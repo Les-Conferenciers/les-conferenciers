@@ -3,14 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Check, ArrowLeft, Mail, Linkedin, Twitter } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-// Removed react-helmet import as we handle SEO manually in useEffect 
-// Actually I don't see react-helmet in the package list. I will use a custom hook or useEffect for SEO.
-
+import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { useEffect } from "react";
+
+const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
 
 const SpeakerDetail = () => {
   const { slug } = useParams();
@@ -93,7 +93,7 @@ const SpeakerDetail = () => {
           <div className="lg:col-span-4 space-y-6">
             <div className="aspect-[3/4] rounded-lg overflow-hidden shadow-xl">
               <img 
-                src={speaker.image_url} 
+                src={speaker.image_url || DEFAULT_IMAGE} 
                 alt={speaker.name} 
                 className="w-full h-full object-cover"
               />
@@ -126,10 +126,14 @@ const SpeakerDetail = () => {
           <div className="lg:col-span-8 space-y-8">
             <div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {speaker.themes?.map((theme: string) => (
-                  <Badge key={theme} variant="secondary" className="text-sm py-1 px-3">
+                {parseThemes(speaker.themes).map((theme: string) => (
+                  <button
+                    key={theme}
+                    onClick={() => navigate(`/speakers?theme=${encodeURIComponent(theme)}`)}
+                    className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
+                  >
                     {theme}
-                  </Badge>
+                  </button>
                 ))}
               </div>
               <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-2">
@@ -165,6 +169,8 @@ const SpeakerDetail = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

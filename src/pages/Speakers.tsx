@@ -4,67 +4,76 @@ import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 
 const PAGE_SIZE = 20;
 
 const Speakers = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
+  const initialTheme = searchParams.get("theme") || null;
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [selectedTheme, setSelectedTheme] = useState<string | null>(initialTheme);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("search", searchQuery);
+    if (selectedTheme) params.set("theme", selectedTheme);
     setSearchParams(params);
-  }, [searchQuery, setSearchParams]);
+  }, [searchQuery, selectedTheme, setSearchParams]);
 
-  // Reset display count when filters change
   useEffect(() => {
     setDisplayCount(PAGE_SIZE);
   }, [searchQuery, selectedTheme]);
 
-  const { data: speakers, isLoading } = useQuery({
-    queryKey: ["speakers", searchQuery, selectedTheme],
+  const { data: allSpeakers, isLoading } = useQuery({
+    queryKey: ["speakers"],
     queryFn: async () => {
-      let query = supabase.from("speakers").select("*").limit(500);
-
-      if (searchQuery) {
-        query = query.or(`name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%,biography.ilike.%${searchQuery}%`);
-      }
-
-      if (selectedTheme) {
-        query = query.contains("themes", [selectedTheme]);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await supabase.from("speakers").select("*").limit(500);
       if (error) throw error;
       return data as Speaker[];
     },
   });
 
-  const { data: allThemes } = useQuery({
-    queryKey: ["all-themes"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("speakers").select("themes");
-      if (error) throw error;
-      const themes = new Set<string>();
-      data.forEach((s) => s.themes?.forEach((t) => themes.add(t)));
-      return Array.from(themes).sort();
-    },
+  // Extract all unique themes from all speakers
+  const allThemes = (() => {
+    if (!allSpeakers) return [];
+    const themes = new Set<string>();
+    allSpeakers.forEach((s) => {
+      parseThemes(s.themes).forEach((t) => themes.add(t));
+    });
+    return Array.from(themes).sort();
+  })();
+
+  // Filter speakers
+  const speakers = allSpeakers?.filter((s) => {
+    const matchesSearch = !searchQuery || 
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.biography?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const speakerThemes = parseThemes(s.themes);
+    const matchesTheme = !selectedTheme || speakerThemes.includes(selectedTheme);
+
+    return matchesSearch && matchesTheme;
   });
 
   const visibleSpeakers = speakers?.slice(0, displayCount);
   const hasMore = speakers ? displayCount < speakers.length : false;
 
+  const handleThemeClick = (theme: string) => {
+    setSelectedTheme(theme === selectedTheme ? null : theme);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
       <div className="bg-primary py-12 px-4 text-center">
@@ -72,13 +81,13 @@ const Speakers = () => {
           Nos Conférenciers
         </h1>
         <p className="text-primary-foreground/80 max-w-2xl mx-auto">
-          Découvrez notre sélection de {speakers?.length ?? "..."} experts passionnants pour vos événements.
+          Découvrez notre sélection de {allSpeakers?.length ?? "..."} experts passionnants pour vos événements.
         </p>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-6 mb-12 items-start md:items-center justify-between">
+      <div className="container mx-auto px-4 py-8 flex-grow">
+        {/* Search */}
+        <div className="mb-6">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -88,28 +97,33 @@ const Speakers = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={selectedTheme === null ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedTheme(null)}
-              className={selectedTheme === null ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}
+        </div>
+
+        {/* Theme filters */}
+        <div className="flex flex-wrap gap-2 mb-10">
+          <button
+            onClick={() => setSelectedTheme(null)}
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+              !selectedTheme
+                ? "bg-accent text-accent-foreground border-accent"
+                : "bg-card text-muted-foreground border-border hover:border-accent/50"
+            }`}
+          >
+            Tous
+          </button>
+          {allThemes.map((theme) => (
+            <button
+              key={theme}
+              onClick={() => handleThemeClick(theme)}
+              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                selectedTheme === theme
+                  ? "ring-2 ring-accent ring-offset-1 " + getThemeColor(theme)
+                  : getThemeColor(theme) + " hover:opacity-80"
+              }`}
             >
-              Tous
-            </Button>
-            {allThemes?.map((theme) => (
-              <Button
-                key={theme}
-                variant={selectedTheme === theme ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTheme(theme === selectedTheme ? null : theme)}
-                className={selectedTheme === theme ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}
-              >
-                {theme}
-              </Button>
-            ))}
-          </div>
+              {theme}
+            </button>
+          ))}
         </div>
 
         {/* Results */}
@@ -134,7 +148,7 @@ const Speakers = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {visibleSpeakers?.map((speaker) => (
-                <SpeakerCard key={speaker.id} speaker={speaker} />
+                <SpeakerCard key={speaker.id} speaker={speaker} onThemeClick={handleThemeClick} />
               ))}
             </div>
 
@@ -157,6 +171,8 @@ const Speakers = () => {
           </>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 };
