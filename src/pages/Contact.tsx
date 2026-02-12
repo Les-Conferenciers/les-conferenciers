@@ -4,13 +4,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, Phone, MapPin, Send, CheckCircle2 } from "lucide-react";
+import { Mail, Phone, MapPin, Send, CheckCircle2, Star } from "lucide-react";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -37,7 +38,6 @@ const Contact = () => {
   });
 
   const onSubmit = async (data: ContactFormData) => {
-    // For now just simulate a submission
     await new Promise((r) => setTimeout(r, 800));
     console.log("Contact form submitted");
     setSubmitted(true);
@@ -46,7 +46,7 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
       <div className="bg-primary py-12 px-4 text-center">
@@ -54,39 +54,56 @@ const Contact = () => {
           Contactez-nous
         </h1>
         <p className="text-primary-foreground/80 max-w-2xl mx-auto">
-          Une question, un projet d'événement ? Remplissez le formulaire et notre équipe vous répondra sous 24h.
+          Une question, un projet d'événement ? Nelly vous répondra personnellement sous 24h.
         </p>
       </div>
 
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-16 flex-grow">
         <div className="grid lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
-          {/* Contact Info */}
+          {/* Contact Info + Nelly */}
           <div className="space-y-8">
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Restons en contact</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                Notre équipe d'experts vous accompagne dans la sélection du conférencier idéal pour votre événement.
-              </p>
-            </div>
+            {/* Nelly card */}
+            <Card className="border-border/40 overflow-hidden">
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src="https://www.lesconferenciers.com/wp-content/uploads/2024/09/selfies.png"
+                  alt="Nelly, votre interlocutrice dédiée"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <CardContent className="p-5">
+                <h3 className="font-serif font-bold text-lg text-foreground">Nelly</h3>
+                <p className="text-sm text-accent font-semibold mb-2">Votre interlocutrice dédiée</p>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Avec plus de 10 ans d'expérience dans l'événementiel, Nelly saura vous guider vers le conférencier parfait pour votre projet.
+                </p>
+                <div className="flex items-center gap-1 mt-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                  ))}
+                  <span className="text-xs text-muted-foreground ml-1">5/5 - 54 avis</span>
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="space-y-5">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-                  <Mail className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Email</p>
-                  <p className="text-muted-foreground text-sm">contact@speaker-agency.fr</p>
-                </div>
-              </div>
-
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
                   <Phone className="h-5 w-5 text-accent" />
                 </div>
                 <div>
                   <p className="font-semibold text-sm">Téléphone</p>
-                  <p className="text-muted-foreground text-sm">+33 1 23 45 67 89</p>
+                  <p className="text-muted-foreground text-sm">06 95 93 97 91</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+                  <Mail className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Email</p>
+                  <p className="text-muted-foreground text-sm">contact@lesconferenciers.com</p>
                 </div>
               </div>
 
@@ -106,7 +123,7 @@ const Contact = () => {
           <Card className="lg:col-span-2 border border-border/40 shadow-sm">
             <CardHeader className="pb-4">
               <h3 className="text-xl font-bold">Réservez un conférencier</h3>
-              <p className="text-sm text-muted-foreground">Décrivez votre projet et nous vous proposerons les meilleurs profils.</p>
+              <p className="text-sm text-muted-foreground">Décrivez votre projet et Nelly vous proposera les meilleurs profils.</p>
             </CardHeader>
             <CardContent>
               {submitted ? (
@@ -114,7 +131,7 @@ const Contact = () => {
                   <CheckCircle2 className="h-16 w-16 text-accent mx-auto" />
                   <h3 className="text-2xl font-bold">Merci pour votre demande !</h3>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    Notre équipe vous contactera dans les plus brefs délais pour discuter de votre projet.
+                    Nelly vous contactera dans les plus brefs délais pour discuter de votre projet.
                   </p>
                   <Button variant="outline" className="mt-4" onClick={() => setSubmitted(false)}>
                     Envoyer une autre demande
@@ -186,6 +203,8 @@ const Contact = () => {
           </Card>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };
