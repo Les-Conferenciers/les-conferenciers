@@ -11,9 +11,8 @@ const FeaturedSpeakers = () => {
       const { data, error } = await supabase
         .from("speakers")
         .select("*")
-        .eq("featured", true)
-        .limit(8);
-      
+        .eq("featured", true);
+
       if (error) throw error;
       return data as Speaker[];
     },
