@@ -7,7 +7,7 @@ import ValueProposition from "@/components/ValueProposition";
 import GoogleReviews from "@/components/GoogleReviews";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Star, ArrowRight, Users, Award, Calendar } from "lucide-react";
+import { Search, Star, ArrowRight, Users, Award, Calendar, Sparkles, Clock, HeartHandshake } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -48,11 +48,23 @@ const Index = () => {
             <span className="text-accent italic">et de célébrités</span>
           </h1>
 
-          <h2 className="text-lg md:text-2xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto font-normal animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <h2 className="text-lg md:text-2xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto font-normal animate-fade-in" style={{ animationDelay: "0.2s" }}>
             Trouvez le conférencier idéal pour vos événements professionnels.
-            <br className="hidden md:block" />
-            Accompagnement sur mesure · Réactivité · Disponibilité
           </h2>
+
+          {/* Reassurance pills */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-10 animate-fade-in" style={{ animationDelay: "0.25s" }}>
+            {[
+              { icon: HeartHandshake, label: "Accompagnement dédié" },
+              { icon: Clock, label: "Réponse sous 24h" },
+              { icon: Sparkles, label: "Profils vérifiés" },
+            ].map(({ icon: Icon, label }) => (
+              <span key={label} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-sm text-primary-foreground/90 backdrop-blur-sm">
+                <Icon className="h-4 w-4 text-accent" />
+                {label}
+              </span>
+            ))}
+          </div>
 
           {/* Rating */}
           <div className="flex items-center justify-center gap-2 mb-10 animate-fade-in" style={{ animationDelay: "0.25s" }}>
