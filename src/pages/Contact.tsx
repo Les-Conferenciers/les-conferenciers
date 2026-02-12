@@ -63,28 +63,29 @@ const Contact = () => {
           {/* Contact Info + Nelly */}
           <div className="space-y-8">
             {/* Nelly card */}
-            <Card className="border-border/40 overflow-hidden">
-              <div className="aspect-[4/3] overflow-hidden">
+            <div className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border/40">
+              <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 border-2 border-accent/30">
                 <img
                   src="https://www.lesconferenciers.com/wp-content/uploads/2024/09/selfies.png"
                   alt="Nelly, votre interlocutrice dédiée"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <CardContent className="p-5">
-                <h3 className="font-serif font-bold text-lg text-foreground">Nelly</h3>
-                <p className="text-sm text-accent font-semibold mb-2">Votre interlocutrice dédiée</p>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Avec plus de 10 ans d'expérience dans l'événementiel, Nelly saura vous guider vers le conférencier parfait pour votre projet.
-                </p>
-                <div className="flex items-center gap-1 mt-3">
+              <div>
+                <h3 className="font-serif font-bold text-foreground">Nelly</h3>
+                <p className="text-xs text-accent font-semibold">Votre interlocutrice dédiée</p>
+                <div className="flex items-center gap-0.5 mt-1">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
                   ))}
-                  <span className="text-xs text-muted-foreground ml-1">5/5 - 54 avis</span>
+                  <span className="text-xs text-muted-foreground ml-1">5/5</span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Forte de plus de 10 ans d'expérience, Nelly saura vous guider vers le conférencier parfait pour votre projet.
+            </p>
 
             <div className="space-y-5">
               <div className="flex items-start gap-4">
