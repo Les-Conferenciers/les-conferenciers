@@ -35,8 +35,8 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative py-28 md:py-40 px-4 overflow-hidden bg-primary text-primary-foreground">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1475721027767-f424029558d4?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10 mix-blend-overlay" />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/50 to-primary" />
+        <div className="absolute inset-0 bg-[url('https://www.lesconferenciers.com/wp-content/uploads/2022/09/lesconferenciers.jpg')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-primary/80" />
         <div className="container mx-auto relative z-10 text-center max-w-4xl">
           <span className="inline-block mb-6 px-5 py-2 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase animate-fade-in">
             Agence de Conférenciers Premium
@@ -104,6 +104,61 @@ const Index = () => {
 
       {/* Value Proposition */}
       <ValueProposition />
+
+      {/* Nelly - Votre interlocutrice */}
+      <section className="py-20 px-4 bg-card border-y border-border/40">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="relative">
+              <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src="https://www.lesconferenciers.com/wp-content/uploads/2024/09/selfies.png"
+                  alt="Nelly, votre interlocutrice dédiée"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-4 -right-4 bg-accent text-accent-foreground rounded-2xl px-6 py-3 shadow-lg font-serif font-bold text-lg">
+                Votre interlocutrice
+              </div>
+            </div>
+            <div className="space-y-6">
+              <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase">
+                Accompagnement personnalisé
+              </span>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
+                Nelly vous accompagne <span className="text-accent italic">à chaque étape</span>
+              </h2>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                De la sélection du conférencier idéal à la coordination le jour J, Nelly est votre interlocutrice unique. Son expertise et sa connaissance approfondie de chaque intervenant garantissent un événement à la hauteur de vos ambitions.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  "Conseil personnalisé selon vos objectifs",
+                  "Devis détaillé sous 24 heures",
+                  "Coordination logistique complète",
+                  "Suivi post-événement",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-3 text-foreground">
+                    <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3.5 h-3.5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="font-medium">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                size="lg"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl mt-4"
+                onClick={() => navigate('/contact')}
+              >
+                Contacter Nelly
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Featured Speakers Section */}
       <section className="py-20 px-4 bg-secondary/30">
