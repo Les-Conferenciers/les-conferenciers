@@ -10,6 +10,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 const FeaturedSpeakers = () => {
   const { data: speakers, isLoading } = useQuery({
@@ -44,6 +45,7 @@ const FeaturedSpeakers = () => {
   return (
     <Carousel
       opts={{ align: "start", loop: true }}
+      plugins={[Autoplay({ delay: 5000, stopOnInteraction: false })]}
       className="w-full"
     >
       <CarouselContent className="-ml-4">
