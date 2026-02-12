@@ -114,7 +114,7 @@ const Index = () => {
               <div className="max-w-[280px] mx-auto">
                 <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-border/40">
                   <img
-                    src="https://www.lesconferenciers.com/wp-content/uploads/2024/09/selfies.png"
+                    src="https://emmalamagicienne.fr/wp-content/uploads/2017/03/emma.png"
                     alt="Nelly, votre interlocutrice dédiée"
                     className="w-full h-full object-cover"
                   />
