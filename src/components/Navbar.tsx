@@ -38,8 +38,8 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <Button variant="default" className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Réserver un talent
+          <Button variant="default" className="bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+            <Link to="/contact">Contact</Link>
           </Button>
         </div>
 
@@ -65,8 +65,8 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <Button className="w-full bg-primary text-primary-foreground">
-              Réserver un talent
+            <Button className="w-full bg-primary text-primary-foreground" asChild>
+              <Link to="/contact">Contact</Link>
             </Button>
           </div>
         </div>
