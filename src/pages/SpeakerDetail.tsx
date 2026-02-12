@@ -1,16 +1,51 @@
 
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, Mail, Linkedin, Twitter } from "lucide-react";
+import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
+
+const generateFAQ = (speaker: any) => {
+  const themes = parseThemes(speaker.themes);
+  const themesText = themes.length > 0 ? themes.slice(0, 3).join(", ") : "le leadership et le management";
+
+  return [
+    {
+      question: `Quels sont les thèmes de conférence de ${speaker.name} ?`,
+      answer: `${speaker.name} intervient principalement sur les thématiques suivantes : ${themesText}. Chaque conférence est adaptée au contexte et aux objectifs de votre événement.`,
+    },
+    {
+      question: `Comment réserver ${speaker.name} pour un événement ?`,
+      answer: `Pour réserver ${speaker.name}, contactez notre agence via le formulaire de contact ou par téléphone au 06 95 93 97 91. Nelly, votre interlocutrice dédiée, vous enverra un devis personnalisé sous 24 heures.`,
+    },
+    {
+      question: `Quel est le tarif d'une conférence avec ${speaker.name} ?`,
+      answer: `Le tarif dépend de plusieurs facteurs : la durée de l'intervention, le format (keynote, table ronde, atelier), le lieu et la date. Contactez-nous pour recevoir une proposition adaptée à votre budget.`,
+    },
+    {
+      question: `${speaker.name} intervient-il en visioconférence ?`,
+      answer: `Oui, ${speaker.name} peut intervenir en présentiel comme en visioconférence. Le format est adapté selon vos contraintes logistiques et le nombre de participants.`,
+    },
+    {
+      question: `Quelle est la durée d'une conférence de ${speaker.name} ?`,
+      answer: `La durée standard est de 45 minutes à 1h30, suivie d'un temps d'échange avec le public. Des formats plus courts ou plus longs sont possibles selon vos besoins.`,
+    },
+  ];
+};
 
 const SpeakerDetail = () => {
   const { slug } = useParams();
@@ -24,25 +59,99 @@ const SpeakerDetail = () => {
         .select("*")
         .eq("slug", slug)
         .single();
-      
+
       if (error) throw error;
       return data;
     },
   });
 
-  // SEO
+  // Similar speakers query
+  const speakerThemes = speaker ? parseThemes(speaker.themes) : [];
+  const { data: similarSpeakers } = useQuery({
+    queryKey: ["similar-speakers", slug, speakerThemes],
+    enabled: !!speaker && speakerThemes.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("speakers")
+        .select("*")
+        .neq("slug", slug)
+        .limit(200);
+
+      if (error) throw error;
+
+      // Score by theme overlap
+      const scored = (data as Speaker[])
+        .map((s) => {
+          const sThemes = parseThemes(s.themes);
+          const overlap = sThemes.filter((t) => speakerThemes.includes(t)).length;
+          return { ...s, score: overlap };
+        })
+        .filter((s) => s.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4);
+
+      return scored;
+    },
+  });
+
+  // SEO: JSON-LD + meta
   useEffect(() => {
     if (speaker) {
-      document.title = speaker.seo_title || `${speaker.name} - Speaker Agency`;
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute("content", speaker.meta_description || "");
+      document.title = speaker.seo_title || `${speaker.name} — Conférencier | Les Conférenciers`;
+      const desc = speaker.meta_description || `Réservez ${speaker.name} pour votre événement. ${speaker.role || "Conférencier professionnel"}.`;
+      let metaEl = document.querySelector('meta[name="description"]');
+      if (metaEl) {
+        metaEl.setAttribute("content", desc);
       } else {
-        const meta = document.createElement('meta');
-        meta.name = "description";
-        meta.content = speaker.meta_description || "";
-        document.head.appendChild(meta);
+        metaEl = document.createElement("meta");
+        metaEl.setAttribute("name", "description");
+        metaEl.setAttribute("content", desc);
+        document.head.appendChild(metaEl);
       }
+
+      // JSON-LD structured data
+      const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        name: speaker.name,
+        jobTitle: speaker.role,
+        description: desc,
+        image: speaker.image_url || DEFAULT_IMAGE,
+        url: window.location.href,
+        knowsAbout: parseThemes(speaker.themes),
+      };
+      let scriptEl = document.querySelector('script[data-jsonld="speaker"]');
+      if (!scriptEl) {
+        scriptEl = document.createElement("script");
+        scriptEl.setAttribute("type", "application/ld+json");
+        scriptEl.setAttribute("data-jsonld", "speaker");
+        document.head.appendChild(scriptEl);
+      }
+      scriptEl.textContent = JSON.stringify(jsonLd);
+
+      // FAQ JSON-LD
+      const faqJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: generateFAQ(speaker).map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: { "@type": "Answer", text: faq.answer },
+        })),
+      };
+      let faqScriptEl = document.querySelector('script[data-jsonld="faq"]');
+      if (!faqScriptEl) {
+        faqScriptEl = document.createElement("script");
+        faqScriptEl.setAttribute("type", "application/ld+json");
+        faqScriptEl.setAttribute("data-jsonld", "faq");
+        document.head.appendChild(faqScriptEl);
+      }
+      faqScriptEl.textContent = JSON.stringify(faqJsonLd);
+
+      return () => {
+        document.querySelector('script[data-jsonld="speaker"]')?.remove();
+        document.querySelector('script[data-jsonld="faq"]')?.remove();
+      };
     }
   }, [speaker]);
 
@@ -50,16 +159,20 @@ const SpeakerDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <Skeleton className="h-96 w-full mb-8" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="col-span-2 space-y-4">
-              <Skeleton className="h-12 w-3/4" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
+        <div className="bg-primary py-16 px-4">
+          <div className="container mx-auto max-w-5xl flex items-center gap-8">
+            <Skeleton className="w-32 h-32 rounded-full flex-shrink-0" />
+            <div className="space-y-3 flex-grow">
+              <Skeleton className="h-10 w-2/3" />
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-8 w-full" />
             </div>
-            <Skeleton className="h-64 w-full" />
           </div>
+        </div>
+        <div className="container mx-auto px-4 py-12 max-w-5xl space-y-6">
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-3/4" />
         </div>
       </div>
     );
@@ -79,97 +192,210 @@ const SpeakerDetail = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <div className="container mx-auto px-4 py-8 md:py-16">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 pl-0 hover:bg-transparent hover:text-primary">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Retour
-        </Button>
+  const themes = parseThemes(speaker.themes);
+  const faqItems = generateFAQ(speaker);
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Left Column: Image & Quick Info */}
-          <div className="lg:col-span-3 space-y-6">
-            <div className="max-w-[240px] mx-auto lg:mx-0">
-              <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-lg border border-border/40">
-                <img 
-                  src={speaker.image_url || DEFAULT_IMAGE} 
-                  alt={speaker.name} 
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar />
+
+      {/* Hero Section */}
+      <section className="bg-primary text-primary-foreground py-12 md:py-16 px-4">
+        <div className="container mx-auto max-w-5xl">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-sm text-primary-foreground/60 mb-8" aria-label="Breadcrumb">
+            <Link to="/" className="hover:text-accent transition-colors">Accueil</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <Link to="/speakers" className="hover:text-accent transition-colors">Conférenciers</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-primary-foreground font-medium">{speaker.name}</span>
+          </nav>
+
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+            {/* Medallion */}
+            <div className="flex-shrink-0">
+              <div className="w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-accent/30 shadow-2xl">
+                <img
+                  src={speaker.image_url || DEFAULT_IMAGE}
+                  alt={speaker.name}
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
-            
-            <div className="space-y-4">
-               <h3 className="font-serif font-bold text-xl">Réseaux Sociaux</h3>
-               <div className="flex gap-4">
-                 <Button variant="outline" size="icon" className="rounded-full">
-                   <Linkedin className="h-4 w-4" />
-                 </Button>
-                 <Button variant="outline" size="icon" className="rounded-full">
-                   <Twitter className="h-4 w-4" />
-                 </Button>
-               </div>
-            </div>
 
-            <div className="bg-secondary/30 p-6 rounded-lg border border-secondary">
-              <h3 className="font-serif font-bold text-lg mb-4">Intéressé par ce profil ?</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Contactez-nous pour vérifier la disponibilité de {speaker.name} pour votre événement.
+            {/* Info */}
+            <div className="flex-grow text-center md:text-left">
+              <h1 className="text-3xl md:text-5xl font-serif font-bold mb-2 leading-tight">
+                {speaker.name}
+              </h1>
+              <p className="text-lg md:text-xl text-primary-foreground/70 font-medium mb-5">
+                {speaker.role}
               </p>
-              <Button className="w-full gap-2">
-                <Mail className="h-4 w-4" /> Demander un devis
-              </Button>
-            </div>
-          </div>
 
-          {/* Right Column: Content */}
-          <div className="lg:col-span-9 space-y-8">
-            <div>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {parseThemes(speaker.themes).map((theme: string) => (
+              {/* Themes */}
+              <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-6">
+                {themes.map((theme) => (
                   <button
                     key={theme}
                     onClick={() => navigate(`/speakers?theme=${encodeURIComponent(theme)}`)}
-                    className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
+                    className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
                   >
                     {theme}
                   </button>
                 ))}
               </div>
-              <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary mb-2">
-                {speaker.name}
-              </h1>
-              <p className="text-xl text-muted-foreground font-medium uppercase tracking-wide">
-                {speaker.role}
+
+              {/* Key Points inline */}
+              {speaker.key_points && speaker.key_points.length > 0 && (
+                <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center md:justify-start">
+                  {speaker.key_points.slice(0, 4).map((point: string, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm text-primary-foreground/80">
+                      <Check className="h-4 w-4 text-accent flex-shrink-0" />
+                      <span>{point}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Content */}
+      <div className="container mx-auto px-4 py-12 md:py-16 max-w-5xl flex-grow">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-12">
+            {/* Biography */}
+            <section>
+              <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                Biographie
+              </h2>
+              <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
+                {speaker.biography?.split("\n").map((paragraph: string, idx: number) => (
+                  <p key={idx} className="mb-4">{paragraph}</p>
+                ))}
+              </div>
+            </section>
+
+            {/* Key Points full */}
+            {speaker.key_points && speaker.key_points.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                  <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                  Points Clés
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {speaker.key_points.map((point: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/40 hover:border-accent/30 transition-colors"
+                    >
+                      <div className="mt-0.5 bg-accent/10 p-1.5 rounded-full flex-shrink-0">
+                        <Check className="h-3.5 w-3.5 text-accent" />
+                      </div>
+                      <span className="font-medium text-foreground text-sm">{point}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* FAQ */}
+            <section>
+              <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                Questions fréquentes
+              </h2>
+              <Accordion type="single" collapsible className="space-y-3">
+                {faqItems.map((faq, idx) => (
+                  <AccordionItem
+                    key={idx}
+                    value={`faq-${idx}`}
+                    className="border border-border/40 rounded-xl px-5 data-[state=open]:border-accent/30 transition-colors"
+                  >
+                    <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline py-4">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground leading-relaxed pb-4">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </section>
+          </div>
+
+          {/* Sidebar */}
+          <aside className="space-y-6">
+            {/* CTA Card */}
+            <div className="bg-primary text-primary-foreground p-6 rounded-2xl shadow-lg sticky top-24">
+              <h3 className="font-serif font-bold text-lg mb-2">Intéressé par ce profil ?</h3>
+              <p className="text-primary-foreground/70 text-sm mb-5">
+                Contactez-nous pour vérifier la disponibilité de {speaker.name} pour votre événement.
+              </p>
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-2"
+                onClick={() => navigate("/contact")}
+              >
+                <Mail className="h-4 w-4" /> Demander un devis
+              </Button>
+              <p className="text-center text-xs text-primary-foreground/50 mt-3">
+                Devis gratuit sous 24h
               </p>
             </div>
 
-            <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
-              {speaker.biography?.split('\n').map((paragraph: string, idx: number) => (
-                <p key={idx} className="mb-4">{paragraph}</p>
-              ))}
-            </div>
-
-            <div className="bg-card shadow-sm border rounded-xl p-8 mt-8">
-              <h3 className="text-2xl font-serif font-bold mb-6 text-primary flex items-center gap-2">
-                <span className="w-1 h-8 bg-accent block rounded-full"></span>
-                Points Clés
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {speaker.key_points?.map((point: string, idx: number) => (
-                  <div key={idx} className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/20 transition-colors">
-                    <div className="mt-1 bg-accent/10 p-1 rounded-full">
-                      <Check className="h-4 w-4 text-accent" />
-                    </div>
-                    <span className="font-medium text-foreground">{point}</span>
+            {/* Formats */}
+            <div className="bg-card border border-border/40 rounded-2xl p-6">
+              <h3 className="font-serif font-bold text-foreground mb-3">Formats d'intervention</h3>
+              <div className="space-y-2">
+                {["Keynote", "Table ronde", "Atelier", "Visioconférence"].map((format) => (
+                  <div key={format} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-3.5 w-3.5 text-accent" />
+                    <span>{format}</span>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+
+            {/* Themes sidebar */}
+            {themes.length > 0 && (
+              <div className="bg-card border border-border/40 rounded-2xl p-6">
+                <h3 className="font-serif font-bold text-foreground mb-3">Thématiques</h3>
+                <div className="flex flex-wrap gap-2">
+                  {themes.map((theme) => (
+                    <button
+                      key={theme}
+                      onClick={() => navigate(`/speakers?theme=${encodeURIComponent(theme)}`)}
+                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
+                    >
+                      {theme}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
         </div>
+
+        {/* Similar Speakers */}
+        {similarSpeakers && similarSpeakers.length > 0 && (
+          <section className="mt-20">
+            <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-2 flex items-center gap-3">
+              <span className="w-1 h-7 bg-accent rounded-full block"></span>
+              Profils similaires
+            </h2>
+            <p className="text-muted-foreground mb-8 ml-4">
+              Des conférenciers qui partagent des thématiques communes avec {speaker.name}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {similarSpeakers.map((s) => (
+                <SpeakerCard key={s.id} speaker={s} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       <Footer />
