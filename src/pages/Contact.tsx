@@ -75,7 +75,7 @@ const Contact = () => {
             <div className="flex items-center gap-4 p-5 bg-card rounded-xl border border-border/40">
               <div className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border-2 border-accent/30">
                 <img
-                  src="https://www.lesconferenciers.com/wp-content/uploads/2024/09/selfies.png"
+                  src="https://emmalamagicienne.fr/wp-content/uploads/2017/03/emma.png"
                   alt="Nelly, votre interlocutrice dédiée"
                   className="w-full h-full object-cover"
                 />

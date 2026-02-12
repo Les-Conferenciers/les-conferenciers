@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const Footer = () => {
   return (
@@ -8,9 +9,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="text-2xl font-serif font-bold tracking-tight flex items-center gap-2 mb-4">
-              <span className="w-8 h-8 bg-accent text-accent-foreground rounded-full flex items-center justify-center font-serif italic text-sm">S</span>
-              LES CONFÉRENCIERS
+            <Link to="/" className="mb-4 inline-block">
+              <img src={logo} alt="Agence Les Conférenciers" className="h-10 brightness-0 invert" />
             </Link>
             <p className="text-primary-foreground/70 max-w-md leading-relaxed text-sm">
               Agence de conférenciers et de célébrités. Trouvez le conférencier idéal pour vos événements professionnels.
