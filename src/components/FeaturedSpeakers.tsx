@@ -12,7 +12,7 @@ const FeaturedSpeakers = () => {
         .from("speakers")
         .select("*")
         .eq("featured", true)
-        .limit(4);
+        .limit(8);
       
       if (error) throw error;
       return data as Speaker[];

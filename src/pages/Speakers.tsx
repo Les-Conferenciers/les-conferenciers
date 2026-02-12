@@ -7,27 +7,33 @@ import Navbar from "@/components/Navbar";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+
+const PAGE_SIZE = 20;
 
 const Speakers = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
 
-  // Update URL when search changes
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("search", searchQuery);
     setSearchParams(params);
   }, [searchQuery, setSearchParams]);
 
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(PAGE_SIZE);
+  }, [searchQuery, selectedTheme]);
+
   const { data: speakers, isLoading } = useQuery({
     queryKey: ["speakers", searchQuery, selectedTheme],
     queryFn: async () => {
-      let query = supabase.from("speakers").select("*");
+      let query = supabase.from("speakers").select("*").limit(500);
 
       if (searchQuery) {
         query = query.or(`name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%,biography.ilike.%${searchQuery}%`);
@@ -43,7 +49,6 @@ const Speakers = () => {
     },
   });
 
-  // Extract unique themes for filter
   const { data: allThemes } = useQuery({
     queryKey: ["all-themes"],
     queryFn: async () => {
@@ -55,16 +60,19 @@ const Speakers = () => {
     },
   });
 
+  const visibleSpeakers = speakers?.slice(0, displayCount);
+  const hasMore = speakers ? displayCount < speakers.length : false;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <div className="bg-primary py-12 px-4 text-center">
-        <h1 className="text-3xl md:text-4xl font-serif font-bold text-primary-foreground mb-4">
+        <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
           Nos Conférenciers
         </h1>
         <p className="text-primary-foreground/80 max-w-2xl mx-auto">
-          Découvrez notre sélection d'experts passionnants pour vos événements.
+          Découvrez notre sélection de {speakers?.length ?? "..."} experts passionnants pour vos événements.
         </p>
       </div>
 
@@ -75,7 +83,7 @@ const Speakers = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Rechercher..."
-              className="pl-9"
+              className="pl-9 border-border/50 shadow-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -86,6 +94,7 @@ const Speakers = () => {
               variant={selectedTheme === null ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTheme(null)}
+              className={selectedTheme === null ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}
             >
               Tous
             </Button>
@@ -95,6 +104,7 @@ const Speakers = () => {
                 variant={selectedTheme === theme ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedTheme(theme === selectedTheme ? null : theme)}
+                className={selectedTheme === theme ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}
               >
                 {theme}
               </Button>
@@ -104,10 +114,10 @@ const Speakers = () => {
 
         {/* Results */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="space-y-4">
-                <Skeleton className="h-[400px] w-full rounded-lg" />
+                <Skeleton className="h-[300px] w-full rounded-lg" />
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
               </div>
@@ -121,11 +131,30 @@ const Speakers = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {speakers?.map((speaker) => (
-              <SpeakerCard key={speaker.id} speaker={speaker} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {visibleSpeakers?.map((speaker) => (
+                <SpeakerCard key={speaker.id} speaker={speaker} />
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="mt-12 text-center">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setDisplayCount((prev) => prev + PAGE_SIZE)}
+                  className="px-10 border-accent text-accent hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  Charger plus ({speakers!.length - displayCount} restants)
+                </Button>
+              </div>
+            )}
+
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              {Math.min(displayCount, speakers?.length ?? 0)} sur {speakers?.length} conférenciers affichés
+            </p>
+          </>
         )}
       </div>
     </div>
