@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, Phone, MapPin, Send, CheckCircle2, Star } from "lucide-react";
+import { Mail, Phone, MapPin, Send, CheckCircle2, Star, ChevronDown } from "lucide-react";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -53,9 +53,18 @@ const Contact = () => {
         <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
           Contactez-nous
         </h1>
-        <p className="text-primary-foreground/80 max-w-2xl mx-auto">
+        <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-6">
           Une question, un projet d'événement ? Nelly vous répondra personnellement sous 24h.
         </p>
+        <Button
+          size="lg"
+          className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-2 px-8 shadow-lg hover:shadow-xl transition-all"
+          onClick={() => document.getElementById("contact-form")?.scrollIntoView({ behavior: "smooth" })}
+        >
+          <Send className="h-5 w-5" />
+          Demander un devis
+          <ChevronDown className="h-4 w-4 ml-1" />
+        </Button>
       </div>
 
       <div className="container mx-auto px-4 py-16 flex-grow">
@@ -122,7 +131,7 @@ const Contact = () => {
           </div>
 
           {/* Form */}
-          <Card className="lg:col-span-2 border border-border/40 shadow-sm">
+          <Card id="contact-form" className="lg:col-span-2 border border-border/40 shadow-sm scroll-mt-24">
             <CardHeader className="pb-4">
               <h3 className="text-xl font-bold">Réservez un conférencier</h3>
               <p className="text-sm text-muted-foreground">Décrivez votre projet et Nelly vous proposera les meilleurs profils.</p>
