@@ -63,8 +63,8 @@ const Contact = () => {
           {/* Contact Info + Nelly */}
           <div className="space-y-8">
             {/* Nelly card */}
-            <div className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border/40">
-              <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 border-2 border-accent/30">
+            <div className="flex items-center gap-4 p-5 bg-card rounded-xl border border-border/40">
+              <div className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border-2 border-accent/30">
                 <img
                   src="https://www.lesconferenciers.com/wp-content/uploads/2024/09/selfies.png"
                   alt="Nelly, votre interlocutrice dédiée"
@@ -72,9 +72,10 @@ const Contact = () => {
                 />
               </div>
               <div>
-                <h3 className="font-serif font-bold text-foreground">Nelly</h3>
-                <p className="text-xs text-accent font-semibold">Votre interlocutrice dédiée</p>
-                <div className="flex items-center gap-0.5 mt-1">
+                <h3 className="font-serif font-bold text-lg text-foreground">Nelly</h3>
+                <p className="text-sm text-accent font-semibold">Votre interlocutrice dédiée</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">10+ ans d'expérience événementiel</p>
+                <div className="flex items-center gap-0.5 mt-1.5">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
                   ))}
