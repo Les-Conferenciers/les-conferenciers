@@ -42,14 +42,19 @@ const Speakers = () => {
     },
   });
 
-  // Extract all unique themes from all speakers
+  // Extract top 10 most cited themes
   const allThemes = (() => {
     if (!allSpeakers) return [];
-    const themes = new Set<string>();
+    const counts = new Map<string, number>();
     allSpeakers.forEach((s) => {
-      parseThemes(s.themes).forEach((t) => themes.add(t));
+      parseThemes(s.themes).forEach((t) => {
+        counts.set(t, (counts.get(t) || 0) + 1);
+      });
     });
-    return Array.from(themes).sort();
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([theme]) => theme);
   })();
 
   // Filter speakers
