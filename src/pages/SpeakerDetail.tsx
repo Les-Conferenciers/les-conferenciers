@@ -256,6 +256,18 @@ const SpeakerDetail = () => {
                   ))}
                 </div>
               )}
+
+              {/* CTA Button */}
+              <div className="mt-8 flex justify-center md:justify-start">
+                <Button
+                  size="lg"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-2 px-8 shadow-lg hover:shadow-xl transition-all"
+                  onClick={() => navigate(`/contact?speaker=${encodeURIComponent(speaker.name)}`)}
+                >
+                  <Mail className="h-5 w-5" />
+                  Solliciter {speaker.name}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
