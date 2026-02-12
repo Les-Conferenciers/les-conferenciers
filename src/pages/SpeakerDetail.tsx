@@ -90,13 +90,15 @@ const SpeakerDetail = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Left Column: Image & Quick Info */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="aspect-[3/4] rounded-lg overflow-hidden shadow-xl">
-              <img 
-                src={speaker.image_url || DEFAULT_IMAGE} 
-                alt={speaker.name} 
-                className="w-full h-full object-cover"
-              />
+          <div className="lg:col-span-3 space-y-6">
+            <div className="max-w-[240px] mx-auto lg:mx-0">
+              <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-lg border border-border/40">
+                <img 
+                  src={speaker.image_url || DEFAULT_IMAGE} 
+                  alt={speaker.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
             
             <div className="space-y-4">
@@ -123,7 +125,7 @@ const SpeakerDetail = () => {
           </div>
 
           {/* Right Column: Content */}
-          <div className="lg:col-span-8 space-y-8">
+          <div className="lg:col-span-9 space-y-8">
             <div>
               <div className="flex flex-wrap gap-2 mb-4">
                 {parseThemes(speaker.themes).map((theme: string) => (
