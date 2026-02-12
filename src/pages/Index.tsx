@@ -107,26 +107,31 @@ const Index = () => {
 
       {/* Nelly - Votre interlocutrice */}
       <section className="py-20 px-4 bg-card border-y border-border/40">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="relative">
-              <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl">
-                <img
-                  src="https://www.lesconferenciers.com/wp-content/uploads/2024/09/selfies.png"
-                  alt="Nelly, votre interlocutrice dédiée"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-4 -right-4 bg-accent text-accent-foreground rounded-2xl px-6 py-3 shadow-lg font-serif font-bold text-lg">
-                Votre interlocutrice
+        <div className="container mx-auto max-w-5xl">
+          <div className="grid lg:grid-cols-5 gap-10 items-center">
+            {/* Image - compact vertical */}
+            <div className="lg:col-span-2">
+              <div className="max-w-[280px] mx-auto">
+                <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-border/40">
+                  <img
+                    src="https://www.lesconferenciers.com/wp-content/uploads/2024/09/selfies.png"
+                    alt="Nelly, votre interlocutrice dédiée"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="text-center mt-4">
+                  <p className="font-serif font-bold text-foreground">Nelly</p>
+                  <p className="text-sm text-accent font-semibold">Votre interlocutrice dédiée</p>
+                </div>
               </div>
             </div>
-            <div className="space-y-6">
+            {/* Text */}
+            <div className="lg:col-span-3 space-y-6">
               <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase">
                 Accompagnement personnalisé
               </span>
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
-                Nelly vous accompagne <span className="text-accent italic">à chaque étape</span>
+                Un accompagnement <span className="text-accent italic">sur mesure</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
                 De la sélection du conférencier idéal à la coordination le jour J, Nelly est votre interlocutrice unique. Son expertise et sa connaissance approfondie de chaque intervenant garantissent un événement à la hauteur de vos ambitions.
