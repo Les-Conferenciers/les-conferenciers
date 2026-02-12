@@ -11,8 +11,8 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Accueil", path: "/" },
-    { name: "Conférenciers", path: "/speakers" },
-    { name: "Contact", path: "/contact" }, // Placeholder route
+    { name: "Les Conférenciers", path: "/speakers" },
+    { name: "Blog", path: "/blog" },
   ];
 
   const isActive = (path: string) => {
