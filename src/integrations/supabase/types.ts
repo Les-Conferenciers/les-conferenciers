@@ -49,6 +49,47 @@ export type Database = {
           },
         ]
       }
+      speaker_conferences: {
+        Row: {
+          bonus: string | null
+          bullet_points: string[] | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          speaker_id: string
+          title: string
+        }
+        Insert: {
+          bonus?: string | null
+          bullet_points?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          speaker_id: string
+          title: string
+        }
+        Update: {
+          bonus?: string | null
+          bullet_points?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          speaker_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaker_conferences_speaker_id_fkey"
+            columns: ["speaker_id"]
+            isOneToOne: false
+            referencedRelation: "speakers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speakers: {
         Row: {
           biography: string | null
