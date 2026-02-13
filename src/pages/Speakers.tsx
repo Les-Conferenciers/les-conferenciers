@@ -83,11 +83,11 @@ const Speakers = () => {
       
       <div className="bg-primary py-12 px-4 text-center">
         <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
-          Nos Conférenciers
+          Conférenciers professionnels pour vos événements
         </h1>
-        <p className="text-primary-foreground/80 max-w-2xl mx-auto">
-          Découvrez notre sélection de {allSpeakers?.length ?? "..."} experts passionnants pour vos événements.
-        </p>
+        <h2 className="text-primary-foreground/80 max-w-2xl mx-auto text-lg font-normal">
+          Découvrez notre sélection de {allSpeakers?.length ?? "..."} conférenciers et intervenants d'exception.
+        </h2>
       </div>
 
       <div className="container mx-auto px-4 py-8 flex-grow">
