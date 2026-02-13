@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +72,23 @@ const Speakers = () => {
 
   const visibleSpeakers = speakers?.slice(0, displayCount);
   const hasMore = speakers ? displayCount < speakers.length : false;
+
+  // Infinite scroll via IntersectionObserver
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadMore = useCallback(() => {
+    if (hasMore) setDisplayCount((prev) => prev + PAGE_SIZE);
+  }, [hasMore]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const handleThemeClick = (theme: string) => {
     setSelectedTheme(theme === selectedTheme ? null : theme);
@@ -157,16 +174,15 @@ const Speakers = () => {
               ))}
             </div>
 
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="h-1" />
+
             {hasMore && (
-              <div className="mt-12 text-center">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setDisplayCount((prev) => prev + PAGE_SIZE)}
-                  className="px-10 border-accent text-accent hover:bg-accent hover:text-accent-foreground transition-colors"
-                >
-                  Charger plus ({speakers!.length - displayCount} restants)
-                </Button>
+              <div className="mt-8 flex justify-center">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-4 w-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                  Chargement…
+                </div>
               </div>
             )}
 
