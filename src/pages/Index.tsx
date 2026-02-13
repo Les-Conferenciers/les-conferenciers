@@ -117,17 +117,52 @@ const Index = () => {
 
       {/* Trouvez l'orateur idéal */}
       <section className="py-20 px-4 bg-card border-y border-border/40">
-        <div className="container mx-auto max-w-4xl text-center">
-          <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-4">
-            Notre conviction
-          </span>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-6">
-            Trouvez l'orateur idéal <span className="text-accent italic">n'est pas chose aisée</span>
-          </h2>
-          <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-            Chaque événement est unique, chaque audience a ses attentes. C'est pourquoi nous mettons notre expertise, 
-            notre réseau et notre connaissance personnelle de chaque intervenant au service de votre projet — 
-            pour que chaque conférence devienne un moment mémorable.
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-14">
+            <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-4">
+              Notre conviction
+            </span>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
+              Trouvez l'orateur idéal <span className="text-accent italic">n'est pas chose aisée</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Pain 1 */}
+            <div className="relative p-8 rounded-2xl bg-background border border-border/60 hover:border-accent/30 transition-all duration-300 group">
+              <div className="absolute -top-4 left-8">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold shadow-md">1</span>
+              </div>
+              <div className="mt-2">
+                <h3 className="text-xl font-serif font-bold text-foreground mb-3">
+                  S'informer, comparer, gérer la logistique…
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Tout ceci est <strong className="text-foreground">chronophage</strong> et votre temps est précieux. 
+                  Entre les recherches, les devis et la coordination, organiser une conférence peut vite devenir un casse-tête.
+                </p>
+              </div>
+            </div>
+
+            {/* Pain 2 */}
+            <div className="relative p-8 rounded-2xl bg-background border border-border/60 hover:border-accent/30 transition-all duration-300 group">
+              <div className="absolute -top-4 left-8">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold shadow-md">2</span>
+              </div>
+              <div className="mt-2">
+                <h3 className="text-xl font-serif font-bold text-foreground mb-3">
+                  Comment choisir le bon intervenant ?
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Les célébrités et experts sont nombreux, avec des expériences et des personnalités différentes. 
+                  <strong className="text-foreground"> Comment savoir lequel sera le plus approprié</strong> pour votre projet ?
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-center text-muted-foreground mt-10 text-lg max-w-2xl mx-auto">
+            C'est exactement pour cela que nous existons. Notre expertise et notre connaissance personnelle de chaque intervenant sont à votre service.
           </p>
         </div>
       </section>
