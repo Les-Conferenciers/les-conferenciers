@@ -115,6 +115,23 @@ const Index = () => {
       {/* Logo Carousel */}
       <LogoCarousel />
 
+      {/* Trouvez l'orateur idéal */}
+      <section className="py-20 px-4 bg-card border-y border-border/40">
+        <div className="container mx-auto max-w-4xl text-center">
+          <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-4">
+            Notre conviction
+          </span>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-6">
+            Trouvez l'orateur idéal <span className="text-accent italic">n'est pas chose aisée</span>
+          </h2>
+          <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+            Chaque événement est unique, chaque audience a ses attentes. C'est pourquoi nous mettons notre expertise, 
+            notre réseau et notre connaissance personnelle de chaque intervenant au service de votre projet — 
+            pour que chaque conférence devienne un moment mémorable.
+          </p>
+        </div>
+      </section>
+
       {/* Value Proposition */}
       <ValueProposition />
 
