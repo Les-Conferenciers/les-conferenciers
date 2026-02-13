@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe } from "lucide-react";
+import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { useEffect, useState } from "react";
@@ -106,6 +106,21 @@ const SpeakerDetail = () => {
         .eq("slug", slug)
         .single();
 
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Conferences query
+  const { data: conferences } = useQuery({
+    queryKey: ["speaker-conferences", speaker?.id],
+    enabled: !!speaker?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("speaker_conferences")
+        .select("*")
+        .eq("speaker_id", speaker!.id)
+        .order("display_order", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -320,7 +335,55 @@ const SpeakerDetail = () => {
             </div>
           </div>
         </div>
-      </section>
+            </section>
+
+            {/* Conferences */}
+            {conferences && conferences.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                  <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                  Les conférences proposées par {speaker.name}
+                </h2>
+                <div className="space-y-5">
+                  {conferences.map((conf) => (
+                    <div
+                      key={conf.id}
+                      className="rounded-xl bg-card border border-border/40 hover:border-accent/30 transition-colors overflow-hidden"
+                    >
+                      <div className="flex items-center gap-3 px-6 py-4 bg-primary/[0.03] border-b border-border/30">
+                        <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                          <Mic className="h-4 w-4 text-accent" />
+                        </div>
+                        <h3 className="font-serif font-bold text-foreground text-lg">
+                          Conférence « {conf.title} »
+                        </h3>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        {conf.description && (
+                          <p className="text-muted-foreground text-sm leading-relaxed">{conf.description}</p>
+                        )}
+                        {conf.bullet_points && conf.bullet_points.length > 0 && (
+                          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {conf.bullet_points.map((point: string, i: number) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                                <Check className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {conf.bonus && (
+                          <div className="flex items-start gap-2 bg-accent/5 border border-accent/15 rounded-lg px-4 py-3">
+                            <Sparkles className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-foreground font-medium">{conf.bonus}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
       {/* Content */}
       <div className="container mx-auto px-4 py-12 md:py-16 max-w-5xl flex-grow">
