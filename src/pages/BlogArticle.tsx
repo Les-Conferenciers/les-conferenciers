@@ -41,6 +41,16 @@ const BlogArticle = () => {
   // Simple markdown-like rendering
   const renderContent = (content: string) => {
     return content.split("\n\n").map((block, idx) => {
+      // Inline image: ![alt](src)
+      const imgMatch = block.match(/^!\[(.*?)\]\((.*?)\)$/);
+      if (imgMatch) {
+        return (
+          <figure key={idx} className="my-8">
+            <img src={imgMatch[2]} alt={imgMatch[1]} className="w-full rounded-xl border border-border/40 shadow-md" loading="lazy" />
+            {imgMatch[1] && <figcaption className="text-xs text-muted-foreground text-center mt-2 italic">{imgMatch[1]}</figcaption>}
+          </figure>
+        );
+      }
       if (block.startsWith("## ")) {
         return (
           <h2 key={idx} className="text-2xl font-serif font-bold text-foreground mt-10 mb-4 flex items-center gap-3">
