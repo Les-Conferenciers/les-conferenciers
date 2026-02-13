@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, Phone, MapPin, Send, CheckCircle2, Star, ChevronDown } from "lucide-react";
+import { Send, CheckCircle2, Star, Shield, Clock, Users, ChevronDown } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -24,6 +24,21 @@ const contactSchema = z.object({
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
+
+const CLIENT_LOGOS = [
+  { name: "Thales", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/thales66cd98d746fb3_150_150.jpg" },
+  { name: "EDF", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/edf66bc7f8ead2dc_150_150.png" },
+  { name: "Decathlon", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/decathlon66bc7f8eb1fff_150_150.png" },
+  { name: "SNCF", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/sncf66bc7f8ea0415_150_150.jpg" },
+  { name: "Orange", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/orange66bc7f90f39cc_150_150.jpg" },
+  { name: "Hermès", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/hermes66bc7f8eaac82_150_150.png" },
+];
+
+const REASSURANCE = [
+  { icon: Clock, label: "Réponse sous 24h", desc: "Nelly vous répond personnellement" },
+  { icon: Users, label: "500+ événements", desc: "Accompagnés avec succès" },
+  { icon: Shield, label: "Satisfaction garantie", desc: "Accompagnement sur-mesure" },
+];
 
 const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -49,12 +64,14 @@ const Contact = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <div className="bg-primary py-12 px-4 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
-          Contactez-nous
+      {/* Hero */}
+      <div className="bg-primary py-14 px-4 text-center">
+        <img src={logo} alt="Les Conférenciers" className="h-10 mx-auto mb-6 brightness-0 invert" />
+        <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-3 tracking-tight">
+          Trouvez le conférencier idéal
         </h1>
-        <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-6">
-          Une question, un projet d'événement ? Nelly vous répondra personnellement sous 24h.
+        <p className="text-primary-foreground/80 max-w-xl mx-auto mb-6 text-lg">
+          Décrivez votre projet, Nelly vous propose les meilleurs profils sous 24h.
         </p>
         <Button
           size="lg"
@@ -62,81 +79,99 @@ const Contact = () => {
           onClick={() => document.getElementById("contact-form")?.scrollIntoView({ behavior: "smooth" })}
         >
           <Send className="h-5 w-5" />
-          Demander un devis
+          Demander un devis gratuit
           <ChevronDown className="h-4 w-4 ml-1" />
         </Button>
+
+        {/* Reassurance pills */}
+        <div className="flex flex-wrap justify-center gap-4 mt-8">
+          {REASSURANCE.map((r) => (
+            <div key={r.label} className="flex items-center gap-2 bg-primary-foreground/10 backdrop-blur-sm rounded-full px-4 py-2 border border-primary-foreground/15">
+              <r.icon className="h-4 w-4 text-accent" />
+              <span className="text-primary-foreground text-sm font-medium">{r.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="container mx-auto px-4 py-16 flex-grow">
-        <div className="grid lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
-          {/* Contact Info + Nelly */}
-          <div className="space-y-8">
+      {/* Main content */}
+      <div className="container mx-auto px-4 py-14 flex-grow">
+        <div className="grid lg:grid-cols-5 gap-10 max-w-6xl mx-auto">
+
+          {/* Left sidebar - Nelly + trust */}
+          <div className="lg:col-span-2 space-y-8">
             {/* Nelly card */}
-            <div className="flex items-center gap-4 p-5 bg-card rounded-xl border border-border/40">
-              <div className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border-2 border-accent/30">
-                <img
-                  src="https://emmalamagicienne.fr/wp-content/uploads/2017/03/emma.png"
-                  alt="Nelly, votre interlocutrice dédiée"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div>
-                <h3 className="font-serif font-bold text-lg text-foreground">Nelly</h3>
-                <p className="text-sm text-accent font-semibold">Votre interlocutrice dédiée</p>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">10+ ans d'expérience événementiel</p>
-                <div className="flex items-center gap-0.5 mt-1.5">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  ))}
-                  <span className="text-xs text-muted-foreground ml-1">5/5</span>
+            <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0 border-2 border-accent/40 ring-4 ring-accent/10">
+                  <img
+                    src="https://emmalamagicienne.fr/wp-content/uploads/2017/03/emma.png"
+                    alt="Nelly, votre interlocutrice dédiée"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-foreground">Nelly</h3>
+                  <p className="text-sm text-accent font-semibold">Votre interlocutrice dédiée</p>
+                  <div className="flex items-center gap-0.5 mt-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    ))}
+                    <span className="text-xs text-muted-foreground ml-1.5 font-medium">5/5</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                « Forte de 10+ ans d'expérience dans l'événementiel, je vous guide vers le conférencier parfait pour votre projet. »
+              </p>
+            </div>
+
+            {/* Google Reviews snippet */}
+            <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                <span className="font-semibold text-sm text-foreground">Avis Google</span>
+                <div className="flex gap-0.5 ml-auto">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <span className="text-sm font-bold text-foreground">5/5</span>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { name: "Marie L.", text: "Accompagnement exceptionnel, conférencier parfait pour notre séminaire !" },
+                  { name: "Thomas B.", text: "Réactivité et professionnalisme. Je recommande vivement." },
+                ].map((review) => (
+                  <div key={review.name} className="border-l-2 border-accent/40 pl-3">
+                    <p className="text-xs text-muted-foreground italic">"{review.text}"</p>
+                    <p className="text-xs font-semibold text-foreground mt-1">— {review.name}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Forte de plus de 10 ans d'expérience, Nelly saura vous guider vers le conférencier parfait pour votre projet.
-            </p>
-
-            <div className="space-y-5">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-                  <Phone className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Téléphone</p>
-                  <p className="text-muted-foreground text-sm">06 95 93 97 91</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-                  <Mail className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Email</p>
-                  <p className="text-muted-foreground text-sm">contact@lesconferenciers.com</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-                  <MapPin className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Adresse</p>
-                  <p className="text-muted-foreground text-sm">Paris, France</p>
-                </div>
+            {/* Client logos */}
+            <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-4">Ils nous font confiance</p>
+              <div className="grid grid-cols-3 gap-4">
+                {CLIENT_LOGOS.map((l) => (
+                  <div key={l.name} className="flex items-center justify-center h-12 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all">
+                    <img src={l.src} alt={l.name} className="max-h-full max-w-full object-contain" loading="lazy" />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
           {/* Form */}
-          <Card id="contact-form" className="lg:col-span-2 border border-border/40 shadow-sm scroll-mt-24">
-            <CardHeader className="pb-4">
-              <h3 className="text-xl font-bold">Réservez un conférencier</h3>
-              <p className="text-sm text-muted-foreground">Décrivez votre projet et Nelly vous proposera les meilleurs profils.</p>
-            </CardHeader>
-            <CardContent>
+          <div id="contact-form" className="lg:col-span-3 scroll-mt-24">
+            <div className="bg-card rounded-2xl border border-border/40 p-8 shadow-sm">
+              <div className="mb-6">
+                <h2 className="text-2xl font-serif font-bold text-foreground">Réservez un conférencier</h2>
+                <p className="text-sm text-muted-foreground mt-1">Remplissez le formulaire, Nelly vous contacte sous 24h.</p>
+              </div>
+
               {submitted ? (
                 <div className="text-center py-16 space-y-4">
                   <CheckCircle2 className="h-16 w-16 text-accent mx-auto" />
@@ -157,7 +192,7 @@ const Contact = () => {
                       {errors.name && <p className="text-destructive text-xs">{errors.name.message}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
+                      <Label htmlFor="email">Email professionnel *</Label>
                       <Input id="email" type="email" placeholder="jean@entreprise.fr" {...register("email")} />
                       {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
                     </div>
@@ -186,11 +221,11 @@ const Contact = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message">Votre message *</Label>
+                    <Label htmlFor="message">Décrivez votre projet *</Label>
                     <Textarea
                       id="message"
-                      rows={5}
-                      placeholder="Décrivez votre événement, le profil de conférencier recherché, le nombre de participants..."
+                      rows={4}
+                      placeholder="Thématique souhaitée, nombre de participants, objectifs de l'événement..."
                       {...register("message")}
                     />
                     {errors.message && <p className="text-destructive text-xs">{errors.message.message}</p>}
@@ -200,18 +235,25 @@ const Contact = () => {
                     type="submit"
                     size="lg"
                     disabled={isSubmitting}
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
+                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base h-12 rounded-xl shadow-md hover:shadow-lg transition-all"
                   >
                     {isSubmitting ? "Envoi en cours..." : (
                       <span className="flex items-center gap-2">
-                        <Send className="h-4 w-4" /> Envoyer ma demande
+                        <Send className="h-4 w-4" /> Envoyer ma demande gratuite
                       </span>
                     )}
                   </Button>
+
+                  {/* Micro-reassurance under CTA */}
+                  <div className="flex flex-wrap items-center justify-center gap-4 pt-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5 text-accent" /> Sans engagement</span>
+                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-accent" /> Réponse sous 24h</span>
+                    <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-accent" /> Devis gratuit</span>
+                  </div>
                 </form>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
 
