@@ -16,6 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import SpeakerReviews from "@/components/SpeakerReviews";
 
 const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
 
@@ -337,6 +338,9 @@ const SpeakerDetail = () => {
                 ))}
               </Accordion>
             </section>
+
+            {/* Reviews */}
+            <SpeakerReviews speakerId={speaker.id} speakerName={speaker.name} />
           </div>
 
           {/* Sidebar */}
