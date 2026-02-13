@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send, CheckCircle2, Star, Shield, Clock, Users, ChevronDown } from "lucide-react";
 import logo from "@/assets/logo.png";
+import nellySelfies from "@/assets/nelly-selfies.png";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -124,6 +125,27 @@ const Contact = () => {
               <p className="text-muted-foreground text-sm leading-relaxed">
                 « Forte de 10+ ans d'expérience dans l'événementiel, je vous guide vers le conférencier parfait pour votre projet. »
               </p>
+            </div>
+
+            {/* Nelly selfies - reassurance */}
+            <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
+              <div className="relative">
+                <img
+                  src={nellySelfies}
+                  alt="Nelly aux côtés des conférenciers lors d'événements"
+                  className="w-full h-auto object-cover"
+                />
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-10">
+                  <p className="text-white text-sm font-semibold leading-snug">
+                    Nelly assiste à chaque conférence et connaît personnellement chaque intervenant.
+                  </p>
+                </div>
+              </div>
+              <div className="p-4 bg-accent/5 border-t border-accent/10">
+                <p className="text-xs text-muted-foreground italic text-center">
+                  « Je sélectionne chaque conférencier avec exigence car je les ai tous vus sur scène. »
+                </p>
+              </div>
             </div>
 
             {/* Google Reviews snippet */}
