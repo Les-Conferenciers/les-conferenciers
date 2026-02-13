@@ -5,6 +5,7 @@ import FeaturedSpeakers from "@/components/FeaturedSpeakers";
 import LogoCarousel from "@/components/LogoCarousel";
 import ValueProposition from "@/components/ValueProposition";
 import GoogleReviews from "@/components/GoogleReviews";
+import WhyChooseUs from "@/components/WhyChooseUs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Star, ArrowRight, Users, Award, Calendar, Sparkles, Clock, HeartHandshake } from "lucide-react";
@@ -206,6 +207,9 @@ const Index = () => {
 
       {/* Google Reviews */}
       <GoogleReviews />
+
+      {/* Why Choose Us */}
+      <WhyChooseUs />
 
       {/* CTA */}
       <section className="py-20 px-4 bg-primary text-primary-foreground text-center">

@@ -290,7 +290,7 @@ const SpeakerDetail = () => {
             {/* Info */}
             <div className="flex-grow text-center md:text-left">
               <h1 className="text-3xl md:text-5xl font-serif font-bold mb-2 leading-tight">
-                {speaker.name}
+                Conférence {speaker.name}
               </h1>
               <p className="text-lg md:text-xl text-primary-foreground/70 font-medium mb-5">
                 {speaker.role}
@@ -342,7 +342,7 @@ const SpeakerDetail = () => {
               <section>
                 <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                   <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                  Les conférences proposées par {speaker.name}
+                  Les thèmes de conférence de {speaker.name}
                 </h2>
                 <div className="space-y-5">
                   {conferences.map((conf) => (
@@ -394,7 +394,7 @@ const SpeakerDetail = () => {
             <section>
               <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                 <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                Qui est {speaker.name} ?
+                Biographie de {speaker.name} — Conférencier
               </h2>
               <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
                 {(bioExpanded ? bioParagraphs : bioPreview).map((paragraph: string, idx: number) => (
@@ -416,7 +416,7 @@ const SpeakerDetail = () => {
             <section>
               <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                 <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                Pourquoi faire appel à {speaker.name} pour votre événement ?
+                Pourquoi réserver la conférence de {speaker.name} ?
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {whyReasons.map((reason, idx) => (
@@ -439,7 +439,7 @@ const SpeakerDetail = () => {
               <section>
                 <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                   <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                  Ce qui le distingue
+                  Ce qui distingue les conférences de {speaker.name}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {speaker.key_points.map((point: string, idx: number) => (
@@ -461,7 +461,7 @@ const SpeakerDetail = () => {
             <section>
               <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                 <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                Questions fréquentes
+                Questions fréquentes sur la conférence de {speaker.name}
               </h2>
               <Accordion type="single" collapsible className="space-y-3">
                 {faqItems.map((faq, idx) => (
@@ -562,7 +562,7 @@ const SpeakerDetail = () => {
           <section className="mt-20">
             <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-2 flex items-center gap-3">
               <span className="w-1 h-7 bg-accent rounded-full block"></span>
-              Profils similaires
+              Conférenciers similaires à {speaker.name}
             </h2>
             <p className="text-muted-foreground mb-8 ml-4">
               Des conférenciers qui partagent des thématiques communes avec {speaker.name}
