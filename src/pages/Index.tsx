@@ -146,14 +146,14 @@ const Index = () => {
                 Un accompagnement <span className="text-accent italic">sur mesure</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                De la sélection du conférencier idéal à la coordination le jour J, Nelly est votre interlocutrice unique. Son expertise et sa connaissance approfondie de chaque intervenant garantissent un événement à la hauteur de vos ambitions.
+                Contrairement à d'autres agences, <strong className="text-foreground">Les Conférenciers est en contact direct avec chaque intervenant</strong>. Cette relation privilégiée nous permet d'assurer un suivi rapide, une communication fluide et un projet mené avec professionnalisme du brief initial jusqu'au jour J.
               </p>
               <ul className="space-y-3">
                 {[
-                  "Conseil personnalisé selon vos objectifs",
+                  "Contact direct avec les conférenciers — sans intermédiaire",
                   "Devis détaillé sous 24 heures",
                   "Coordination logistique complète",
-                  "Suivi post-événement",
+                  "Suivi personnalisé avant, pendant et après l'événement",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-foreground">
                     <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">

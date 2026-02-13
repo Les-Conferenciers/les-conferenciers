@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown } from "lucide-react";
+import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown, Target, Lightbulb, TrendingUp, Handshake } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { useEffect, useState } from "react";
@@ -48,9 +48,38 @@ const generateFAQ = (speaker: any) => {
   ];
 };
 
+const generateWhyReasons = (speaker: any) => {
+  const themes = parseThemes(speaker.themes);
+  const themesText = themes.length > 0 ? themes.slice(0, 2).join(" et ") : "son domaine";
+
+  return [
+    {
+      icon: Target,
+      title: "Expertise reconnue",
+      description: `${speaker.name} est un expert reconnu en ${themesText}, apportant une vision concrète et actionnable à chaque intervention.`,
+    },
+    {
+      icon: Lightbulb,
+      title: "Contenu inspirant et sur-mesure",
+      description: `Chaque conférence est personnalisée en fonction de votre audience et de vos objectifs pour maximiser l'impact et l'engagement.`,
+    },
+    {
+      icon: TrendingUp,
+      title: "Impact mesurable",
+      description: `Les interventions de ${speaker.name} génèrent un réel retour sur investissement : motivation des équipes, nouvelles perspectives et dynamique positive.`,
+    },
+    {
+      icon: Handshake,
+      title: "Accompagnement professionnel",
+      description: `Notre agence assure un suivi complet : de la préparation du brief à la coordination le jour J, pour un événement sans fausse note.`,
+    },
+  ];
+};
+
 const SpeakerDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const [bioExpanded, setBioExpanded] = useState(false);
 
   const { data: speaker, isLoading } = useQuery({
     queryKey: ["speaker", slug],
@@ -80,7 +109,6 @@ const SpeakerDetail = () => {
 
       if (error) throw error;
 
-      // Score by theme overlap
       const scored = (data as Speaker[])
         .map((s) => {
           const sThemes = parseThemes(s.themes);
@@ -110,7 +138,6 @@ const SpeakerDetail = () => {
         document.head.appendChild(metaEl);
       }
 
-      // JSON-LD structured data
       const jsonLd = {
         "@context": "https://schema.org",
         "@type": "Person",
@@ -130,7 +157,6 @@ const SpeakerDetail = () => {
       }
       scriptEl.textContent = JSON.stringify(jsonLd);
 
-      // FAQ JSON-LD
       const faqJsonLd = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -195,6 +221,12 @@ const SpeakerDetail = () => {
 
   const themes = parseThemes(speaker.themes);
   const faqItems = generateFAQ(speaker);
+  const whyReasons = generateWhyReasons(speaker);
+
+  // Biography: show 3 lines by default
+  const bioParagraphs = speaker.biography?.split("\n").filter(Boolean) || [];
+  const bioPreview = bioParagraphs.slice(0, 2);
+  const hasMoreBio = bioParagraphs.length > 2;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -279,15 +311,46 @@ const SpeakerDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-12">
-            {/* Biography */}
+            {/* Biography with "Qui est" heading */}
             <section>
               <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                 <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                Biographie
+                Qui est {speaker.name} ?
               </h2>
               <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
-                {speaker.biography?.split("\n").map((paragraph: string, idx: number) => (
+                {(bioExpanded ? bioParagraphs : bioPreview).map((paragraph: string, idx: number) => (
                   <p key={idx} className="mb-4">{paragraph}</p>
+                ))}
+              </div>
+              {hasMoreBio && (
+                <button
+                  onClick={() => setBioExpanded(!bioExpanded)}
+                  className="text-accent font-semibold text-sm hover:underline mt-2 inline-flex items-center gap-1"
+                >
+                  {bioExpanded ? "Voir moins" : "Lire la suite"}
+                  <ChevronDown className={`h-4 w-4 transition-transform ${bioExpanded ? "rotate-180" : ""}`} />
+                </button>
+              )}
+            </section>
+
+            {/* Why choose this speaker */}
+            <section>
+              <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                Pourquoi faire appel à {speaker.name} pour votre événement ?
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {whyReasons.map((reason, idx) => (
+                  <div
+                    key={idx}
+                    className="p-5 rounded-xl bg-card border border-border/40 hover:border-accent/30 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center mb-3">
+                      <reason.icon className="h-5 w-5 text-accent" />
+                    </div>
+                    <h3 className="font-serif font-bold text-foreground mb-2">{reason.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{reason.description}</p>
+                  </div>
                 ))}
               </div>
             </section>
