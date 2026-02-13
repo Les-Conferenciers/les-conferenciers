@@ -3,60 +3,66 @@ import { Users, Award, Search, Handshake } from "lucide-react";
 const REASONS = [
   {
     icon: Users,
-    title: "Un large choix",
-    description:
-      "Quel que soit la taille de votre évènement (comité restreint ou grand rassemblement), le lieu géographique souhaité (en France ou à l'international), les thématiques choisies (leadership, coopération, engagement…), le domaine d'expertise de prédilection (sport, art culinaire, économie, politique, philosophie…), et votre budget, nous vous proposons les meilleurs profils d'intervenants pour votre évènement.",
+    title: "161+ conférenciers",
+    description: "Tous les profils, toutes les thématiques, tous les budgets. En France et à l'international.",
+    stat: "161+",
+    statLabel: "intervenants",
   },
   {
     icon: Award,
-    title: "Des intervenants d'élite",
-    description:
-      "Notre agence regroupe une communauté des meilleurs conférenciers dont la légitimité repose sur un savoir-faire unique, une expérience pérenne dans leur domaine, et un vrai talent d'orateur.",
+    title: "Des talents d'exception",
+    description: "Chaque conférencier est sélectionné pour son expertise unique et son talent d'orateur éprouvé.",
+    stat: "100%",
+    statLabel: "vérifiés",
   },
   {
     icon: Search,
-    title: "Plus qu'un simple catalogue de conférenciers",
-    description:
-      "Nous étudions de façon détaillée votre projet en amont, afin de vous mettre en relation avec le conférencier qui de par son expertise et son profil, répondra précisément à vos besoins.",
+    title: "Un matching sur-mesure",
+    description: "Nous analysons votre projet en détail pour vous proposer l'intervenant qui répondra précisément à vos objectifs.",
+    stat: "24h",
+    statLabel: "pour un devis",
   },
   {
     icon: Handshake,
-    title: "Une relation de confiance avec nos intervenants",
-    description:
-      "Choisir un conférencier peut s'avérer hasardeux, sans une connaissance aigüe du contenu des conférences. C'est pourquoi notre agence a assisté personnellement à l'ensemble des interventions qu'elle propose afin de toujours mieux vous conseiller.",
+    title: "Vus sur scène. Tous.",
+    description: "Nous avons assisté personnellement à chaque conférence que nous proposons. Zéro mauvaise surprise.",
+    stat: "500+",
+    statLabel: "événements",
   },
 ];
 
 const WhyChooseUs = () => {
   return (
-    <section className="py-20 px-4 bg-secondary/30">
+    <section className="py-24 px-4 bg-background">
       <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-14 max-w-3xl mx-auto">
+        <div className="text-center mb-16 max-w-2xl mx-auto">
           <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-4">
             Nos engagements
           </span>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
             Pourquoi nous choisir ?
           </h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            Trouvez l'orateur idéal n'est pas chose aisée. C'est pourquoi nous mettons
-            notre expertise et notre réseau à votre service pour garantir le succès de votre événement.
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {REASONS.map((reason, idx) => (
             <div
               key={idx}
-              className="group p-8 rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300"
+              className="group relative p-7 rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 text-center"
             >
-              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mb-5 group-hover:bg-accent/20 transition-colors">
+              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5 group-hover:bg-accent/20 group-hover:scale-110 transition-all">
                 <reason.icon className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="text-xl font-serif font-bold text-foreground mb-3">
+
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-foreground">{reason.stat}</span>
+                <span className="block text-xs text-muted-foreground font-medium uppercase tracking-wider mt-0.5">{reason.statLabel}</span>
+              </div>
+
+              <h3 className="text-lg font-serif font-bold text-foreground mb-2">
                 {reason.title}
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed">
                 {reason.description}
               </p>
             </div>

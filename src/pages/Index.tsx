@@ -8,7 +8,7 @@ import GoogleReviews from "@/components/GoogleReviews";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Star, ArrowRight, Users, Award, Calendar, Sparkles, Clock, HeartHandshake } from "lucide-react";
+import { Search, Star, ArrowRight, Users, Award, Calendar, Sparkles, Clock, HeartHandshake, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -116,54 +116,56 @@ const Index = () => {
       <LogoCarousel />
 
       {/* Trouvez l'orateur idéal */}
-      <section className="py-20 px-4 bg-card border-y border-border/40">
-        <div className="container mx-auto max-w-5xl">
-          <div className="text-center mb-14">
-            <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-4">
-              Notre conviction
+      <section className="py-24 px-4 bg-primary text-primary-foreground overflow-hidden">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-5">
+              Le problème
             </span>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
-              Trouvez l'orateur idéal <span className="text-accent italic">n'est pas chose aisée</span>
+            <h2 className="text-3xl md:text-5xl font-serif font-bold leading-tight">
+              Trouvez l'orateur idéal
+              <br />
+              <span className="text-accent italic">n'est pas chose aisée</span>
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {/* Pain 1 */}
-            <div className="relative p-8 rounded-2xl bg-background border border-border/60 hover:border-accent/30 transition-all duration-300 group">
-              <div className="absolute -top-4 left-8">
-                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold shadow-md">1</span>
+            <div className="relative rounded-2xl bg-primary-foreground/[0.06] border border-primary-foreground/10 p-8 backdrop-blur-sm hover:bg-primary-foreground/[0.1] transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <Clock className="h-6 w-6 text-accent" />
               </div>
-              <div className="mt-2">
-                <h3 className="text-xl font-serif font-bold text-foreground mb-3">
-                  S'informer, comparer, gérer la logistique…
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Tout ceci est <strong className="text-foreground">chronophage</strong> et votre temps est précieux. 
-                  Entre les recherches, les devis et la coordination, organiser une conférence peut vite devenir un casse-tête.
-                </p>
-              </div>
+              <h3 className="text-xl font-serif font-bold text-primary-foreground mb-3">
+                Votre temps est précieux
+              </h3>
+              <p className="text-primary-foreground/70 leading-relaxed">
+                S'informer, comparer, gérer la logistique… Tout ceci est <strong className="text-primary-foreground">chronophage</strong>. Vous méritez de vous concentrer sur l'essentiel.
+              </p>
             </div>
 
             {/* Pain 2 */}
-            <div className="relative p-8 rounded-2xl bg-background border border-border/60 hover:border-accent/30 transition-all duration-300 group">
-              <div className="absolute -top-4 left-8">
-                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold shadow-md">2</span>
+            <div className="relative rounded-2xl bg-primary-foreground/[0.06] border border-primary-foreground/10 p-8 backdrop-blur-sm hover:bg-primary-foreground/[0.1] transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                <HelpCircle className="h-6 w-6 text-accent" />
               </div>
-              <div className="mt-2">
-                <h3 className="text-xl font-serif font-bold text-foreground mb-3">
-                  Comment choisir le bon intervenant ?
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Les célébrités et experts sont nombreux, avec des expériences et des personnalités différentes. 
-                  <strong className="text-foreground"> Comment savoir lequel sera le plus approprié</strong> pour votre projet ?
-                </p>
-              </div>
+              <h3 className="text-xl font-serif font-bold text-primary-foreground mb-3">
+                Le bon choix est crucial
+              </h3>
+              <p className="text-primary-foreground/70 leading-relaxed">
+                Des centaines d'experts, des personnalités différentes. <strong className="text-primary-foreground">Comment choisir celui qui marquera les esprits ?</strong>
+              </p>
             </div>
           </div>
 
-          <p className="text-center text-muted-foreground mt-10 text-lg max-w-2xl mx-auto">
-            C'est exactement pour cela que nous existons. Notre expertise et notre connaissance personnelle de chaque intervenant sont à votre service.
-          </p>
+          <div className="mt-12 text-center">
+            <p className="text-primary-foreground/50 text-lg font-medium max-w-xl mx-auto mb-6">
+              C'est exactement pour cela que nous existons.
+            </p>
+            <div className="inline-flex items-center gap-2 text-accent font-semibold">
+              <ArrowRight className="h-5 w-5" />
+              <span>Découvrez notre approche ci-dessous</span>
+            </div>
+          </div>
         </div>
       </section>
 
