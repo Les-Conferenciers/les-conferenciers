@@ -1,4 +1,5 @@
-
+import speakersCollage1 from "@/assets/speakers-collage-1.png";
+import speakersCollage2 from "@/assets/speakers-collage-2.png";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FeaturedSpeakers from "@/components/FeaturedSpeakers";
@@ -118,52 +119,78 @@ const Index = () => {
       {/* Trouvez l'orateur idéal */}
       <section className="py-24 px-4 bg-primary text-primary-foreground overflow-hidden">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-5">
-              Le problème
-            </span>
-            <h2 className="text-3xl md:text-5xl font-serif font-bold leading-tight">
-              Trouvez l'orateur idéal
-              <br />
-              <span className="text-accent italic">n'est pas chose aisée</span>
-            </h2>
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Left — Text */}
+            <div>
+              <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-5">
+                Le problème
+              </span>
+              <h2 className="text-3xl md:text-5xl font-serif font-bold leading-tight mb-10">
+                Trouvez l'orateur idéal
+                <br />
+                <span className="text-accent italic">n'est pas chose aisée</span>
+              </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* Pain 1 */}
-            <div className="relative rounded-2xl bg-primary-foreground/[0.06] border border-primary-foreground/10 p-8 backdrop-blur-sm hover:bg-primary-foreground/[0.1] transition-all duration-300 group">
-              <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <Clock className="h-6 w-6 text-accent" />
+              <div className="space-y-6">
+                {/* Pain 1 */}
+                <div className="flex gap-5 group">
+                  <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <Clock className="h-6 w-6 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-serif font-bold text-primary-foreground mb-1">
+                      Votre temps est précieux
+                    </h3>
+                    <p className="text-primary-foreground/60 leading-relaxed text-sm">
+                      S'informer, comparer, gérer la logistique… Tout ceci est <strong className="text-primary-foreground/90">chronophage</strong>. Concentrez-vous sur l'essentiel.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Pain 2 */}
+                <div className="flex gap-5 group">
+                  <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <HelpCircle className="h-6 w-6 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-serif font-bold text-primary-foreground mb-1">
+                      Le bon choix est crucial
+                    </h3>
+                    <p className="text-primary-foreground/60 leading-relaxed text-sm">
+                      Des centaines d'experts aux personnalités différentes. <strong className="text-primary-foreground/90">Comment choisir celui qui marquera les esprits ?</strong>
+                    </p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-serif font-bold text-primary-foreground mb-3">
-                Votre temps est précieux
-              </h3>
-              <p className="text-primary-foreground/70 leading-relaxed">
-                S'informer, comparer, gérer la logistique… Tout ceci est <strong className="text-primary-foreground">chronophage</strong>. Vous méritez de vous concentrer sur l'essentiel.
-              </p>
+
+              <div className="mt-10 flex items-center gap-3">
+                <div className="h-px flex-grow bg-primary-foreground/10" />
+                <span className="text-primary-foreground/40 text-sm font-medium italic">C'est exactement pour cela que nous existons.</span>
+                <div className="h-px flex-grow bg-primary-foreground/10" />
+              </div>
             </div>
 
-            {/* Pain 2 */}
-            <div className="relative rounded-2xl bg-primary-foreground/[0.06] border border-primary-foreground/10 p-8 backdrop-blur-sm hover:bg-primary-foreground/[0.1] transition-all duration-300 group">
-              <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <HelpCircle className="h-6 w-6 text-accent" />
+            {/* Right — Image collage */}
+            <div className="relative hidden lg:block">
+              <div className="relative">
+                <img
+                  src={speakersCollage1}
+                  alt="Sélection de conférenciers stars"
+                  className="w-full rounded-2xl shadow-2xl border border-primary-foreground/10"
+                />
+                {/* Floating second image */}
+                <div className="absolute -bottom-8 -left-8 w-2/3">
+                  <img
+                    src={speakersCollage2}
+                    alt="Nos intervenants d'exception"
+                    className="rounded-2xl shadow-2xl border-4 border-primary"
+                  />
+                </div>
+                {/* Badge */}
+                <div className="absolute -top-4 -right-4 bg-accent text-accent-foreground px-4 py-2 rounded-xl shadow-lg font-bold text-sm">
+                  161+ profils vérifiés
+                </div>
               </div>
-              <h3 className="text-xl font-serif font-bold text-primary-foreground mb-3">
-                Le bon choix est crucial
-              </h3>
-              <p className="text-primary-foreground/70 leading-relaxed">
-                Des centaines d'experts, des personnalités différentes. <strong className="text-primary-foreground">Comment choisir celui qui marquera les esprits ?</strong>
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <p className="text-primary-foreground/50 text-lg font-medium max-w-xl mx-auto mb-6">
-              C'est exactement pour cela que nous existons.
-            </p>
-            <div className="inline-flex items-center gap-2 text-accent font-semibold">
-              <ArrowRight className="h-5 w-5" />
-              <span>Découvrez notre approche ci-dessous</span>
             </div>
           </div>
         </div>
