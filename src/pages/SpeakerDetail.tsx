@@ -157,8 +157,8 @@ const SpeakerDetail = () => {
   // SEO: JSON-LD + meta
   useEffect(() => {
     if (speaker) {
-      document.title = speaker.seo_title || `${speaker.name} — Conférencier | Les Conférenciers`;
-      const desc = speaker.meta_description || `Réservez ${speaker.name} pour votre événement. ${speaker.role || "Conférencier professionnel"}.`;
+      document.title = speaker.seo_title || `Conférence ${speaker.name} — Conférencier | Les Conférenciers`;
+      const desc = speaker.meta_description || `Réservez la conférence de ${speaker.name} pour votre événement. ${speaker.role || "Conférencier professionnel"}. Devis gratuit sous 24h.`;
       let metaEl = document.querySelector('meta[name="description"]');
       if (metaEl) {
         metaEl.setAttribute("content", desc);
@@ -169,25 +169,53 @@ const SpeakerDetail = () => {
         document.head.appendChild(metaEl);
       }
 
-      const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "Person",
-        name: speaker.name,
-        jobTitle: speaker.role,
-        description: desc,
-        image: speaker.image_url || DEFAULT_IMAGE,
-        url: window.location.href,
-        knowsAbout: parseThemes(speaker.themes),
-      };
-      let scriptEl = document.querySelector('script[data-jsonld="speaker"]');
-      if (!scriptEl) {
-        scriptEl = document.createElement("script");
-        scriptEl.setAttribute("type", "application/ld+json");
-        scriptEl.setAttribute("data-jsonld", "speaker");
-        document.head.appendChild(scriptEl);
+      // Canonical
+      let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (!canonicalEl) {
+        canonicalEl = document.createElement("link");
+        canonicalEl.setAttribute("rel", "canonical");
+        document.head.appendChild(canonicalEl);
       }
-      scriptEl.textContent = JSON.stringify(jsonLd);
+      canonicalEl.href = window.location.origin + `/speakers/${speaker.slug}`;
 
+      const themes = parseThemes(speaker.themes);
+      const pageUrl = window.location.origin + `/speakers/${speaker.slug}`;
+      const imageUrl = speaker.image_url || DEFAULT_IMAGE;
+
+      // Person + ProfilePage
+      const personJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "ProfilePage",
+        mainEntity: {
+          "@type": "Person",
+          "@id": pageUrl + "#person",
+          name: speaker.name,
+          jobTitle: speaker.role,
+          description: desc,
+          image: imageUrl,
+          url: pageUrl,
+          knowsAbout: themes,
+          knowsLanguage: speaker.languages || [],
+          memberOf: {
+            "@type": "Organization",
+            name: "Les Conférenciers",
+            url: window.location.origin,
+          },
+        },
+      };
+
+      // BreadcrumbList
+      const breadcrumbJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Accueil", item: window.location.origin + "/" },
+          { "@type": "ListItem", position: 2, name: "Conférenciers", item: window.location.origin + "/speakers" },
+          { "@type": "ListItem", position: 3, name: `Conférence ${speaker.name}`, item: pageUrl },
+        ],
+      };
+
+      // FAQPage
       const faqJsonLd = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -197,21 +225,73 @@ const SpeakerDetail = () => {
           acceptedAnswer: { "@type": "Answer", text: faq.answer },
         })),
       };
-      let faqScriptEl = document.querySelector('script[data-jsonld="faq"]');
-      if (!faqScriptEl) {
-        faqScriptEl = document.createElement("script");
-        faqScriptEl.setAttribute("type", "application/ld+json");
-        faqScriptEl.setAttribute("data-jsonld", "faq");
-        document.head.appendChild(faqScriptEl);
-      }
-      faqScriptEl.textContent = JSON.stringify(faqJsonLd);
+
+      // ItemList for conferences
+      const conferencesListJsonLd = conferences && conferences.length > 0 ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: `Conférences de ${speaker.name}`,
+        numberOfItems: conferences.length,
+        itemListElement: conferences.map((conf, idx) => ({
+          "@type": "ListItem",
+          position: idx + 1,
+          item: {
+            "@type": "Course",
+            name: conf.title,
+            description: conf.description || `Conférence « ${conf.title} » par ${speaker.name}`,
+            provider: {
+              "@type": "Organization",
+              name: "Les Conférenciers",
+              url: window.location.origin,
+            },
+          },
+        })),
+      } : null;
+
+      // Offers (Service)
+      const serviceJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: `Conférence de ${speaker.name}`,
+        description: `Réservez ${speaker.name} comme conférencier pour votre événement professionnel.`,
+        provider: {
+          "@type": "Organization",
+          name: "Les Conférenciers",
+          url: window.location.origin,
+          telephone: "+33695939791",
+        },
+        areaServed: { "@type": "Country", name: "France" },
+        serviceType: "Conférence professionnelle",
+      };
+
+      const schemas = [
+        { key: "speaker", data: personJsonLd },
+        { key: "breadcrumb", data: breadcrumbJsonLd },
+        { key: "faq", data: faqJsonLd },
+        { key: "conferences-list", data: conferencesListJsonLd },
+        { key: "service", data: serviceJsonLd },
+      ];
+
+      schemas.forEach(({ key, data }) => {
+        if (!data) return;
+        let el = document.querySelector(`script[data-jsonld="${key}"]`);
+        if (!el) {
+          el = document.createElement("script");
+          el.setAttribute("type", "application/ld+json");
+          el.setAttribute("data-jsonld", key);
+          document.head.appendChild(el);
+        }
+        el.textContent = JSON.stringify(data);
+      });
 
       return () => {
-        document.querySelector('script[data-jsonld="speaker"]')?.remove();
-        document.querySelector('script[data-jsonld="faq"]')?.remove();
+        schemas.forEach(({ key }) => {
+          document.querySelector(`script[data-jsonld="${key}"]`)?.remove();
+        });
+        document.querySelector('link[rel="canonical"]')?.remove();
       };
     }
-  }, [speaker]);
+  }, [speaker, conferences]);
 
   if (isLoading) {
     return (
