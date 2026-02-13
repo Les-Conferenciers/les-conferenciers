@@ -417,6 +417,33 @@ const SpeakerDetail = () => {
         </div>
             </section>
 
+      {/* Content */}
+      <div className="container mx-auto px-4 py-12 md:py-16 max-w-5xl flex-grow">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-12">
+            {/* Biography with "Qui est" heading */}
+            <section>
+              <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                Biographie
+              </h2>
+              <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
+                {(bioExpanded ? bioParagraphs : bioPreview).map((paragraph: string, idx: number) => (
+                  <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: highlightBioKeywords(paragraph) }} />
+                ))}
+              </div>
+              {hasMoreBio && (
+                <button
+                  onClick={() => setBioExpanded(!bioExpanded)}
+                  className="text-accent font-semibold text-sm hover:underline mt-2 inline-flex items-center gap-1"
+                >
+                  {bioExpanded ? "Voir moins" : "Lire la suite"}
+                  <ChevronDown className={`h-4 w-4 transition-transform ${bioExpanded ? "rotate-180" : ""}`} />
+                </button>
+              )}
+            </section>
+
             {/* Conferences */}
             {conferences && conferences.length > 0 && (
               <section>
@@ -464,33 +491,6 @@ const SpeakerDetail = () => {
                 </div>
               </section>
             )}
-
-      {/* Content */}
-      <div className="container mx-auto px-4 py-12 md:py-16 max-w-5xl flex-grow">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Main content */}
-          <div className="lg:col-span-2 space-y-12">
-            {/* Biography with "Qui est" heading */}
-            <section>
-              <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
-                <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                Biographie
-              </h2>
-              <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
-                {(bioExpanded ? bioParagraphs : bioPreview).map((paragraph: string, idx: number) => (
-                  <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: highlightBioKeywords(paragraph) }} />
-                ))}
-              </div>
-              {hasMoreBio && (
-                <button
-                  onClick={() => setBioExpanded(!bioExpanded)}
-                  className="text-accent font-semibold text-sm hover:underline mt-2 inline-flex items-center gap-1"
-                >
-                  {bioExpanded ? "Voir moins" : "Lire la suite"}
-                  <ChevronDown className={`h-4 w-4 transition-transform ${bioExpanded ? "rotate-180" : ""}`} />
-                </button>
-              )}
-            </section>
 
             {/* Why choose this speaker */}
             <section>
