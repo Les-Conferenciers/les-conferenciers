@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      reviews: {
+        Row: {
+          author_name: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          speaker_id: string
+        }
+        Insert: {
+          author_name: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          speaker_id: string
+        }
+        Update: {
+          author_name?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          speaker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_speaker_id_fkey"
+            columns: ["speaker_id"]
+            isOneToOne: false
+            referencedRelation: "speakers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speakers: {
         Row: {
           biography: string | null
