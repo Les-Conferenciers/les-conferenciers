@@ -57,6 +57,7 @@ export type Database = {
           id: string
           image_url: string | null
           key_points: string[] | null
+          languages: string[] | null
           meta_description: string | null
           name: string
           role: string | null
@@ -72,6 +73,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           key_points?: string[] | null
+          languages?: string[] | null
           meta_description?: string | null
           name: string
           role?: string | null
@@ -87,6 +89,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           key_points?: string[] | null
+          languages?: string[] | null
           meta_description?: string | null
           name?: string
           role?: string | null

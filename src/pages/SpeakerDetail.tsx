@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown, Target, Lightbulb, TrendingUp, Handshake } from "lucide-react";
+import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { useEffect, useState } from "react";
@@ -74,6 +74,22 @@ const generateWhyReasons = (speaker: any) => {
       description: `Notre agence assure un suivi complet : de la préparation du brief à la coordination le jour J, pour un événement sans fausse note.`,
     },
   ];
+};
+
+const highlightBioKeywords = (text: string): string => {
+  // Bold patterns: years, numbers with units, quoted text, proper nouns patterns, strong phrases
+  const patterns = [
+    /(\d{4})/g, // years
+    /(\d+[\s]?(ans|pays|millions?|milliards?|livres?|ouvrages?|médailles?|records?|émissions?|entreprises?|collaborateurs?|salariés?))/gi,
+    /(champion(?:ne)?|record|prix|médaille|oscar|césar|palme|trophée|étoile|michelin|meilleur ouvrier|ballon d'or|victoire)/gi,
+    /(n°\s?\d+|numéro \d+|premier(?:e)?|première)/gi,
+  ];
+  
+  let result = text;
+  patterns.forEach(pattern => {
+    result = result.replace(pattern, '<strong class="text-foreground font-semibold">$&</strong>');
+  });
+  return result;
 };
 
 const SpeakerDetail = () => {
@@ -319,7 +335,7 @@ const SpeakerDetail = () => {
               </h2>
               <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
                 {(bioExpanded ? bioParagraphs : bioPreview).map((paragraph: string, idx: number) => (
-                  <p key={idx} className="mb-4">{paragraph}</p>
+                  <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: highlightBioKeywords(paragraph) }} />
                 ))}
               </div>
               {hasMoreBio && (
@@ -360,7 +376,7 @@ const SpeakerDetail = () => {
               <section>
                 <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                   <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                  Points Clés
+                  Ce qui le distingue
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {speaker.key_points.map((point: string, idx: number) => (
@@ -437,6 +453,26 @@ const SpeakerDetail = () => {
                 ))}
               </div>
             </div>
+
+            {/* Languages */}
+            {speaker.languages && speaker.languages.length > 0 && (
+              <div className="bg-card border border-border/40 rounded-2xl p-6">
+                <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-accent" />
+                  Langues d'intervention
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {speaker.languages.map((lang: string) => (
+                    <span
+                      key={lang}
+                      className="inline-flex items-center rounded-full bg-accent/10 border border-accent/20 text-accent px-3 py-1 text-xs font-semibold"
+                    >
+                      {lang}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Themes sidebar */}
             {themes.length > 0 && (

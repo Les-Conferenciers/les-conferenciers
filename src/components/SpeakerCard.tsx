@@ -14,6 +14,7 @@ export interface Speaker {
   themes: string[] | null;
   image_url: string | null;
   biography: string | null;
+  languages?: string[] | null;
 }
 
 interface SpeakerCardProps {
