@@ -62,7 +62,7 @@ ${message}
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "Les Conférenciers <onboarding@resend.dev>",
+          from: "Les Conférenciers <contact@lesconferenciers.com>",
           to: ["nellysabde@lesconferenciers.com"],
           subject: `Nouvelle demande de devis - ${name}${company ? ` (${company})` : ""}`,
           text: emailBody,
