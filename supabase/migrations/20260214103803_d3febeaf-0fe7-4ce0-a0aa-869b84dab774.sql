@@ -1,0 +1,1 @@
+ALTER TABLE public.speakers ADD COLUMN video_url text DEFAULT NULL;
