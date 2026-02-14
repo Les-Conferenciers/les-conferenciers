@@ -21,18 +21,18 @@ import {
   HeartHandshake,
   HelpCircle,
   ShieldCheck,
-  MessageCircle,
-} from "lucide-react";
+  MessageCircle } from
+"lucide-react";
 import SpeakerSimulator from "@/components/SpeakerSimulator";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const STATS = [
-  { icon: Users, value: "161+", label: "Conférenciers" },
-  { icon: Award, value: "500+", label: "Événements" },
-  { icon: Calendar, value: "20+", label: "Années d'expérience" },
-  { icon: Star, value: "5/5", label: "Note Google" },
-];
+{ icon: Users, value: "161+", label: "Conférenciers" },
+{ icon: Award, value: "500+", label: "Événements" },
+{ icon: Calendar, value: "20+", label: "Années d'expérience" },
+{ icon: Star, value: "5/5", label: "Note Google" }];
+
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,8 +60,8 @@ const Index = () => {
 
           <h1
             className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight animate-fade-in"
-            style={{ animationDelay: "0.1s" }}
-          >
+            style={{ animationDelay: "0.1s" }}>
+
             Agence de conférenciers
             <br />
             <span className="text-accent italic">et de célébrités</span>
@@ -69,40 +69,40 @@ const Index = () => {
 
           <h2
             className="text-lg md:text-2xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto font-normal animate-fade-in"
-            style={{ animationDelay: "0.2s" }}
-          >
+            style={{ animationDelay: "0.2s" }}>
+
             Gagnez du temps, trouvez le conférencier idéal pour vos événements professionnels.
           </h2>
 
           {/* Reassurance pills */}
           <div
             className="flex flex-wrap items-center justify-center gap-3 mb-10 animate-fade-in"
-            style={{ animationDelay: "0.25s" }}
-          >
+            style={{ animationDelay: "0.25s" }}>
+
             {[
-              { icon: HeartHandshake, label: "20 ans d'expertise" },
-              { icon: Clock, label: "On vous fait gagner du temps" },
-              { icon: Sparkles, label: "Événement sécurisé de A à Z" },
-            ].map(({ icon: Icon, label }) => (
-              <span
-                key={label}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-sm text-primary-foreground/90 backdrop-blur-sm"
-              >
+            { icon: HeartHandshake, label: "20 ans d'expertise" },
+            { icon: Clock, label: "On vous fait gagner du temps" },
+            { icon: Sparkles, label: "Événement sécurisé de A à Z" }].
+            map(({ icon: Icon, label }) =>
+            <span
+              key={label}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-sm text-primary-foreground/90 backdrop-blur-sm">
+
                 <Icon className="h-4 w-4 text-accent" />
                 {label}
               </span>
-            ))}
+            )}
           </div>
 
           {/* Rating */}
           <div
             className="flex items-center justify-center gap-2 mb-10 animate-fade-in"
-            style={{ animationDelay: "0.25s" }}
-          >
+            style={{ animationDelay: "0.25s" }}>
+
             <div className="flex gap-0.5">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="h-5 w-5 fill-accent text-accent" />
-              ))}
+              {[1, 2, 3, 4, 5].map((i) =>
+              <Star key={i} className="h-5 w-5 fill-accent text-accent" />
+              )}
             </div>
             <span className="text-primary-foreground font-semibold text-lg">5/5</span>
             <span className="text-primary-foreground/60 text-sm">— 54 avis Google</span>
@@ -112,8 +112,8 @@ const Index = () => {
           <form
             onSubmit={handleSearch}
             className="flex flex-col md:flex-row gap-4 max-w-xl mx-auto animate-fade-in"
-            style={{ animationDelay: "0.3s" }}
-          >
+            style={{ animationDelay: "0.3s" }}>
+
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
@@ -121,14 +121,14 @@ const Index = () => {
                 placeholder="Rechercher par nom, thème ou expertise..."
                 className="pl-10 h-14 bg-background text-foreground border-none shadow-lg text-lg rounded-xl"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+                onChange={(e) => setSearchQuery(e.target.value)} />
+
             </div>
             <Button
               type="submit"
               size="lg"
-              className="h-14 px-8 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-lg rounded-xl"
-            >
+              className="h-14 px-8 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-lg rounded-xl">
+
               Rechercher
             </Button>
           </form>
@@ -139,13 +139,13 @@ const Index = () => {
       <section className="relative -mt-12 z-10 px-4">
         <div className="container mx-auto max-w-4xl">
           <div className="bg-card rounded-2xl shadow-xl border border-border/40 grid grid-cols-2 md:grid-cols-4 divide-x divide-border/40">
-            {STATS.map(({ icon: Icon, value, label }) => (
-              <div key={label} className="flex flex-col items-center gap-1 py-8 px-4">
+            {STATS.map(({ icon: Icon, value, label }) =>
+            <div key={label} className="flex flex-col items-center gap-1 py-8 px-4">
                 <Icon className="h-6 w-6 text-accent mb-1" />
                 <span className="text-2xl md:text-3xl font-bold text-foreground">{value}</span>
                 <span className="text-xs text-muted-foreground font-medium">{label}</span>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -220,16 +220,16 @@ const Index = () => {
                 <img
                   src={speakersCollage1}
                   alt="Sélection de conférenciers stars"
-                  className="w-full rounded-2xl shadow-2xl border border-primary-foreground/10"
-                />
+                  className="w-full rounded-2xl shadow-2xl border border-primary-foreground/10" />
+
 
                 {/* Floating second image */}
                 <div className="absolute -bottom-8 -left-8 w-2/3">
                   <img
                     src={speakersCollage2}
                     alt="Nos intervenants d'exception"
-                    className="rounded-2xl shadow-2xl border-4 border-primary"
-                  />
+                    className="rounded-2xl shadow-2xl border-4 border-primary" />
+
                 </div>
                 {/* Badge */}
                 <div className="absolute -top-4 -right-4 bg-accent text-accent-foreground px-4 py-2 rounded-xl shadow-lg font-bold text-sm">
@@ -255,8 +255,8 @@ const Index = () => {
                   <img
                     src="https://emmalamagicienne.fr/wp-content/uploads/2017/03/emma.png"
                     alt="Nelly, votre interlocutrice dédiée"
-                    className="w-full h-full object-cover"
-                  />
+                    className="w-full h-full object-cover" />
+
                 </div>
                 <div className="text-center mt-4">
                   <p className="font-serif font-bold text-foreground">Nelly</p>
@@ -289,33 +289,33 @@ const Index = () => {
               </p>
               <ul className="space-y-3">
                 {[
-                  "20 ans d'expertise — chaque recommandation est éprouvée",
-                  "Contact direct avec les conférenciers — sans intermédiaire",
-                  "Devis détaillé sous 24 heures",
-                  "Coordination logistique complète, de A à Z",
-                  "Suivi personnalisé avant, pendant et après l'événement",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-foreground">
+                "20 ans d'expertise — chaque recommandation est éprouvée",
+                "Contact direct avec les conférenciers — sans intermédiaire",
+                "Devis détaillé sous 24 heures",
+                "Coordination logistique complète, de A à Z",
+                "Suivi personnalisé avant, pendant et après l'événement"].
+                map((item) =>
+                <li key={item} className="flex items-center gap-3 text-foreground">
                     <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
                       <svg
-                        className="w-3.5 h-3.5 text-accent"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={3}
-                      >
+                      className="w-3.5 h-3.5 text-accent"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}>
+
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
                     <span className="font-medium">{item}</span>
                   </li>
-                ))}
+                )}
               </ul>
               <Button
                 size="lg"
                 className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl mt-4"
-                onClick={() => navigate("/contact")}
-              >
+                onClick={() => navigate("/contact")}>
+
                 Contacter Nelly
               </Button>
             </div>
@@ -339,36 +339,36 @@ const Index = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              {
-                icon: MessageCircle,
-                title: "Relation directe",
-                description:
-                  "Nous connaissons personnellement chaque conférencier. Pas de sous-traitance, pas d'intermédiaire. Résultat : réactivité maximale et recommandations sincères.",
-              },
-              {
-                icon: ShieldCheck,
-                title: "Zéro risque",
-                description:
-                  "20 ans d'expérience signifient 20 ans d'imprévus gérés. Nous anticipons les problèmes pour que votre événement se déroule sans accroc.",
-              },
-              {
-                icon: HeartHandshake,
-                title: "Conseil, pas juste booking",
-                description:
-                  "Les plateformes listent des profils. Nous, on vous conseille le bon. On challenge votre brief, on vous fait gagner du temps et on s'engage sur le résultat.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="p-7 rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 text-center group"
-              >
+            {
+              icon: MessageCircle,
+              title: "Relation directe",
+              description:
+              "Nous connaissons personnellement chaque conférencier. Pas de sous-traitance, pas d'intermédiaire. Résultat : réactivité maximale et recommandations sincères."
+            },
+            {
+              icon: ShieldCheck,
+              title: "Zéro risque",
+              description:
+              "20 ans d'expérience signifient 20 ans d'imprévus gérés. Nous anticipons les problèmes pour que votre événement se déroule sans accroc."
+            },
+            {
+              icon: HeartHandshake,
+              title: "Conseil, pas juste booking",
+              description:
+              "Les plateformes listent des profils. Nous, on vous conseille le bon. On challenge votre brief, on vous fait gagner du temps et on s'engage sur le résultat."
+            }].
+            map((item) =>
+            <div
+              key={item.title}
+              className="p-7 rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 text-center group">
+
                 <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5 group-hover:bg-accent/20 group-hover:scale-110 transition-all">
                   <item.icon className="h-7 w-7 text-accent" />
                 </div>
                 <h3 className="text-lg font-serif font-bold text-foreground mb-2">{item.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -378,8 +378,8 @@ const Index = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">
-                Les conférenciers avec qui nous travaillons Conférenciers
+              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">Les conférenciers dans notre agence
+
               </h2>
               <p className="text-muted-foreground">Nous avons une relation privilégiée avec tous les profils</p>
             </div>
@@ -418,16 +418,16 @@ const Index = () => {
             <Button
               size="lg"
               className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-10 rounded-xl"
-              onClick={() => navigate("/contact")}
-            >
+              onClick={() => navigate("/contact")}>
+
               Demander un devis gratuit
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="border-accent/50 text-accent hover:bg-accent/10 rounded-xl font-semibold"
-              onClick={() => navigate("/speakers")}
-            >
+              onClick={() => navigate("/speakers")}>
+
               Découvrir nos conférenciers
             </Button>
           </div>
@@ -435,8 +435,8 @@ const Index = () => {
       </section>
 
       <Footer />
-    </div>
-  );
+    </div>);
+
 };
 
 export default Index;
