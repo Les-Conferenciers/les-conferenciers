@@ -64,11 +64,25 @@ const Contact = () => {
   }, [speakerName, conferenceName, prefillMessage, setValue]);
 
   const onSubmit = async (data: ContactFormData) => {
-    await new Promise((r) => setTimeout(r, 800));
-    console.log("Contact form submitted");
-    setSubmitted(true);
-    toast.success("Votre demande a bien été envoyée !");
-    reset();
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-contact-email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify(data),
+        }
+      );
+      if (!res.ok) throw new Error("Erreur serveur");
+      setSubmitted(true);
+      toast.success("Votre demande a bien été envoyée !");
+      reset();
+    } catch {
+      toast.error("Une erreur est survenue. Veuillez réessayer ou nous contacter par téléphone.");
+    }
   };
 
   return (

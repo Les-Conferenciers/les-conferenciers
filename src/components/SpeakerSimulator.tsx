@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { parseThemes } from "@/lib/parseThemes";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Sparkles, Users, Target, ArrowRight, Loader2, RotateCcw } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import {
+  Sparkles, Users, Target, ArrowRight, RotateCcw,
+  MapPin, Euro, Trophy, Search, CheckCircle2, MessageCircle
+} from "lucide-react";
 
 const EVENT_TYPES = [
   "Séminaire d'entreprise",
@@ -19,22 +22,12 @@ const EVENT_TYPES = [
 ];
 
 const THEMES = [
-  "Leadership",
-  "Management",
-  "Motivation",
-  "Performance",
-  "Cohésion d'équipe",
-  "Innovation",
-  "Gestion du stress",
-  "Communication",
-  "Bien-être au travail",
-  "Négociation",
-  "Dépassement de soi",
-  "Conduite du changement",
-  "Optimisme",
-  "Entrepreneuriat",
-  "Intelligence collective",
-  "Transition écologique",
+  "Leadership", "Management", "Motivation", "Performance",
+  "Cohésion d'équipe", "Innovation", "Gestion du stress", "Communication",
+  "Bien-être au travail", "Négociation", "Dépassement de soi",
+  "Conduite du changement", "Optimisme", "Entrepreneuriat",
+  "Intelligence collective", "Transition écologique",
+  "Autre",
 ];
 
 const OBJECTIVES = [
@@ -44,6 +37,7 @@ const OBJECTIVES = [
   "Sensibiliser sur un sujet clé",
   "Divertir et surprendre",
   "Former sur un domaine précis",
+  "Autre",
 ];
 
 const AUDIENCE_SIZES = [
@@ -52,6 +46,27 @@ const AUDIENCE_SIZES = [
   "150 à 500 personnes",
   "Plus de 500 personnes",
 ];
+
+const BUDGETS = [
+  "Moins de 3 000 €",
+  "3 000 € – 5 000 €",
+  "5 000 € – 10 000 €",
+  "10 000 € – 20 000 €",
+  "Plus de 20 000 €",
+  "À définir ensemble",
+];
+
+const SEARCH_MESSAGES = [
+  "Analyse de vos critères en cours…",
+  "Parcours de nos 161+ profils qualifiés…",
+  "Évaluation de la compatibilité thématique…",
+  "Vérification des disponibilités…",
+  "Classement des meilleurs candidats…",
+  "Finalisation de votre sélection personnalisée…",
+];
+
+const STEP_LABELS = ["Événement", "Audience", "Thématiques", "Objectif", "Budget & Lieu", "Détails"];
+const TOTAL_STEPS = 6;
 
 type SpeakerResult = {
   name: string;
@@ -64,35 +79,78 @@ type SpeakerResult = {
 
 const SpeakerSimulator = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<"form" | "loading" | "results">("form");
+  const [currentStep, setCurrentStep] = useState(0);
+  const [phase, setPhase] = useState<"form" | "searching" | "results" | "maxed">("form");
+
+  // Form state
   const [eventType, setEventType] = useState("");
+  const [customEventType, setCustomEventType] = useState("");
   const [audienceSize, setAudienceSize] = useState("");
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [customTheme, setCustomTheme] = useState("");
   const [objective, setObjective] = useState("");
+  const [customObjective, setCustomObjective] = useState("");
+  const [budget, setBudget] = useState("");
+  const [location, setLocation] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
+
+  // Results state
   const [results, setResults] = useState<SpeakerResult[]>([]);
+  const [searchProgress, setSearchProgress] = useState(0);
+  const [searchMessageIndex, setSearchMessageIndex] = useState(0);
+  const [searchCount, setSearchCount] = useState(0);
+
+  const completionPercent = Math.round(((currentStep + 1) / TOTAL_STEPS) * 100);
+
+  const stepCompleted = useCallback((step: number) => {
+    switch (step) {
+      case 0: return !!eventType;
+      case 1: return !!audienceSize;
+      case 2: return selectedThemes.length > 0;
+      case 3: return !!objective;
+      case 4: return !!budget;
+      case 5: return true;
+      default: return false;
+    }
+  }, [eventType, audienceSize, selectedThemes, objective, budget]);
+
+  const canProceed = stepCompleted(currentStep);
+
+  const gamificationMessage = () => {
+    if (currentStep === 0 && eventType) return "🎯 Parfait ! On avance…";
+    if (currentStep === 1 && audienceSize) return "👥 Très bien ! On y est presque…";
+    if (currentStep === 2 && selectedThemes.length === 3) return "🔥 Excellent choix de thématiques !";
+    if (currentStep === 2 && selectedThemes.length > 0) return "✨ Bon choix ! Vous pouvez en ajouter jusqu'à 3.";
+    if (currentStep === 3 && objective) return "🏆 Objectif clair, résultat assuré !";
+    if (currentStep === 4 && budget) return "💰 Noté ! Dernière étape…";
+    if (currentStep === 5) return "🚀 Vous y êtes ! Lancez la recherche.";
+    return null;
+  };
 
   const toggleTheme = (theme: string) => {
+    if (theme === "Autre") return;
     setSelectedThemes((prev) =>
-      prev.includes(theme) ? prev.filter((t) => t !== theme) : prev.length < 3 ? [...prev, theme] : prev
+      prev.includes(theme)
+        ? prev.filter((t) => t !== theme)
+        : prev.length < 3 ? [...prev, theme] : prev
     );
   };
 
-  const handleSubmit = async () => {
-    setStep("loading");
+  const handleSearch = async () => {
+    setPhase("searching");
+    setSearchProgress(0);
+    setSearchMessageIndex(0);
 
-    // Fetch speakers that match the selected themes
     const { data: speakers } = await supabase
       .from("speakers")
       .select("name, slug, role, image_url, themes, key_points")
       .order("featured", { ascending: false });
 
     if (!speakers || speakers.length === 0) {
-      setStep("results");
+      setTimeout(() => setPhase("results"), 10000);
       return;
     }
 
-    // Score speakers based on theme overlap
     const scored = speakers.map((speaker) => {
       const speakerThemes = parseThemes(speaker.themes);
       const lowerSelected = selectedThemes.map((t) => t.toLowerCase());
@@ -122,30 +180,71 @@ const SpeakerSimulator = () => {
       };
     });
 
-    // Sort by score and take top 3
     scored.sort((a, b) => b.score - a.score);
     const top3 = scored.slice(0, 3).map(({ score, ...rest }) => rest);
-
     setResults(top3);
 
-    // Simulate a small delay for UX
-    setTimeout(() => setStep("results"), 800);
+    // The actual reveal happens after the 10s timer finishes
   };
 
+  // Search animation timer
+  useEffect(() => {
+    if (phase !== "searching") return;
+
+    const duration = 10000;
+    const interval = 50;
+    let elapsed = 0;
+
+    const timer = setInterval(() => {
+      elapsed += interval;
+      const progress = Math.min((elapsed / duration) * 100, 100);
+      setSearchProgress(progress);
+      setSearchMessageIndex(Math.min(Math.floor((elapsed / duration) * SEARCH_MESSAGES.length), SEARCH_MESSAGES.length - 1));
+
+      if (elapsed >= duration) {
+        clearInterval(timer);
+        setPhase("results");
+        setSearchCount((prev) => prev + 1);
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [phase]);
+
   const handleContactClick = (speaker: SpeakerResult) => {
-    const message = `Bonjour,\n\nJe suis intéressé(e) par le profil de ${speaker.name} pour ${eventType || "notre événement"}.\n\nType d'événement : ${eventType}\nNombre de personnes : ${audienceSize}\nThématiques souhaitées : ${selectedThemes.join(", ")}\nObjectif : ${objective}\n${additionalInfo ? `Informations complémentaires : ${additionalInfo}` : ""}`;
+    const effectiveThemes = [...selectedThemes, customTheme].filter(Boolean);
+    const effectiveObjective = objective === "Autre" ? customObjective : objective;
+    const effectiveEventType = eventType === "Autre" ? customEventType : eventType;
+    const message = `Bonjour,\n\nJe suis intéressé(e) par le profil de ${speaker.name} pour ${effectiveEventType || "notre événement"}.\n\nType d'événement : ${effectiveEventType}\nNombre de personnes : ${audienceSize}\nThématiques souhaitées : ${effectiveThemes.join(", ")}\nObjectif : ${effectiveObjective}\nBudget : ${budget}\nLieu : ${location || "Non précisé"}\n${additionalInfo ? `Informations complémentaires : ${additionalInfo}` : ""}`;
     navigate(`/contact?speaker=${encodeURIComponent(speaker.name)}&message=${encodeURIComponent(message)}`);
   };
 
-  const handleReset = () => {
-    setStep("form");
-    setResults([]);
-    setEventType("");
-    setAudienceSize("");
-    setSelectedThemes([]);
-    setObjective("");
-    setAdditionalInfo("");
+  const handleRetry = () => {
+    if (searchCount >= 2) {
+      setPhase("maxed");
+    } else {
+      setPhase("form");
+      setCurrentStep(0);
+      setResults([]);
+      setEventType("");
+      setCustomEventType("");
+      setAudienceSize("");
+      setSelectedThemes([]);
+      setCustomTheme("");
+      setObjective("");
+      setCustomObjective("");
+      setBudget("");
+      setLocation("");
+      setAdditionalInfo("");
+    }
   };
+
+  const chipClass = (active: boolean) =>
+    `px-4 py-2.5 rounded-xl text-sm font-medium transition-all border cursor-pointer ${
+      active
+        ? "bg-accent text-accent-foreground border-accent shadow-md"
+        : "bg-primary-foreground/5 text-primary-foreground/70 border-primary-foreground/10 hover:border-accent/40 hover:bg-primary-foreground/10"
+    }`;
 
   return (
     <section className="py-24 px-4 bg-primary text-primary-foreground overflow-hidden">
@@ -159,154 +258,283 @@ const SpeakerSimulator = () => {
             <span className="text-accent italic">pour votre événement</span>
           </h2>
           <p className="text-primary-foreground/60 mt-4 max-w-2xl mx-auto text-lg">
-            Répondez à quelques questions et nous vous suggérons les conférenciers les plus adaptés à vos besoins.
+            Répondez à quelques questions et nous vous suggérons les conférenciers les plus adaptés.
           </p>
         </div>
 
-        {step === "form" && (
+        {/* ===== FORM PHASE ===== */}
+        {phase === "form" && (
           <div className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl p-8 md:p-10 space-y-8">
-            {/* Event type */}
-            <div>
-              <label className="block text-sm font-semibold text-primary-foreground mb-3">
-                <span className="inline-flex items-center gap-2">
-                  <Target className="h-4 w-4 text-accent" />
-                  Type d'événement
+            {/* Progress bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-primary-foreground/50">
+                <span>{STEP_LABELS[currentStep]}</span>
+                <span>{completionPercent}% complété</span>
+              </div>
+              <Progress value={completionPercent} className="h-2 bg-primary-foreground/10 [&>div]:bg-accent" />
+              <div className="flex justify-between">
+                {STEP_LABELS.map((label, i) => (
+                  <div
+                    key={label}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      i <= currentStep ? "bg-accent" : "bg-primary-foreground/20"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Gamification message */}
+            {gamificationMessage() && (
+              <div className="text-center animate-fade-in">
+                <span className="inline-block px-4 py-2 bg-accent/10 border border-accent/20 rounded-full text-sm text-accent font-medium">
+                  {gamificationMessage()}
                 </span>
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {EVENT_TYPES.map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setEventType(type)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
-                      eventType === type
-                        ? "bg-accent text-accent-foreground border-accent"
-                        : "bg-primary-foreground/5 text-primary-foreground/70 border-primary-foreground/10 hover:border-accent/40"
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
               </div>
-            </div>
+            )}
 
-            {/* Audience size */}
-            <div>
-              <label className="block text-sm font-semibold text-primary-foreground mb-3">
-                <span className="inline-flex items-center gap-2">
-                  <Users className="h-4 w-4 text-accent" />
-                  Nombre de participants
-                </span>
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {AUDIENCE_SIZES.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setAudienceSize(size)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
-                      audienceSize === size
-                        ? "bg-accent text-accent-foreground border-accent"
-                        : "bg-primary-foreground/5 text-primary-foreground/70 border-primary-foreground/10 hover:border-accent/40"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+            {/* Step 0: Event type */}
+            {currentStep === 0 && (
+              <div className="animate-fade-in">
+                <label className="block text-sm font-semibold text-primary-foreground mb-3">
+                  <span className="inline-flex items-center gap-2">
+                    <Target className="h-4 w-4 text-accent" />
+                    Quel type d'événement organisez-vous ?
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {EVENT_TYPES.map((type) => (
+                    <button key={type} onClick={() => setEventType(type)} className={chipClass(eventType === type)}>
+                      {type}
+                    </button>
+                  ))}
+                </div>
+                {eventType === "Autre" && (
+                  <input
+                    value={customEventType}
+                    onChange={(e) => setCustomEventType(e.target.value)}
+                    placeholder="Précisez le type d'événement…"
+                    className="mt-3 w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 px-4 py-3 text-sm focus:outline-none focus:border-accent/40"
+                  />
+                )}
               </div>
-            </div>
+            )}
 
-            {/* Themes */}
-            <div>
-              <label className="block text-sm font-semibold text-primary-foreground mb-1">
-                <span className="inline-flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-accent" />
-                  Thématiques souhaitées
-                </span>
-              </label>
-              <p className="text-primary-foreground/40 text-xs mb-3">Sélectionnez jusqu'à 3 thématiques</p>
-              <div className="flex flex-wrap gap-2">
-                {THEMES.map((theme) => (
-                  <button
-                    key={theme}
-                    onClick={() => toggleTheme(theme)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
-                      selectedThemes.includes(theme)
-                        ? "bg-accent text-accent-foreground border-accent"
-                        : "bg-primary-foreground/5 text-primary-foreground/60 border-primary-foreground/10 hover:border-accent/40"
-                    }`}
-                  >
-                    {theme}
-                  </button>
-                ))}
+            {/* Step 1: Audience */}
+            {currentStep === 1 && (
+              <div className="animate-fade-in">
+                <label className="block text-sm font-semibold text-primary-foreground mb-3">
+                  <span className="inline-flex items-center gap-2">
+                    <Users className="h-4 w-4 text-accent" />
+                    Combien de participants attendez-vous ?
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {AUDIENCE_SIZES.map((size) => (
+                    <button key={size} onClick={() => setAudienceSize(size)} className={chipClass(audienceSize === size)}>
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Objective */}
-            <div>
-              <label className="block text-sm font-semibold text-primary-foreground mb-3">
-                Objectif principal de l'intervention
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {OBJECTIVES.map((obj) => (
-                  <button
-                    key={obj}
-                    onClick={() => setObjective(obj)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border text-left ${
-                      objective === obj
-                        ? "bg-accent text-accent-foreground border-accent"
-                        : "bg-primary-foreground/5 text-primary-foreground/70 border-primary-foreground/10 hover:border-accent/40"
-                    }`}
-                  >
-                    {obj}
-                  </button>
-                ))}
+            {/* Step 2: Themes */}
+            {currentStep === 2 && (
+              <div className="animate-fade-in">
+                <label className="block text-sm font-semibold text-primary-foreground mb-1">
+                  <span className="inline-flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-accent" />
+                    Quelles thématiques vous intéressent ?
+                  </span>
+                </label>
+                <p className="text-primary-foreground/40 text-xs mb-3">Sélectionnez jusqu'à 3 thématiques</p>
+                <div className="flex flex-wrap gap-2">
+                  {THEMES.map((theme) => (
+                    <button
+                      key={theme}
+                      onClick={() => {
+                        if (theme === "Autre") return;
+                        toggleTheme(theme);
+                      }}
+                      className={chipClass(theme === "Autre" ? !!customTheme : selectedThemes.includes(theme))}
+                    >
+                      {theme}
+                    </button>
+                  ))}
+                </div>
+                {/* Custom theme input always visible when "Autre" is in THEMES */}
+                <input
+                  value={customTheme}
+                  onChange={(e) => setCustomTheme(e.target.value)}
+                  placeholder="Précisez une thématique personnalisée…"
+                  className="mt-3 w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 px-4 py-3 text-sm focus:outline-none focus:border-accent/40"
+                />
               </div>
-            </div>
+            )}
 
-            {/* Additional info */}
-            <div>
-              <label className="block text-sm font-semibold text-primary-foreground mb-3">
-                Informations complémentaires (optionnel)
-              </label>
-              <textarea
-                value={additionalInfo}
-                onChange={(e) => setAdditionalInfo(e.target.value)}
-                placeholder="Précisez votre secteur d'activité, le contexte de l'événement, vos attentes particulières…"
-                className="w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 px-4 py-3 text-sm focus:outline-none focus:border-accent/40 resize-none h-24"
-              />
-            </div>
+            {/* Step 3: Objective */}
+            {currentStep === 3 && (
+              <div className="animate-fade-in">
+                <label className="block text-sm font-semibold text-primary-foreground mb-3">
+                  <span className="inline-flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-accent" />
+                    Quel est l'objectif principal de l'intervention ?
+                  </span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {OBJECTIVES.map((obj) => (
+                    <button key={obj} onClick={() => setObjective(obj)} className={`${chipClass(objective === obj)} text-left`}>
+                      {obj}
+                    </button>
+                  ))}
+                </div>
+                {objective === "Autre" && (
+                  <input
+                    value={customObjective}
+                    onChange={(e) => setCustomObjective(e.target.value)}
+                    placeholder="Précisez votre objectif…"
+                    className="mt-3 w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 px-4 py-3 text-sm focus:outline-none focus:border-accent/40"
+                  />
+                )}
+              </div>
+            )}
 
-            <div className="text-center pt-2">
+            {/* Step 4: Budget & Location */}
+            {currentStep === 4 && (
+              <div className="animate-fade-in space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-primary-foreground mb-3">
+                    <span className="inline-flex items-center gap-2">
+                      <Euro className="h-4 w-4 text-accent" />
+                      Quel est votre budget ?
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {BUDGETS.map((b) => (
+                      <button key={b} onClick={() => setBudget(b)} className={chipClass(budget === b)}>
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-primary-foreground mb-3">
+                    <span className="inline-flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-accent" />
+                      Lieu de l'événement
+                    </span>
+                  </label>
+                  <input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Ville, région ou pays…"
+                    className="w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 px-4 py-3 text-sm focus:outline-none focus:border-accent/40"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Additional info */}
+            {currentStep === 5 && (
+              <div className="animate-fade-in">
+                <label className="block text-sm font-semibold text-primary-foreground mb-3">
+                  Informations complémentaires (optionnel)
+                </label>
+                <textarea
+                  value={additionalInfo}
+                  onChange={(e) => setAdditionalInfo(e.target.value)}
+                  placeholder="Précisez votre secteur d'activité, le contexte de l'événement, vos attentes particulières…"
+                  className="w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 px-4 py-3 text-sm focus:outline-none focus:border-accent/40 resize-none h-24"
+                />
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex items-center justify-between pt-2">
               <Button
-                size="lg"
-                className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-10 gap-2"
-                onClick={handleSubmit}
-                disabled={!eventType || selectedThemes.length === 0}
+                variant="ghost"
+                className="text-primary-foreground/40 hover:text-primary-foreground hover:bg-primary-foreground/5"
+                onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
+                disabled={currentStep === 0}
               >
-                <Sparkles className="h-5 w-5" />
-                Trouver mon conférencier idéal
+                ← Précédent
               </Button>
+
+              {currentStep < TOTAL_STEPS - 1 ? (
+                <Button
+                  className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-8 gap-2"
+                  onClick={() => setCurrentStep((s) => s + 1)}
+                  disabled={!canProceed}
+                >
+                  Continuer <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-10 gap-2"
+                  onClick={handleSearch}
+                  disabled={!eventType || selectedThemes.length === 0}
+                >
+                  <Search className="h-5 w-5" />
+                  Trouver mon conférencier idéal
+                </Button>
+              )}
             </div>
           </div>
         )}
 
-        {step === "loading" && (
-          <div className="text-center py-20">
-            <Loader2 className="h-12 w-12 text-accent animate-spin mx-auto mb-6" />
-            <p className="text-primary-foreground/70 text-lg font-medium">
-              Analyse de votre besoin en cours…
-            </p>
-            <p className="text-primary-foreground/40 text-sm mt-2">
-              Nous parcourons nos 161+ profils pour vous trouver les meilleurs candidats.
-            </p>
+        {/* ===== SEARCHING PHASE ===== */}
+        {phase === "searching" && (
+          <div className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl p-10 md:p-14">
+            <div className="text-center space-y-6 max-w-lg mx-auto">
+              <div className="relative mx-auto w-20 h-20">
+                <div className="absolute inset-0 rounded-full border-4 border-accent/20" />
+                <div
+                  className="absolute inset-0 rounded-full border-4 border-accent border-t-transparent animate-spin"
+                  style={{ animationDuration: "1.5s" }}
+                />
+                <Search className="absolute inset-0 m-auto h-8 w-8 text-accent" />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-primary-foreground text-lg font-semibold animate-fade-in" key={searchMessageIndex}>
+                  {SEARCH_MESSAGES[searchMessageIndex]}
+                </p>
+                <p className="text-primary-foreground/40 text-sm">
+                  Notre algorithme analyse chaque profil pour vous.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Progress value={searchProgress} className="h-3 bg-primary-foreground/10 [&>div]:bg-gradient-to-r [&>div]:from-accent/70 [&>div]:to-accent" />
+                <p className="text-primary-foreground/30 text-xs">{Math.round(searchProgress)}%</p>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3 pt-2">
+                {["🎯 Pertinence", "⭐ Expérience", "💡 Originalité"].map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium border border-accent/20"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {step === "results" && (
-          <div className="space-y-8">
+        {/* ===== RESULTS PHASE ===== */}
+        {phase === "results" && (
+          <div className="space-y-8 animate-fade-in">
             <div className="text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full mb-4">
+                <CheckCircle2 className="h-4 w-4 text-accent" />
+                <span className="text-accent text-sm font-medium">Recherche terminée</span>
+              </div>
               <p className="text-primary-foreground/60 text-lg">
-                Voici les <strong className="text-accent">3 profils</strong> qui correspondent le mieux à votre événement.
+                Voici les <strong className="text-accent">3 profils</strong> les plus adaptés à votre événement.
               </p>
             </div>
 
@@ -315,29 +543,31 @@ const SpeakerSimulator = () => {
                 <div
                   key={speaker.slug}
                   className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl overflow-hidden hover:border-accent/40 transition-all group"
+                  style={{ animationDelay: `${idx * 200}ms` }}
                 >
-                  {speaker.image_url && (
-                    <div className="aspect-[4/3] overflow-hidden">
-                      <img
-                        src={speaker.image_url}
-                        alt={speaker.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                    </div>
-                  )}
-                  <div className="p-6 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent text-accent-foreground text-xs font-bold">
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold flex-shrink-0">
                         {idx + 1}
                       </span>
-                      <h3 className="text-lg font-serif font-bold text-primary-foreground">
-                        {speaker.name}
-                      </h3>
+                      {speaker.image_url && (
+                        <img
+                          src={speaker.image_url}
+                          alt={speaker.name}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-accent/30"
+                          loading="lazy"
+                        />
+                      )}
+                      <div>
+                        <h3 className="text-lg font-serif font-bold text-primary-foreground leading-tight">
+                          {speaker.name}
+                        </h3>
+                        {speaker.role && (
+                          <p className="text-primary-foreground/50 text-xs line-clamp-1">{speaker.role}</p>
+                        )}
+                      </div>
                     </div>
-                    {speaker.role && (
-                      <p className="text-primary-foreground/50 text-sm line-clamp-2">{speaker.role}</p>
-                    )}
+
                     <ul className="space-y-1.5">
                       {speaker.matchReasons.map((reason, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-primary-foreground/70">
@@ -348,17 +578,17 @@ const SpeakerSimulator = () => {
                         </li>
                       ))}
                     </ul>
-                    <div className="flex gap-2 pt-2">
+
+                    <div className="flex flex-col gap-2 pt-2">
                       <Button
-                        className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-1 text-sm"
+                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-1 text-sm"
                         onClick={() => handleContactClick(speaker)}
                       >
-                        Ça m'intéresse
-                        <ArrowRight className="h-4 w-4" />
+                        Ça m'intéresse <ArrowRight className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="outline"
-                        className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 rounded-xl text-sm"
+                        variant="ghost"
+                        className="w-full text-accent hover:text-accent hover:bg-accent/10 rounded-xl text-sm font-medium"
                         onClick={() => navigate(`/speakers/${speaker.slug}`)}
                       >
                         Voir le profil
@@ -370,15 +600,52 @@ const SpeakerSimulator = () => {
             </div>
 
             <div className="text-center pt-4">
-              <Button
-                variant="ghost"
-                className="text-primary-foreground/50 hover:text-primary-foreground hover:bg-primary-foreground/5 gap-2"
-                onClick={handleReset}
-              >
-                <RotateCcw className="h-4 w-4" />
-                Relancer la recherche
-              </Button>
+              {searchCount < 2 ? (
+                <Button
+                  variant="ghost"
+                  className="text-primary-foreground/50 hover:text-primary-foreground hover:bg-primary-foreground/5 gap-2"
+                  onClick={handleRetry}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Relancer la recherche ({2 - searchCount} essai{2 - searchCount > 1 ? "s" : ""} restant{2 - searchCount > 1 ? "s" : ""})
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-primary-foreground/50 text-sm">
+                    Vous avez utilisé vos 2 recherches. Contactez-nous pour affiner humainement votre sélection !
+                  </p>
+                  <Button
+                    className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-8 gap-2"
+                    onClick={() => navigate("/contact")}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Nous contacter directement
+                  </Button>
+                </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {/* ===== MAXED OUT PHASE ===== */}
+        {phase === "maxed" && (
+          <div className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl p-10 text-center space-y-6">
+            <MessageCircle className="h-14 w-14 text-accent mx-auto" />
+            <h3 className="text-2xl font-serif font-bold text-primary-foreground">
+              Besoin d'un accompagnement personnalisé ?
+            </h3>
+            <p className="text-primary-foreground/60 max-w-lg mx-auto">
+              Nelly, forte de ses 20 ans d'expérience, peut affiner votre recherche et vous proposer
+              l'intervenant idéal en quelques heures.
+            </p>
+            <Button
+              size="lg"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-10 gap-2"
+              onClick={() => navigate("/contact")}
+            >
+              <ArrowRight className="h-5 w-5" />
+              Contactez-nous
+            </Button>
           </div>
         )}
       </div>
