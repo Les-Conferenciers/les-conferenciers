@@ -163,7 +163,7 @@ const Index = () => {
                 Le problème
               </span>
               <h2 className="text-3xl font-serif font-bold leading-tight mb-10 md:text-4xl">
-                Trouvez l'orateur idéal
+                Trouvez l'orateur idéal n'est pas chose aisée
                 <br />
                 <span className="text-accent italic">n'est pas chose aisée</span>
               </h2>
@@ -280,12 +280,6 @@ const Index = () => {
                 <strong className="text-foreground">plus de 20 ans</strong>, Nelly accompagne les entreprises pour leur
                 faire <strong className="text-foreground">gagner du temps</strong> et{" "}
                 <strong className="text-foreground">sécuriser chaque étape</strong> de l'organisation.
-              </p>
-              <p className="text-muted-foreground leading-relaxed">
-                Organiser une conférence demande une vraie expertise : cadrage du brief, adéquation de l'intervenant,
-                gestion des imprévus. Notre rôle est de{" "}
-                <strong className="text-foreground">conseiller, coordonner et garantir un événement fluide</strong>,
-                sans mauvaise surprise.
               </p>
               <ul className="space-y-3">
                 {[
