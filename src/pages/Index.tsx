@@ -9,14 +9,15 @@ import GoogleReviews from "@/components/GoogleReviews";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Star, ArrowRight, Users, Award, Calendar, Sparkles, Clock, HeartHandshake, HelpCircle } from "lucide-react";
+import { Search, Star, ArrowRight, Users, Award, Calendar, Sparkles, Clock, HeartHandshake, HelpCircle, ShieldCheck, MessageCircle } from "lucide-react";
+import SpeakerSimulator from "@/components/SpeakerSimulator";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const STATS = [
 { icon: Users, value: "161+", label: "Conférenciers" },
 { icon: Award, value: "500+", label: "Événements" },
-{ icon: Calendar, value: "10+", label: "Années d'expérience" },
+{ icon: Calendar, value: "20+", label: "Années d'expérience" },
 { icon: Star, value: "5/5", label: "Note Google" }];
 
 
@@ -51,15 +52,15 @@ const Index = () => {
           </h1>
 
           <h2 className="text-lg md:text-2xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto font-normal animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Trouvez le conférencier idéal pour vos événements professionnels.
+            Gagnez du temps, trouvez le conférencier idéal pour vos événements professionnels.
           </h2>
 
           {/* Reassurance pills */}
           <div className="flex flex-wrap items-center justify-center gap-3 mb-10 animate-fade-in" style={{ animationDelay: "0.25s" }}>
             {[
-            { icon: HeartHandshake, label: "Accompagnement dédié" },
-            { icon: Clock, label: "Réponse sous 24h" },
-            { icon: Sparkles, label: "Profils vérifiés" }].
+            { icon: HeartHandshake, label: "20 ans d'expertise" },
+            { icon: Clock, label: "On vous fait gagner du temps" },
+            { icon: Sparkles, label: "Événement sécurisé de A à Z" }].
             map(({ icon: Icon, label }) =>
             <span key={label} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-sm text-primary-foreground/90 backdrop-blur-sm">
                 <Icon className="h-4 w-4 text-accent" />
@@ -211,30 +212,34 @@ n'est pas chose aisée
                     src="https://emmalamagicienne.fr/wp-content/uploads/2017/03/emma.png"
                     alt="Nelly, votre interlocutrice dédiée"
                     className="w-full h-full object-cover" />
-
                 </div>
                 <div className="text-center mt-4">
                   <p className="font-serif font-bold text-foreground">Nelly</p>
-                  <p className="text-sm text-accent font-semibold">Votre interlocutrice dédiée</p>
+                  <p className="text-sm text-accent font-semibold">Fondatrice · 20+ ans d'expérience</p>
                 </div>
               </div>
             </div>
             {/* Text */}
             <div className="lg:col-span-3 space-y-6">
               <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase">
-                Accompagnement personnalisé
+                Accompagnement sur mesure
               </span>
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
-                Un accompagnement <span className="text-accent italic">sur mesure</span>
+                Arrêtez de perdre du temps,<br />
+                <span className="text-accent italic">on s'occupe de tout.</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Contrairement à d'autres agences, <strong className="text-foreground">Les Conférenciers est en contact direct avec chaque intervenant</strong>. Cette relation privilégiée nous permet d'assurer un suivi rapide, une communication fluide et un projet mené avec professionnalisme du brief initial jusqu'au jour J.
+                Trouver le bon conférencier est <strong className="text-foreground">chronophage</strong> : recherches, comparaisons, négociations, logistique… Depuis <strong className="text-foreground">plus de 20 ans</strong>, Nelly accompagne les entreprises pour leur faire <strong className="text-foreground">gagner du temps</strong> et <strong className="text-foreground">sécuriser chaque étape</strong> de l'organisation.
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Organiser une conférence demande une vraie expertise : cadrage du brief, adéquation de l'intervenant, gestion des imprévus. Notre rôle est de <strong className="text-foreground">conseiller, coordonner et garantir un événement fluide</strong>, sans mauvaise surprise.
               </p>
               <ul className="space-y-3">
                 {[
+                "20 ans d'expertise — chaque recommandation est éprouvée",
                 "Contact direct avec les conférenciers — sans intermédiaire",
                 "Devis détaillé sous 24 heures",
-                "Coordination logistique complète",
+                "Coordination logistique complète, de A à Z",
                 "Suivi personnalisé avant, pendant et après l'événement"].
                 map((item) =>
                 <li key={item} className="flex items-center gap-3 text-foreground">
@@ -251,10 +256,53 @@ n'est pas chose aisée
                 size="lg"
                 className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl mt-4"
                 onClick={() => navigate('/contact')}>
-
                 Contacter Nelly
               </Button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Différenciateur — Ce qui nous rend uniques */}
+      <section className="py-16 px-4 bg-background border-b border-border/40">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-10">
+            <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-4">
+              Ce qui nous différencie
+            </span>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
+              Pourquoi passer par <span className="text-accent italic">Les Conférenciers</span> ?
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
+              Beaucoup de nos clients nous posent cette question. Voici la réponse.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: MessageCircle,
+                title: "Relation directe",
+                description: "Nous connaissons personnellement chaque conférencier. Pas de sous-traitance, pas d'intermédiaire. Résultat : réactivité maximale et recommandations sincères.",
+              },
+              {
+                icon: ShieldCheck,
+                title: "Zéro risque",
+                description: "20 ans d'expérience signifient 20 ans d'imprévus gérés. Nous anticipons les problèmes pour que votre événement se déroule sans accroc.",
+              },
+              {
+                icon: HeartHandshake,
+                title: "Conseil, pas juste booking",
+                description: "Les plateformes listent des profils. Nous, on vous conseille le bon. On challenge votre brief, on vous fait gagner du temps et on s'engage sur le résultat.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="p-7 rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 text-center group">
+                <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5 group-hover:bg-accent/20 group-hover:scale-110 transition-all">
+                  <item.icon className="h-7 w-7 text-accent" />
+                </div>
+                <h3 className="text-lg font-serif font-bold text-foreground mb-2">{item.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -291,6 +339,9 @@ n'est pas chose aisée
 
       {/* Why Choose Us */}
       <WhyChooseUs />
+
+      {/* Speaker Simulator */}
+      <SpeakerSimulator />
 
       {/* CTA */}
       <section className="py-20 px-4 bg-primary text-primary-foreground text-center">

@@ -40,6 +40,7 @@ const Contact = () => {
   const [searchParams] = useSearchParams();
   const speakerName = searchParams.get("speaker") || "";
   const conferenceName = searchParams.get("conference") || "";
+  const prefillMessage = searchParams.get("message") || "";
 
   const {
     register,
@@ -52,13 +53,15 @@ const Contact = () => {
   });
 
   useEffect(() => {
-    if (speakerName) {
+    if (prefillMessage) {
+      setValue("message", prefillMessage);
+    } else if (speakerName) {
       const prefill = conferenceName
         ? `Je suis intéressé(e) par la conférence « ${conferenceName} » de ${speakerName}.`
         : `Je suis intéressé(e) par le profil de ${speakerName}.`;
       setValue("message", prefill);
     }
-  }, [speakerName, conferenceName, setValue]);
+  }, [speakerName, conferenceName, prefillMessage, setValue]);
 
   const onSubmit = async (data: ContactFormData) => {
     await new Promise((r) => setTimeout(r, 800));
