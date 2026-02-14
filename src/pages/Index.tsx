@@ -281,6 +281,12 @@ const Index = () => {
                 faire <strong className="text-foreground">gagner du temps</strong> et{" "}
                 <strong className="text-foreground">sécuriser chaque étape</strong> de l'organisation.
               </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Organiser une conférence demande une vraie expertise : cadrage du brief, adéquation de l'intervenant,
+                gestion des imprévus. Notre rôle est de{" "}
+                <strong className="text-foreground">conseiller, coordonner et garantir un événement fluide</strong>,
+                sans mauvaise surprise.
+              </p>
               <ul className="space-y-3">
                 {[
                   "20 ans d'expertise — chaque recommandation est éprouvée",
@@ -372,8 +378,10 @@ const Index = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">Conférenciers à la Une</h2>
-              <p className="text-muted-foreground">Les profils les plus demandés du moment</p>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">
+                Les conférenciers avec qui nous travaillons Conférenciers
+              </h2>
+              <p className="text-muted-foreground">Nous avons une relation privilégiée avec tous les profils</p>
             </div>
             <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/speakers")}>
               Voir tous <ArrowRight className="h-4 w-4" />
