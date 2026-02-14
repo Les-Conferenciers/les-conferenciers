@@ -106,6 +106,7 @@ export type Database = {
           slug: string
           themes: string[] | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           biography?: string | null
@@ -122,6 +123,7 @@ export type Database = {
           slug: string
           themes?: string[] | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           biography?: string | null
@@ -138,6 +140,7 @@ export type Database = {
           slug?: string
           themes?: string[] | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: []
       }
