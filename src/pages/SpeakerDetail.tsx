@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles } from "lucide-react";
+import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles, Play } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { useEffect, useState } from "react";
@@ -485,12 +485,48 @@ const SpeakerDetail = () => {
                             <p className="text-sm text-foreground font-medium">{conf.bonus}</p>
                           </div>
                         )}
+                        <div className="pt-2">
+                          <Button
+                            variant="outline"
+                            className="border-accent text-accent hover:bg-accent hover:text-accent-foreground font-semibold rounded-xl gap-2"
+                            onClick={() => navigate(`/contact?speaker=${encodeURIComponent(speaker.name)}&conference=${encodeURIComponent(conf.title)}`)}
+                          >
+                            <Mail className="h-4 w-4" /> Ça m'intéresse
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </section>
             )}
+
+            {/* Video */}
+            {(speaker as any).video_url && (() => {
+              const videoUrl = (speaker as any).video_url as string;
+              const videoId = videoUrl.match(/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]{11})/)?.[1];
+              return videoId ? (
+                <section>
+                  <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                    <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                    <Play className="h-5 w-5 text-accent" />
+                    Vidéo de conférence
+                  </h2>
+                  <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm">
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        className="absolute inset-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title={`Conférence de ${speaker.name}`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                </section>
+              ) : null;
+            })()}
 
             {/* Why choose this speaker */}
             <section>
@@ -575,7 +611,7 @@ const SpeakerDetail = () => {
               </p>
               <Button
                 className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-2"
-                onClick={() => navigate("/contact")}
+                onClick={() => navigate(`/contact?speaker=${encodeURIComponent(speaker.name)}`)}
               >
                 <Mail className="h-4 w-4" /> Demander un devis
               </Button>
