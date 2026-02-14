@@ -378,10 +378,10 @@ const Index = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">Les conférenciers dans notre agence
+              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">Notre catalogue de conférenciers inspirants
 
               </h2>
-              <p className="text-muted-foreground">Nous avons une relation privilégiée avec tous les profils</p>
+              <p className="text-muted-foreground">Vous allez forcément trouver celui qui correspond à l'objectif de votre événement</p>
             </div>
             <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/speakers")}>
               Voir tous <ArrowRight className="h-4 w-4" />
