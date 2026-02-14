@@ -281,12 +281,12 @@ const Index = () => {
                 faire <strong className="text-foreground">gagner du temps</strong> et{" "}
                 <strong className="text-foreground">sécuriser chaque étape</strong> de l'organisation.
               </p>
-              <p className="text-muted-foreground leading-relaxed">
-                Organiser une conférence demande une vraie expertise : cadrage du brief, adéquation de l'intervenant,
-                gestion des imprévus. Notre rôle est de{" "}
-                <strong className="text-foreground">conseiller, coordonner et garantir un événement fluide</strong>,
-                sans mauvaise surprise.
-              </p>
+              
+
+
+
+
+
               <ul className="space-y-3">
                 {[
                 "20 ans d'expertise — chaque recommandation est éprouvée",
