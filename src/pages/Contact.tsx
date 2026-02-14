@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,15 +37,28 @@ const CLIENT_LOGOS = [
 
 const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
+  const [searchParams] = useSearchParams();
+  const speakerName = searchParams.get("speaker") || "";
+  const conferenceName = searchParams.get("conference") || "";
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    setValue,
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
   });
+
+  useEffect(() => {
+    if (speakerName) {
+      const prefill = conferenceName
+        ? `Je suis intéressé(e) par la conférence « ${conferenceName} » de ${speakerName}.`
+        : `Je suis intéressé(e) par le profil de ${speakerName}.`;
+      setValue("message", prefill);
+    }
+  }, [speakerName, conferenceName, setValue]);
 
   const onSubmit = async (data: ContactFormData) => {
     await new Promise((r) => setTimeout(r, 800));
