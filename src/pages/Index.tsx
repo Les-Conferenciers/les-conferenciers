@@ -162,8 +162,8 @@ const Index = () => {
               <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-5">
                 Le problème
               </span>
-              <h2 className="text-3xl font-serif font-bold leading-tight mb-10 md:text-4xl">
-                Trouvez l'orateur idéal n'est pas chose aisée
+              <h2 className="text-3xl font-serif font-bold leading-tight mb-10 md:text-4xl">Trouvez l'orateur idéal
+n'est pas chose aisée
                 <br />
                 <span className="text-accent italic">n'est pas chose aisée</span>
               </h2>
