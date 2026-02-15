@@ -79,6 +79,7 @@ type SpeakerResult = {
 
 const SpeakerSimulator = () => {
   const navigate = useNavigate();
+  const [started, setStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [phase, setPhase] = useState<"form" | "searching" | "results" | "maxed">("form");
 
@@ -100,8 +101,6 @@ const SpeakerSimulator = () => {
   const [searchMessageIndex, setSearchMessageIndex] = useState(0);
   const [searchCount, setSearchCount] = useState(0);
 
-  const completionPercent = Math.round(((currentStep + 1) / TOTAL_STEPS) * 100);
-
   const stepCompleted = useCallback((step: number) => {
     switch (step) {
       case 0: return !!eventType;
@@ -116,14 +115,16 @@ const SpeakerSimulator = () => {
 
   const canProceed = stepCompleted(currentStep);
 
+  const completionPercent = Math.round((currentStep / TOTAL_STEPS) * 100 + (canProceed ? (1 / TOTAL_STEPS) * 100 : 0));
+
   const gamificationMessage = () => {
-    if (currentStep === 0 && eventType) return "🎯 Parfait ! On avance…";
-    if (currentStep === 1 && audienceSize) return "👥 Très bien ! On y est presque…";
-    if (currentStep === 2 && selectedThemes.length === 3) return "🔥 Excellent choix de thématiques !";
-    if (currentStep === 2 && selectedThemes.length > 0) return "✨ Bon choix ! Vous pouvez en ajouter jusqu'à 3.";
-    if (currentStep === 3 && objective) return "🏆 Objectif clair, résultat assuré !";
-    if (currentStep === 4 && budget) return "💰 Noté ! Dernière étape…";
-    if (currentStep === 5) return "🚀 Vous y êtes ! Lancez la recherche.";
+    if (currentStep === 0 && eventType) return "Excellent choix — nous adaptons notre recherche à votre format.";
+    if (currentStep === 1 && audienceSize) return "Bien noté. La taille de l'audience influence le choix du profil.";
+    if (currentStep === 2 && selectedThemes.length === 3) return "Trois thématiques sélectionnées — combinaison optimale pour un matching précis.";
+    if (currentStep === 2 && selectedThemes.length > 0) return "Vous pouvez sélectionner jusqu'à 3 thématiques pour affiner les résultats.";
+    if (currentStep === 3 && objective) return "Objectif défini — notre algorithme va prioriser les profils les plus pertinents.";
+    if (currentStep === 4 && budget) return "Parfait. Plus qu'une dernière étape avant votre sélection personnalisée.";
+    if (currentStep === 5) return "Tout est prêt. Lancez la recherche pour découvrir vos profils recommandés.";
     return null;
   };
 
@@ -262,8 +263,34 @@ const SpeakerSimulator = () => {
           </p>
         </div>
 
+        {/* ===== CTA GATE ===== */}
+        {!started && phase === "form" && (
+          <div className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl p-10 md:p-14 text-center space-y-8">
+            <div className="mx-auto w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
+              <Sparkles className="h-8 w-8 text-accent" />
+            </div>
+            <div className="space-y-3 max-w-xl mx-auto">
+              <h3 className="text-2xl md:text-3xl font-serif font-bold text-primary-foreground">
+                Identifiez le conférencier idéal en 60 secondes
+              </h3>
+              <p className="text-primary-foreground/60 text-lg">
+                6 questions, un algorithme de matching et une sélection sur-mesure parmi nos 161+ profils qualifiés.
+              </p>
+            </div>
+            <Button
+              size="lg"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-10 gap-2 text-base"
+              onClick={() => setStarted(true)}
+            >
+              <Target className="h-5 w-5" />
+              Démarrer votre profiling
+            </Button>
+            <p className="text-primary-foreground/30 text-xs">Gratuit • Sans engagement • Résultat immédiat</p>
+          </div>
+        )}
+
         {/* ===== FORM PHASE ===== */}
-        {phase === "form" && (
+        {started && phase === "form" && (
           <div className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl p-8 md:p-10 space-y-8">
             {/* Progress bar */}
             <div className="space-y-2">
