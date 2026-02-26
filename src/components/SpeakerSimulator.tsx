@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   Sparkles, Users, Target, ArrowRight, RotateCcw,
-  MapPin, Euro, Trophy, Search, CheckCircle2, MessageCircle
+  MapPin, Euro, Trophy, Search, CheckCircle2, MessageCircle,
+  Lock, Mail, User
 } from "lucide-react";
 
 const EVENT_TYPES = [
@@ -65,6 +66,14 @@ const SEARCH_MESSAGES = [
   "Finalisation de votre sélection personnalisée…",
 ];
 
+const BLOCKED_DOMAINS = [
+  "gmail.com", "yahoo.com", "yahoo.fr", "hotmail.com", "hotmail.fr",
+  "outlook.com", "outlook.fr", "live.com", "live.fr", "aol.com",
+  "icloud.com", "me.com", "mac.com", "mail.com", "protonmail.com",
+  "proton.me", "gmx.com", "gmx.fr", "orange.fr", "free.fr",
+  "sfr.fr", "laposte.net", "wanadoo.fr", "yandex.com",
+];
+
 const STEP_LABELS = ["Événement", "Audience", "Thématiques", "Objectif", "Budget & Lieu", "Détails"];
 const TOTAL_STEPS = 6;
 
@@ -94,6 +103,13 @@ const SpeakerSimulator = () => {
   const [budget, setBudget] = useState("");
   const [location, setLocation] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
+
+  // Lead capture state
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [leadCaptured, setLeadCaptured] = useState(false);
 
   // Results state
   const [results, setResults] = useState<SpeakerResult[]>([]);
@@ -135,6 +151,31 @@ const SpeakerSimulator = () => {
         ? prev.filter((t) => t !== theme)
         : prev.length < 3 ? [...prev, theme] : prev
     );
+  };
+
+  const validateEmail = (value: string): string => {
+    if (!value) return "L'email est requis.";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) return "Veuillez saisir un email valide.";
+    const domain = value.split("@")[1]?.toLowerCase();
+    if (BLOCKED_DOMAINS.includes(domain)) {
+      return "Merci d'utiliser votre email professionnel (les adresses personnelles ne sont pas acceptées).";
+    }
+    return "";
+  };
+
+  const handleLeadSubmit = () => {
+    const error = validateEmail(email);
+    if (error) {
+      setEmailError(error);
+      return;
+    }
+    if (!firstName.trim() || !lastName.trim()) {
+      setEmailError("Le prénom et le nom sont requis.");
+      return;
+    }
+    setEmailError("");
+    setLeadCaptured(true);
   };
 
   const handleSearch = async () => {
@@ -184,8 +225,6 @@ const SpeakerSimulator = () => {
     scored.sort((a, b) => b.score - a.score);
     const top3 = scored.slice(0, 3).map(({ score, ...rest }) => rest);
     setResults(top3);
-
-    // The actual reveal happens after the 10s timer finishes
   };
 
   // Search animation timer
@@ -237,6 +276,11 @@ const SpeakerSimulator = () => {
       setBudget("");
       setLocation("");
       setAdditionalInfo("");
+      setLeadCaptured(false);
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setEmailError("");
     }
   };
 
@@ -265,18 +309,7 @@ const SpeakerSimulator = () => {
 
         {/* ===== CTA GATE ===== */}
         {!started && phase === "form" && (
-          <div className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl p-10 md:p-14 text-center space-y-8">
-            <div className="mx-auto w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
-              <Sparkles className="h-8 w-8 text-accent" />
-            </div>
-            <div className="space-y-3 max-w-xl mx-auto">
-              <h3 className="text-2xl md:text-3xl font-serif font-bold text-primary-foreground">
-                Identifiez le conférencier idéal en 60 secondes
-              </h3>
-              <p className="text-primary-foreground/60 text-lg">
-                6 questions, un algorithme de matching et une sélection sur-mesure parmi nos 161+ profils qualifiés.
-              </p>
-            </div>
+          <div className="text-center">
             <Button
               size="lg"
               className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-10 gap-2 text-base"
@@ -285,7 +318,7 @@ const SpeakerSimulator = () => {
               <Target className="h-5 w-5" />
               Démarrer votre profiling
             </Button>
-            <p className="text-primary-foreground/30 text-xs">Gratuit • Sans engagement • Résultat immédiat</p>
+            <p className="text-primary-foreground/30 text-xs mt-3">Gratuit • Sans engagement</p>
           </div>
         )}
 
@@ -390,7 +423,6 @@ const SpeakerSimulator = () => {
                     </button>
                   ))}
                 </div>
-                {/* Custom theme input always visible when "Autre" is in THEMES */}
                 <input
                   value={customTheme}
                   onChange={(e) => setCustomTheme(e.target.value)}
@@ -565,92 +597,167 @@ const SpeakerSimulator = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {results.map((speaker, idx) => (
-                <div
-                  key={speaker.slug}
-                  className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl overflow-hidden hover:border-accent/40 transition-all group"
-                  style={{ animationDelay: `${idx * 200}ms` }}
-                >
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold flex-shrink-0">
-                        {idx + 1}
-                      </span>
-                      {speaker.image_url && (
-                        <img
-                          src={speaker.image_url}
-                          alt={speaker.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-accent/30"
-                          loading="lazy"
-                        />
-                      )}
-                      <div>
-                        <h3 className="text-lg font-serif font-bold text-primary-foreground leading-tight">
-                          {speaker.name}
-                        </h3>
-                        {speaker.role && (
-                          <p className="text-primary-foreground/50 text-xs line-clamp-1">{speaker.role}</p>
+            {/* Blurred results preview */}
+            <div className="relative">
+              <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-500 ${!leadCaptured ? "blur-md pointer-events-none select-none" : ""}`}>
+                {results.map((speaker, idx) => (
+                  <div
+                    key={speaker.slug}
+                    className="bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10 rounded-2xl overflow-hidden hover:border-accent/40 transition-all group"
+                    style={{ animationDelay: `${idx * 200}ms` }}
+                  >
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-bold flex-shrink-0">
+                          {idx + 1}
+                        </span>
+                        {speaker.image_url && (
+                          <img
+                            src={speaker.image_url}
+                            alt={speaker.name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-accent/30"
+                            loading="lazy"
+                          />
                         )}
+                        <div>
+                          <h3 className="text-lg font-serif font-bold text-primary-foreground leading-tight">
+                            {speaker.name}
+                          </h3>
+                          {speaker.role && (
+                            <p className="text-primary-foreground/50 text-xs line-clamp-1">{speaker.role}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <ul className="space-y-1.5">
+                        {speaker.matchReasons.map((reason, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-primary-foreground/70">
+                            <svg className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>{reason}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="flex flex-col gap-2 pt-2">
+                        <Button
+                          className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-1 text-sm"
+                          onClick={() => handleContactClick(speaker)}
+                        >
+                          Ça m'intéresse <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full text-accent hover:text-accent hover:bg-accent/10 rounded-xl text-sm font-medium"
+                          onClick={() => navigate(`/speakers/${speaker.slug}`)}
+                        >
+                          Voir le profil
+                        </Button>
                       </div>
                     </div>
-
-                    <ul className="space-y-1.5">
-                      {speaker.matchReasons.map((reason, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-primary-foreground/70">
-                          <svg className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>{reason}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="flex flex-col gap-2 pt-2">
-                      <Button
-                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-1 text-sm"
-                        onClick={() => handleContactClick(speaker)}
-                      >
-                        Ça m'intéresse <ArrowRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full text-accent hover:text-accent hover:bg-accent/10 rounded-xl text-sm font-medium"
-                        onClick={() => navigate(`/speakers/${speaker.slug}`)}
-                      >
-                        Voir le profil
-                      </Button>
-                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div className="text-center pt-4">
-              {searchCount < 2 ? (
-                <Button
-                  variant="ghost"
-                  className="text-primary-foreground/50 hover:text-primary-foreground hover:bg-primary-foreground/5 gap-2"
-                  onClick={handleRetry}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Relancer la recherche ({2 - searchCount} essai{2 - searchCount > 1 ? "s" : ""} restant{2 - searchCount > 1 ? "s" : ""})
-                </Button>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-primary-foreground/50 text-sm">
-                    Vous avez utilisé vos 2 recherches. Contactez-nous pour affiner humainement votre sélection !
-                  </p>
-                  <Button
-                    className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-8 gap-2"
-                    onClick={() => navigate("/contact")}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    Nous contacter directement
-                  </Button>
+              {/* Lead capture overlay */}
+              {!leadCaptured && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-primary border border-primary-foreground/15 rounded-2xl p-8 md:p-10 max-w-md w-full mx-4 shadow-2xl space-y-6">
+                    <div className="text-center space-y-3">
+                      <div className="mx-auto w-12 h-12 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
+                        <Lock className="h-6 w-6 text-accent" />
+                      </div>
+                      <h3 className="text-xl font-serif font-bold text-primary-foreground">
+                        Votre sélection est prête
+                      </h3>
+                      <p className="text-primary-foreground/50 text-sm">
+                        Recevez vos 3 profils recommandés directement par email pour les consulter à tout moment.
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-foreground/30" />
+                          <input
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            placeholder="Prénom"
+                            className="w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent/40"
+                          />
+                        </div>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-foreground/30" />
+                          <input
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            placeholder="Nom"
+                            className="w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent/40"
+                          />
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-foreground/30" />
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                            if (emailError) setEmailError("");
+                          }}
+                          placeholder="Email professionnel"
+                          className="w-full rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/30 pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent/40"
+                        />
+                      </div>
+                      {emailError && (
+                        <p className="text-red-400 text-xs px-1">{emailError}</p>
+                      )}
+                    </div>
+
+                    <Button
+                      size="lg"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl gap-2"
+                      onClick={handleLeadSubmit}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Recevoir ma sélection
+                    </Button>
+                    <p className="text-primary-foreground/25 text-[11px] text-center">
+                      Vos données sont confidentielles et ne seront jamais partagées.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
+
+            {leadCaptured && (
+              <div className="text-center pt-4">
+                {searchCount < 2 ? (
+                  <Button
+                    variant="ghost"
+                    className="text-primary-foreground/50 hover:text-primary-foreground hover:bg-primary-foreground/5 gap-2"
+                    onClick={handleRetry}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Relancer la recherche ({2 - searchCount} essai{2 - searchCount > 1 ? "s" : ""} restant{2 - searchCount > 1 ? "s" : ""})
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-primary-foreground/50 text-sm">
+                      Vous avez utilisé vos 2 recherches. Contactez-nous pour affiner humainement votre sélection !
+                    </p>
+                    <Button
+                      className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl px-8 gap-2"
+                      onClick={() => navigate("/contact")}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Nous contacter directement
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
