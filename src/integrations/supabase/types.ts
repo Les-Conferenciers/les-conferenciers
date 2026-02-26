@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      proposal_speakers: {
+        Row: {
+          agency_commission: number | null
+          created_at: string
+          display_order: number | null
+          id: string
+          proposal_id: string
+          speaker_fee: number | null
+          speaker_id: string
+          total_price: number | null
+          travel_costs: number | null
+        }
+        Insert: {
+          agency_commission?: number | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          proposal_id: string
+          speaker_fee?: number | null
+          speaker_id: string
+          total_price?: number | null
+          travel_costs?: number | null
+        }
+        Update: {
+          agency_commission?: number | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          proposal_id?: string
+          speaker_fee?: number | null
+          speaker_id?: string
+          total_price?: number | null
+          travel_costs?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_speakers_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_speakers_speaker_id_fkey"
+            columns: ["speaker_id"]
+            isOneToOne: false
+            referencedRelation: "speakers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          client_email: string
+          client_name: string
+          created_at: string
+          expires_at: string
+          id: string
+          message: string | null
+          sent_at: string | null
+          status: string
+          token: string
+        }
+        Insert: {
+          client_email: string
+          client_name: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          message?: string | null
+          sent_at?: string | null
+          status?: string
+          token?: string
+        }
+        Update: {
+          client_email?: string
+          client_name?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          message?: string | null
+          sent_at?: string | null
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           author_name: string
