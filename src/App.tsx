@@ -12,6 +12,8 @@ import BlogArticle from "./pages/BlogArticle";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
+import AdminProposals from "./pages/AdminProposals";
+import ProposalView from "./pages/ProposalView";
 
 const queryClient = new QueryClient();
 
