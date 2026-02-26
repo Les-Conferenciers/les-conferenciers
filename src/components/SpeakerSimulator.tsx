@@ -164,7 +164,7 @@ const SpeakerSimulator = () => {
     return "";
   };
 
-  const handleLeadSubmit = () => {
+  const handleLeadSubmit = async () => {
     const error = validateEmail(email);
     if (error) {
       setEmailError(error);
@@ -175,6 +175,25 @@ const SpeakerSimulator = () => {
       return;
     }
     setEmailError("");
+
+    const effectiveThemes = [...selectedThemes, customTheme].filter(Boolean);
+    const effectiveObjective = objective === "Autre" ? customObjective : objective;
+    const effectiveEventType = eventType === "Autre" ? customEventType : eventType;
+
+    await supabase.from("simulator_leads").insert({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      email: email.trim(),
+      event_type: effectiveEventType || null,
+      audience_size: audienceSize || null,
+      themes: effectiveThemes.length > 0 ? effectiveThemes : null,
+      objective: effectiveObjective || null,
+      budget: budget || null,
+      location: location || null,
+      additional_info: additionalInfo || null,
+      suggested_speakers: results.map((s) => s.name),
+    });
+
     setLeadCaptured(true);
   };
 
