@@ -49,6 +49,54 @@ export type Database = {
           },
         ]
       }
+      simulator_leads: {
+        Row: {
+          additional_info: string | null
+          audience_size: string | null
+          budget: string | null
+          created_at: string
+          email: string
+          event_type: string | null
+          first_name: string
+          id: string
+          last_name: string
+          location: string | null
+          objective: string | null
+          suggested_speakers: string[] | null
+          themes: string[] | null
+        }
+        Insert: {
+          additional_info?: string | null
+          audience_size?: string | null
+          budget?: string | null
+          created_at?: string
+          email: string
+          event_type?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          location?: string | null
+          objective?: string | null
+          suggested_speakers?: string[] | null
+          themes?: string[] | null
+        }
+        Update: {
+          additional_info?: string | null
+          audience_size?: string | null
+          budget?: string | null
+          created_at?: string
+          email?: string
+          event_type?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          location?: string | null
+          objective?: string | null
+          suggested_speakers?: string[] | null
+          themes?: string[] | null
+        }
+        Relationships: []
+      }
       speaker_conferences: {
         Row: {
           bonus: string | null
