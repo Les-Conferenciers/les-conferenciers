@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { LogOut, RefreshCw } from "lucide-react";
+import { LogOut, RefreshCw, FileText } from "lucide-react";
 
 type Lead = {
   id: string;
@@ -66,6 +66,9 @@ const Admin = () => {
       <header className="border-b border-border px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-serif font-bold text-foreground">Leads Simulateur</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/admin/propositions")} className="gap-2">
+            <FileText className="h-4 w-4" /> Propositions
+          </Button>
           <Button variant="ghost" size="sm" onClick={fetchLeads} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
