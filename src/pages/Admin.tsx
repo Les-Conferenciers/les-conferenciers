@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { LogOut, RefreshCw } from "lucide-react";
+import { LogOut, RefreshCw, FileText } from "lucide-react";
 
 type Lead = {
   id: string;
