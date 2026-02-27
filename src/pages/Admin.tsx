@@ -410,11 +410,13 @@ const AdminProposalsContent = () => {
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     isExpired(p.expires_at)
                       ? "bg-destructive/10 text-destructive"
+                      : p.status === "archived"
+                      ? "bg-muted text-muted-foreground"
                       : p.status === "sent"
                       ? "bg-green-100 text-green-700"
                       : "bg-muted text-muted-foreground"
                   }`}>
-                    {isExpired(p.expires_at) ? "Expiré" : p.status === "sent" ? "Envoyé" : "Brouillon"}
+                    {isExpired(p.expires_at) ? "Expiré" : p.status === "archived" ? "Archivé" : p.status === "sent" ? "Envoyé" : "Brouillon"}
                   </span>
                 </TableCell>
                 <TableCell className="text-xs whitespace-nowrap">{formatDate(p.expires_at)}</TableCell>
