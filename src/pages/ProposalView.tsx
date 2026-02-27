@@ -53,7 +53,7 @@ const ProposalView = () => {
 
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, client_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, speakers(name, role, image_url, themes, biography, slug, city))")
+        .select("id, client_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, speakers(name, role, image_url, themes, biography, key_points, slug, city, speaker_conferences(title, description)))")
         .eq("token", token)
         .single();
 
