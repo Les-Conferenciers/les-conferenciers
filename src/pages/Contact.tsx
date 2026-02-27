@@ -199,15 +199,11 @@ const Contact = () => {
 
             {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
-              <div className="relative">
-                <img
-                  src={nellySabde}
-                  alt="Nelly, fondatrice de l'agence"
-                  className="w-full h-48 object-cover object-top"
-                />
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-card via-card/80 to-transparent h-16" />
-              </div>
-              <div className="px-5 pb-5 -mt-4 relative">
+              <img
+                src={nellySabde}
+                alt="Nelly, fondatrice de l'agence"
+                className="w-full object-cover object-top aspect-[3/4]"
+              />
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mt-1.5">
                   Elle connaît en profondeur chaque conférencier du catalogue et vous accompagne personnellement de A à Z.
