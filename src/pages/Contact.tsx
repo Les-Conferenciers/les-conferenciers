@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send, CheckCircle2, Clock, Star } from "lucide-react";
-import nellySabde from "@/assets/nelly-sabde.jpg";
+import nellySelfies from "@/assets/nelly-selfies.png";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
