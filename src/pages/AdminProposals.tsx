@@ -14,7 +14,7 @@ import {
 import { ArrowLeft, Plus, Send, Trash2, ExternalLink, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
-type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null };
+type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
 type ProposalSpeaker = {
   speaker_id: string;
   speaker_fee: number | null;
@@ -43,6 +43,8 @@ type Proposal = {
     speakers: { name: string } | null;
   }[];
 };
+
+const COMMISSION = 1000;
 
 const AdminProposals = () => {
   const navigate = useNavigate();
@@ -82,7 +84,7 @@ const AdminProposals = () => {
   const fetchSpeakers = async () => {
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, image_url, role, themes")
+      .select("id, name, image_url, role, themes, base_fee, city")
       .order("name");
     setSpeakers(data || []);
   };
@@ -90,12 +92,17 @@ const AdminProposals = () => {
   const addSpeaker = (speaker: Speaker) => {
     if (selectedSpeakers.length >= 3) { toast.error("Maximum 3 conférenciers"); return; }
     if (selectedSpeakers.find(s => s.speaker_id === speaker.id)) { toast.error("Déjà ajouté"); return; }
+
+    const baseFee = speaker.base_fee ?? 0;
+    const commission = COMMISSION;
+    const totalPrice = baseFee + commission;
+
     setSelectedSpeakers(prev => [...prev, {
       speaker_id: speaker.id,
-      speaker_fee: null,
+      speaker_fee: baseFee || null,
       travel_costs: null,
-      agency_commission: null,
-      total_price: null,
+      agency_commission: commission,
+      total_price: totalPrice || null,
       display_order: prev.length,
     }]);
   };
@@ -105,12 +112,22 @@ const AdminProposals = () => {
   };
 
   const updateSpeakerField = (speakerId: string, field: keyof ProposalSpeaker, value: number | null) => {
-    setSelectedSpeakers(prev => prev.map(s =>
-      s.speaker_id === speakerId ? { ...s, [field]: value } : s
-    ));
+    setSelectedSpeakers(prev => prev.map(s => {
+      if (s.speaker_id !== speakerId) return s;
+      const updated = { ...s, [field]: value };
+      // Auto-recalc total_price when sub-fields change
+      if (field !== "total_price" && field !== "display_order") {
+        const fee = field === "speaker_fee" ? value : updated.speaker_fee;
+        const travel = field === "travel_costs" ? value : updated.travel_costs;
+        const commission = field === "agency_commission" ? value : updated.agency_commission;
+        updated.total_price = (fee || 0) + (travel || 0) + (commission || 0) || null;
+      }
+      return updated;
+    }));
   };
 
   const getSpeakerName = (id: string) => speakers.find(s => s.id === id)?.name || "—";
+  const getSpeakerCity = (id: string) => speakers.find(s => s.id === id)?.city || null;
 
   const handleCreate = async () => {
     if (!clientName || !clientEmail || selectedSpeakers.length === 0) {
@@ -222,34 +239,43 @@ const AdminProposals = () => {
               {/* Speaker selection */}
               <div className="space-y-3">
                 <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
-                {selectedSpeakers.map(ps => (
-                  <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
-                      <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                {selectedSpeakers.map(ps => {
+                  const city = getSpeakerCity(ps.speaker_id);
+                  return (
+                    <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
+                          {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
+                          <Input type="number" placeholder="0" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label>
+                          <Input type="number" placeholder="0" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Commission agence (€)</Label>
+                          <Input type="number" placeholder="1000" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Prix total TTC (€) — auto-calculé</Label>
+                          <Input type="number" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} className="font-bold" />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Tarif de base en BDD : {speakers.find(s => s.id === ps.speaker_id)?.base_fee?.toLocaleString("fr-FR") ?? "non renseigné"} € · Commission auto : +{COMMISSION.toLocaleString("fr-FR")} €
+                      </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Cachet (€)</Label>
-                        <Input type="number" placeholder="0" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label>
-                        <Input type="number" placeholder="0" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Commission agence (€)</Label>
-                        <Input type="number" placeholder="0" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label>
-                        <Input type="number" placeholder="0" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {selectedSpeakers.length < 3 && (
                   <div className="border border-dashed border-border rounded-lg p-3">
                     <Label className="text-xs text-muted-foreground mb-2 block">Ajouter un conférencier</Label>
@@ -265,7 +291,9 @@ const AdminProposals = () => {
                       {speakers
                         .filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id))
                         .map(s => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
+                          <option key={s.id} value={s.id}>
+                            {s.name}{s.base_fee ? ` — ${s.base_fee.toLocaleString("fr-FR")} €` : ""}{s.city ? ` (${s.city})` : ""}
+                          </option>
                         ))}
                     </select>
                   </div>
@@ -327,18 +355,16 @@ const AdminProposals = () => {
                           <ExternalLink className="h-4 w-4" />
                         </a>
                       </Button>
-                      {!isExpired(p.expires_at) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1"
-                          onClick={() => handleSend(p)}
-                          disabled={sending === p.id}
-                        >
-                          <Send className="h-3 w-3" />
-                          {sending === p.id ? "Envoi…" : "Envoyer"}
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => handleSend(p)}
+                        disabled={sending === p.id}
+                      >
+                        <Send className="h-3 w-3" />
+                        {sending === p.id ? "Envoi…" : "Envoyer"}
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

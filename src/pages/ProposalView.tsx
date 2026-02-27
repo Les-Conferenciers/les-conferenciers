@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, Mail, User } from "lucide-react";
+import { Clock, Mail, User, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import nugget from "@/assets/nugget.png";
 
 type ProposalData = {
   id: string;
@@ -12,6 +13,7 @@ type ProposalData = {
   created_at: string;
   proposal_speakers: {
     total_price: number | null;
+    travel_costs: number | null;
     display_order: number;
     speakers: {
       name: string;
@@ -20,6 +22,7 @@ type ProposalData = {
       themes: string[] | null;
       biography: string | null;
       slug: string;
+      city: string | null;
     };
   }[];
 };
@@ -30,36 +33,41 @@ const ProposalView = () => {
   const [loading, setLoading] = useState(true);
   const [expired, setExpired] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const fetch = async () => {
+    const init = async () => {
+      // Check if admin is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      const admin = !!session;
+      setIsAdmin(admin);
+
       if (!token) { setNotFound(true); setLoading(false); return; }
 
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, client_name, message, expires_at, created_at, proposal_speakers(total_price, display_order, speakers(name, role, image_url, themes, biography, slug))")
+        .select("id, client_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, speakers(name, role, image_url, themes, biography, slug, city))")
         .eq("token", token)
         .single();
 
       if (error || !data) {
-        // Could be expired (RLS blocks it) or truly not found
         setNotFound(true);
         setLoading(false);
         return;
       }
 
-      if (new Date(data.expires_at) < new Date()) {
+      // Only block non-admin users when expired
+      if (!admin && new Date(data.expires_at) < new Date()) {
         setExpired(true);
         setLoading(false);
         return;
       }
 
-      // Sort speakers by display_order
       (data as any).proposal_speakers?.sort((a: any, b: any) => a.display_order - b.display_order);
       setProposal(data as any);
       setLoading(false);
     };
-    fetch();
+    init();
   }, [token]);
 
   if (loading) {
@@ -86,7 +94,7 @@ const ProposalView = () => {
               : "Le lien que vous avez utilisé n'est pas valide."}
           </p>
           <Button asChild variant="outline">
-            <a href="mailto:contact@lesconferenciers.com">
+            <a href="mailto:nellysabde@lesconferenciers.com">
               <Mail className="h-4 w-4 mr-2" /> Nous contacter
             </a>
           </Button>
@@ -97,26 +105,42 @@ const ProposalView = () => {
 
   if (!proposal) return null;
 
+  const isProposalExpired = new Date(proposal.expires_at) < new Date();
   const daysLeft = Math.max(0, Math.ceil((new Date(proposal.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Admin banner */}
+      {isAdmin && isProposalExpired && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 text-center py-2 text-xs text-amber-700 font-medium">
+          ⚠️ Cette proposition est expirée pour le client — visible uniquement en mode admin
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 px-4">
         <div className="max-w-4xl mx-auto text-center space-y-3">
-          <p className="text-sm uppercase tracking-widest opacity-70">Les Conférenciers</p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <img src={nugget} alt="" className="h-6 w-6" />
+            <p className="text-sm uppercase tracking-widest opacity-70">Les Conférenciers</p>
+          </div>
           <h1 className="text-3xl md:text-4xl font-serif font-bold">Votre sélection personnalisée</h1>
+          {proposal.client_name && (
+            <p className="text-sm opacity-80">Pour {proposal.client_name}</p>
+          )}
           {proposal.message && (
             <p className="text-sm opacity-80 max-w-xl mx-auto mt-4">{proposal.message}</p>
           )}
-          <div className="flex items-center justify-center gap-2 mt-4 text-xs opacity-60">
-            <Clock className="h-3 w-3" />
-            <span>Valide encore {daysLeft} jour{daysLeft !== 1 ? "s" : ""}</span>
-          </div>
+          {!isProposalExpired && (
+            <div className="flex items-center justify-center gap-2 mt-4 text-xs opacity-60">
+              <Clock className="h-3 w-3" />
+              <span>Valide encore {daysLeft} jour{daysLeft !== 1 ? "s" : ""}</span>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Speakers */}
+      {/* Speaker Cards */}
       <main className="max-w-4xl mx-auto px-4 py-12 space-y-8">
         {proposal.proposal_speakers.map((ps, i) => {
           const speaker = ps.speakers as any;
@@ -145,6 +169,11 @@ const ProposalView = () => {
                   <div>
                     <h2 className="text-2xl font-serif font-bold text-foreground">{speaker.name}</h2>
                     {speaker.role && <p className="text-sm text-muted-foreground mt-1">{speaker.role}</p>}
+                    {speaker.city && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> {speaker.city}
+                      </p>
+                    )}
                   </div>
 
                   {speaker.themes && speaker.themes.length > 0 && (
@@ -158,26 +187,61 @@ const ProposalView = () => {
                   {speaker.biography && (
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">{speaker.biography}</p>
                   )}
-
-                  {ps.total_price && (
-                    <div className="pt-4 border-t border-border">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-foreground">{ps.total_price.toLocaleString("fr-FR")} €</span>
-                        <span className="text-xs text-muted-foreground">TTC</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           );
         })}
 
+        {/* Tariffs Section */}
+        <div className="border border-border rounded-2xl bg-card p-6 md:p-8">
+          <h2 className="text-xl font-serif font-bold text-foreground mb-6">Tarifs proposés</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 pr-4 font-medium text-muted-foreground">Conférencier</th>
+                  <th className="text-left py-3 pr-4 font-medium text-muted-foreground">Localisation</th>
+                  <th className="text-right py-3 pr-4 font-medium text-muted-foreground">Frais de déplacement</th>
+                  <th className="text-right py-3 font-medium text-muted-foreground">Prix total TTC</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proposal.proposal_speakers.map((ps, i) => {
+                  const speaker = ps.speakers as any;
+                  if (!speaker) return null;
+                  return (
+                    <tr key={i} className="border-b border-border/50 last:border-0">
+                      <td className="py-4 pr-4">
+                        <span className="font-medium text-foreground">{speaker.name}</span>
+                      </td>
+                      <td className="py-4 pr-4 text-muted-foreground">
+                        {speaker.city || "—"}
+                      </td>
+                      <td className="py-4 pr-4 text-right text-muted-foreground">
+                        {ps.travel_costs ? `${ps.travel_costs.toLocaleString("fr-FR")} €` : "Inclus"}
+                      </td>
+                      <td className="py-4 text-right">
+                        {ps.total_price ? (
+                          <span className="font-bold text-foreground text-lg">{ps.total_price.toLocaleString("fr-FR")} €</span>
+                        ) : "Sur devis"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4 italic">
+            Les tarifs incluent la prestation du conférencier et la commission d'agence. Les frais de déplacement sont indiqués séparément le cas échéant.
+          </p>
+        </div>
+
         {/* CTA */}
         <div className="text-center pt-8 space-y-4">
           <p className="text-muted-foreground text-sm">Un profil vous intéresse ? Contactez-nous pour concrétiser votre événement.</p>
           <Button asChild size="lg">
-            <a href="mailto:contact@lesconferenciers.com?subject=Suite à votre proposition">
+            <a href="mailto:nellysabde@lesconferenciers.com?subject=Suite à votre proposition">
               <Mail className="h-4 w-4 mr-2" /> Répondre à cette proposition
             </a>
           </Button>
