@@ -11,8 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Send, CheckCircle2, Shield, Clock, Star } from "lucide-react";
-import nellySelfies from "@/assets/nelly-selfies.png";
+import { Send, CheckCircle2, Clock, Star } from "lucide-react";
+import nellySabde from "@/assets/nelly-sabde.jpg";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -96,7 +96,7 @@ const Contact = () => {
             Trouvez le conférencier idéal
           </h1>
           <p className="text-primary-foreground/75 max-w-lg mx-auto text-base">
-            Décrivez votre projet, recevez une sélection personnalisée sous 24h.
+            Parlez-nous de votre projet et recevez une proposition personnalisée sous 24h
           </p>
         </div>
       </div>
@@ -186,8 +186,7 @@ const Contact = () => {
                   </Button>
 
                   <div className="flex flex-wrap items-center justify-center gap-5 pt-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-accent" /> Sans engagement</span>
-                    <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-accent" /> Réponse 24h</span>
+                    <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-accent" /> Réponse sous 24h</span>
                     <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-accent" /> Devis gratuit</span>
                   </div>
                 </form>
@@ -198,12 +197,12 @@ const Contact = () => {
           {/* Right sidebar — reassurance épurée */}
           <div className="lg:col-span-1 order-2 space-y-6">
 
-            {/* Nelly + selfies combined card */}
+            {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
               <div className="relative">
                 <img
-                  src={nellySelfies}
-                  alt="Nelly aux côtés des conférenciers"
+                  src={nellySabde}
+                  alt="Nelly, fondatrice de l'agence"
                   className="w-full h-48 object-cover object-top"
                 />
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-card via-card/80 to-transparent h-16" />
@@ -211,10 +210,10 @@ const Contact = () => {
               <div className="px-5 pb-5 -mt-4 relative">
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mt-1.5">
-                  10+ ans d'expérience · Elle connaît personnellement chaque conférencier et assiste aux interventions.
+                  Elle connaît en profondeur chaque conférencier du catalogue et vous accompagne personnellement de A à Z.
                 </p>
                 <p className="text-xs text-accent font-medium mt-3 italic">
-                  « Je les ai tous vus sur scène. »
+                  « Un seul interlocuteur, une relation de confiance. »
                 </p>
               </div>
             </div>
@@ -243,12 +242,12 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* Logos clients */}
+            {/* Logos clients — en couleur */}
             <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
               <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mb-3">Ils nous font confiance</p>
               <div className="grid grid-cols-3 gap-3">
                 {CLIENT_LOGOS.map((l) => (
-                  <div key={l.name} className="flex items-center justify-center h-10 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+                  <div key={l.name} className="flex items-center justify-center h-10 hover:scale-105 transition-transform">
                     <img src={l.src} alt={l.name} className="max-h-full max-w-full object-contain" loading="lazy" />
                   </div>
                 ))}

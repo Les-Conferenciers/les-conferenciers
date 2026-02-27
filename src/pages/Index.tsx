@@ -1,5 +1,6 @@
 import speakersCollage1 from "@/assets/speakers-collage-1.png";
 import speakersCollage2 from "@/assets/speakers-collage-2.png";
+import nellySabde from "@/assets/nelly-sabde.jpg";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FeaturedSpeakers from "@/components/FeaturedSpeakers";
@@ -22,15 +23,17 @@ import {
   HelpCircle,
   ShieldCheck,
   MessageCircle,
+  UserCheck,
+  Zap,
+  BookOpen,
 } from "lucide-react";
-import SpeakerSimulator from "@/components/SpeakerSimulator";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const STATS = [
   { icon: Users, value: "161+", label: "Conférenciers" },
   { icon: Award, value: "500+", label: "Événements" },
-  { icon: Calendar, value: "20+", label: "Années d'expérience" },
+  { icon: Clock, value: "24h", label: "Temps de réponse" },
   { icon: Star, value: "5/5", label: "Note Google" },
 ];
 
@@ -80,8 +83,8 @@ const Index = () => {
             style={{ animationDelay: "0.25s" }}
           >
             {[
-              { icon: HeartHandshake, label: "20 ans d'expertise" },
-              { icon: Clock, label: "On vous fait gagner du temps" },
+              { icon: HeartHandshake, label: "Un seul interlocuteur dédié" },
+              { icon: Clock, label: "Réponse garantie sous 24h" },
               { icon: Sparkles, label: "Événement sécurisé de A à Z" },
             ].map(({ icon: Icon, label }) => (
               <span
@@ -253,14 +256,14 @@ const Index = () => {
               <div className="max-w-[280px] mx-auto">
                 <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-border/40">
                   <img
-                    src="https://emmalamagicienne.fr/wp-content/uploads/2017/03/emma.png"
+                    src={nellySabde}
                     alt="Nelly, votre interlocutrice dédiée"
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="text-center mt-4">
                   <p className="font-serif font-bold text-foreground">Nelly</p>
-                  <p className="text-sm text-accent font-semibold">Fondatrice · 20+ ans d'expérience</p>
+                  <p className="text-sm text-accent font-semibold">Fondatrice de l'agence</p>
                 </div>
               </div>
             </div>
@@ -276,16 +279,15 @@ const Index = () => {
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
                 Trouver le bon conférencier est <strong className="text-foreground">chronophage</strong> : recherches,
-                comparaisons, négociations, logistique… Depuis{" "}
-                <strong className="text-foreground">plus de 20 ans</strong>, Nelly accompagne les entreprises pour leur
+                comparaisons, négociations, logistique… Nelly connaît en profondeur chaque conférencier du catalogue et accompagne les entreprises pour leur
                 faire <strong className="text-foreground">gagner du temps</strong> et{" "}
                 <strong className="text-foreground">sécuriser chaque étape</strong> de l'organisation.
               </p>
 
               <ul className="space-y-3">
                 {[
-                  "20 ans d'expertise — chaque recommandation est éprouvée",
-                  "Contact direct avec les conférenciers — sans intermédiaire",
+                  "Un seul interlocuteur — relation directe et personnalisée",
+                  "Connaissance approfondie de chaque conférencier proposé",
                   "Devis détaillé sous 24 heures",
                   "Coordination logistique complète, de A à Z",
                   "Suivi personnalisé avant, pendant et après l'événement",
@@ -335,22 +337,22 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                icon: MessageCircle,
-                title: "Relation directe",
+                icon: UserCheck,
+                title: "Un seul interlocuteur : Nelly",
                 description:
-                  "Nous connaissons personnellement chaque conférencier. Pas de sous-traitance, pas d'intermédiaire. Résultat : réactivité maximale et recommandations sincères.",
+                  "Pas de plateforme anonyme, pas de turnover. Nelly gère votre projet de A à Z. Relation directe, personnalisée et sans intermédiaire.",
               },
               {
-                icon: ShieldCheck,
-                title: "Zéro risque",
+                icon: Zap,
+                title: "Réactivité exceptionnelle",
                 description:
-                  "20 ans d'expérience signifient 20 ans d'imprévus gérés. Nous anticipons les problèmes pour que votre événement se déroule sans accroc.",
+                  "Tous les mails sont traités dans la journée. Vous recevez un devis détaillé sous 24h avec des profils adaptés à votre brief.",
               },
               {
-                icon: HeartHandshake,
-                title: "Conseil, pas juste booking",
+                icon: BookOpen,
+                title: "Connaissance approfondie",
                 description:
-                  "Les plateformes listent des profils. Nous, on vous conseille le bon. On challenge votre brief, on vous fait gagner du temps et on s'engage sur le résultat.",
+                  "Nous connaissons en profondeur chaque conférencier que nous proposons : son style, ses thématiques, son impact sur scène. Zéro mauvaise surprise.",
               },
             ].map((item) => (
               <div
@@ -374,10 +376,10 @@ const Index = () => {
           <div className="flex justify-between items-end mb-12">
             <div>
               <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">
-                Notre catalogue de conférenciers inspirants
+                Conférenciers inspirants à découvrir
               </h2>
               <p className="text-muted-foreground">
-                Vous allez forcément trouver celui qui correspond à l'objectif de votre événement
+                Thierry Marx, Nina Métayer, Tony Estanguet, Julia de Funès… et bien d'autres
               </p>
             </div>
             <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/speakers")}>
@@ -400,9 +402,6 @@ const Index = () => {
 
       {/* Why Choose Us */}
       <WhyChooseUs />
-
-      {/* Speaker Simulator */}
-      <SpeakerSimulator />
 
       {/* CTA */}
       <section className="py-20 px-4 bg-primary text-primary-foreground text-center">
