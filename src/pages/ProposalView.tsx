@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, Mail, User, MapPin } from "lucide-react";
+import { Clock, Mail, User, MapPin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import nugget from "@/assets/nugget.png";
+
+type SpeakerConference = {
+  title: string;
+  description: string | null;
+};
 
 type ProposalData = {
   id: string;
@@ -21,8 +26,10 @@ type ProposalData = {
       image_url: string | null;
       themes: string[] | null;
       biography: string | null;
+      key_points: string[] | null;
       slug: string;
       city: string | null;
+      speaker_conferences: SpeakerConference[];
     };
   }[];
 };
@@ -46,7 +53,7 @@ const ProposalView = () => {
 
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, client_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, speakers(name, role, image_url, themes, biography, slug, city))")
+        .select("id, client_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, speakers(name, role, image_url, themes, biography, key_points, slug, city, speaker_conferences(title, description)))")
         .eq("token", token)
         .single();
 
@@ -165,27 +172,48 @@ const ProposalView = () => {
                 </div>
 
                 {/* Info */}
-                <div className="md:w-2/3 p-6 md:p-8 space-y-4">
+                <div className="md:w-2/3 p-6 md:p-8 space-y-5">
                   <div>
-                    <h2 className="text-2xl font-serif font-bold text-foreground">{speaker.name}</h2>
+                    <h2 className="text-2xl font-serif font-bold text-foreground">Qui est {speaker.name}</h2>
                     {speaker.role && <p className="text-sm text-muted-foreground mt-1">{speaker.role}</p>}
-                    {speaker.city && (
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                        <MapPin className="h-3 w-3" /> {speaker.city}
-                      </p>
-                    )}
                   </div>
 
-                  {speaker.themes && speaker.themes.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {speaker.themes.slice(0, 5).map((t: string) => (
-                        <span key={t} className="text-xs px-3 py-1 rounded-full bg-secondary text-secondary-foreground">{t}</span>
+                  {/* Key Points */}
+                  {speaker.key_points && speaker.key_points.length > 0 && (
+                    <ul className="space-y-1.5">
+                      {speaker.key_points.map((point: string, idx: number) => (
+                        <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                          <span className="text-accent mt-0.5">•</span>
+                          <span>{point}</span>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
 
-                  {speaker.biography && (
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">{speaker.biography}</p>
+                  {/* Profile Link */}
+                  <a
+                    href={`https://www.lesconferenciers.com/conferencier/${speaker.slug}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline font-medium"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Voir son profil complet
+                  </a>
+
+                  {/* Conference Summary */}
+                  {speaker.speaker_conferences && speaker.speaker_conferences.length > 0 && (
+                    <div className="space-y-2 border-t border-border pt-4">
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Conférence</h3>
+                      {speaker.speaker_conferences.slice(0, 1).map((conf: SpeakerConference, idx: number) => (
+                        <div key={idx}>
+                          {conf.title && <p className="text-sm font-semibold text-foreground">{conf.title}</p>}
+                          {conf.description && (
+                            <p className="text-sm text-muted-foreground leading-relaxed mt-1 whitespace-pre-line">{conf.description}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
