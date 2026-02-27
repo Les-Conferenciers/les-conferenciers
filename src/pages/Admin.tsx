@@ -249,6 +249,20 @@ const AdminProposalsContent = () => {
     setSending(null);
   };
 
+  const handleArchive = async (id: string) => {
+    await supabase.from("proposals").update({ status: "archived" }).eq("id", id);
+    toast.success("Proposition archivée");
+    fetchProposals();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Supprimer définitivement cette proposition ?")) return;
+    await supabase.from("proposal_speakers").delete().eq("proposal_id", id);
+    await supabase.from("proposals").delete().eq("id", id);
+    toast.success("Proposition supprimée");
+    fetchProposals();
+  };
+
   const getProposalUrl = (token: string) => `${window.location.origin}/proposition/${token}`;
 
   const copyLink = (proposal: Proposal) => {
