@@ -94,7 +94,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive } from "lucide-react";
 import { toast } from "sonner";
 
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
@@ -249,6 +249,20 @@ const AdminProposalsContent = () => {
     setSending(null);
   };
 
+  const handleArchive = async (id: string) => {
+    await supabase.from("proposals").update({ status: "archived" }).eq("id", id);
+    toast.success("Proposition archivée");
+    fetchProposals();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Supprimer définitivement cette proposition ?")) return;
+    await supabase.from("proposal_speakers").delete().eq("proposal_id", id);
+    await supabase.from("proposals").delete().eq("id", id);
+    toast.success("Proposition supprimée");
+    fetchProposals();
+  };
+
   const getProposalUrl = (token: string) => `${window.location.origin}/proposition/${token}`;
 
   const copyLink = (proposal: Proposal) => {
@@ -396,11 +410,13 @@ const AdminProposalsContent = () => {
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     isExpired(p.expires_at)
                       ? "bg-destructive/10 text-destructive"
+                      : p.status === "archived"
+                      ? "bg-muted text-muted-foreground"
                       : p.status === "sent"
                       ? "bg-green-100 text-green-700"
                       : "bg-muted text-muted-foreground"
                   }`}>
-                    {isExpired(p.expires_at) ? "Expiré" : p.status === "sent" ? "Envoyé" : "Brouillon"}
+                    {isExpired(p.expires_at) ? "Expiré" : p.status === "archived" ? "Archivé" : p.status === "sent" ? "Envoyé" : "Brouillon"}
                   </span>
                 </TableCell>
                 <TableCell className="text-xs whitespace-nowrap">{formatDate(p.expires_at)}</TableCell>
@@ -423,6 +439,14 @@ const AdminProposalsContent = () => {
                     >
                       <Send className="h-3 w-3" />
                       {sending === p.id ? "Envoi…" : "Envoyer"}
+                    </Button>
+                    {p.status !== "archived" && (
+                      <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver">
+                        <Archive className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer">
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </TableCell>
