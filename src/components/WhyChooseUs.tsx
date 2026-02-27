@@ -24,8 +24,8 @@ const REASONS = [
   },
   {
     icon: Handshake,
-    title: "Vus sur scène. Tous.",
-    description: "Nous avons assisté personnellement à chaque conférence que nous proposons. Zéro mauvaise surprise.",
+    title: "Conseil & accompagnement",
+    description: "Nous ne listons pas des profils : nous vous conseillons le bon intervenant, challengeons votre brief et nous engageons sur le résultat.",
     stat: "500+",
     statLabel: "événements",
   },
