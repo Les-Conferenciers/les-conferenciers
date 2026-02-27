@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send, CheckCircle2, Clock, Star } from "lucide-react";
-import nellySabde from "@/assets/nelly-sabde.jpg";
+import nellySelfies from "@/assets/nelly-selfies.png";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -199,15 +199,14 @@ const Contact = () => {
 
             {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
-              <div className="relative">
+              <div className="p-4">
                 <img
-                  src={nellySabde}
-                  alt="Nelly, fondatrice de l'agence"
-                  className="w-full h-48 object-cover object-top"
+                  src={nellySelfies}
+                  alt="Nelly avec des conférenciers lors d'événements"
+                  className="w-full rounded-xl object-contain"
                 />
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-card via-card/80 to-transparent h-16" />
               </div>
-              <div className="px-5 pb-5 -mt-4 relative">
+              <div className="px-5 pb-5">
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mt-1.5">
                   Elle connaît en profondeur chaque conférencier du catalogue et vous accompagne personnellement de A à Z.
