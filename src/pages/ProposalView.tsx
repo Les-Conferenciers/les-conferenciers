@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, Mail, User, MapPin } from "lucide-react";
+import { Clock, Mail, User, MapPin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import nugget from "@/assets/nugget.png";
+
+type SpeakerConference = {
+  title: string;
+  description: string | null;
+};
 
 type ProposalData = {
   id: string;
@@ -21,8 +26,10 @@ type ProposalData = {
       image_url: string | null;
       themes: string[] | null;
       biography: string | null;
+      key_points: string[] | null;
       slug: string;
       city: string | null;
+      speaker_conferences: SpeakerConference[];
     };
   }[];
 };
