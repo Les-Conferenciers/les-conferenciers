@@ -440,6 +440,14 @@ const AdminProposalsContent = () => {
                       <Send className="h-3 w-3" />
                       {sending === p.id ? "Envoi…" : "Envoyer"}
                     </Button>
+                    {p.status !== "archived" && (
+                      <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver">
+                        <Archive className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
