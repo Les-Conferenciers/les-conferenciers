@@ -253,14 +253,12 @@ const Index = () => {
           <div className="grid lg:grid-cols-5 gap-10 items-center">
             {/* Image - compact vertical */}
             <div className="lg:col-span-2">
-              <div className="max-w-[280px] mx-auto">
-                <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-border/40">
-                  <img
-                    src={nellySabde}
-                    alt="Nelly, votre interlocutrice dédiée"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              <div className="max-w-[320px] mx-auto">
+                <img
+                  src={nellySelfies}
+                  alt="Nelly avec des conférenciers lors d'événements"
+                  className="w-full rounded-2xl shadow-lg border border-border/40"
+                />
                 <div className="text-center mt-4">
                   <p className="font-serif font-bold text-foreground">Nelly</p>
                   <p className="text-sm text-accent font-semibold">Fondatrice de l'agence</p>
