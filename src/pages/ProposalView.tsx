@@ -192,7 +192,7 @@ const ProposalView = () => {
 
                   {/* Profile Link */}
                   <a
-                    href={`https://www.lesconferenciers.com/conferencier/${speaker.slug}/`}
+                    href={`${window.location.origin}/speaker/${speaker.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline font-medium"
