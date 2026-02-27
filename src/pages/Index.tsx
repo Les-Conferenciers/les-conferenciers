@@ -1,6 +1,6 @@
 import speakersCollage1 from "@/assets/speakers-collage-1.png";
 import speakersCollage2 from "@/assets/speakers-collage-2.png";
-import nellySabde from "@/assets/nelly-sabde.jpg";
+import nellySelfies from "@/assets/nelly-selfies.png";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FeaturedSpeakers from "@/components/FeaturedSpeakers";
