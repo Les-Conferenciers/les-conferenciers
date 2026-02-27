@@ -227,7 +227,9 @@ export type Database = {
       }
       speakers: {
         Row: {
+          base_fee: number | null
           biography: string | null
+          city: string | null
           created_at: string
           featured: boolean | null
           id: string
@@ -244,7 +246,9 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          base_fee?: number | null
           biography?: string | null
+          city?: string | null
           created_at?: string
           featured?: boolean | null
           id?: string
@@ -261,7 +265,9 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          base_fee?: number | null
           biography?: string | null
+          city?: string | null
           created_at?: string
           featured?: boolean | null
           id?: string
