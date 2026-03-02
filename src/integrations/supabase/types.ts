@@ -232,6 +232,7 @@ export type Database = {
           city: string | null
           created_at: string
           featured: boolean | null
+          gender: string | null
           id: string
           image_url: string | null
           key_points: string[] | null
@@ -251,6 +252,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           featured?: boolean | null
+          gender?: string | null
           id?: string
           image_url?: string | null
           key_points?: string[] | null
@@ -270,6 +272,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           featured?: boolean | null
+          gender?: string | null
           id?: string
           image_url?: string | null
           key_points?: string[] | null
