@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, X, MapPin, Euro, RefreshCw, ExternalLink } from "lucide-react";
+import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload } from "lucide-react";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
+import { toast } from "sonner";
 
 type Speaker = {
   id: string;
