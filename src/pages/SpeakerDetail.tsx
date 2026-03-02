@@ -105,6 +105,34 @@ const generateWhyReasons = (speaker: any) => {
   ];
 };
 
+// Remove speaker name from beginning of biography
+const removeNameFromBio = (bio: string, name: string): string => {
+  if (!bio || !name) return bio;
+  // Try various patterns: "Prénom Nom est...", "Prénom Nom,", "Prénom Nom :"
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Also handle with just first name or reversed
+  const nameParts = name.split(/\s+/);
+  const firstName = nameParts[0];
+  const patterns = [
+    new RegExp(`^${escapedName}\\s*(,|est|a été|est un|est une|née?\\s)\\s*`, 'i'),
+    new RegExp(`^${escapedName}\\s*[:,]?\\s*`, 'i'),
+  ];
+  
+  let result = bio;
+  for (const pattern of patterns) {
+    if (pattern.test(result)) {
+      result = result.replace(pattern, (match) => {
+        // Keep the verb/connector part, just remove the name
+        const withoutName = match.replace(new RegExp(`^${escapedName}\\s*,?\\s*`, 'i'), '');
+        // Capitalize the first letter of remaining text
+        return withoutName.charAt(0).toUpperCase() + withoutName.slice(1);
+      });
+      break;
+    }
+  }
+  return result;
+};
+
 const highlightBioKeywords = (text: string): string => {
   // Bold patterns: years, numbers with units, quoted text, strong phrases, titles, key achievements
   const patterns = [
@@ -361,7 +389,11 @@ const SpeakerDetail = () => {
   const faqItems = generateFAQ(speaker);
   const whyReasons = generateWhyReasons(speaker);
 
-  const bioParagraphs = speaker.biography?.split("\n").filter(Boolean) || [];
+  const rawBioParagraphs = speaker.biography?.split("\n").filter(Boolean) || [];
+  // Remove speaker name from the first paragraph
+  const bioParagraphs = rawBioParagraphs.map((p: string, i: number) => 
+    i === 0 ? removeNameFromBio(p, speaker.name) : p
+  );
   const bioPreview = bioParagraphs.slice(0, 2);
   const hasMoreBio = bioParagraphs.length > 2;
 
