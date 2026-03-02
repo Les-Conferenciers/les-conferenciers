@@ -414,10 +414,15 @@ const SpeakerDetail = () => {
   let processedBio = speaker.biography || "";
   
   if (isHtmlBio) {
-    // HTML bio from rich text editor — remove speaker name from start
+    // HTML bio from rich text editor or AI formatting — already has <strong> etc.
+    // Just remove speaker name from the very start
     processedBio = removeNameFromBio(processedBio.replace(/^<p>/, ""), speaker.name);
     if (!processedBio.startsWith("<")) processedBio = "<p>" + processedBio;
-    processedBio = highlightBioKeywords(processedBio);
+    // Don't double-apply highlightBioKeywords if already rich HTML
+    const hasExistingStrong = (processedBio.match(/<strong>/g) || []).length >= 2;
+    if (!hasExistingStrong) {
+      processedBio = highlightBioKeywords(processedBio);
+    }
   } else {
     // Plain text bio — split into paragraphs
     const rawBioParagraphs = processedBio.split("\n").filter(Boolean);

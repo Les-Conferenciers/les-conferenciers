@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon } from "lucide-react";
+import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon, Wand2 } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -38,6 +38,7 @@ const AdminSpeakersCRM = () => {
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
   const [importing, setImporting] = useState(false);
   const [migratingPhotos, setMigratingPhotos] = useState(false);
+  const [formattingBios, setFormattingBios] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit dialog state
@@ -215,6 +216,29 @@ const AdminSpeakersCRM = () => {
             setMigratingPhotos(false);
           }}>
             <ImageIcon className="h-4 w-4" /> {migratingPhotos ? "Migration…" : "Migrer photos"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={formattingBios} onClick={async () => {
+            setFormattingBios(true);
+            try {
+              const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/format-biographies`;
+              const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                  "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({}),
+              });
+              const data = await resp.json();
+              toast.success(`Bios formatées : ${data.summary?.formatted ?? 0} traitées`);
+              fetchSpeakers();
+            } catch (err: any) {
+              toast.error(`Erreur : ${err.message}`);
+            }
+            setFormattingBios(false);
+          }}>
+            <Wand2 className="h-4 w-4" /> {formattingBios ? "Formatage…" : "Formater bios"}
           </Button>
         </div>
 
