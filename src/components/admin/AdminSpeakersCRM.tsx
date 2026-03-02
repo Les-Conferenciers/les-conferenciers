@@ -140,6 +140,7 @@ const AdminSpeakersCRM = () => {
       themes: speaker.themes,
       languages: speaker.languages,
       featured: speaker.featured,
+      gender: speaker.gender,
     });
   };
 
