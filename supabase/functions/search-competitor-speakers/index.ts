@@ -248,6 +248,20 @@ async function synthesizeWithAI(name: string, sources: any[]): Promise<any> {
   const foundSources = sources.filter((s) => s.found);
   if (foundSources.length === 0) return null;
 
+  // Collect all available images (excluding profile photos) for conference illustrations
+  const allImages: string[] = [];
+  foundSources.forEach((s) => {
+    if (s.images?.length) {
+      // Filter out profile photos and tiny images
+      const conferenceImages = s.images.filter((img: string) => 
+        !img.includes("logo") && !img.includes("icon") && !img.includes("portrait") &&
+        img !== s.photo_url
+      );
+      allImages.push(...conferenceImages);
+    }
+  });
+  const uniqueImages = [...new Set(allImages)].slice(0, 6); // Max 6 images
+
   const sourcesText = foundSources.map((s) => {
     let t = `\n=== SOURCE: ${s.source} ===\n`;
     if (s.role) t += `Rôle/Titre: ${s.role}\n`;
