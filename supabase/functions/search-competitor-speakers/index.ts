@@ -102,13 +102,16 @@ function parseWechamp(html: string): { found: boolean; photo_url?: string; role?
     if (descMatch) r.biography = stripHtml(descMatch[1]);
   }
 
-  // Themes
-  const themeLinks = html.match(/\/theme\/([^/"]+)/gi);
-  if (themeLinks) {
-    r.themes = [...new Set(themeLinks.map((t: string) => {
-      const name = t.replace(/\/theme\//i, "").replace(/\//g, "").replace(/-/g, " ");
-      return name.charAt(0).toUpperCase() + name.slice(1);
-    }))];
+  // Themes - only extract from actual theme links in the speaker section, not nav
+  const speakerThemeSection = html.match(/Thèmes de conférence[\s\S]*?(?:Formats|Biographie|id="biographie")/i);
+  if (speakerThemeSection) {
+    const themeLinks = speakerThemeSection[0].match(/\/theme\/([^/"]+)/gi);
+    if (themeLinks) {
+      r.themes = [...new Set(themeLinks.map((t: string) => {
+        const name = t.replace(/\/theme\//i, "").replace(/\//g, "").replace(/-/g, " ");
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      }))];
+    }
   }
 
   // Faits marquants
@@ -303,7 +306,7 @@ JSON ATTENDU :
 IMPORTANT : Réponds UNIQUEMENT avec le JSON valide, sans commentaire ni backtick.`;
 
   try {
-    const resp = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
