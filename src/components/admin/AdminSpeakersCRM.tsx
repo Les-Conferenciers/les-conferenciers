@@ -367,7 +367,7 @@ const AdminSpeakersCRM = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -375,8 +375,19 @@ const AdminSpeakersCRM = () => {
                     onChange={e => setEditForm(p => ({ ...p, featured: e.target.checked }))}
                     className="rounded border-input"
                   />
-                  <span className="text-sm">Conférencier mis en avant (featured)</span>
+                  <span className="text-sm">Mis en avant (featured)</span>
                 </label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground">Genre</Label>
+                  <select
+                    className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm"
+                    value={editForm.gender || "male"}
+                    onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
+                  >
+                    <option value="male">Masculin</option>
+                    <option value="female">Féminin</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
