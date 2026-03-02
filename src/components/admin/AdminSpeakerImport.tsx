@@ -85,36 +85,70 @@ const AdminSpeakerImport = () => {
     setPublishing(true);
 
     try {
-      // 1. Upload photo if external URL
+      // Helper: upload an external image to our bucket and return the public URL
+      const uploadImage = async (externalUrl: string, fileName: string): Promise<string> => {
+        const photoResp = await fetch(externalUrl);
+        if (!photoResp.ok) throw new Error(`Failed to fetch ${externalUrl}`);
+        const blob = await photoResp.blob();
+        const ext = externalUrl.match(/\.(jpe?g|png|webp)/i)?.[1] || "jpg";
+        const finalName = fileName.endsWith(`.${ext}`) ? fileName : `${fileName}.${ext}`;
+
+        const { error: uploadErr } = await supabase.storage
+          .from("speaker-photos")
+          .upload(finalName, blob, {
+            contentType: blob.type || `image/${ext}`,
+            upsert: true,
+          });
+
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage
+          .from("speaker-photos")
+          .getPublicUrl(finalName);
+        return urlData.publicUrl;
+      };
+
+      const isExternalUrl = (url: string) => 
+        url.startsWith("http") && !url.includes(import.meta.env.VITE_SUPABASE_URL);
+
+      // 1. Upload profile photo if external
       let imageUrl = editForm.photo_url;
-      if (imageUrl && !imageUrl.includes("supabase")) {
+      if (imageUrl && isExternalUrl(imageUrl)) {
         try {
-          const photoResp = await fetch(imageUrl);
-          if (photoResp.ok) {
-            const blob = await photoResp.blob();
-            const ext = imageUrl.match(/\.(jpe?g|png|webp)/i)?.[1] || "jpg";
-            const fileName = `${editForm.slug}.${ext}`;
-
-            const { error: uploadErr } = await supabase.storage
-              .from("speaker-photos")
-              .upload(fileName, blob, {
-                contentType: blob.type || `image/${ext}`,
-                upsert: true,
-              });
-
-            if (!uploadErr) {
-              const { data: urlData } = supabase.storage
-                .from("speaker-photos")
-                .getPublicUrl(fileName);
-              imageUrl = urlData.publicUrl;
-            }
-          }
+          const ext = imageUrl.match(/\.(jpe?g|png|webp)/i)?.[1] || "jpg";
+          imageUrl = await uploadImage(imageUrl, `${editForm.slug}.${ext}`);
         } catch {
-          console.warn("Could not upload photo, using original URL");
+          console.warn("Could not upload profile photo, using original URL");
         }
       }
 
-      // 2. Insert speaker
+      // 2. Migrate all external images in conference descriptions
+      const migratedConferences = await Promise.all(
+        editForm.conferences.map(async (conf, idx) => {
+          if (!conf.description) return conf;
+          let desc = conf.description;
+          const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/gi;
+          const matches = [...desc.matchAll(imgRegex)];
+          let imgCounter = 0;
+
+          for (const match of matches) {
+            const originalUrl = match[1];
+            if (isExternalUrl(originalUrl)) {
+              try {
+                imgCounter++;
+                const ext = originalUrl.match(/\.(jpe?g|png|webp)/i)?.[1] || "jpg";
+                const fileName = `${editForm.slug}-conference-${idx + 1}-${imgCounter}.${ext}`;
+                const newUrl = await uploadImage(originalUrl, fileName);
+                desc = desc.replace(originalUrl, newUrl);
+              } catch {
+                console.warn(`Could not upload conference image: ${originalUrl}`);
+              }
+            }
+          }
+          return { ...conf, description: desc };
+        })
+      );
+
+      // 3. Insert speaker
       const { data: speaker, error: insertErr } = await supabase
         .from("speakers")
         .insert({
@@ -138,9 +172,9 @@ const AdminSpeakerImport = () => {
 
       if (insertErr) throw insertErr;
 
-      // 3. Insert conferences
-      if (editForm.conferences.length > 0 && speaker) {
-        const confInserts = editForm.conferences.map((conf, idx) => ({
+      // 4. Insert conferences with migrated images
+      if (migratedConferences.length > 0 && speaker) {
+        const confInserts = migratedConferences.map((conf, idx) => ({
           speaker_id: speaker.id,
           title: conf.title,
           description: conf.description || null,
