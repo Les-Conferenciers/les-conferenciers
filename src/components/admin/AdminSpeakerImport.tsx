@@ -22,6 +22,8 @@ type ImportedProfile = {
   languages: string[];
   gender: string;
   key_points: string[];
+  why_expertise: string | null;
+  why_impact: string | null;
   photo_url: string | null;
   video_url: string | null;
   sources: { source: string; found: boolean; photo_url: string | null }[];
@@ -125,6 +127,8 @@ const AdminSpeakerImport = () => {
           languages: editForm.languages,
           gender: editForm.gender,
           key_points: editForm.key_points,
+          why_expertise: editForm.why_expertise,
+          why_impact: editForm.why_impact,
           image_url: imageUrl,
           video_url: editForm.video_url,
           featured: false,
