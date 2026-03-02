@@ -248,6 +248,20 @@ async function synthesizeWithAI(name: string, sources: any[]): Promise<any> {
   const foundSources = sources.filter((s) => s.found);
   if (foundSources.length === 0) return null;
 
+  // Collect all available images (excluding profile photos) for conference illustrations
+  const allImages: string[] = [];
+  foundSources.forEach((s) => {
+    if (s.images?.length) {
+      // Filter out profile photos and tiny images
+      const conferenceImages = s.images.filter((img: string) => 
+        !img.includes("logo") && !img.includes("icon") && !img.includes("portrait") &&
+        img !== s.photo_url
+      );
+      allImages.push(...conferenceImages);
+    }
+  });
+  const uniqueImages = [...new Set(allImages)].slice(0, 6); // Max 6 images
+
   const sourcesText = foundSources.map((s) => {
     let t = `\n=== SOURCE: ${s.source} ===\n`;
     if (s.role) t += `Rôle/Titre: ${s.role}\n`;
@@ -285,9 +299,20 @@ RÈGLES BIOGRAPHIE (CRITIQUES) :
 RÈGLES CONFÉRENCES :
 - Crée 1 à 3 conférences thématiques basées sur les infos trouvées
 - Titre accrocheur et inspirant
-- Description HTML de 2-3 paragraphes <p> avec des <strong> sur les mots-clés
+- Description HTML de 3-4 paragraphes <p> avec des <strong> sur les mots-clés
 - Inclure les enseignements concrets et la valeur ajoutée pour le public
+${uniqueImages.length > 0 ? `
+IMAGES DISPONIBLES POUR LES CONFÉRENCES :
+${uniqueImages.map((img, i) => `  Image ${i + 1}: ${img}`).join("\n")}
 
+RÈGLE D'INSERTION DES IMAGES (TRÈS IMPORTANT) :
+- Si des images sont disponibles, insère-les DANS le corps de la description de conférence, PAS à la fin
+- Place l'image ENTRE deux paragraphes de texte pour créer un rythme de lecture agréable : du texte, puis l'image, puis du texte
+- Utilise le format : <img src="URL_IMAGE" alt="Description pertinente" />
+- N'utilise qu'une seule image par conférence maximum
+- Répartis les images entre les différentes conférences
+- Exemple de structure : <p>Premier paragraphe...</p><img src="..." alt="..." /><p>Suite du texte...</p>
+` : ""}
 RÈGLES KEY_POINTS :
 - 3-5 points forts factuels et percutants (chiffres, titres, palmarès, distinctions)
 
@@ -306,7 +331,7 @@ JSON ATTENDU :
   "biography": "HTML riche structuré comme l'exemple ci-dessus",
   "themes": ["Thème 1", "Thème 2", "Thème 3"],
   "conferences": [
-    {"title": "Titre accrocheur", "description": "HTML riche avec <p> et <strong>"}
+    {"title": "Titre accrocheur", "description": "HTML riche avec <p>, <strong> et éventuellement une <img> insérée ENTRE les paragraphes"}
   ],
   "languages": ["Français"],
   "gender": "male ou female",
