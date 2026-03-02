@@ -6,39 +6,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<li[^>]*>/gi, '• ')
-    .replace(/<[^>]+>/g, '')
+function cleanHtml(html: string): string {
+  // Remove images
+  let result = html.replace(/<img[^>]*>/g, '');
+  // Remove empty h4 tags
+  result = result.replace(/<h4[^>]*>\s*<\/h4>/g, '');
+  // Remove &nbsp; only lines
+  result = result.replace(/<p>\s*&nbsp;\s*<\/p>/g, '');
+  // Convert &nbsp; to spaces
+  result = result.replace(/&nbsp;/g, ' ');
+  // Clean up excessive whitespace between tags  
+  result = result.replace(/>\s+</g, '><');
+  // Preserve only: p, ul, ol, li, strong, em, br tags
+  result = result.replace(/<(?!\/?(?:p|ul|ol|li|strong|em|br)\b)[^>]+>/g, '');
+  // Remove empty paragraphs
+  result = result.replace(/<p>\s*<\/p>/g, '');
+  // Trim
+  return result.trim();
+}
+
+function extractTitle(h4Html: string): string {
+  // Strip all HTML tags first
+  let title = h4Html.replace(/<[^>]+>/g, '');
+  // Decode HTML entities
+  title = title
     .replace(/&nbsp;/g, ' ')
     .replace(/&laquo;/g, '«')
     .replace(/&raquo;/g, '»')
     .replace(/&rsquo;/g, "'")
-    .replace(/&eacute;/g, 'é')
-    .replace(/&egrave;/g, 'è')
-    .replace(/&agrave;/g, 'à')
-    .replace(/&ccedil;/g, 'ç')
-    .replace(/&ocirc;/g, 'ô')
-    .replace(/&ucirc;/g, 'û')
-    .replace(/&ecirc;/g, 'ê')
-    .replace(/&iuml;/g, 'ï')
     .replace(/&amp;/g, '&')
     .replace(/&#8217;/g, "'")
     .replace(/&#8211;/g, '–')
-    .replace(/&#8230;/g, '…')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-function extractTitle(h4Html: string): string {
-  let title = stripHtml(h4Html);
+    .replace(/&#8230;/g, '…');
   // Clean "Conférence « ... »" or "Conférence : « ... »"
   title = title.replace(/^Conférence\s*:?\s*[«"]\s*/, '').replace(/\s*[»"]\s*$/, '');
-  // If it still starts with "Conférence" and has content after, keep it
-  if (title === 'Conférence' || title === '') return '';
+  if (title === 'Conférence' || title === 'Conférences' || title === '') return '';
   return title.trim();
 }
 
@@ -67,11 +69,13 @@ function parseConferences(html: string): Array<{ title: string; description: str
     const start = h4Matches[i].end;
     const end = i + 1 < h4Matches.length ? h4Matches[i + 1].index : content.length;
     const descHtml = content.slice(start, end);
-    // Remove images
-    const cleanDesc = descHtml.replace(/<img[^>]*>/g, '');
-    const description = stripHtml(cleanDesc).trim();
-
-    if (h4Matches[i].title && description.length > 10) {
+    
+    // Clean the HTML but preserve formatting
+    const description = cleanHtml(descHtml);
+    
+    // Only include if there's meaningful content (more than just a few chars)
+    const textOnly = description.replace(/<[^>]+>/g, '').trim();
+    if (h4Matches[i].title && textOnly.length > 10) {
       conferences.push({
         title: h4Matches[i].title,
         description,
@@ -165,7 +169,7 @@ serve(async (req) => {
         results.push({
           slug: speaker.slug,
           status: 'ok',
-          conferences: conferences.map(c => c.title),
+          conferences: conferences.map(c => ({ title: c.title, descLength: c.description.length })),
           count: conferences.length,
         });
         totalAdded += conferences.length;

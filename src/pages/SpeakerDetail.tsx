@@ -586,7 +586,18 @@ const SpeakerDetail = () => {
                       </AccordionTrigger>
                       <AccordionContent className="px-5 pb-5 space-y-4">
                         {conf.description && (
-                          <p className="text-muted-foreground text-sm leading-relaxed">{conf.description}</p>
+                          <div 
+                            className="text-muted-foreground text-sm leading-relaxed prose prose-sm max-w-none
+                              [&_p]:mb-3 [&_p:last-child]:mb-0
+                              [&_strong]:text-foreground [&_strong]:font-semibold
+                              [&_ul]:my-3 [&_ul]:ml-1 [&_ul]:space-y-1.5
+                              [&_ol]:my-3 [&_ol]:ml-1 [&_ol]:space-y-1.5
+                              [&_li]:relative [&_li]:pl-5
+                              [&_ul>li]:before:content-[''] [&_ul>li]:before:absolute [&_ul>li]:before:left-0 [&_ul>li]:before:top-[0.6em] [&_ul>li]:before:w-1.5 [&_ul>li]:before:h-1.5 [&_ul>li]:before:rounded-full [&_ul>li]:before:bg-accent/60
+                              [&_ol]:list-decimal [&_ol]:pl-5
+                              [&_em]:italic"
+                            dangerouslySetInnerHTML={{ __html: conf.description }}
+                          />
                         )}
                         {conf.bullet_points && conf.bullet_points.length > 0 && (
                           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
