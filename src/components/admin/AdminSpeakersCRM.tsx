@@ -3,13 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
+import RichTextEditor from "./RichTextEditor";
 
 type Speaker = {
   id: string;
@@ -381,11 +381,11 @@ const AdminSpeakersCRM = () => {
 
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Biographie</Label>
-                <Textarea
+                <RichTextEditor
                   value={editForm.biography || ""}
-                  onChange={e => setEditForm(p => ({ ...p, biography: e.target.value }))}
-                  rows={6}
+                  onChange={(val) => setEditForm(p => ({ ...p, biography: val }))}
                   placeholder="Biographie du conférencier…"
+                  minHeight="250px"
                 />
               </div>
 
