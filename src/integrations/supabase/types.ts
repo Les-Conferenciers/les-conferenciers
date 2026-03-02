@@ -242,6 +242,7 @@ export type Database = {
           role: string | null
           seo_title: string | null
           slug: string
+          specialty: string | null
           themes: string[] | null
           updated_at: string
           video_url: string | null
@@ -262,6 +263,7 @@ export type Database = {
           role?: string | null
           seo_title?: string | null
           slug: string
+          specialty?: string | null
           themes?: string[] | null
           updated_at?: string
           video_url?: string | null
@@ -282,6 +284,7 @@ export type Database = {
           role?: string | null
           seo_title?: string | null
           slug?: string
+          specialty?: string | null
           themes?: string[] | null
           updated_at?: string
           video_url?: string | null

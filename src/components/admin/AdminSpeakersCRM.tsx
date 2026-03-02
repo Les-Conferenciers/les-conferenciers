@@ -19,6 +19,7 @@ type Speaker = {
   themes: string[] | null;
   image_url: string | null;
   biography: string | null;
+  specialty: string | null;
   base_fee: number | null;
   city: string | null;
   languages: string[] | null;
@@ -80,7 +81,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, base_fee, city, languages, video_url, featured, gender")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender")
       .order("name");
     setSpeakers(data || []);
     setLoading(false);
@@ -134,6 +135,7 @@ const AdminSpeakersCRM = () => {
     setEditForm({
       name: speaker.name,
       role: speaker.role,
+      specialty: speaker.specialty,
       city: speaker.city,
       base_fee: speaker.base_fee,
       biography: speaker.biography,
@@ -154,6 +156,7 @@ const AdminSpeakersCRM = () => {
       .update({
         name: editForm.name,
         role: editForm.role || null,
+        specialty: editForm.specialty || null,
         city: editForm.city || null,
         base_fee: editForm.base_fee || null,
         biography: editForm.biography || null,
@@ -366,6 +369,11 @@ const AdminSpeakersCRM = () => {
                   <Label className="text-xs text-muted-foreground">Rôle / Titre</Label>
                   <Input value={editForm.role || ""} onChange={e => setEditForm(p => ({ ...p, role: e.target.value }))} placeholder="Ex: Expert en IA" />
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Spécialité (affichée sur la carte)</Label>
+                <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Ex: Chef Étoilé et Homme d'Affaires" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
