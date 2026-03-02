@@ -31,7 +31,9 @@ serve(async (req) => {
     if (!csvResp.ok) throw new Error(`Failed to fetch CSV: ${csvResp.status}`);
     const csvData = await csvResp.text();
 
-    const lines = csvData.split('\n').filter((l: string) => l.trim());
+    console.log(`CSV length: ${csvData.length} chars`);
+    console.log(`First 200 chars: ${csvData.substring(0, 200)}`);
+    const lines = csvData.split(/\r?\n|\r/).filter((l: string) => l.trim());
     const dataLines = lines.slice(1); // skip header
 
     console.log(`Processing ${dataLines.length} CSV rows`);
