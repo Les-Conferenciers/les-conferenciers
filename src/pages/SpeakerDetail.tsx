@@ -543,6 +543,7 @@ const SpeakerDetail = () => {
                     [&_li]:mb-1.5 [&_li]:text-[0.95rem]
                     [&_p]:mb-3 [&_p]:text-[0.95rem] [&_p]:leading-[1.8]
                     [&_strong]:text-foreground [&_strong]:font-semibold
+                    [&_img]:rounded-xl [&_img]:shadow-md [&_img]:my-4 [&_img]:max-w-[40%] [&_img]:float-right [&_img]:ml-6 [&_img]:mb-4
                     ${!bioExpanded ? "max-h-[180px]" : "max-h-[5000px]"}`}
                   dangerouslySetInnerHTML={{ __html: processedBio }}
                 />
@@ -595,7 +596,8 @@ const SpeakerDetail = () => {
                               [&_li]:relative [&_li]:pl-5
                               [&_ul>li]:before:content-[''] [&_ul>li]:before:absolute [&_ul>li]:before:left-0 [&_ul>li]:before:top-[0.6em] [&_ul>li]:before:w-1.5 [&_ul>li]:before:h-1.5 [&_ul>li]:before:rounded-full [&_ul>li]:before:bg-accent/60
                               [&_ol]:list-decimal [&_ol]:pl-5
-                              [&_em]:italic"
+                              [&_em]:italic
+                              [&_img]:rounded-xl [&_img]:shadow-sm [&_img]:my-4 [&_img]:w-full [&_img]:max-w-full"
                             dangerouslySetInnerHTML={{ __html: conf.description }}
                           />
                         )}
