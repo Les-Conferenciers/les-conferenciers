@@ -1,1 +1,4 @@
 project_id = "ibvjijamybwagxrniyjv"
+
+[functions.search-competitor-speakers]
+verify_jwt = false

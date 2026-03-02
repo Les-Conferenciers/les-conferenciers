@@ -3,10 +3,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Users, FileText, Mic } from "lucide-react";
+import { LogOut, Users, FileText, Mic, UserPlus } from "lucide-react";
 import nugget from "@/assets/nugget.png";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
+import AdminSpeakerImport from "@/components/admin/AdminSpeakerImport";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -65,6 +66,9 @@ const Admin = () => {
             <TabsTrigger value="speakers" className="gap-2">
               <Mic className="h-4 w-4" /> CRM Speakers
             </TabsTrigger>
+            <TabsTrigger value="import" className="gap-2">
+              <UserPlus className="h-4 w-4" /> Importer
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="leads">
@@ -77,6 +81,10 @@ const Admin = () => {
 
           <TabsContent value="speakers">
             <AdminSpeakersCRM />
+          </TabsContent>
+
+          <TabsContent value="import">
+            <AdminSpeakerImport />
           </TabsContent>
         </Tabs>
       </div>
