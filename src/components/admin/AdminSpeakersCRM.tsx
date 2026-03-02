@@ -78,7 +78,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, base_fee, city, languages, video_url, featured")
+      .select("id, name, slug, role, themes, image_url, biography, base_fee, city, languages, video_url, featured, gender")
       .order("name");
     setSpeakers(data || []);
     setLoading(false);
