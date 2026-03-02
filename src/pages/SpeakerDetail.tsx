@@ -532,24 +532,21 @@ const SpeakerDetail = () => {
               </h2>
               <div className="relative">
                 <div 
-                  className={`prose prose-lg max-w-none text-muted-foreground leading-relaxed space-y-4 overflow-hidden transition-all duration-500 ${
-                    !bioExpanded ? "max-h-[180px]" : "max-h-[5000px]"
-                  }`}
-                >
-                  {bioParagraphs.map((paragraph: string, idx: number) => (
-                    <p 
-                      key={idx} 
-                      className="mb-3 text-[0.95rem] leading-[1.8]" 
-                      dangerouslySetInnerHTML={{ __html: highlightBioKeywords(formatBioForWeb(paragraph)) }} 
-                    />
-                  ))}
-                </div>
+                  className={`prose prose-lg max-w-none text-muted-foreground leading-relaxed overflow-hidden transition-all duration-500
+                    [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:my-3
+                    [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:my-3
+                    [&_li]:mb-1.5 [&_li]:text-[0.95rem]
+                    [&_p]:mb-3 [&_p]:text-[0.95rem] [&_p]:leading-[1.8]
+                    [&_strong]:text-foreground [&_strong]:font-semibold
+                    ${!bioExpanded ? "max-h-[180px]" : "max-h-[5000px]"}`}
+                  dangerouslySetInnerHTML={{ __html: processedBio }}
+                />
                 {/* Gradient fade overlay when collapsed */}
-                {!bioExpanded && bioParagraphs.length > 0 && (
+                {!bioExpanded && processedBio.length > 0 && (
                   <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
                 )}
               </div>
-              {bioParagraphs.length > 0 && (
+              {processedBio.length > 0 && (
                 <button
                   onClick={() => setBioExpanded(!bioExpanded)}
                   className="mt-3 text-accent font-semibold text-sm hover:underline inline-flex items-center gap-1.5 transition-colors"
