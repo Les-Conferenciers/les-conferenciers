@@ -248,7 +248,7 @@ const AdminSpeakerImport = () => {
                 }`}
               >
                 {src.found ? (
-                  <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                  <CheckCircle className="h-3.5 w-3.5 text-accent flex-shrink-0" />
                 ) : (
                   <AlertCircle className="h-3.5 w-3.5" />
                 )}
@@ -480,7 +480,7 @@ const AdminSpeakerImport = () => {
                     <ul className="grid grid-cols-2 gap-1.5">
                       {editForm.key_points.map((kp, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                          <CheckCircle className="h-3.5 w-3.5 text-accent flex-shrink-0" />
                           {kp}
                         </li>
                       ))}
