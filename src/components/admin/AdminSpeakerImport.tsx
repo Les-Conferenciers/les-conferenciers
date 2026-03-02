@@ -85,108 +85,43 @@ const AdminSpeakerImport = () => {
     setPublishing(true);
 
     try {
-      // Helper: upload an external image to our bucket and return the public URL
-      const uploadImage = async (externalUrl: string, fileName: string): Promise<string> => {
-        const photoResp = await fetch(externalUrl);
-        if (!photoResp.ok) throw new Error(`Failed to fetch ${externalUrl}`);
-        const blob = await photoResp.blob();
-        const ext = externalUrl.match(/\.(jpe?g|png|webp)/i)?.[1] || "jpg";
-        const finalName = fileName.endsWith(`.${ext}`) ? fileName : `${fileName}.${ext}`;
+      // Call edge function to publish (handles image migration server-side)
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-speaker`;
+      const session = await supabase.auth.getSession();
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          profile: {
+            name: editForm.name,
+            slug: editForm.slug,
+            role: editForm.role,
+            specialty: editForm.specialty,
+            biography: editForm.biography,
+            themes: editForm.themes,
+            languages: editForm.languages,
+            gender: editForm.gender,
+            key_points: editForm.key_points,
+            why_expertise: (editForm as any).why_expertise,
+            why_impact: (editForm as any).why_impact,
+            photo_url: editForm.photo_url,
+            video_url: editForm.video_url,
+          },
+          conferences: editForm.conferences,
+        }),
+      });
 
-        const { error: uploadErr } = await supabase.storage
-          .from("speaker-photos")
-          .upload(finalName, blob, {
-            contentType: blob.type || `image/${ext}`,
-            upsert: true,
-          });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || "Erreur de publication");
 
-        if (uploadErr) throw uploadErr;
-        const { data: urlData } = supabase.storage
-          .from("speaker-photos")
-          .getPublicUrl(finalName);
-        return urlData.publicUrl;
-      };
-
-      const isExternalUrl = (url: string) => 
-        url.startsWith("http") && !url.includes(import.meta.env.VITE_SUPABASE_URL);
-
-      // 1. Upload profile photo if external
-      let imageUrl = editForm.photo_url;
-      if (imageUrl && isExternalUrl(imageUrl)) {
-        try {
-          const ext = imageUrl.match(/\.(jpe?g|png|webp)/i)?.[1] || "jpg";
-          imageUrl = await uploadImage(imageUrl, `${editForm.slug}.${ext}`);
-        } catch {
-          console.warn("Could not upload profile photo, using original URL");
-        }
-      }
-
-      // 2. Migrate all external images in conference descriptions
-      const migratedConferences = await Promise.all(
-        editForm.conferences.map(async (conf, idx) => {
-          if (!conf.description) return conf;
-          let desc = conf.description;
-          const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/gi;
-          const matches = [...desc.matchAll(imgRegex)];
-          let imgCounter = 0;
-
-          for (const match of matches) {
-            const originalUrl = match[1];
-            if (isExternalUrl(originalUrl)) {
-              try {
-                imgCounter++;
-                const ext = originalUrl.match(/\.(jpe?g|png|webp)/i)?.[1] || "jpg";
-                const fileName = `${editForm.slug}-conference-${idx + 1}-${imgCounter}.${ext}`;
-                const newUrl = await uploadImage(originalUrl, fileName);
-                desc = desc.replace(originalUrl, newUrl);
-              } catch {
-                console.warn(`Could not upload conference image: ${originalUrl}`);
-              }
-            }
-          }
-          return { ...conf, description: desc };
-        })
-      );
-
-      // 3. Insert speaker
-      const { data: speaker, error: insertErr } = await supabase
-        .from("speakers")
-        .insert({
-          name: editForm.name,
-          slug: editForm.slug,
-          role: editForm.role,
-          specialty: editForm.specialty,
-          biography: editForm.biography,
-          themes: editForm.themes,
-          languages: editForm.languages,
-          gender: editForm.gender,
-          key_points: editForm.key_points,
-          why_expertise: editForm.why_expertise,
-          why_impact: editForm.why_impact,
-          image_url: imageUrl,
-          video_url: editForm.video_url,
-          featured: false,
-        } as any)
-        .select()
-        .single();
-
-      if (insertErr) throw insertErr;
-
-      // 4. Insert conferences with migrated images
-      if (migratedConferences.length > 0 && speaker) {
-        const confInserts = migratedConferences.map((conf, idx) => ({
-          speaker_id: speaker.id,
-          title: conf.title,
-          description: conf.description || null,
-          display_order: idx,
-        }));
-
-        const { error: confErr } = await supabase
-          .from("speaker_conferences")
-          .insert(confInserts as any);
-
-        if (confErr) console.error("Conference insert error:", confErr);
-      }
+      toast.success(`${editForm.name} a été ajouté avec succès !`);
+      setProfile(null);
+      setEditForm(null);
+      setSearchName("");
 
       toast.success(`${editForm.name} a été ajouté avec succès !`);
       setProfile(null);
