@@ -246,6 +246,8 @@ export type Database = {
           themes: string[] | null
           updated_at: string
           video_url: string | null
+          why_expertise: string | null
+          why_impact: string | null
         }
         Insert: {
           base_fee?: number | null
@@ -267,6 +269,8 @@ export type Database = {
           themes?: string[] | null
           updated_at?: string
           video_url?: string | null
+          why_expertise?: string | null
+          why_impact?: string | null
         }
         Update: {
           base_fee?: number | null
@@ -288,6 +292,8 @@ export type Database = {
           themes?: string[] | null
           updated_at?: string
           video_url?: string | null
+          why_expertise?: string | null
+          why_impact?: string | null
         }
         Relationships: []
       }
