@@ -65,8 +65,8 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
           </p>
         </CardHeader>
         {speaker.specialty && (
-          <CardContent className="pb-2">
-            <p className="text-accent text-sm font-semibold leading-relaxed">
+          <CardContent className="pb-2 pt-0">
+            <p className="text-muted-foreground/80 text-xs italic leading-snug tracking-wide">
               {speaker.specialty}
             </p>
           </CardContent>
