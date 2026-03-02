@@ -259,48 +259,60 @@ async function synthesizeWithAI(name: string, sources: any[]): Promise<any> {
     return t;
   }).join("\n");
 
-  const prompt = `Tu es un rédacteur expert en fiches de conférenciers professionnels pour une agence de booking.
+  const prompt = `Tu es un rédacteur expert en fiches de conférenciers professionnels pour l'agence "Les Conférenciers".
 
 DONNÉES BRUTES trouvées pour "${name}" :
 ${sourcesText}
 
-CRÉE UNE FICHE COMPLÈTE en JSON avec cette structure EXACTE. Inspire-toi de ce modèle de qualité (Régis Rossi) :
+CRÉE UNE FICHE COMPLÈTE en JSON. Voici un EXEMPLE DE BIOGRAPHIE PARFAITE à suivre :
 
-EXEMPLE DE BIOGRAPHIE DE QUALITÉ :
-"<p>Titulaire d'un <strong>DESS en Stratégie et Communication</strong>, a accompagné des décideurs de grands groupes durant une <strong>quinzaine d'années</strong> dans les domaines du <strong>marketing, du management et de la communication</strong>.</p>
+"<p>Titulaire d'un <strong>DESS en Stratégie et Communication</strong>, il a accompagné des décideurs de grands groupes durant une <strong>quinzaine d'années</strong> dans les domaines du <strong>marketing, du management et de la communication</strong>.</p>
 <p>Parallèlement à cette carrière, il a pratiqué l'illusion sous toutes ses formes :</p>
-<ul><li><strong>Close-up</strong></li><li><strong>Mentalisme</strong></li></ul>
-<p>En <strong>2011</strong>, il fonde sa société et propose aux entreprises un concept novateur.</p>"
+<ul><li><strong>Close-up</strong> et magie de salon</li><li><strong>Mentalisme</strong> et lecture de pensée</li><li><strong>Grandes illusions</strong> sur scène</li></ul>
+<p>En <strong>2011</strong>, il fonde sa société et propose aux entreprises un concept novateur : <strong>la Magie de la Vente®</strong>, une méthode unique qui allie techniques magiques et stratégies commerciales.</p>
+<p>Aujourd'hui, il intervient auprès de <strong>grands groupes du CAC 40</strong> et a formé plus de <strong>15 000 collaborateurs</strong> en France et à l'international.</p>"
 
-RÈGLES BIOGRAPHIE :
-- NE commence JAMAIS par le prénom ou le nom du conférencier. Commence directement par un titre, une qualité ou "Né(e) en..."
-- HTML riche avec <p>, <strong>, <ul><li>
-- Met en <strong> : dates, chiffres clés, titres/prix, institutions prestigieuses, mots-clés importants
-- 4-7 paragraphes structurés chronologiquement
-- Utilise des listes <ul><li> pour énumérer des éléments (palmarès, domaines, etc.)
-- Ton professionnel mais engageant
+RÈGLES BIOGRAPHIE (CRITIQUES) :
+- NE commence JAMAIS par le prénom ou le nom. Commence par un titre, une qualité ou un fait marquant (ex: "Ancien champion...", "Titulaire d'un...", "Diplômé de...", "Figure incontournable de...")
+- Structure en <strong>5 à 7 paragraphes</strong> <p>...</p> séparés
+- Chaque paragraphe = 2-3 phrases max, aérées
+- Met en <strong> : dates, chiffres clés, titres/prix, institutions, mots-clés importants
+- Utilise des listes <ul><li> quand il y a une énumération (palmarès, domaines d'expertise, ouvrages, etc.)
+- Progression chronologique : parcours → expertise → conférences/impact
+- Ton professionnel, engageant et narratif (pas de liste sèche de faits)
+- IMPORTANT : Chaque paragraphe doit être sur une NOUVELLE LIGNE (pas tout collé)
 
 RÈGLES CONFÉRENCES :
-- Crée 1 à 3 conférences thématiques pertinentes basées sur les infos trouvées
-- Chaque conférence a un titre accrocheur et une description HTML détaillée (2-3 paragraphes)
-- La description doit expliquer le contenu, les enseignements et la valeur ajoutée
+- Crée 1 à 3 conférences thématiques basées sur les infos trouvées
+- Titre accrocheur et inspirant
+- Description HTML de 2-3 paragraphes <p> avec des <strong> sur les mots-clés
+- Inclure les enseignements concrets et la valeur ajoutée pour le public
 
 RÈGLES KEY_POINTS :
-- 3-5 points forts factuels et percutants (titres, palmarès, distinctions, chiffres)
+- 3-5 points forts factuels et percutants (chiffres, titres, palmarès, distinctions)
+
+RÈGLES WHY_EXPERTISE et WHY_IMPACT (TRÈS IMPORTANT) :
+- why_expertise : une phrase UNIQUE et SPÉCIFIQUE à ce speaker expliquant son expertise. Mentionner ses domaines précis, ses réalisations concrètes. PAS de phrase générique.
+  Exemple pour un sportif : "Double champion olympique de judo et ancien ministre des Sports, David Douillet apporte un regard unique sur le dépassement de soi forgé par 20 ans de compétition au plus haut niveau."
+  Exemple pour un entrepreneur : "Fondateur de 3 entreprises et auteur de 5 ouvrages sur le leadership, il partage des méthodes éprouvées issues de 15 ans d'expérience terrain."
+- why_impact : une phrase UNIQUE et SPÉCIFIQUE décrivant l'impact concret de ses interventions. Mentionner ce que le public retient, les transformations observées.
+  Exemple : "Ses interventions provoquent un véritable déclic : les participants repartent avec une nouvelle vision du leadership et des outils concrets applicables dès le lendemain."
 
 JSON ATTENDU :
 {
   "name": "Prénom Nom",
   "role": "Titre professionnel court (ex: Double Champion Olympique de Judo)",
   "specialty": "Phrase d'accroche courte pour la carte (max 8 mots)",
-  "biography": "HTML riche...",
+  "biography": "HTML riche structuré comme l'exemple ci-dessus",
   "themes": ["Thème 1", "Thème 2", "Thème 3"],
   "conferences": [
     {"title": "Titre accrocheur", "description": "HTML riche avec <p> et <strong>"}
   ],
   "languages": ["Français"],
   "gender": "male ou female",
-  "key_points": ["Point fort 1", "Point fort 2"]
+  "key_points": ["Point fort 1", "Point fort 2"],
+  "why_expertise": "Phrase personnalisée sur l'expertise unique de ce speaker",
+  "why_impact": "Phrase personnalisée sur l'impact concret de ses interventions"
 }
 
 IMPORTANT : Réponds UNIQUEMENT avec le JSON valide, sans commentaire ni backtick.`;
@@ -419,6 +431,8 @@ Deno.serve(async (req) => {
       languages: aiProfile?.languages || found.find((s) => s.languages)?.languages || ["Français"],
       gender: aiProfile?.gender || "male",
       key_points: aiProfile?.key_points || found.find((s) => s.faits)?.faits || [],
+      why_expertise: aiProfile?.why_expertise || null,
+      why_impact: aiProfile?.why_impact || null,
       photo_url: bestPhoto,
       video_url: videoUrl,
       sources: sources.map((s) => ({ source: s.source, found: s.found, photo_url: s.photo_url || null })),
