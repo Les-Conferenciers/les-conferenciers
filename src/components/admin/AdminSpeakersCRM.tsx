@@ -253,7 +253,7 @@ const AdminSpeakersCRM = () => {
               <div className="flex-grow min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm text-foreground truncate">{speaker.name}</span>
-                  {speaker.featured && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">★</span>}
+                  {speaker.featured && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground font-medium">★</span>}
                 </div>
                 {speaker.role && <p className="text-xs text-muted-foreground truncate">{speaker.role}</p>}
               </div>
