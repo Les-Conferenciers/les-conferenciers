@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, Mail, ChevronRight, HelpCircle, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles, Play } from "lucide-react";
+import { Check, Mail, ChevronRight, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles, Play, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { useEffect, useState } from "react";
@@ -20,11 +20,29 @@ import SpeakerReviews from "@/components/SpeakerReviews";
 
 const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
 
+// Gender helpers
+const isFemale = (speaker: any) => speaker.gender === "female";
+const pronoun = (speaker: any) => isFemale(speaker) ? "elle" : "il";
+const pronounCap = (speaker: any) => isFemale(speaker) ? "Elle" : "Il";
+const le_la = (speaker: any) => isFemale(speaker) ? "la" : "le";
+const ce_cette = (speaker: any) => isFemale(speaker) ? "cette" : "ce";
+const expert_e = (speaker: any) => isFemale(speaker) ? "experte" : "expert";
+const reconnu_e = (speaker: any) => isFemale(speaker) ? "reconnue" : "reconnu";
+const conferencier_e = (speaker: any) => isFemale(speaker) ? "conférencière" : "conférencier";
+
+// Check if biography mentions books/ouvrages
+const hasPublishedBooks = (biography: string | null): boolean => {
+  if (!biography) return false;
+  const bookKeywords = /ouvrage|livre|auteur|auteure|best-seller|best seller|publié|publie|écrit|écrivain|roman|essai/i;
+  return bookKeywords.test(biography);
+};
+
 const generateFAQ = (speaker: any) => {
   const themes = parseThemes(speaker.themes);
   const themesText = themes.length > 0 ? themes.slice(0, 3).join(", ") : "le leadership et le management";
+  const fem = isFemale(speaker);
 
-  return [
+  const faqs = [
     {
       question: `Quels sont les thèmes de conférence de ${speaker.name} ?`,
       answer: `${speaker.name} intervient principalement sur les thématiques suivantes : ${themesText}. Chaque conférence est adaptée au contexte et aux objectifs de votre événement.`,
@@ -35,38 +53,49 @@ const generateFAQ = (speaker: any) => {
     },
     {
       question: `Quel est le tarif d'une conférence avec ${speaker.name} ?`,
-      answer: `Le tarif dépend de plusieurs facteurs : la durée de l'intervention, le format (keynote, table ronde, atelier), le lieu et la date. Contactez-nous pour recevoir une proposition adaptée à votre budget.`,
+      answer: `Le tarif dépend de plusieurs facteurs : la durée de l'intervention, le format (conférence, table ronde, webconférence), le lieu et la date. Contactez-nous pour recevoir une proposition adaptée à votre budget.`,
     },
     {
-      question: `${speaker.name} intervient-il en visioconférence ?`,
-      answer: `Oui, ${speaker.name} peut intervenir en présentiel comme en visioconférence. Le format est adapté selon vos contraintes logistiques et le nombre de participants.`,
+      question: `Une session de questions-réponses est-elle prévue à l'issue de la conférence ?`,
+      answer: `Oui, la plupart de nos ${conferencier_e(speaker)}s proposent un temps d'échange avec le public après leur intervention. ${speaker.name} ${fem ? "est disponible" : "est disponible"} pour répondre aux questions de vos participants et approfondir les sujets abordés.`,
     },
     {
-      question: `Quelle est la durée d'une conférence de ${speaker.name} ?`,
-      answer: `La durée standard est de 45 minutes à 1h30, suivie d'un temps d'échange avec le public. Des formats plus courts ou plus longs sont possibles selon vos besoins.`,
+      question: `La durée d'intervention est-elle modulable ?`,
+      answer: `Oui, la durée est ajustable selon vos besoins. En général, les interventions durent entre 35 minutes et 2 heures. ${speaker.name} s'adapte à votre programme et au format de votre événement.`,
     },
   ];
+
+  // Conditionally add book signing FAQ
+  if (hasPublishedBooks(speaker.biography)) {
+    faqs.push({
+      question: `Peut-on organiser une séance de dédicace ?`,
+      answer: `${speaker.name} ${fem ? "est l'auteure" : "est l'auteur"} de plusieurs ouvrages. Il est tout à fait possible d'organiser une séance de dédicace à l'issue de la conférence. Contactez-nous pour organiser les détails logistiques.`,
+    });
+  }
+
+  return faqs;
 };
 
 const generateWhyReasons = (speaker: any) => {
   const themes = parseThemes(speaker.themes);
   const themesText = themes.length > 0 ? themes.slice(0, 2).join(" et ") : "son domaine";
+  const fem = isFemale(speaker);
 
   return [
     {
       icon: Target,
       title: "Expertise reconnue",
-      description: `${speaker.name} est un expert reconnu en ${themesText}, apportant une vision concrète et actionnable à chaque intervention.`,
+      description: `${speaker.name} est ${fem ? "une experte reconnue" : "un expert reconnu"} en ${themesText}, apportant une vision concrète et actionnable à chaque intervention.`,
     },
     {
       icon: Lightbulb,
-      title: "Contenu inspirant et sur-mesure",
-      description: `Chaque conférence est personnalisée en fonction de votre audience et de vos objectifs pour maximiser l'impact et l'engagement.`,
+      title: "Intervention adaptée à votre secteur",
+      description: `${speaker.name} adapte spécifiquement son intervention au secteur d'activité de votre entreprise pour maximiser la pertinence et l'impact auprès de vos équipes.`,
     },
     {
       icon: TrendingUp,
       title: "Impact mesurable",
-      description: `Les interventions de ${speaker.name} génèrent un réel retour sur investissement : motivation des équipes, nouvelles perspectives et dynamique positive.`,
+      description: `Les interventions de ${speaker.name} génèrent un réel retour sur investissement : motivation des équipes, nouvelles perspectives et dynamique positive durable.`,
     },
     {
       icon: Handshake,
@@ -77,14 +106,18 @@ const generateWhyReasons = (speaker: any) => {
 };
 
 const highlightBioKeywords = (text: string): string => {
-  // Bold patterns: years, numbers with units, quoted text, proper nouns patterns, strong phrases
+  // Bold patterns: years, numbers with units, quoted text, strong phrases, titles, key achievements
   const patterns = [
     /(\d{4})/g, // years
-    /(\d+[\s]?(ans|pays|millions?|milliards?|livres?|ouvrages?|médailles?|records?|émissions?|entreprises?|collaborateurs?|salariés?))/gi,
-    /(champion(?:ne)?|record|prix|médaille|oscar|césar|palme|trophée|étoile|michelin|meilleur ouvrier|ballon d'or|victoire)/gi,
-    /(n°\s?\d+|numéro \d+|premier(?:e)?|première)/gi,
+    /(\d+[\s]?(ans|pays|millions?|milliards?|livres?|ouvrages?|médailles?|records?|émissions?|entreprises?|collaborateurs?|salariés?|exemplaires?|langues?))/gi,
+    /(champion(?:ne)?|record|prix|médaille|oscar|césar|palme|trophée|étoile|michelin|meilleur ouvrier|ballon d'or|victoire|best-seller|best seller)/gi,
+    /(n°\s?\d+|numéro \d+|premier(?:e)?|première|pionnière?)/gi,
+    /(fondateur|fondatrice|co-fondateur|co-fondatrice|directeur|directrice|président(?:e)?|professeur(?:e)?|expert(?:e)?|ambassadeur|ambassadrice)/gi,
+    /(diplômé(?:e)?|agrégé(?:e)?|docteur(?:e)?)/gi,
+    /(conférencier(?:e)?\s+inspirant(?:e)?|vision humaniste|référence sur le sujet)/gi,
+    /«\s*([^»]+)\s*»/g, // Quoted titles → bold the whole thing
   ];
-  
+
   let result = text;
   patterns.forEach(pattern => {
     result = result.replace(pattern, '<strong class="text-foreground font-semibold">$&</strong>');
@@ -157,7 +190,7 @@ const SpeakerDetail = () => {
   // SEO: JSON-LD + meta
   useEffect(() => {
     if (speaker) {
-      document.title = speaker.seo_title || `Conférence ${speaker.name} — Conférencier | Les Conférenciers`;
+      document.title = speaker.seo_title || `Conférence ${speaker.name} — ${conferencier_e(speaker)} | Les Conférenciers`;
       const desc = speaker.meta_description || `Réservez la conférence de ${speaker.name} pour votre événement. ${speaker.role || "Conférencier professionnel"}. Devis gratuit sous 24h.`;
       let metaEl = document.querySelector('meta[name="description"]');
       if (metaEl) {
@@ -169,7 +202,6 @@ const SpeakerDetail = () => {
         document.head.appendChild(metaEl);
       }
 
-      // Canonical
       let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
       if (!canonicalEl) {
         canonicalEl = document.createElement("link");
@@ -182,7 +214,6 @@ const SpeakerDetail = () => {
       const pageUrl = window.location.origin + `/speakers/${speaker.slug}`;
       const imageUrl = speaker.image_url || DEFAULT_IMAGE;
 
-      // Person + ProfilePage
       const personJsonLd = {
         "@context": "https://schema.org",
         "@type": "ProfilePage",
@@ -204,7 +235,6 @@ const SpeakerDetail = () => {
         },
       };
 
-      // BreadcrumbList
       const breadcrumbJsonLd = {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
@@ -215,7 +245,6 @@ const SpeakerDetail = () => {
         ],
       };
 
-      // FAQPage
       const faqJsonLd = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -226,7 +255,6 @@ const SpeakerDetail = () => {
         })),
       };
 
-      // ItemList for conferences
       const conferencesListJsonLd = conferences && conferences.length > 0 ? {
         "@context": "https://schema.org",
         "@type": "ItemList",
@@ -248,12 +276,11 @@ const SpeakerDetail = () => {
         })),
       } : null;
 
-      // Offers (Service)
       const serviceJsonLd = {
         "@context": "https://schema.org",
         "@type": "Service",
         name: `Conférence de ${speaker.name}`,
-        description: `Réservez ${speaker.name} comme conférencier pour votre événement professionnel.`,
+        description: `Réservez ${speaker.name} comme ${conferencier_e(speaker)} pour votre événement professionnel.`,
         provider: {
           "@type": "Organization",
           name: "Les Conférenciers",
@@ -334,10 +361,23 @@ const SpeakerDetail = () => {
   const faqItems = generateFAQ(speaker);
   const whyReasons = generateWhyReasons(speaker);
 
-  // Biography: show 3 lines by default
   const bioParagraphs = speaker.biography?.split("\n").filter(Boolean) || [];
   const bioPreview = bioParagraphs.slice(0, 2);
   const hasMoreBio = bioParagraphs.length > 2;
+
+  // Language flag mapping
+  const langFlags: Record<string, string> = {
+    "Français": "🇫🇷",
+    "Anglais": "🇬🇧",
+    "Espagnol": "🇪🇸",
+    "Allemand": "🇩🇪",
+    "Italien": "🇮🇹",
+    "Portugais": "🇵🇹",
+    "Néerlandais": "🇳🇱",
+    "Arabe": "🇸🇦",
+    "Chinois": "🇨🇳",
+    "Japonais": "🇯🇵",
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -415,14 +455,14 @@ const SpeakerDetail = () => {
             </div>
           </div>
         </div>
-            </section>
+      </section>
 
       {/* Content */}
       <div className="container mx-auto px-4 py-12 md:py-16 max-w-5xl flex-grow">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-12">
-            {/* Biography with "Qui est" heading */}
+            {/* Biography */}
             <section>
               <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                 <span className="w-1 h-7 bg-accent rounded-full block"></span>
@@ -444,28 +484,29 @@ const SpeakerDetail = () => {
               )}
             </section>
 
-            {/* Conferences */}
+            {/* Conferences — collapsible accordion */}
             {conferences && conferences.length > 0 && (
               <section>
                 <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                   <span className="w-1 h-7 bg-accent rounded-full block"></span>
                   Ses conférences
                 </h2>
-                <div className="space-y-5">
+                <Accordion type="single" collapsible className="space-y-3">
                   {conferences.map((conf) => (
-                    <div
+                    <AccordionItem
                       key={conf.id}
-                      className="rounded-xl bg-card border border-border/40 hover:border-accent/30 transition-colors overflow-hidden"
+                      value={conf.id}
+                      className="border border-border/40 rounded-xl px-0 overflow-hidden data-[state=open]:border-accent/30 transition-colors"
                     >
-                      <div className="flex items-center gap-3 px-6 py-4 bg-primary/[0.03] border-b border-border/30">
-                        <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                          <Mic className="h-4 w-4 text-accent" />
+                      <AccordionTrigger className="px-5 py-4 hover:no-underline gap-3">
+                        <div className="flex items-center gap-3 text-left">
+                          <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                            <Mic className="h-4 w-4 text-accent" />
+                          </div>
+                          <span className="font-serif font-bold text-foreground">{conf.title}</span>
                         </div>
-                        <h3 className="font-serif font-bold text-foreground text-lg">
-                          {conf.title}
-                        </h3>
-                      </div>
-                      <div className="p-6 space-y-4">
+                      </AccordionTrigger>
+                      <AccordionContent className="px-5 pb-5 space-y-4">
                         {conf.description && (
                           <p className="text-muted-foreground text-sm leading-relaxed">{conf.description}</p>
                         )}
@@ -494,17 +535,18 @@ const SpeakerDetail = () => {
                             <Mail className="h-4 w-4" /> Ça m'intéresse
                           </Button>
                         </div>
-                      </div>
-                    </div>
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               </section>
             )}
 
             {/* Video */}
             {(speaker as any).video_url && (() => {
               const videoUrl = (speaker as any).video_url as string;
-              const videoId = videoUrl.match(/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]{11})/)?.[1];
+              // Handle both regular youtube URLs and embed URLs
+              const videoId = videoUrl.match(/(?:youtu\.be\/|v=|embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
               return videoId ? (
                 <section>
                   <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
@@ -550,12 +592,12 @@ const SpeakerDetail = () => {
               </div>
             </section>
 
-            {/* Key Points full */}
+            {/* Key Points */}
             {speaker.key_points && speaker.key_points.length > 0 && (
               <section>
                 <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
                   <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                  Ce qui le distingue
+                  {isFemale(speaker) ? "Ce qui la distingue" : "Ce qui le distingue"}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {speaker.key_points.map((point: string, idx: number) => (
@@ -605,7 +647,7 @@ const SpeakerDetail = () => {
           <aside className="space-y-6">
             {/* CTA Card */}
             <div className="bg-primary text-primary-foreground p-6 rounded-2xl shadow-lg sticky top-24">
-              <h3 className="font-serif font-bold text-lg mb-2">Intéressé par ce profil ?</h3>
+              <h3 className="font-serif font-bold text-lg mb-2">Intéressé par {ce_cette(speaker)} profil ?</h3>
               <p className="text-primary-foreground/70 text-sm mb-5">
                 Contactez-nous pour vérifier la disponibilité de {speaker.name} pour votre événement.
               </p>
@@ -620,11 +662,14 @@ const SpeakerDetail = () => {
               </p>
             </div>
 
-            {/* Formats */}
+            {/* Formats d'intervention */}
             <div className="bg-card border border-border/40 rounded-2xl p-6">
-              <h3 className="font-serif font-bold text-foreground mb-3">Formats d'intervention</h3>
+              <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
+                <Mic className="h-4 w-4 text-accent" />
+                Formats d'intervention
+              </h3>
               <div className="space-y-2">
-                {["Keynote", "Table ronde", "Atelier", "Visioconférence"].map((format) => (
+                {["Conférence", "Webconférence", "Table ronde"].map((format) => (
                   <div key={format} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Check className="h-3.5 w-3.5 text-accent" />
                     <span>{format}</span>
@@ -633,21 +678,19 @@ const SpeakerDetail = () => {
               </div>
             </div>
 
-            {/* Languages */}
+            {/* Languages — explicit section */}
             {speaker.languages && speaker.languages.length > 0 && (
               <div className="bg-card border border-border/40 rounded-2xl p-6">
                 <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
                   <Globe className="h-4 w-4 text-accent" />
                   Langues d'intervention
                 </h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
                   {speaker.languages.map((lang: string) => (
-                    <span
-                      key={lang}
-                      className="inline-flex items-center rounded-full bg-accent/10 border border-accent/20 text-accent px-3 py-1 text-xs font-semibold"
-                    >
-                      {lang}
-                    </span>
+                    <div key={lang} className="flex items-center gap-2.5 text-sm text-foreground">
+                      <span className="text-base">{langFlags[lang] || "🌐"}</span>
+                      <span className="font-medium">{lang}</span>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -681,7 +724,7 @@ const SpeakerDetail = () => {
               Profils similaires
             </h2>
             <p className="text-muted-foreground mb-8 ml-4">
-              Des conférenciers qui partagent des thématiques communes avec {speaker.name}
+              Des {conferencier_e(speaker)}s qui partagent des thématiques communes avec {speaker.name}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {similarSpeakers.map((s) => (
