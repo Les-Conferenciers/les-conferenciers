@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon, Wand2 } from "lucide-react";
+import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon, Wand2, Sparkles } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -40,6 +40,7 @@ const AdminSpeakersCRM = () => {
   const [importing, setImporting] = useState(false);
   const [migratingPhotos, setMigratingPhotos] = useState(false);
   const [formattingBios, setFormattingBios] = useState(false);
+  const [generatingSpecialties, setGeneratingSpecialties] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit dialog state
@@ -242,6 +243,29 @@ const AdminSpeakersCRM = () => {
             setFormattingBios(false);
           }}>
             <Wand2 className="h-4 w-4" /> {formattingBios ? "Formatage…" : "Formater bios"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={generatingSpecialties} onClick={async () => {
+            setGeneratingSpecialties(true);
+            try {
+              const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-specialties`;
+              const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                  "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({}),
+              });
+              const data = await resp.json();
+              toast.success(`Spécialités générées : ${data.summary?.generated ?? 0} traitées`);
+              fetchSpeakers();
+            } catch (err: any) {
+              toast.error(`Erreur : ${err.message}`);
+            }
+            setGeneratingSpecialties(false);
+          }}>
+            <Sparkles className="h-4 w-4" /> {generatingSpecialties ? "Génération…" : "Générer spécialités"}
           </Button>
         </div>
 
