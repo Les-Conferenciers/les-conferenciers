@@ -24,6 +24,7 @@ type Speaker = {
   languages: string[] | null;
   video_url: string | null;
   featured: boolean | null;
+  gender: string | null;
 };
 
 const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
