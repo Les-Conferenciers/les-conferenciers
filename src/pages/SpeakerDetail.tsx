@@ -133,6 +133,26 @@ const removeNameFromBio = (bio: string, name: string): string => {
   return result;
 };
 
+// Format biography for web readability: detect lists, add structure
+const formatBioForWeb = (text: string): string => {
+  // Split long paragraphs into shorter ones at sentence boundaries (aim for ~2-3 sentences per block)
+  let result = text;
+
+  // Detect enumeration patterns and convert to HTML lists
+  // Pattern: "1) ... 2) ... 3) ..." or "1. ... 2. ..."
+  result = result.replace(/(?:^|\n)\s*(\d+)[.)]\s+/g, '\n<li>');
+  
+  // Detect "- item" patterns
+  result = result.replace(/(?:^|\n)\s*[-–—•]\s+(.+?)(?=(?:\n\s*[-–—•]|\n\n|$))/g, '<li>$1</li>');
+
+  // Wrap consecutive <li> in <ul>
+  if (result.includes('<li>')) {
+    result = result.replace(/((?:<li>.*?<\/li>\s*)+)/g, '<ul class="my-4 ml-4 space-y-2">$1</ul>');
+  }
+
+  return result;
+};
+
 const highlightBioKeywords = (text: string): string => {
   // Bold patterns: years, numbers with units, quoted text, strong phrases, titles, key achievements
   const patterns = [
@@ -500,18 +520,32 @@ const SpeakerDetail = () => {
                 <span className="w-1 h-7 bg-accent rounded-full block"></span>
                 Biographie
               </h2>
-              <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed">
-                {(bioExpanded ? bioParagraphs : bioPreview).map((paragraph: string, idx: number) => (
-                  <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: highlightBioKeywords(paragraph) }} />
-                ))}
+              <div className="relative">
+                <div 
+                  className={`prose prose-lg max-w-none text-muted-foreground leading-relaxed space-y-4 overflow-hidden transition-all duration-500 ${
+                    !bioExpanded ? "max-h-[180px]" : "max-h-[5000px]"
+                  }`}
+                >
+                  {bioParagraphs.map((paragraph: string, idx: number) => (
+                    <p 
+                      key={idx} 
+                      className="mb-3 text-[0.95rem] leading-[1.8]" 
+                      dangerouslySetInnerHTML={{ __html: highlightBioKeywords(formatBioForWeb(paragraph)) }} 
+                    />
+                  ))}
+                </div>
+                {/* Gradient fade overlay when collapsed */}
+                {!bioExpanded && bioParagraphs.length > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+                )}
               </div>
-              {hasMoreBio && (
+              {bioParagraphs.length > 0 && (
                 <button
                   onClick={() => setBioExpanded(!bioExpanded)}
-                  className="text-accent font-semibold text-sm hover:underline mt-2 inline-flex items-center gap-1"
+                  className="mt-3 text-accent font-semibold text-sm hover:underline inline-flex items-center gap-1.5 transition-colors"
                 >
-                  {bioExpanded ? "Voir moins" : "Lire la suite"}
-                  <ChevronDown className={`h-4 w-4 transition-transform ${bioExpanded ? "rotate-180" : ""}`} />
+                  {bioExpanded ? "Voir moins" : "Lire la suite de la biographie"}
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${bioExpanded ? "rotate-180" : ""}`} />
                 </button>
               )}
             </section>
