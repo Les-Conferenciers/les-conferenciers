@@ -81,11 +81,18 @@ const generateWhyReasons = (speaker: any) => {
   const themesText = themes.length > 0 ? themes.slice(0, 2).join(" et ") : "son domaine";
   const fem = isFemale(speaker);
 
+  // Use personalized AI-generated text when available, fallback to generic
+  const expertiseDesc = speaker.why_expertise 
+    || `${speaker.name} est ${fem ? "une experte reconnue" : "un expert reconnu"} en ${themesText}, apportant une vision concrète et actionnable à chaque intervention.`;
+  
+  const impactDesc = speaker.why_impact 
+    || `Les interventions de ${speaker.name} génèrent un réel retour sur investissement : motivation des équipes, nouvelles perspectives et dynamique positive durable.`;
+
   return [
     {
       icon: Target,
       title: "Expertise reconnue",
-      description: `${speaker.name} est ${fem ? "une experte reconnue" : "un expert reconnu"} en ${themesText}, apportant une vision concrète et actionnable à chaque intervention.`,
+      description: expertiseDesc,
     },
     {
       icon: Lightbulb,
@@ -95,7 +102,7 @@ const generateWhyReasons = (speaker: any) => {
     {
       icon: TrendingUp,
       title: "Impact mesurable",
-      description: `Les interventions de ${speaker.name} génèrent un réel retour sur investissement : motivation des équipes, nouvelles perspectives et dynamique positive durable.`,
+      description: impactDesc,
     },
     {
       icon: Handshake,
