@@ -23,11 +23,14 @@ serve(async (req) => {
 
     const supabase = createClient(localUrl, localServiceKey);
 
-    // Accept array of speaker data objects
-    const { speakers: speakerRows } = await req.json();
-    if (!speakerRows || !Array.isArray(speakerRows)) throw new Error('No speakers array provided');
+    // Get CSV as raw text body
+    const csvData = await req.text();
+    if (!csvData || csvData.length < 50) throw new Error('No CSV data in body');
 
-    console.log(`Processing ${speakerRows.length} speakers`);
+    const lines = csvData.split(/\r?\n|\r/).filter((l: string) => l.trim());
+    const dataLines = lines.slice(1); // skip header
+
+    console.log(`Processing ${dataLines.length} CSV rows, total ${csvData.length} chars`);
 
     // Get all existing speakers
     const { data: existingSpeakers, error: fetchErr } = await supabase
@@ -46,9 +49,24 @@ serve(async (req) => {
     let notFound: string[] = [];
     let conferencesInserted = 0;
 
-    for (const row of speakerRows) {
-      const { slug, nom, thematiques, pointsCles, biographie, conferences, photoUrl, videosYoutube, languesParlees } = row;
+    for (const line of dataLines) {
+      const cols = line.split(';');
+      if (cols.length < 11) {
+        console.log(`Skipping line with ${cols.length} cols`);
+        continue;
+      }
 
+      const url = cols[0];
+      const nom = cols[1];
+      const thematiques = cols[2];
+      const pointsCles = cols[3];
+      const biographie = cols[4];
+      const conferences = cols[5];
+      const photoUrl = cols[6];
+      const videosYoutube = cols[7];
+      const languesParlees = cols[10];
+
+      const slug = extractSlugFromUrl(url);
       let speaker = speakerBySlug.get(slug);
       if (!speaker) {
         speaker = speakerByName.get(nom.toLowerCase().trim());
@@ -144,7 +162,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      total: speakerRows.length,
+      total: dataLines.length,
       updated,
       notFound,
       conferencesInserted,
