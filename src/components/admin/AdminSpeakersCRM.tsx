@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video } from "lucide-react";
+import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 
@@ -37,6 +37,7 @@ const AdminSpeakersCRM = () => {
   const [cityFilter, setCityFilter] = useState("");
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
   const [importing, setImporting] = useState(false);
+  const [migratingPhotos, setMigratingPhotos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit dialog state
@@ -193,6 +194,27 @@ const AdminSpeakersCRM = () => {
           <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
           <Button variant="outline" size="sm" className="gap-1.5" disabled={importing} onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4" /> {importing ? "Import…" : "Importer CSV"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={migratingPhotos} onClick={async () => {
+            setMigratingPhotos(true);
+            try {
+              const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/migrate-speaker-photos`;
+              const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                  "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                },
+              });
+              const data = await resp.json();
+              toast.success(`Photos migrées : ${data.summary?.migrated ?? 0} OK, ${data.summary?.failed ?? 0} erreurs`);
+              fetchSpeakers();
+            } catch (err: any) {
+              toast.error(`Erreur migration : ${err.message}`);
+            }
+            setMigratingPhotos(false);
+          }}>
+            <ImageIcon className="h-4 w-4" /> {migratingPhotos ? "Migration…" : "Migrer photos"}
           </Button>
         </div>
 
