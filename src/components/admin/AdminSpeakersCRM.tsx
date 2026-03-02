@@ -38,11 +38,19 @@ const AdminSpeakersCRM = () => {
     setImporting(true);
     try {
       const text = await file.text();
-      const { data, error } = await supabase.functions.invoke("update-speakers-from-csv", {
+      // Call edge function with raw CSV text via fetch
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-speakers-from-csv`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
         body: text,
-        headers: { "Content-Type": "text/plain" },
       });
-      if (error) throw error;
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error);
       toast.success(`Import terminé : ${data.updated} mis à jour, ${data.conferencesInserted} conférences ajoutées`);
       if (data.notFound?.length > 0) {
         toast.info(`${data.notFound.length} non trouvés : ${data.notFound.slice(0, 5).join(", ")}${data.notFound.length > 5 ? "…" : ""}`);
