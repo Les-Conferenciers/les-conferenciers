@@ -7,36 +7,55 @@ const corsHeaders = {
 };
 
 function moveImageToMiddle(html: string): string {
-  // Extract the img tag (with or without self-closing)
+  // Extract the img tag
   const imgMatch = html.match(/<img\s[^>]+(?:\/>|>)/);
   if (!imgMatch) return html;
 
   const imgTag = imgMatch[0];
-  // Remove img tag from current position
   const withoutImg = html.replace(imgTag, "").replace(/\s*$/, "");
 
-  // Find all </p> positions
-  const closingTags: number[] = [];
-  let searchFrom = 0;
+  // Try </p> boundaries first
+  const pClosings: number[] = [];
+  let idx = 0;
   while (true) {
-    const pos = withoutImg.indexOf("</p>", searchFrom);
+    const pos = withoutImg.indexOf("</p>", idx);
     if (pos === -1) break;
-    closingTags.push(pos + 4); // position after </p>
-    searchFrom = pos + 4;
+    pClosings.push(pos + 4);
+    idx = pos + 4;
   }
 
-  if (closingTags.length < 2) return html; // Not enough paragraphs
+  if (pClosings.length >= 2) {
+    const insertIdx = Math.floor(pClosings.length / 2);
+    const insertPos = pClosings[insertIdx - 1];
+    return withoutImg.substring(0, insertPos) + imgTag + withoutImg.substring(insertPos);
+  }
 
-  // Insert after the paragraph at ~50% mark
-  const insertIdx = Math.floor(closingTags.length / 2);
-  const insertPos = closingTags[insertIdx - 1]; // After the middle </p>
+  // No <p> tags — plain text. Find the sentence closest to 50% of the text
+  const textLen = withoutImg.length;
+  const midpoint = Math.floor(textLen / 2);
+  
+  // Find sentence boundaries (. followed by space or uppercase)
+  const sentenceEnds: number[] = [];
+  for (let i = 20; i < textLen - 20; i++) {
+    if (withoutImg[i] === "." && (withoutImg[i + 1] === " " || withoutImg[i + 1] === "\n")) {
+      sentenceEnds.push(i + 1);
+    }
+  }
 
-  const result =
-    withoutImg.substring(0, insertPos) +
-    imgTag +
-    withoutImg.substring(insertPos);
+  if (sentenceEnds.length < 2) return html; // Can't split meaningfully
 
-  return result;
+  // Find the sentence end closest to the midpoint
+  let bestPos = sentenceEnds[0];
+  let bestDist = Math.abs(bestPos - midpoint);
+  for (const pos of sentenceEnds) {
+    const dist = Math.abs(pos - midpoint);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestPos = pos;
+    }
+  }
+
+  return withoutImg.substring(0, bestPos) + " " + imgTag + " " + withoutImg.substring(bestPos);
 }
 
 Deno.serve(async (req) => {
