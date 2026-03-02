@@ -29,6 +29,31 @@ const AdminSpeakersCRM = () => {
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState("");
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const { data, error } = await supabase.functions.invoke("update-speakers-from-csv", {
+        body: text,
+        headers: { "Content-Type": "text/plain" },
+      });
+      if (error) throw error;
+      toast.success(`Import terminé : ${data.updated} mis à jour, ${data.conferencesInserted} conférences ajoutées`);
+      if (data.notFound?.length > 0) {
+        toast.info(`${data.notFound.length} non trouvés : ${data.notFound.slice(0, 5).join(", ")}${data.notFound.length > 5 ? "…" : ""}`);
+      }
+      fetchSpeakers();
+    } catch (err: any) {
+      toast.error(`Erreur import : ${err.message}`);
+    }
+    setImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const fetchSpeakers = async () => {
     setLoading(true);
