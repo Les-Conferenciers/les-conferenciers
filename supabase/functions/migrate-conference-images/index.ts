@@ -7,33 +7,34 @@ const corsHeaders = {
 };
 
 function moveImageToMiddle(html: string): string {
-  // Extract the img tag
-  const imgMatch = html.match(/<img[^>]+(?:\/>|>)/);
+  // Extract the img tag (with or without self-closing)
+  const imgMatch = html.match(/<img\s[^>]+(?:\/>|>)/);
   if (!imgMatch) return html;
 
   const imgTag = imgMatch[0];
   // Remove img tag from current position
-  const withoutImg = html.replace(imgTag, "").trim();
+  const withoutImg = html.replace(imgTag, "").replace(/\s*$/, "");
 
-  // Split by </p> to find paragraph boundaries
-  const parts = withoutImg.split("</p>");
-  // Filter out empty parts
-  const paragraphs = parts.filter((p) => p.trim().length > 0);
+  // Find all </p> positions
+  const closingTags: number[] = [];
+  let searchFrom = 0;
+  while (true) {
+    const pos = withoutImg.indexOf("</p>", searchFrom);
+    if (pos === -1) break;
+    closingTags.push(pos + 4); // position after </p>
+    searchFrom = pos + 4;
+  }
 
-  if (paragraphs.length < 2) return html; // Not enough paragraphs
+  if (closingTags.length < 2) return html; // Not enough paragraphs
 
-  // Insert after the paragraph closest to the middle
-  const insertAfter = Math.ceil(paragraphs.length / 2);
+  // Insert after the paragraph at ~50% mark
+  const insertIdx = Math.floor(closingTags.length / 2);
+  const insertPos = closingTags[insertIdx - 1]; // After the middle </p>
 
-  const result = paragraphs
-    .map((p, i) => {
-      const closed = p.trim() + "</p>";
-      if (i === insertAfter - 1) {
-        return closed + imgTag;
-      }
-      return closed;
-    })
-    .join("");
+  const result =
+    withoutImg.substring(0, insertPos) +
+    imgTag +
+    withoutImg.substring(insertPos);
 
   return result;
 }
