@@ -14,6 +14,7 @@ export interface Speaker {
   themes: string[] | null;
   image_url: string | null;
   biography: string | null;
+  specialty: string | null;
   languages?: string[] | null;
 }
 
@@ -63,11 +64,13 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
             {speaker.role}
           </p>
         </CardHeader>
-        <CardContent className="pb-2">
-          <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
-            {speaker.biography}
-          </p>
-        </CardContent>
+        {speaker.specialty && (
+          <CardContent className="pb-2">
+            <p className="text-accent text-sm font-semibold leading-relaxed">
+              {speaker.specialty}
+            </p>
+          </CardContent>
+        )}
         <CardFooter className="flex flex-wrap gap-1.5 pt-0 mt-auto pb-5">
           {themes.slice(0, 3).map((theme) => (
             <button
