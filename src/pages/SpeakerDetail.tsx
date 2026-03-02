@@ -409,13 +409,23 @@ const SpeakerDetail = () => {
   const faqItems = generateFAQ(speaker);
   const whyReasons = generateWhyReasons(speaker);
 
-  const rawBioParagraphs = speaker.biography?.split("\n").filter(Boolean) || [];
-  // Remove speaker name from the first paragraph
-  const bioParagraphs = rawBioParagraphs.map((p: string, i: number) => 
-    i === 0 ? removeNameFromBio(p, speaker.name) : p
-  );
-  const bioPreview = bioParagraphs.slice(0, 2);
-  const hasMoreBio = bioParagraphs.length > 2;
+  // Prepare biography: handle both HTML content and plain text
+  const isHtmlBio = speaker.biography?.includes("<") ?? false;
+  let processedBio = speaker.biography || "";
+  
+  if (isHtmlBio) {
+    // HTML bio from rich text editor — remove speaker name from start
+    processedBio = removeNameFromBio(processedBio.replace(/^<p>/, ""), speaker.name);
+    if (!processedBio.startsWith("<")) processedBio = "<p>" + processedBio;
+    processedBio = highlightBioKeywords(processedBio);
+  } else {
+    // Plain text bio — split into paragraphs
+    const rawBioParagraphs = processedBio.split("\n").filter(Boolean);
+    const bioParagraphs = rawBioParagraphs.map((p: string, i: number) => 
+      i === 0 ? removeNameFromBio(p, speaker.name) : p
+    );
+    processedBio = bioParagraphs.map(p => `<p>${highlightBioKeywords(formatBioForWeb(p))}</p>`).join("");
+  }
 
   // Language flag mapping
   const langFlags: Record<string, string> = {
