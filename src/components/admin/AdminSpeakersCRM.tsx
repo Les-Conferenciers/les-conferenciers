@@ -139,6 +139,22 @@ const AdminSpeakersCRM = () => {
           <Button variant="ghost" size="icon" onClick={fetchSpeakers} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImportCSV}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={importing}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4" /> {importing ? "Import…" : "Importer CSV"}
+          </Button>
           {hasFilters && (
             <Button variant="outline" size="sm" onClick={clearFilters} className="gap-1.5">
               <X className="h-3.5 w-3.5" /> Réinitialiser
