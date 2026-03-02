@@ -23,20 +23,11 @@ serve(async (req) => {
 
     const supabase = createClient(localUrl, localServiceKey);
 
-    const { csvUrl } = await req.json();
-    if (!csvUrl) throw new Error('No csvUrl provided');
+    // Accept array of speaker data objects
+    const { speakers: speakerRows } = await req.json();
+    if (!speakerRows || !Array.isArray(speakerRows)) throw new Error('No speakers array provided');
 
-    // Fetch CSV
-    const csvResp = await fetch(csvUrl);
-    if (!csvResp.ok) throw new Error(`Failed to fetch CSV: ${csvResp.status}`);
-    const csvData = await csvResp.text();
-
-    console.log(`CSV length: ${csvData.length} chars`);
-    console.log(`First 200 chars: ${csvData.substring(0, 200)}`);
-    const lines = csvData.split(/\r?\n|\r/).filter((l: string) => l.trim());
-    const dataLines = lines.slice(1); // skip header
-
-    console.log(`Processing ${dataLines.length} CSV rows`);
+    console.log(`Processing ${speakerRows.length} speakers`);
 
     // Get all existing speakers
     const { data: existingSpeakers, error: fetchErr } = await supabase
@@ -55,13 +46,9 @@ serve(async (req) => {
     let notFound: string[] = [];
     let conferencesInserted = 0;
 
-    for (const line of dataLines) {
-      const cols = line.split(';');
-      if (cols.length < 12) continue;
+    for (const row of speakerRows) {
+      const { slug, nom, thematiques, pointsCles, biographie, conferences, photoUrl, videosYoutube, languesParlees } = row;
 
-      const [url, nom, thematiques, pointsCles, biographie, conferences, photoUrl, videosYoutube, _associes, _telephone, languesParlees, _typeConf] = cols;
-
-      const slug = extractSlugFromUrl(url);
       let speaker = speakerBySlug.get(slug);
       if (!speaker) {
         speaker = speakerByName.get(nom.toLowerCase().trim());
@@ -72,7 +59,6 @@ serve(async (req) => {
         continue;
       }
 
-      // Build update
       const updateData: Record<string, any> = {};
 
       if (videosYoutube) {
@@ -120,8 +106,7 @@ serve(async (req) => {
       if (conferences && conferences.trim()) {
         await supabase.from('speaker_conferences').delete().eq('speaker_id', speaker.id);
 
-        // Split conferences by "Conférence «" or "Conférence :" patterns
-        const confParts = conferences.split(/(?=Conférence\s+[«"])|(?=Conférence\s+::)/);
+        const confParts = conferences.split(/(?=Conférence\s+[«"])|(?=Conférence[s]?\s+::)/);
         
         let order = 0;
         for (const part of confParts) {
@@ -141,15 +126,8 @@ serve(async (req) => {
               title = 'Conférence';
               description = colonMatch[1].trim();
             } else {
-              // Check for "Thèmes abordés" pattern
-              const themeMatch = trimmed.match(/^Thèmes?\s+abordés?\s*:?\s*::\s*(.*)/s);
-              if (themeMatch) {
-                title = 'Thèmes abordés';
-                description = themeMatch[1].trim();
-              } else {
-                title = trimmed.substring(0, Math.min(100, trimmed.length));
-                description = trimmed;
-              }
+              title = trimmed.substring(0, Math.min(100, trimmed.length));
+              description = trimmed;
             }
           }
 
@@ -166,7 +144,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      totalCSVRows: dataLines.length,
+      total: speakerRows.length,
       updated,
       notFound,
       conferencesInserted,
