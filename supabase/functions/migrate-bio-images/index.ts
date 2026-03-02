@@ -16,11 +16,16 @@ async function downloadAndUpload(
   fileName: string
 ): Promise<string | null> {
   try {
-    const resp = await fetch(imageUrl, {
+    // Ensure full URL
+    let fullUrl = imageUrl;
+    if (fullUrl.startsWith("//")) fullUrl = "https:" + fullUrl;
+    if (!fullUrl.startsWith("http")) return null;
+
+    const resp = await fetch(fullUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ConferenceBot/1.0)' }
     });
     if (!resp.ok) {
-      console.log(`Download failed for ${imageUrl}: ${resp.status}`);
+      console.log(`Download failed for ${fullUrl}: ${resp.status}`);
       return null;
     }
 
@@ -29,7 +34,7 @@ async function downloadAndUpload(
 
     // Skip tiny images (likely icons/spacers)
     if (blob.byteLength < 2000) {
-      console.log(`Skipping tiny image (${blob.byteLength}b): ${imageUrl}`);
+      console.log(`Skipping tiny image (${blob.byteLength}b): ${fullUrl}`);
       return null;
     }
 
@@ -55,12 +60,34 @@ async function downloadAndUpload(
 
 function extractImagesFromHtml(html: string): string[] {
   const imgs: string[] = [];
-  const imgRegex = /<img[^>]+src=["']([^"']+)[^>]*>/g;
+  // Match both src and data-src attributes
+  const imgRegex = /<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>/g;
   let m;
   while ((m = imgRegex.exec(html)) !== null) {
-    const src = m[1];
-    // Only keep actual content images from wp-content, skip icons/gravatar/etc
+    let src = m[1];
+    // Skip base64 placeholders
+    if (src.startsWith("data:")) {
+      // Try to find data-src in the same tag
+      const dataSrcMatch = m[0].match(/data-src=["']([^"']+)["']/);
+      if (dataSrcMatch) {
+        src = dataSrcMatch[1];
+      } else {
+        continue;
+      }
+    }
+    // Only keep actual content images from wp-content
     if (src.includes("wp-content/uploads") && !src.includes("placeholder") && !src.includes("icon")) {
+      // Avoid duplicates
+      if (!imgs.includes(src)) {
+        imgs.push(src);
+      }
+    }
+  }
+  // Also catch data-src that wasn't caught
+  const dataSrcRegex = /data-src=["']([^"']+)["']/g;
+  while ((m = dataSrcRegex.exec(html)) !== null) {
+    const src = m[1];
+    if (src.includes("wp-content/uploads") && !src.startsWith("data:") && !imgs.includes(src)) {
       imgs.push(src);
     }
   }
@@ -68,9 +95,9 @@ function extractImagesFromHtml(html: string): string[] {
 }
 
 function getTabContent(html: string, tabIndex: number): string {
-  // Match et_pb_tab_0 (bio) or et_pb_tab_1 (conferences)
+  // The structure is: <div class="et_pb_tab et_pb_tab_X clearfix..."><div class="et_pb_tab_content">...</div></div>
   const regex = new RegExp(
-    `class="et_pb_tab\\\\s+et_pb_tab_${tabIndex}\\\\s+[^"]*"[\\\\s\\\\S]*?<div\\\\s+class="et_pb_tab_content">([\\\\s\\\\S]*?)</div>\\\\s*</div>`,
+    `<div\\s+class="et_pb_tab\\s+et_pb_tab_${tabIndex}\\s+clearfix[^"]*">[\\s\\S]*?<div\\s+class="et_pb_tab_content">([\\s\\S]*?)</div>\\s*</div>`,
     ''
   );
   const match = html.match(regex);
@@ -140,17 +167,13 @@ serve(async (req) => {
 
             const newUrl = await downloadAndUpload(supabase, oldUrl, fileName);
             if (newUrl) {
-              // If the bio already contains this image reference, update it
-              // Otherwise, we'll note it but the image is in the old site HTML, not necessarily in our bio text
               speakerResult.details.push({ type: 'bio', oldUrl, newUrl, fileName });
               speakerResult.bioImages++;
               totalBioImages++;
 
-              // Insert image tag into biography if not already there
-              // Add it as a float-right image at the start of bio or where it appeared
+              // Insert image into biography if not already present
               if (!updatedBio.includes(newUrl)) {
                 const imgTag = `<img src="${newUrl}" alt="${speaker.name}" class="float-right ml-6 mb-4 rounded-lg w-64 max-w-[40%]" />`;
-                // Insert after first <p> tag or at the beginning
                 if (updatedBio.startsWith('<p>')) {
                   const firstPEnd = updatedBio.indexOf('</p>');
                   if (firstPEnd > -1) {
@@ -181,7 +204,6 @@ serve(async (req) => {
         const confImages = extractImagesFromHtml(confHtml);
 
         if (confImages.length > 0) {
-          // Get existing conferences for this speaker
           const { data: existingConfs } = await supabase
             .from('speaker_conferences')
             .select('id, title, description, display_order')
@@ -207,11 +229,7 @@ serve(async (req) => {
               speakerResult.confImages++;
               totalConfImages++;
 
-              // Try to insert the image into the matching conference description
-              // Images in conference tab usually appear between or within conference entries
-              // We'll add it to the conference at the corresponding position
               if (existingConfs && existingConfs.length > 0) {
-                // Match image to closest conference by position in HTML
                 const confIndex = Math.min(i, existingConfs.length - 1);
                 const conf = existingConfs[confIndex];
                 
@@ -230,7 +248,6 @@ serve(async (req) => {
         }
 
         results.push(speakerResult);
-        // Polite delay
         await new Promise(r => setTimeout(r, 500));
       } catch (err) {
         results.push({ slug: speaker.slug, status: 'error', error: err.message });
