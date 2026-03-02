@@ -160,7 +160,8 @@ const AdminSpeakersCRM = () => {
         themes: editForm.themes || [],
         languages: editForm.languages || [],
         featured: editForm.featured ?? false,
-      })
+        gender: editForm.gender || 'male',
+      } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
     if (error) {
