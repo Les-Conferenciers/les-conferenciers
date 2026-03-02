@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, X, MapPin, Euro, RefreshCw, ExternalLink } from "lucide-react";
+import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload } from "lucide-react";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
+import { toast } from "sonner";
 
 type Speaker = {
   id: string;
@@ -28,6 +29,39 @@ const AdminSpeakersCRM = () => {
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState("");
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      // Call edge function with raw CSV text via fetch
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-speakers-from-csv`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: text,
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error);
+      toast.success(`Import terminé : ${data.updated} mis à jour, ${data.conferencesInserted} conférences ajoutées`);
+      if (data.notFound?.length > 0) {
+        toast.info(`${data.notFound.length} non trouvés : ${data.notFound.slice(0, 5).join(", ")}${data.notFound.length > 5 ? "…" : ""}`);
+      }
+      fetchSpeakers();
+    } catch (err: any) {
+      toast.error(`Erreur import : ${err.message}`);
+    }
+    setImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const fetchSpeakers = async () => {
     setLoading(true);
@@ -112,6 +146,22 @@ const AdminSpeakersCRM = () => {
           </div>
           <Button variant="ghost" size="icon" onClick={fetchSpeakers} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImportCSV}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={importing}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4" /> {importing ? "Import…" : "Importer CSV"}
           </Button>
           {hasFilters && (
             <Button variant="outline" size="sm" onClick={clearFilters} className="gap-1.5">
