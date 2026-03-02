@@ -61,25 +61,36 @@ Deno.serve(async (req) => {
   }
 
   let fixed = 0;
+  let skipped = 0;
   for (const conf of conferences || []) {
     const desc = conf.description || "";
     const imgPos = desc.indexOf("<img");
+    if (imgPos < 0) continue;
     const pct = imgPos / desc.length;
 
-    if (pct > 0.7) {
+    if (pct > 0.65) {
       const newDesc = moveImageToMiddle(desc);
       if (newDesc !== desc) {
-        await supabase
+        const { error: updateErr } = await supabase
           .from("speaker_conferences")
           .update({ description: newDesc })
           .eq("id", conf.id);
-        fixed++;
+        if (updateErr) {
+          console.error(`Update error for ${conf.id}:`, updateErr);
+        } else {
+          fixed++;
+        }
+      } else {
+        skipped++;
+        console.log(`Skipped ${conf.id}: moveImageToMiddle returned same content`);
       }
     }
   }
 
+  console.log(`Fixed: ${fixed}, Skipped: ${skipped}, Total: ${conferences?.length}`);
+
   return new Response(
-    JSON.stringify({ success: true, fixed, total: conferences?.length }),
+    JSON.stringify({ success: true, fixed, skipped, total: conferences?.length }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 });
