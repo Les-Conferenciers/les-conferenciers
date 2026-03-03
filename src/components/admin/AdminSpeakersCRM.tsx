@@ -32,6 +32,7 @@ type Speaker = {
   featured: boolean | null;
   gender: string | null;
   archived: boolean | null;
+  created_at: string;
 };
 
 type Review = {
@@ -105,7 +106,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender, archived")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender, archived, created_at")
       .order("name");
     setSpeakers(data || []);
     setLoading(false);
