@@ -32,6 +32,7 @@ type Speaker = {
   featured: boolean | null;
   gender: string | null;
   archived: boolean | null;
+  created_at: string;
 };
 
 type Review = {
@@ -105,7 +106,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender, archived")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender, archived, created_at")
       .order("name");
     setSpeakers(data || []);
     setLoading(false);
@@ -433,6 +434,7 @@ const AdminSpeakersCRM = () => {
                 {speaker.role && <p className="text-xs text-muted-foreground truncate">{speaker.role}</p>}
               </div>
               <div className="hidden md:flex items-center gap-4 flex-shrink-0 text-xs text-muted-foreground">
+                <span className="whitespace-nowrap">{new Date(speaker.created_at).toLocaleDateString("fr-FR")}</span>
                 {themes.length > 0 && (
                   <span className="truncate max-w-[200px]">{themes.slice(0, 2).join(", ")}{themes.length > 2 ? ` +${themes.length - 2}` : ""}</span>
                 )}
