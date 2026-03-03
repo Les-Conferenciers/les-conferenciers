@@ -57,16 +57,9 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
             {speaker.name}
           </h3>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-            {speaker.role}
+            {speaker.specialty || speaker.role}
           </p>
         </CardHeader>
-        {speaker.specialty && (
-          <CardContent className="pb-2 pt-0 text-center">
-            <p className="text-muted-foreground/80 text-xs italic leading-snug tracking-wide">
-              {speaker.specialty}
-            </p>
-          </CardContent>
-        )}
         <CardFooter className="flex flex-wrap gap-1.5 pt-0 mt-auto pb-5 justify-center">
           {themes.slice(0, 3).map((theme) => (
             <button
