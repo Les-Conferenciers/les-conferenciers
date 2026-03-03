@@ -406,8 +406,19 @@ const AdminSpeakersCRM = () => {
         </div>
       </div>
 
-      {/* Speaker list */}
-      <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+      {/* Speaker table */}
+      <div className="border border-border rounded-xl overflow-hidden">
+        {/* Table header */}
+        <div className="hidden md:flex items-center gap-4 px-3 py-2.5 bg-muted/50 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <span className="w-10 flex-shrink-0"></span>
+          <span className="flex-grow min-w-0">Nom</span>
+          <span className="w-[100px] flex-shrink-0 text-right">Ajouté le</span>
+          <span className="w-[180px] flex-shrink-0">Thèmes</span>
+          <span className="w-[90px] flex-shrink-0">Ville</span>
+          <span className="w-[70px] flex-shrink-0 text-right">Tarif</span>
+          <span className="w-[100px] flex-shrink-0"></span>
+        </div>
+        <div className="divide-y divide-border">
         {filteredSpeakers.map(speaker => {
           const themes = parseThemes(speaker.themes);
           const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg" ? speaker.image_url : DEFAULT_IMAGE;
@@ -427,20 +438,14 @@ const AdminSpeakersCRM = () => {
                 {(speaker.specialty || speaker.role) && <p className="text-xs text-muted-foreground truncate">{speaker.specialty || speaker.role}</p>}
               </div>
               <div className="hidden md:flex items-center gap-4 flex-shrink-0 text-xs text-muted-foreground">
-                <span className="whitespace-nowrap">{new Date(speaker.created_at).toLocaleDateString("fr-FR")}</span>
-                {themes.length > 0 && (
-                  <span className="truncate max-w-[200px]">{themes.slice(0, 2).join(", ")}{themes.length > 2 ? ` +${themes.length - 2}` : ""}</span>
-                )}
-                {speaker.city && (
-                  <span className="flex items-center gap-1 whitespace-nowrap"><MapPin className="h-3 w-3" />{speaker.city}</span>
-                )}
-                {speaker.base_fee ? (
-                  <span className="font-semibold text-foreground whitespace-nowrap">{speaker.base_fee.toLocaleString("fr-FR")} €</span>
-                ) : (
-                  <span className="italic text-muted-foreground/50 whitespace-nowrap">—</span>
-                )}
+                <span className="w-[100px] text-right whitespace-nowrap">{new Date(speaker.created_at).toLocaleDateString("fr-FR")}</span>
+                <span className="w-[180px] truncate">{themes.length > 0 ? themes.slice(0, 2).join(", ") + (themes.length > 2 ? ` +${themes.length - 2}` : "") : "—"}</span>
+                <span className="w-[90px] truncate">{speaker.city ? <><MapPin className="h-3 w-3 inline mr-1" />{speaker.city}</> : "—"}</span>
+                <span className={`w-[70px] text-right whitespace-nowrap ${speaker.base_fee ? "font-semibold text-foreground" : "italic text-muted-foreground/50"}`}>
+                  {speaker.base_fee ? `${speaker.base_fee.toLocaleString("fr-FR")} €` : "—"}
+                </span>
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1 flex-shrink-0 w-[100px] justify-end">
                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); handleArchive(speaker); }} title={speaker.archived ? "Restaurer" : "Archiver"}>
                   {speaker.archived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
                 </Button>
@@ -454,6 +459,7 @@ const AdminSpeakersCRM = () => {
             </div>
           );
         })}
+        </div>
       </div>
 
       {filteredSpeakers.length === 0 && !loading && (
