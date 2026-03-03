@@ -151,8 +151,7 @@ const AdminSpeakersCRM = () => {
     setEditSpeaker(speaker);
     setEditForm({
       name: speaker.name,
-      role: speaker.role,
-      specialty: speaker.specialty,
+      specialty: speaker.specialty || speaker.role,
       city: speaker.city,
       base_fee: speaker.base_fee,
       biography: speaker.biography,
@@ -174,7 +173,7 @@ const AdminSpeakersCRM = () => {
       .from("speakers")
       .update({
         name: editForm.name,
-        role: editForm.role || null,
+        role: editForm.specialty || null,
         specialty: editForm.specialty || null,
         city: editForm.city || null,
         base_fee: editForm.base_fee || null,
@@ -275,8 +274,8 @@ const AdminSpeakersCRM = () => {
           profile: {
             name: data.profile.name,
             slug: data.profile.slug,
-            role: data.profile.role,
-            specialty: data.profile.specialty,
+            role: data.profile.role || data.profile.specialty,
+            specialty: data.profile.role || data.profile.specialty,
             biography: data.profile.biography,
             themes: data.profile.themes,
             languages: data.profile.languages,
@@ -425,7 +424,7 @@ const AdminSpeakersCRM = () => {
                   {speaker.featured && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground font-medium">★</span>}
                   {speaker.archived && <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">Archivé</span>}
                 </div>
-                {speaker.role && <p className="text-xs text-muted-foreground truncate">{speaker.role}</p>}
+                {(speaker.specialty || speaker.role) && <p className="text-xs text-muted-foreground truncate">{speaker.specialty || speaker.role}</p>}
               </div>
               <div className="hidden md:flex items-center gap-4 flex-shrink-0 text-xs text-muted-foreground">
                 <span className="whitespace-nowrap">{new Date(speaker.created_at).toLocaleDateString("fr-FR")}</span>
@@ -484,14 +483,9 @@ const AdminSpeakersCRM = () => {
                   <Input value={editForm.name || ""} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Rôle / Titre</Label>
-                  <Input value={editForm.role || ""} onChange={e => setEditForm(p => ({ ...p, role: e.target.value }))} placeholder="Ex: Expert en IA" />
+                  <Label className="text-xs text-muted-foreground">Titre / Rôle (affiché sur la carte et le profil)</Label>
+                  <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Ex: Double Champion Olympique de Judo" />
                 </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Spécialité (affichée sur la carte)</Label>
-                <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Ex: Chef Étoilé et Homme d'Affaires" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">

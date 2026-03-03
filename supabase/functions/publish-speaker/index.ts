@@ -112,8 +112,8 @@ Deno.serve(async (req) => {
       .insert({
         name: profile.name,
         slug: profile.slug,
-        role: profile.role || null,
-        specialty: profile.specialty || null,
+        role: profile.role || profile.specialty || null,
+        specialty: profile.specialty || profile.role || null,
         biography: profile.biography || null,
         themes: profile.themes || [],
         languages: profile.languages || ["Français"],
