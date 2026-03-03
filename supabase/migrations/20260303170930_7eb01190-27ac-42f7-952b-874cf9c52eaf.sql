@@ -1,0 +1,5 @@
+UPDATE speaker_conferences 
+SET 
+  title = 'Conférence',
+  description = '<p>Malgré une histoire chaotique et le fait que la discipline existe depuis les années 1950, « L''intelligence artificielle » a fait un grand retour au cours de la dernière décennie. Mais dans l''état actuel des choses, cette « Intelligence Artificielle » apporte son lot de promesses irréalistes dignes des meilleurs films hollywoodiens, permettant à quelques charlatans de nous faire croire que les machines pourraient un jour prendre le pouvoir et nous réduire à presque rien.</p><img src="https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/luc-julia-conference.png" alt="Luc Julia en conférence" class="rounded-lg w-full my-4" /><p>Mais surtout, nous faire courir le risque d''abandonner toute recherche dans ce domaine et de menacer les avancées dans des disciplines telles que l''apprentissage automatique ou l''apprentissage profond, alors qu''elles sont encore à leurs balbutiements et apporteront encore bien plus à l''humanité…</p>'
+WHERE id = 'c86f3867-ca58-4da5-8972-b10fe206bb08'
