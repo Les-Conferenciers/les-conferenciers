@@ -434,6 +434,7 @@ const AdminSpeakersCRM = () => {
                 {speaker.role && <p className="text-xs text-muted-foreground truncate">{speaker.role}</p>}
               </div>
               <div className="hidden md:flex items-center gap-4 flex-shrink-0 text-xs text-muted-foreground">
+                <span className="whitespace-nowrap">{new Date(speaker.created_at).toLocaleDateString("fr-FR")}</span>
                 {themes.length > 0 && (
                   <span className="truncate max-w-[200px]">{themes.slice(0, 2).join(", ")}{themes.length > 2 ? ` +${themes.length - 2}` : ""}</span>
                 )}
