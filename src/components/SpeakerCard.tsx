@@ -56,7 +56,7 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
           <h3 className="text-lg font-bold leading-tight group-hover:text-accent transition-colors">
             {speaker.name}
           </h3>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground/80 text-xs italic leading-snug tracking-wide">
             {speaker.specialty || speaker.role}
           </p>
         </CardHeader>
