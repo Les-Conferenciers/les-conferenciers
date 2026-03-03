@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon, Wand2, Sparkles, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare } from "lucide-react";
+import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -33,6 +33,8 @@ type Speaker = {
   gender: string | null;
   archived: boolean | null;
   created_at: string;
+  why_expertise: string | null;
+  why_impact: string | null;
 };
 
 type Review = {
@@ -55,16 +57,19 @@ const AdminSpeakersCRM = () => {
   const [cityFilter, setCityFilter] = useState("");
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
   const [showArchived, setShowArchived] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [migratingPhotos, setMigratingPhotos] = useState(false);
-  const [formattingBios, setFormattingBios] = useState(false);
-  const [generatingSpecialties, setGeneratingSpecialties] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Import state
+  const [importName, setImportName] = useState("");
+  const [importSearching, setImportSearching] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   // Edit dialog state
   const [editSpeaker, setEditSpeaker] = useState<Speaker | null>(null);
   const [editForm, setEditForm] = useState<Partial<Speaker>>({});
   const [saving, setSaving] = useState(false);
+
+  // AI regeneration state
+  const [regenerating, setRegenerating] = useState<string | null>(null);
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -72,41 +77,11 @@ const AdminSpeakersCRM = () => {
   const [newReview, setNewReview] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
 
-  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImporting(true);
-    try {
-      const text = await file.text();
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-speakers-from-csv`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain",
-          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: text,
-      });
-      const data = await resp.json();
-      if (!data.success) throw new Error(data.error);
-      toast.success(`Import terminé : ${data.updated} mis à jour, ${data.conferencesInserted} conférences`);
-      if (data.notFound?.length > 0) {
-        toast.info(`${data.notFound.length} non trouvés`);
-      }
-      fetchSpeakers();
-    } catch (err: any) {
-      toast.error(`Erreur import : ${err.message}`);
-    }
-    setImporting(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   const fetchSpeakers = async () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender, archived, created_at")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact")
       .order("name");
     setSpeakers(data || []);
     setLoading(false);
@@ -147,10 +122,8 @@ const AdminSpeakersCRM = () => {
 
   const filteredSpeakers = useMemo(() => {
     return speakers.filter(s => {
-      // Filter archived
       if (!showArchived && s.archived) return false;
       if (showArchived && !s.archived) return false;
-
       if (search) {
         const q = search.toLowerCase();
         const nameMatch = s.name.toLowerCase().includes(q);
@@ -169,12 +142,8 @@ const AdminSpeakersCRM = () => {
   }, [speakers, search, themeFilter, cityFilter, feeFilter, showArchived]);
 
   const clearFilters = () => {
-    setSearch("");
-    setThemeFilter("");
-    setCityFilter("");
-    setFeeFilter("all");
+    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all");
   };
-
   const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all";
 
   // Edit handlers
@@ -193,6 +162,8 @@ const AdminSpeakersCRM = () => {
       languages: speaker.languages,
       featured: speaker.featured,
       gender: speaker.gender,
+      why_expertise: speaker.why_expertise,
+      why_impact: speaker.why_impact,
     });
   };
 
@@ -214,13 +185,12 @@ const AdminSpeakersCRM = () => {
         languages: editForm.languages || [],
         featured: editForm.featured ?? false,
         gender: editForm.gender || 'male',
+        why_expertise: editForm.why_expertise || null,
+        why_impact: editForm.why_impact || null,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
-    if (error) {
-      toast.error("Erreur de sauvegarde");
-      return;
-    }
+    if (error) { toast.error("Erreur de sauvegarde"); return; }
     toast.success("Conférencier mis à jour");
     setEditSpeaker(null);
     fetchSpeakers();
@@ -236,7 +206,6 @@ const AdminSpeakersCRM = () => {
   };
 
   const handleDelete = async (speaker: Speaker) => {
-    // Delete conferences first
     await supabase.from("speaker_conferences").delete().eq("speaker_id", speaker.id);
     await supabase.from("reviews").delete().eq("speaker_id", speaker.id);
     const { error } = await supabase.from("speakers").delete().eq("id", speaker.id);
@@ -246,6 +215,95 @@ const AdminSpeakersCRM = () => {
     fetchSpeakers();
   };
 
+  // AI Regeneration
+  const handleRegenerate = async (field: "biography" | "why_expertise" | "why_impact") => {
+    if (!editSpeaker) return;
+    setRegenerating(field);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-speaker-content`;
+      const session = await supabase.auth.getSession();
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ speaker_id: editSpeaker.id, field }),
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      setEditForm(prev => ({ ...prev, [field]: data.content }));
+      toast.success("Contenu régénéré par l'IA !");
+    } catch (err: any) {
+      toast.error(`Erreur : ${err.message}`);
+    }
+    setRegenerating(null);
+  };
+
+  // Import handler
+  const handleImportSearch = async () => {
+    if (!importName.trim() || importName.trim().length < 2) {
+      toast.error("Entrez un nom valide (min 2 caractères)");
+      return;
+    }
+    setImportSearching(true);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-competitor-speakers`;
+      const session = await supabase.auth.getSession();
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ name: importName.trim() }),
+      });
+      const data = await resp.json();
+      if (!data.success) { toast.error(data.error || "Conférencier non trouvé"); return; }
+
+      // Publish directly via publish-speaker
+      const pubResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-speaker`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          profile: {
+            name: data.profile.name,
+            slug: data.profile.slug,
+            role: data.profile.role,
+            specialty: data.profile.specialty,
+            biography: data.profile.biography,
+            themes: data.profile.themes,
+            languages: data.profile.languages,
+            gender: data.profile.gender,
+            key_points: data.profile.key_points,
+            why_expertise: data.profile.why_expertise,
+            why_impact: data.profile.why_impact,
+            photo_url: data.profile.photo_url,
+            video_url: data.profile.video_url,
+          },
+          conferences: data.profile.conferences,
+        }),
+      });
+      const pubData = await pubResp.json();
+      if (!pubData.success) throw new Error(pubData.error);
+
+      toast.success(`${data.profile.name} importé avec succès !`);
+      setImportName("");
+      setShowImport(false);
+      fetchSpeakers();
+    } catch (err: any) {
+      toast.error(`Erreur : ${err.message}`);
+    }
+    setImportSearching(false);
+  };
+
+  // Reviews
   const handleAddReview = async () => {
     if (!editSpeaker || !newReview.author_name || !newReview.comment) return;
     const { error } = await supabase.from("reviews").insert({
@@ -286,81 +344,38 @@ const AdminSpeakersCRM = () => {
           <Button variant="ghost" size="icon" onClick={fetchSpeakers} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
-          <Button variant="outline" size="sm" className="gap-1.5" disabled={importing} onClick={() => fileInputRef.current?.click()}>
-            <Upload className="h-4 w-4" /> {importing ? "Import…" : "Importer CSV"}
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" disabled={migratingPhotos} onClick={async () => {
-            setMigratingPhotos(true);
-            try {
-              const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/migrate-speaker-photos`;
-              const resp = await fetch(url, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-                  "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                },
-              });
-              const data = await resp.json();
-              toast.success(`Photos migrées : ${data.summary?.migrated ?? 0} OK, ${data.summary?.failed ?? 0} erreurs`);
-              fetchSpeakers();
-            } catch (err: any) {
-              toast.error(`Erreur migration : ${err.message}`);
-            }
-            setMigratingPhotos(false);
-          }}>
-            <ImageIcon className="h-4 w-4" /> {migratingPhotos ? "Migration…" : "Migrer photos"}
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" disabled={formattingBios} onClick={async () => {
-            setFormattingBios(true);
-            try {
-              const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/format-biographies`;
-              const resp = await fetch(url, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-                  "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({}),
-              });
-              const data = await resp.json();
-              toast.success(`Bios formatées : ${data.summary?.formatted ?? 0} traitées`);
-              fetchSpeakers();
-            } catch (err: any) {
-              toast.error(`Erreur : ${err.message}`);
-            }
-            setFormattingBios(false);
-          }}>
-            <Wand2 className="h-4 w-4" /> {formattingBios ? "Formatage…" : "Formater bios"}
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" disabled={generatingSpecialties} onClick={async () => {
-            setGeneratingSpecialties(true);
-            try {
-              const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-specialties`;
-              const resp = await fetch(url, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-                  "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({}),
-              });
-              const data = await resp.json();
-              toast.success(`Spécialités générées : ${data.summary?.generated ?? 0} traitées`);
-              fetchSpeakers();
-            } catch (err: any) {
-              toast.error(`Erreur : ${err.message}`);
-            }
-            setGeneratingSpecialties(false);
-          }}>
-            <Sparkles className="h-4 w-4" /> {generatingSpecialties ? "Génération…" : "Générer spécialités"}
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setShowImport(!showImport)}
+          >
+            <UserPlus className="h-4 w-4" /> Importer
           </Button>
         </div>
 
+        {/* Import inline */}
+        {showImport && (
+          <div className="border border-border rounded-lg p-4 bg-card space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Recherchez un conférencier sur les sites concurrents et importez sa fiche automatiquement.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Nom du conférencier (ex: Bertrand Piccard)"
+                value={importName}
+                onChange={e => setImportName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleImportSearch()}
+                className="flex-grow"
+              />
+              <Button onClick={handleImportSearch} disabled={importSearching} size="sm" className="gap-1.5 min-w-[120px]">
+                {importSearching ? <><Loader2 className="h-4 w-4 animate-spin" /> Recherche…</> : <><Search className="h-4 w-4" /> Importer</>}
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2 items-center">
-          {/* Archive toggle */}
           <button
             onClick={() => setShowArchived(!showArchived)}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${showArchived ? "bg-orange-100 text-orange-800 border-orange-200" : "bg-background text-foreground border-input"}`}
@@ -368,56 +383,35 @@ const AdminSpeakersCRM = () => {
             <Archive className="h-3.5 w-3.5" />
             {showArchived ? "Archivés" : "Actifs"}
           </button>
-
-          {/* Theme dropdown */}
-          <select
-            className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
-            value={themeFilter}
-            onChange={e => setThemeFilter(e.target.value)}
-          >
+          <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={themeFilter} onChange={e => setThemeFilter(e.target.value)}>
             <option value="">Toutes les thématiques</option>
             {allThemes.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-
-          {/* City dropdown */}
-          <select
-            className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
-            value={cityFilter}
-            onChange={e => setCityFilter(e.target.value)}
-          >
+          <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={cityFilter} onChange={e => setCityFilter(e.target.value)}>
             <option value="">Toutes les villes</option>
             {allCities.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-
-          {/* Fee filter */}
-          <select
-            className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
-            value={feeFilter}
-            onChange={e => setFeeFilter(e.target.value as any)}
-          >
+          <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={feeFilter} onChange={e => setFeeFilter(e.target.value as any)}>
             <option value="all">Tarif : tous</option>
             <option value="set">Tarif renseigné</option>
             <option value="unset">Tarif non renseigné</option>
           </select>
-
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground">
               <X className="h-3.5 w-3.5" /> Réinitialiser
             </Button>
           )}
-
           <span className="text-sm text-muted-foreground ml-auto">
             {filteredSpeakers.length} conférencier{filteredSpeakers.length !== 1 ? "s" : ""}
           </span>
         </div>
       </div>
 
-      {/* Speaker list as table-like rows */}
+      {/* Speaker list */}
       <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
         {filteredSpeakers.map(speaker => {
           const themes = parseThemes(speaker.themes);
           const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg" ? speaker.image_url : DEFAULT_IMAGE;
-
           return (
             <div
               key={speaker.id}
@@ -477,11 +471,7 @@ const AdminSpeakersCRM = () => {
             <div className="space-y-5 mt-2">
               {/* Avatar preview */}
               <div className="flex items-center gap-4">
-                <img
-                  src={editForm.image_url || DEFAULT_IMAGE}
-                  alt=""
-                  className="w-16 h-16 rounded-xl object-cover"
-                />
+                <img src={editForm.image_url || DEFAULT_IMAGE} alt="" className="w-16 h-16 rounded-xl object-cover" />
                 <div className="flex-grow space-y-1">
                   <Label className="text-xs text-muted-foreground">URL de la photo</Label>
                   <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} placeholder="https://…" />
@@ -517,12 +507,8 @@ const AdminSpeakersCRM = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues (séparées par des virgules)</Label>
-                  <Input
-                    value={(editForm.languages || []).join(", ")}
-                    onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))}
-                    placeholder="Français, Anglais"
-                  />
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
+                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} placeholder="Français, Anglais" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo</Label>
@@ -532,40 +518,86 @@ const AdminSpeakersCRM = () => {
 
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Thématiques (séparées par des virgules)</Label>
-                <Input
-                  value={(editForm.themes || []).join(", ")}
-                  onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))}
-                  placeholder="Intelligence artificielle, Innovation, Leadership"
-                />
+                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} placeholder="Intelligence artificielle, Innovation, Leadership" />
               </div>
 
+              {/* Biography with AI regeneration */}
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Biographie</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Biographie</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-xs h-7"
+                    onClick={() => handleRegenerate("biography")}
+                    disabled={regenerating === "biography"}
+                  >
+                    {regenerating === "biography" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    Régénérer avec l'IA
+                  </Button>
+                </div>
                 <RichTextEditor
                   value={editForm.biography || ""}
                   onChange={(val) => setEditForm(p => ({ ...p, biography: val }))}
                   placeholder="Biographie du conférencier…"
-                  minHeight="250px"
+                  minHeight="200px"
+                />
+              </div>
+
+              {/* Why Expertise with AI regeneration */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Expertise reconnue</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-xs h-7"
+                    onClick={() => handleRegenerate("why_expertise")}
+                    disabled={regenerating === "why_expertise"}
+                  >
+                    {regenerating === "why_expertise" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    Régénérer avec l'IA
+                  </Button>
+                </div>
+                <Textarea
+                  value={editForm.why_expertise || ""}
+                  onChange={e => setEditForm(p => ({ ...p, why_expertise: e.target.value }))}
+                  placeholder="Expertise reconnue du conférencier…"
+                  rows={3}
+                />
+              </div>
+
+              {/* Why Impact with AI regeneration */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Impact mesurable</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-xs h-7"
+                    onClick={() => handleRegenerate("why_impact")}
+                    disabled={regenerating === "why_impact"}
+                  >
+                    {regenerating === "why_impact" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    Régénérer avec l'IA
+                  </Button>
+                </div>
+                <Textarea
+                  value={editForm.why_impact || ""}
+                  onChange={e => setEditForm(p => ({ ...p, why_impact: e.target.value }))}
+                  placeholder="Impact mesurable des interventions…"
+                  rows={3}
                 />
               </div>
 
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editForm.featured ?? false}
-                    onChange={e => setEditForm(p => ({ ...p, featured: e.target.checked }))}
-                    className="rounded border-input"
-                  />
+                  <input type="checkbox" checked={editForm.featured ?? false} onChange={e => setEditForm(p => ({ ...p, featured: e.target.checked }))} className="rounded border-input" />
                   <span className="text-sm">Mis en avant (featured)</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs text-muted-foreground">Genre</Label>
-                  <select
-                    className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm"
-                    value={editForm.gender || "male"}
-                    onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
-                  >
+                  <select className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm" value={editForm.gender || "male"} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}>
                     <option value="male">Masculin</option>
                     <option value="female">Féminin</option>
                   </select>
@@ -592,7 +624,7 @@ const AdminSpeakersCRM = () => {
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Poste / Entreprise</Label>
-                        <Input value={newReview.author_title} onChange={e => setNewReview(p => ({ ...p, author_title: e.target.value }))} placeholder="Directeur Délégué Ineo Infracom (ENGIE Ineo)" />
+                        <Input value={newReview.author_title} onChange={e => setNewReview(p => ({ ...p, author_title: e.target.value }))} placeholder="Directeur Délégué" />
                       </div>
                     </div>
                     <div className="space-y-1">
