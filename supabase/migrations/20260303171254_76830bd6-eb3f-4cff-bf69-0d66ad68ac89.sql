@@ -1,0 +1,1 @@
+UPDATE speaker_conferences SET title = 'Conférence', description = '<p>' || title || '</p>' WHERE id IN ('31579d7a-fbd9-44ed-83d9-23483ecfb722', 'ec6df879-c425-4a97-a0da-604c054c5920', 'd78ebcbf-279a-4e20-84bb-7495169319a8');
