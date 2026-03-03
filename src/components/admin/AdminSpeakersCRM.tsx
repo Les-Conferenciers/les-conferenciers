@@ -3,10 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon, Wand2, Sparkles } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Search, X, MapPin, Euro, RefreshCw, ExternalLink, Upload, Pencil, Save, Globe, Video, ImageIcon, Wand2, Sparkles, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -26,6 +31,17 @@ type Speaker = {
   video_url: string | null;
   featured: boolean | null;
   gender: string | null;
+  archived: boolean | null;
+};
+
+type Review = {
+  id: string;
+  speaker_id: string;
+  author_name: string;
+  author_title: string | null;
+  rating: number;
+  comment: string | null;
+  created_at: string;
 };
 
 const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
@@ -37,6 +53,7 @@ const AdminSpeakersCRM = () => {
   const [themeFilter, setThemeFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
+  const [showArchived, setShowArchived] = useState(false);
   const [importing, setImporting] = useState(false);
   const [migratingPhotos, setMigratingPhotos] = useState(false);
   const [formattingBios, setFormattingBios] = useState(false);
@@ -47,6 +64,12 @@ const AdminSpeakersCRM = () => {
   const [editSpeaker, setEditSpeaker] = useState<Speaker | null>(null);
   const [editForm, setEditForm] = useState<Partial<Speaker>>({});
   const [saving, setSaving] = useState(false);
+
+  // Reviews state
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [newReview, setNewReview] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,13 +105,32 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender, archived")
       .order("name");
     setSpeakers(data || []);
     setLoading(false);
   };
 
+  const fetchReviews = async (speakerId: string) => {
+    setLoadingReviews(true);
+    const { data } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("speaker_id", speakerId)
+      .order("created_at", { ascending: false });
+    setReviews((data as Review[]) || []);
+    setLoadingReviews(false);
+  };
+
   useEffect(() => { fetchSpeakers(); }, []);
+
+  useEffect(() => {
+    if (editSpeaker) {
+      fetchReviews(editSpeaker.id);
+      setShowReviewForm(false);
+      setNewReview({ author_name: "", author_title: "", rating: 5, comment: "" });
+    }
+  }, [editSpeaker?.id]);
 
   const allThemes = useMemo(() => {
     const themeSet = new Set<string>();
@@ -104,6 +146,10 @@ const AdminSpeakersCRM = () => {
 
   const filteredSpeakers = useMemo(() => {
     return speakers.filter(s => {
+      // Filter archived
+      if (!showArchived && s.archived) return false;
+      if (showArchived && !s.archived) return false;
+
       if (search) {
         const q = search.toLowerCase();
         const nameMatch = s.name.toLowerCase().includes(q);
@@ -119,7 +165,7 @@ const AdminSpeakersCRM = () => {
       if (feeFilter === "unset" && s.base_fee) return false;
       return true;
     });
-  }, [speakers, search, themeFilter, cityFilter, feeFilter]);
+  }, [speakers, search, themeFilter, cityFilter, feeFilter, showArchived]);
 
   const clearFilters = () => {
     setSearch("");
@@ -179,12 +225,55 @@ const AdminSpeakersCRM = () => {
     fetchSpeakers();
   };
 
+  const handleArchive = async (speaker: Speaker) => {
+    const newVal = !speaker.archived;
+    const { error } = await supabase.from("speakers").update({ archived: newVal } as any).eq("id", speaker.id);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success(newVal ? "Fiche archivée" : "Fiche restaurée");
+    fetchSpeakers();
+    if (editSpeaker?.id === speaker.id) setEditSpeaker(null);
+  };
+
+  const handleDelete = async (speaker: Speaker) => {
+    // Delete conferences first
+    await supabase.from("speaker_conferences").delete().eq("speaker_id", speaker.id);
+    await supabase.from("reviews").delete().eq("speaker_id", speaker.id);
+    const { error } = await supabase.from("speakers").delete().eq("id", speaker.id);
+    if (error) { toast.error("Erreur de suppression"); return; }
+    toast.success("Fiche supprimée définitivement");
+    setEditSpeaker(null);
+    fetchSpeakers();
+  };
+
+  const handleAddReview = async () => {
+    if (!editSpeaker || !newReview.author_name || !newReview.comment) return;
+    const { error } = await supabase.from("reviews").insert({
+      speaker_id: editSpeaker.id,
+      author_name: newReview.author_name,
+      author_title: newReview.author_title || null,
+      rating: newReview.rating,
+      comment: newReview.comment,
+    } as any);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Avis ajouté");
+    setNewReview({ author_name: "", author_title: "", rating: 5, comment: "" });
+    setShowReviewForm(false);
+    fetchReviews(editSpeaker.id);
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Avis supprimé");
+    if (editSpeaker) fetchReviews(editSpeaker.id);
+  };
+
   return (
     <div className="space-y-5">
       {/* Search & Filters */}
       <div className="space-y-3">
-        <div className="flex gap-2 items-center">
-          <div className="relative flex-grow">
+        <div className="flex gap-2 items-center flex-wrap">
+          <div className="relative flex-grow min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Rechercher par nom ou thématique…"
@@ -270,6 +359,15 @@ const AdminSpeakersCRM = () => {
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">
+          {/* Archive toggle */}
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${showArchived ? "bg-orange-100 text-orange-800 border-orange-200" : "bg-background text-foreground border-input"}`}
+          >
+            <Archive className="h-3.5 w-3.5" />
+            {showArchived ? "Archivés" : "Actifs"}
+          </button>
+
           {/* Theme dropdown */}
           <select
             className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
@@ -322,7 +420,7 @@ const AdminSpeakersCRM = () => {
           return (
             <div
               key={speaker.id}
-              className="flex items-center gap-4 p-3 hover:bg-muted/30 transition-colors cursor-pointer group"
+              className={`flex items-center gap-4 p-3 hover:bg-muted/30 transition-colors cursor-pointer group ${speaker.archived ? "opacity-60" : ""}`}
               onClick={() => openEdit(speaker)}
             >
               <img src={imageUrl} alt={speaker.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
@@ -330,6 +428,7 @@ const AdminSpeakersCRM = () => {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm text-foreground truncate">{speaker.name}</span>
                   {speaker.featured && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground font-medium">★</span>}
+                  {speaker.archived && <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">Archivé</span>}
                 </div>
                 {speaker.role && <p className="text-xs text-muted-foreground truncate">{speaker.role}</p>}
               </div>
@@ -347,10 +446,13 @@ const AdminSpeakersCRM = () => {
                 )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); handleArchive(speaker); }} title={speaker.archived ? "Restaurer" : "Archiver"}>
+                  {speaker.archived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+                </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); openEdit(speaker); }}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
-                <a href={`/speaker/${speaker.slug}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="h-8 w-8 flex items-center justify-center">
+                <a href={`/speakers/${speaker.slug}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="h-8 w-8 flex items-center justify-center">
                   <ExternalLink className="h-3.5 w-3.5 text-muted-foreground hover:text-accent transition-colors" />
                 </a>
               </div>
@@ -468,11 +570,111 @@ const AdminSpeakersCRM = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setEditSpeaker(null)}>Annuler</Button>
-                <Button onClick={handleSave} disabled={saving} className="gap-2">
-                  <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Enregistrer"}
-                </Button>
+              {/* Reviews section */}
+              <div className="border-t border-border pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" /> Avis clients ({reviews.length})
+                  </Label>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowReviewForm(!showReviewForm)}>
+                    <Plus className="h-3.5 w-3.5" /> Ajouter un avis
+                  </Button>
+                </div>
+
+                {showReviewForm && (
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Nom</Label>
+                        <Input value={newReview.author_name} onChange={e => setNewReview(p => ({ ...p, author_name: e.target.value }))} placeholder="Christophe MAUFOUX" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Poste / Entreprise</Label>
+                        <Input value={newReview.author_title} onChange={e => setNewReview(p => ({ ...p, author_title: e.target.value }))} placeholder="Directeur Délégué Ineo Infracom (ENGIE Ineo)" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Note</Label>
+                      <div className="flex gap-1">
+                        {[1,2,3,4,5].map(s => (
+                          <button key={s} type="button" onClick={() => setNewReview(p => ({ ...p, rating: s }))}>
+                            <Star className={`h-5 w-5 ${s <= newReview.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Commentaire</Label>
+                      <Textarea value={newReview.comment} onChange={e => setNewReview(p => ({ ...p, comment: e.target.value }))} placeholder="Témoignage du client…" rows={3} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleAddReview} disabled={!newReview.author_name || !newReview.comment}>Ajouter</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowReviewForm(false)}>Annuler</Button>
+                    </div>
+                  </div>
+                )}
+
+                {loadingReviews ? (
+                  <p className="text-xs text-muted-foreground">Chargement…</p>
+                ) : reviews.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucun avis pour ce conférencier.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {reviews.map(r => (
+                      <div key={r.id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg text-sm">
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">{r.author_name}</span>
+                            <div className="flex gap-0.5">
+                              {[1,2,3,4,5].map(s => <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />)}
+                            </div>
+                          </div>
+                          {r.author_title && <p className="text-xs text-muted-foreground">{r.author_title}</p>}
+                          {r.comment && <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{r.comment}</p>}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => handleDeleteReview(r.id)}>
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-between items-center gap-2 pt-2 border-t border-border">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1.5 text-orange-600" onClick={() => handleArchive(editSpeaker)}>
+                    {editSpeaker.archived ? <><ArchiveRestore className="h-3.5 w-3.5" /> Restaurer</> : <><Archive className="h-3.5 w-3.5" /> Archiver</>}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5 text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer {editSpeaker.name} ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Cette action est irréversible. La fiche, les conférences et les avis associés seront définitivement supprimés.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(editSpeaker)} className="bg-destructive text-destructive-foreground">
+                          Supprimer définitivement
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setEditSpeaker(null)}>Annuler</Button>
+                  <Button onClick={handleSave} disabled={saving} className="gap-2">
+                    <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Enregistrer"}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

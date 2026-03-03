@@ -25,6 +25,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/speakers" element={<Speakers />} />
+          {/* Support both /speakers/:slug (SEO canonical) and /speaker/:slug (legacy) */}
+          <Route path="/speakers/:slug" element={<SpeakerDetail />} />
           <Route path="/speaker/:slug" element={<SpeakerDetail />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/blog" element={<Blog />} />
