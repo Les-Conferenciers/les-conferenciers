@@ -456,6 +456,8 @@ Deno.serve(async (req) => {
       key_points: aiProfile?.key_points || found.find((s) => s.faits)?.faits || [],
       why_expertise: aiProfile?.why_expertise || null,
       why_impact: aiProfile?.why_impact || null,
+      seo_title: aiProfile?.seo_title || null,
+      meta_description: aiProfile?.meta_description || null,
       photo_url: bestPhoto,
       video_url: videoUrl,
       sources: sources.map((s) => ({ source: s.source, found: s.found, photo_url: s.photo_url || null })),
