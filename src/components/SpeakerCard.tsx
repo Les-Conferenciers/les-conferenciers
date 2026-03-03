@@ -53,7 +53,7 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
             />
           </div>
         </div>
-        <CardHeader className="pt-5 pb-1">
+        <CardHeader className="pt-2 pb-1 text-center">
           <h3 className="text-lg font-bold leading-tight group-hover:text-accent transition-colors">
             {speaker.name}
           </h3>
