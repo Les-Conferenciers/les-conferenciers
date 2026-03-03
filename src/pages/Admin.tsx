@@ -13,7 +13,7 @@ const Admin = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [authed, setAuthed] = useState(false);
 
-  const tab = searchParams.get("tab") || "leads";
+  const tab = searchParams.get("tab") || "speakers";
 
   useEffect(() => {
     const check = async () => {
@@ -56,34 +56,27 @@ const Admin = () => {
       <div className="p-6">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="mb-6">
-            <TabsTrigger value="leads" className="gap-2">
-              <Users className="h-4 w-4" /> Leads
+            <TabsTrigger value="speakers" className="gap-2">
+              <Mic className="h-4 w-4" /> CRM Speakers
             </TabsTrigger>
             <TabsTrigger value="propositions" className="gap-2">
               <FileText className="h-4 w-4" /> Propositions
             </TabsTrigger>
-            <TabsTrigger value="speakers" className="gap-2">
-              <Mic className="h-4 w-4" /> CRM Speakers
-            </TabsTrigger>
-            <TabsTrigger value="import" className="gap-2">
-              <UserPlus className="h-4 w-4" /> Importer
+            <TabsTrigger value="leads" className="gap-2">
+              <Users className="h-4 w-4" /> Leads
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="leads">
-            <AdminLeads />
+          <TabsContent value="speakers">
+            <AdminSpeakersCRM />
           </TabsContent>
 
           <TabsContent value="propositions">
             <AdminProposalsContent />
           </TabsContent>
 
-          <TabsContent value="speakers">
-            <AdminSpeakersCRM />
-          </TabsContent>
-
-          <TabsContent value="import">
-            <AdminSpeakerImport />
+          <TabsContent value="leads">
+            <AdminLeads />
           </TabsContent>
         </Tabs>
       </div>
