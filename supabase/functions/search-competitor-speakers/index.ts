@@ -234,6 +234,12 @@ function parseOrators(html: string): { found: boolean; photo_url?: string; role?
     if (ls) r.languages = ls.map((l: string) => stripHtml(l));
   }
 
+  // Location
+  const locMatch = html.match(/Localisation[\s\S]{0,500}?elementor-icon-list-text[^>]*>([^<]+)</i);
+  if (locMatch?.[1]) {
+    r.city = locMatch[1].trim().split(",")[0].trim();
+  }
+
   return r;
 }
 
@@ -460,6 +466,7 @@ Deno.serve(async (req) => {
       meta_description: aiProfile?.meta_description || null,
       photo_url: bestPhoto,
       video_url: videoUrl,
+      city: found.find((s) => s.city)?.city || null,
       sources: sources.map((s) => ({ source: s.source, found: s.found, photo_url: s.photo_url || null })),
     };
 
