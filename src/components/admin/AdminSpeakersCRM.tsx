@@ -426,11 +426,17 @@ const AdminSpeakersCRM = () => {
         {/* Table header */}
         <div className="hidden md:flex items-center gap-4 px-3 py-2.5 bg-muted/50 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           <span className="w-10 flex-shrink-0"></span>
-          <span className="flex-grow min-w-0">Nom</span>
-          <span className="w-[100px] flex-shrink-0 text-right">Ajouté le</span>
+          <button onClick={() => { setSortBy("name"); setSortDir(d => sortBy === "name" ? (d === "asc" ? "desc" : "asc") : "asc"); }} className="flex-grow min-w-0 flex items-center gap-1 hover:text-foreground transition-colors text-left">
+            Nom {sortBy === "name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+          </button>
+          <button onClick={() => { setSortBy("created_at"); setSortDir(d => sortBy === "created_at" ? (d === "asc" ? "desc" : "asc") : "desc"); }} className="w-[100px] flex-shrink-0 flex items-center gap-1 justify-end hover:text-foreground transition-colors">
+            Ajouté le {sortBy === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+          </button>
           <span className="w-[180px] flex-shrink-0">Thèmes</span>
           <span className="w-[90px] flex-shrink-0">Ville</span>
-          <span className="w-[70px] flex-shrink-0 text-right">Tarif</span>
+          <button onClick={() => { setSortBy("base_fee"); setSortDir(d => sortBy === "base_fee" ? (d === "asc" ? "desc" : "asc") : "desc"); }} className="w-[70px] flex-shrink-0 flex items-center gap-1 justify-end hover:text-foreground transition-colors">
+            Tarif {sortBy === "base_fee" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+          </button>
           <span className="w-[100px] flex-shrink-0"></span>
         </div>
         <div className="divide-y divide-border">
