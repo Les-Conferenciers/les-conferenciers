@@ -62,13 +62,13 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
           </p>
         </CardHeader>
         {speaker.specialty && (
-          <CardContent className="pb-2 pt-0">
+          <CardContent className="pb-2 pt-0 text-center">
             <p className="text-muted-foreground/80 text-xs italic leading-snug tracking-wide">
               {speaker.specialty}
             </p>
           </CardContent>
         )}
-        <CardFooter className="flex flex-wrap gap-1.5 pt-0 mt-auto pb-5">
+        <CardFooter className="flex flex-wrap gap-1.5 pt-0 mt-auto pb-5 justify-center">
           {themes.slice(0, 3).map((theme) => (
             <button
               key={theme}
