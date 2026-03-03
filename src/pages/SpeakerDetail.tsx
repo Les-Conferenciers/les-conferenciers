@@ -247,7 +247,7 @@ const SpeakerDetail = () => {
   useEffect(() => {
     if (speaker) {
       document.title = speaker.seo_title || `Conférence ${speaker.name} — ${conferencier_e(speaker)} | Les Conférenciers`;
-      const desc = speaker.meta_description || `Réservez la conférence de ${speaker.name} pour votre événement. ${speaker.role || "Conférencier professionnel"}. Devis gratuit sous 24h.`;
+      const desc = speaker.meta_description || `Réservez la conférence de ${speaker.name} pour votre événement. ${speaker.specialty || speaker.role || "Conférencier professionnel"}. Devis gratuit sous 24h.`;
       let metaEl = document.querySelector('meta[name="description"]');
       if (metaEl) {
         metaEl.setAttribute("content", desc);
@@ -277,7 +277,7 @@ const SpeakerDetail = () => {
           "@type": "Person",
           "@id": pageUrl + "#person",
           name: speaker.name,
-          jobTitle: speaker.role,
+          jobTitle: speaker.specialty || speaker.role,
           description: desc,
           image: imageUrl,
           url: pageUrl,
@@ -489,7 +489,7 @@ const SpeakerDetail = () => {
                 {speaker.name}
               </h1>
               <p className="text-lg md:text-xl text-primary-foreground/70 font-medium mb-5">
-                {speaker.role}
+                {speaker.specialty || speaker.role}
               </p>
 
               {/* Themes */}
