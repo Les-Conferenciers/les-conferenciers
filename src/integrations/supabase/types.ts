@@ -104,6 +104,7 @@ export type Database = {
       reviews: {
         Row: {
           author_name: string
+          author_title: string | null
           comment: string | null
           created_at: string
           id: string
@@ -112,6 +113,7 @@ export type Database = {
         }
         Insert: {
           author_name: string
+          author_title?: string | null
           comment?: string | null
           created_at?: string
           id?: string
@@ -120,6 +122,7 @@ export type Database = {
         }
         Update: {
           author_name?: string
+          author_title?: string | null
           comment?: string | null
           created_at?: string
           id?: string
@@ -227,6 +230,7 @@ export type Database = {
       }
       speakers: {
         Row: {
+          archived: boolean
           base_fee: number | null
           biography: string | null
           city: string | null
@@ -250,6 +254,7 @@ export type Database = {
           why_impact: string | null
         }
         Insert: {
+          archived?: boolean
           base_fee?: number | null
           biography?: string | null
           city?: string | null
@@ -273,6 +278,7 @@ export type Database = {
           why_impact?: string | null
         }
         Update: {
+          archived?: boolean
           base_fee?: number | null
           biography?: string | null
           city?: string | null

@@ -224,6 +224,7 @@ const SpeakerDetail = () => {
         .from("speakers")
         .select("*")
         .neq("slug", slug)
+        .eq("archived", false)
         .limit(200);
 
       if (error) throw error;
@@ -475,8 +476,9 @@ const SpeakerDetail = () => {
               <div className="w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-accent/30 shadow-2xl">
                 <img
                   src={speaker.image_url || DEFAULT_IMAGE}
-                  alt={speaker.name}
+                  alt={`${speaker.name} - conférencier professionnel`}
                   className="w-full h-full object-cover"
+                  width={176} height={176}
                 />
               </div>
             </div>

@@ -41,12 +41,12 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
   };
 
   return (
-    <Link to={`/speaker/${speaker.slug}`} className="group block h-full">
+    <Link to={`/speakers/${speaker.slug}`} className="group block h-full">
       <Card className="h-full overflow-hidden border border-border/40 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-card">
         <div className="aspect-[4/4] overflow-hidden relative">
           <img
             src={imageUrl}
-            alt={speaker.name}
+            alt={`${speaker.name} - conférencier professionnel`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
