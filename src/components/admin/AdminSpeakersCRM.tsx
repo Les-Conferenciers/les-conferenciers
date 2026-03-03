@@ -285,6 +285,7 @@ const AdminSpeakersCRM = () => {
             why_impact: data.profile.why_impact,
             photo_url: data.profile.photo_url,
             video_url: data.profile.video_url,
+            city: data.profile.city,
           },
           conferences: data.profile.conferences,
         }),
