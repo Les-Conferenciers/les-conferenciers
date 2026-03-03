@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles } from "lucide-react";
+import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -57,6 +57,8 @@ const AdminSpeakersCRM = () => {
   const [cityFilter, setCityFilter] = useState("");
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
   const [showArchived, setShowArchived] = useState(false);
+  const [sortBy, setSortBy] = useState<"name" | "created_at" | "base_fee">("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   // Import state
   const [importName, setImportName] = useState("");
@@ -121,7 +123,7 @@ const AdminSpeakersCRM = () => {
   }, [speakers]);
 
   const filteredSpeakers = useMemo(() => {
-    return speakers.filter(s => {
+    const filtered = speakers.filter(s => {
       if (!showArchived && s.archived) return false;
       if (showArchived && !s.archived) return false;
       if (search) {
@@ -139,7 +141,19 @@ const AdminSpeakersCRM = () => {
       if (feeFilter === "unset" && s.base_fee) return false;
       return true;
     });
-  }, [speakers, search, themeFilter, cityFilter, feeFilter, showArchived]);
+
+    return filtered.sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      if (sortBy === "name") return a.name.localeCompare(b.name) * dir;
+      if (sortBy === "created_at") return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+      if (sortBy === "base_fee") {
+        const aFee = a.base_fee ?? (sortDir === "asc" ? Infinity : -Infinity);
+        const bFee = b.base_fee ?? (sortDir === "asc" ? Infinity : -Infinity);
+        return (aFee - bFee) * dir;
+      }
+      return 0;
+    });
+  }, [speakers, search, themeFilter, cityFilter, feeFilter, showArchived, sortBy, sortDir]);
 
   const clearFilters = () => {
     setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all");
