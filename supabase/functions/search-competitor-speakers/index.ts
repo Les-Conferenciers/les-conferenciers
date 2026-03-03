@@ -295,6 +295,12 @@ RÈGLES BIOGRAPHIE (CRITIQUES) :
 - Progression chronologique : parcours → expertise → conférences/impact
 - Ton professionnel, engageant et narratif (pas de liste sèche de faits)
 - IMPORTANT : Chaque paragraphe doit être sur une NOUVELLE LIGNE (pas tout collé)
+- REFORMULATION OBLIGATOIRE : Le texte doit être 100% original. Ne jamais recopier les phrases des sources. Reformule entièrement avec ton propre style.
+- SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière (ex: "Aujourd'hui, ses conférences inspirent…" ou "En tant que conférencier, il partage…"). Cela doit couler naturellement dans le récit, JAMAIS forcer de mots-clés.
+
+RÈGLES SEO (seo_title et meta_description) :
+- seo_title : Format "${name} — Conférencier [thème principal] | Les Conférenciers" (max 60 caractères, adapter Conférencier/Conférencière selon le genre)
+- meta_description : 1 phrase fluide de 140-155 caractères présentant le speaker et invitant à réserver. Doit contenir naturellement "conférence" ou "conférencier/ère" + le nom. Pas de bourrage de mots-clés.
 
 RÈGLES CONFÉRENCES :
 - Crée 1 à 3 conférences thématiques basées sur les infos trouvées
@@ -327,7 +333,9 @@ JSON ATTENDU :
   "gender": "male ou female",
   "key_points": ["Point fort 1", "Point fort 2"],
   "why_expertise": "Phrase personnalisée sur l'expertise unique de ce speaker",
-  "why_impact": "Phrase personnalisée sur l'impact concret de ses interventions"
+  "why_impact": "Phrase personnalisée sur l'impact concret de ses interventions",
+  "seo_title": "Titre SEO optimisé (max 60 car.)",
+  "meta_description": "Meta description engageante (140-155 car.)"
 }
 
 IMPORTANT : Réponds UNIQUEMENT avec le JSON valide, sans commentaire ni backtick.`;
