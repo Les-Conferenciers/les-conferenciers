@@ -64,6 +64,13 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
             {speaker.role}
           </p>
         </CardHeader>
+        {speaker.specialty && (
+          <CardContent className="pb-2 pt-0">
+            <p className="text-muted-foreground/80 text-xs italic leading-snug tracking-wide">
+              {speaker.specialty}
+            </p>
+          </CardContent>
+        )}
         <CardFooter className="flex flex-wrap gap-1.5 pt-0 mt-auto pb-5">
           {themes.slice(0, 3).map((theme) => (
             <button
@@ -82,11 +89,5 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
     </Link>
   );
 };
-        {speaker.specialty && (
-          <CardContent className="pb-2 pt-0">
-            <p className="text-muted-foreground/80 text-xs italic leading-snug tracking-wide">
-              {speaker.specialty}
-            </p>
-          </CardContent>
-        )}
+
 export default SpeakerCard;
