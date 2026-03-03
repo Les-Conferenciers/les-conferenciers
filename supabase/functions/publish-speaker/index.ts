@@ -121,6 +121,8 @@ Deno.serve(async (req) => {
         key_points: profile.key_points || [],
         why_expertise: profile.why_expertise || null,
         why_impact: profile.why_impact || null,
+        seo_title: profile.seo_title || null,
+        meta_description: profile.meta_description || null,
         image_url: imageUrl,
         video_url: profile.video_url || null,
         featured: false,
