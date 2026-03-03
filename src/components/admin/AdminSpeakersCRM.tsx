@@ -274,8 +274,8 @@ const AdminSpeakersCRM = () => {
           profile: {
             name: data.profile.name,
             slug: data.profile.slug,
-            role: data.profile.role,
-            specialty: data.profile.specialty,
+            role: data.profile.role || data.profile.specialty,
+            specialty: data.profile.role || data.profile.specialty,
             biography: data.profile.biography,
             themes: data.profile.themes,
             languages: data.profile.languages,
