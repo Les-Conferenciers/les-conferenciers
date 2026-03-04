@@ -1,0 +1,3 @@
+UPDATE public.reviews SET author_title = 'Head Category Regulatory Affairs, Novartis' WHERE id = '163215cb-1f96-4f3b-9a40-4a6da2920c26' AND author_title IS NULL;
+UPDATE public.reviews SET author_title = 'HR Spécialiste, Richemont Europe' WHERE id = '54d959ca-de8b-4704-ab2d-8431f5d6d616' AND author_title IS NULL;
+UPDATE public.reviews SET author_title = 'CPME Côte d''Or' WHERE id = '4fab0520-dba4-4a75-bb2e-a7d9db81b4db' AND author_title IS NULL;
