@@ -762,11 +762,11 @@ const SpeakerDetail = () => {
               </p>
             </div>
 
-            {/* Formats d'intervention */}
+            {/* Formats proposés */}
             <div className="bg-card border border-border/40 rounded-2xl p-6">
               <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
                 <Mic className="h-4 w-4 text-accent" />
-                Formats d'intervention
+                Formats proposés
               </h3>
               <div className="space-y-2">
                 {["Conférence", "Webconférence", "Table ronde"].map((format) => (
@@ -778,12 +778,12 @@ const SpeakerDetail = () => {
               </div>
             </div>
 
-            {/* Languages — explicit section */}
+            {/* Langues */}
             {speaker.languages && speaker.languages.length > 0 && (
               <div className="bg-card border border-border/40 rounded-2xl p-6">
                 <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
                   <Globe className="h-4 w-4 text-accent" />
-                  Langues d'intervention
+                  {speaker.languages.length === 1 ? "Langue parlée" : "Langues parlées"}
                 </h3>
                 <div className="space-y-2">
                   {speaker.languages.map((lang: string) => (
@@ -793,6 +793,17 @@ const SpeakerDetail = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Localisation */}
+            {speaker.city && (
+              <div className="bg-card border border-border/40 rounded-2xl p-6">
+                <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  Localisation
+                </h3>
+                <p className="text-sm text-foreground font-medium">{speaker.city}</p>
               </div>
             )}
 
