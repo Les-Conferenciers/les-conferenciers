@@ -45,30 +45,21 @@ Deno.serve(async (req) => {
     const themes = (speaker.themes || []).join(", ");
     const bioSnippet = (speaker.biography || "").replace(/<[^>]+>/g, "").slice(0, 600);
 
-    const prompt = `Tu es un copywriter expert en événementiel B2B.
+    const prompt = `Conférencier : ${speaker.name}
+Rôle : ${speaker.role || "Conférencier"}
+Genre : ${fem ? "F" : "M"}
+Thèmes : ${themes}
+Bio : ${bioSnippet}
 
-Voici un conférencier :
-- Nom : ${speaker.name}
-- Rôle : ${speaker.role || "Conférencier"}
-- Genre : ${fem ? "féminin" : "masculin"}
-- Thématiques : ${themes}
-- Extrait bio : ${bioSnippet}
+Écris 2 textes ULTRA-COURTS (1 à 2 phrases max, zéro blabla) :
 
-Génère EXACTEMENT 2 textes courts et percutants (2 phrases max chacun, style direct et impactant) :
+1. "expertise" : Ce qui rend ${speaker.name} légitime et unique. Un fait, un chiffre, une réalisation concrète tirée de la bio. Pas de "expert reconnu" ni de formule bateau.
 
-1. **expertise** : Pourquoi ${fem ? "elle" : "il"} est ${fem ? "une référence" : "un référent"} dans son domaine. Mentionne un fait concret ou distinctif tiré de la bio si possible.
+2. "impact" : Ce que le public retient après son passage. Résultat concret, pas de promesse vague.
 
-2. **impact** : Quel impact concret ses interventions ont sur les équipes/audiences. Sois spécifique et orienté résultat.
+Style : 3e personne, direct, factuel. Commence par le prénom.
 
-RÈGLES :
-- Maximum 2 phrases par bloc
-- Pas de formules génériques type "expert reconnu" ou "impact mesurable"
-- Utilise le prénom du conférencier
-- Tutoie pas, vouvoie pas : style impersonnel à la 3e personne
-- Pas de guillemets autour du texte
-
-Réponds UNIQUEMENT au format JSON :
-{"expertise": "...", "impact": "..."}`;
+JSON uniquement : {"expertise": "...", "impact": "..."}`;
 
     try {
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
