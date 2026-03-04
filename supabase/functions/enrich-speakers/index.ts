@@ -264,12 +264,6 @@ Deno.serve(async (req) => {
       if (mode === "all" || mode === "enrich_only") {
         const slug = speaker.slug.replace(/-\d+$/, "");
         
-        // Fetch existing conferences for this speaker
-        const { data: existingConfs } = await supabase
-          .from("speaker_conferences")
-          .select("title")
-          .eq("speaker_id", speaker.id);
-        const existingTitles = (existingConfs || []).map(c => c.title.toLowerCase().trim());
         
         // Fetch competitor pages in parallel
         const [oratorsHtml, wechampHtml, simoneHtml] = await Promise.all([
@@ -285,7 +279,6 @@ Deno.serve(async (req) => {
         ].filter(p => p.html && p.html.length > 2000 && !p.html.includes("error404") && !p.html.includes("Page non trouvée"));
 
         result.competitors_found = competitorPages.map(p => p.name);
-        let conferencesAdded = 0;
 
         for (const page of competitorPages) {
           // Video
