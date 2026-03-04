@@ -53,38 +53,10 @@ function extractBioFromOldSite(html: string): string | null {
   return bio;
 }
 
-// Extract conference titles and descriptions from competitor pages
-function extractConferencesFromHtml(html: string): { title: string; description: string }[] {
-  const conferences: { title: string; description: string }[] = [];
-  
-  // Pattern 1: h3/h4 followed by content (common across sites)
-  const headingBlocks = [...html.matchAll(/<h[34][^>]*>([\s\S]*?)<\/h[34]>\s*([\s\S]*?)(?=<h[34]|<\/section|<\/article|<footer|$)/gi)];
-  for (const m of headingBlocks) {
-    const title = m[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-    let desc = m[2].replace(/<img[^>]*>/gi, "").replace(/<!--[\s\S]*?-->/g, "").trim();
-    // Only keep if looks like a conference title
-    if (title.length > 8 && title.length < 250 && desc.length > 30 && !/menu|nav|footer|header|cookie/i.test(title)) {
-      conferences.push({ title, description: desc });
-    }
-  }
-
-  // Pattern 2: conference cards/items with specific class names
-  const cardBlocks = [...html.matchAll(/class="[^"]*(?:conference|intervention|keynote|talk)[^"]*"[^>]*>([\s\S]*?)(?=class="[^"]*(?:conference|intervention|keynote|talk)|<\/section|$)/gi)];
-  for (const m of cardBlocks) {
-    const titleMatch = m[1].match(/<h[2345][^>]*>(.*?)<\/h[2345]>/i);
-    // Get all <p> text as description
-    const pTags = [...m[1].matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
-    if (titleMatch) {
-      const title = titleMatch[1].replace(/<[^>]+>/g, "").trim();
-      const desc = pTags.map(p => p[1].trim()).filter(p => p.length > 10).join("\n\n");
-      if (title.length > 5 && desc.length > 20) {
-        conferences.push({ title, description: desc });
-      }
-    }
-  }
-
-  return conferences;
-}
+// Conference extraction from competitor sites DISABLED
+// The regex-based approach was too unreliable and grabbed random HTML fragments
+// (carousel items, bio paragraphs, other speakers' cards) as "conferences".
+// Conference data should be managed manually via the admin CRM.
 
 // Extract video URLs from any HTML page
 function extractVideos(html: string): string[] {
@@ -292,12 +264,6 @@ Deno.serve(async (req) => {
       if (mode === "all" || mode === "enrich_only") {
         const slug = speaker.slug.replace(/-\d+$/, "");
         
-        // Fetch existing conferences for this speaker
-        const { data: existingConfs } = await supabase
-          .from("speaker_conferences")
-          .select("title")
-          .eq("speaker_id", speaker.id);
-        const existingTitles = (existingConfs || []).map(c => c.title.toLowerCase().trim());
         
         // Fetch competitor pages in parallel
         const [oratorsHtml, wechampHtml, simoneHtml] = await Promise.all([
@@ -313,7 +279,6 @@ Deno.serve(async (req) => {
         ].filter(p => p.html && p.html.length > 2000 && !p.html.includes("error404") && !p.html.includes("Page non trouvée"));
 
         result.competitors_found = competitorPages.map(p => p.name);
-        let conferencesAdded = 0;
 
         for (const page of competitorPages) {
           // Video
@@ -343,32 +308,8 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Conferences - add new ones that don't already exist
-          const newConfs = extractConferencesFromHtml(page.html!);
-          for (const conf of newConfs) {
-            const titleLower = conf.title.toLowerCase().trim();
-            // Skip if a similar title already exists
-            if (existingTitles.some(t => t === titleLower || t.includes(titleLower) || titleLower.includes(t))) continue;
-            // Skip generic/nav titles
-            if (/à propos|contact|accueil|biograph|témoignage|avis|profil/i.test(conf.title)) continue;
-            
-            const { error: insertErr } = await supabase
-              .from("speaker_conferences")
-              .insert({
-                speaker_id: speaker.id,
-                title: conf.title,
-                description: conf.description,
-                display_order: existingTitles.length + conferencesAdded,
-              });
-            if (!insertErr) {
-              conferencesAdded++;
-              existingTitles.push(titleLower);
-            }
-          }
-          if (conferencesAdded > 0) {
-            result.conferences_added = conferencesAdded;
-            result.conferences_source = page.name;
-          }
+          // Conference scraping DISABLED - was grabbing random HTML as conferences
+
         }
       }
 

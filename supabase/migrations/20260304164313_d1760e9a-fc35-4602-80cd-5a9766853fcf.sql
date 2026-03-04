@@ -1,0 +1,1 @@
+DELETE FROM speaker_conferences WHERE created_at > '2026-03-04T00:00:00Z';
