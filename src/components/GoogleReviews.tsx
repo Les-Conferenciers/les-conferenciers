@@ -79,18 +79,22 @@ const GoogleReviews = () => {
 
   useEffect(() => {
     const fetchReviews = async () => {
-      const { data, error } = await supabase
-        .from("google_reviews")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(6);
+      try {
+        // Use type cast since google_reviews isn't in auto-generated types yet
+        const { data, error } = await (supabase as any)
+          .from("google_reviews")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(6);
 
-      if (!error && data && data.length > 0) {
-        setReviews(data as GoogleReview[]);
-        const avg = data.reduce((sum, r) => sum + (r as any).rating, 0) / data.length;
-        setAverageRating(Math.round(avg * 10) / 10);
-      } else {
-        // Use fallback reviews
+        if (!error && data && data.length > 0) {
+          setReviews(data as GoogleReview[]);
+          const avg = data.reduce((sum: number, r: any) => sum + r.rating, 0) / data.length;
+          setAverageRating(Math.round(avg * 10) / 10);
+        } else {
+          setReviews(FALLBACK_REVIEWS.map((r, i) => ({ ...r, id: `fallback-${i}` })));
+        }
+      } catch {
         setReviews(FALLBACK_REVIEWS.map((r, i) => ({ ...r, id: `fallback-${i}` })));
       }
     };
