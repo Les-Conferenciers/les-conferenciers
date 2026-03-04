@@ -347,6 +347,61 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchReviews(editSpeaker.id);
   };
 
+  // Enrichment handler
+  const handleEnrichAll = async () => {
+    if (enriching) return;
+    setEnriching(true);
+    setShowEnrichLog(true);
+    setEnrichLog([]);
+    setEnrichProgress({ processed: 0, total: 0, current: "Démarrage..." });
+
+    const session = await supabase.auth.getSession();
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.data.session?.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    };
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enrich-speakers`;
+
+    let offset = 0;
+    let done = false;
+    const batchSize = 3;
+
+    while (!done) {
+      try {
+        const resp = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ offset, batch_size: batchSize, mode: "all" }),
+        });
+        const data = await resp.json();
+        if (!data.success) { setEnrichLog(prev => [...prev, `❌ Erreur: ${data.error}`]); break; }
+
+        done = data.done;
+        offset = data.next_offset;
+        setEnrichProgress({ processed: offset, total: data.total, current: "" });
+
+        for (const r of data.results || []) {
+          const updates = r.updates?.length ? r.updates.join(", ") : "rien";
+          const log = r.error
+            ? `❌ ${r.name}: ${r.error}`
+            : r.updates?.length
+              ? `✅ ${r.name}: ${updates}${r.bio_source ? ` (bio: ${r.bio_source})` : ""}`
+              : `⏭ ${r.name}: rien à mettre à jour`;
+          setEnrichLog(prev => [...prev, log]);
+        }
+      } catch (err: any) {
+        setEnrichLog(prev => [...prev, `❌ Erreur réseau: ${err.message}`]);
+        break;
+      }
+    }
+
+    setEnriching(false);
+    setEnrichProgress(prev => ({ ...prev, current: "Terminé !" }));
+    toast.success("Enrichissement terminé !");
+    fetchSpeakers();
+  };
+
   return (
     <div className="space-y-5">
       {/* Search & Filters */}
