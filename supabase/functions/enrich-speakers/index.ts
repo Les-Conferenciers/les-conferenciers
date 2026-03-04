@@ -281,7 +281,14 @@ Deno.serve(async (req) => {
 
       // ── STEP 2: Enrich from competitor sites ──
       if (mode === "all" || mode === "enrich_only") {
-        const slug = speaker.slug.replace(/-\d+$/, ""); // Remove trailing numbers
+        const slug = speaker.slug.replace(/-\d+$/, "");
+        
+        // Fetch existing conferences for this speaker
+        const { data: existingConfs } = await supabase
+          .from("speaker_conferences")
+          .select("title")
+          .eq("speaker_id", speaker.id);
+        const existingTitles = (existingConfs || []).map(c => c.title.toLowerCase().trim());
         
         // Fetch competitor pages in parallel
         const [oratorsHtml, wechampHtml, simoneHtml] = await Promise.all([
@@ -297,6 +304,7 @@ Deno.serve(async (req) => {
         ].filter(p => p.html && p.html.length > 2000 && !p.html.includes("error404") && !p.html.includes("Page non trouvée"));
 
         result.competitors_found = competitorPages.map(p => p.name);
+        let conferencesAdded = 0;
 
         for (const page of competitorPages) {
           // Video
@@ -324,6 +332,33 @@ Deno.serve(async (req) => {
               updates.city = city;
               result.city_source = page.name;
             }
+          }
+
+          // Conferences - add new ones that don't already exist
+          const newConfs = extractConferencesFromHtml(page.html!);
+          for (const conf of newConfs) {
+            const titleLower = conf.title.toLowerCase().trim();
+            // Skip if a similar title already exists
+            if (existingTitles.some(t => t === titleLower || t.includes(titleLower) || titleLower.includes(t))) continue;
+            // Skip generic/nav titles
+            if (/à propos|contact|accueil|biograph|témoignage|avis|profil/i.test(conf.title)) continue;
+            
+            const { error: insertErr } = await supabase
+              .from("speaker_conferences")
+              .insert({
+                speaker_id: speaker.id,
+                title: conf.title,
+                description: conf.description,
+                display_order: existingTitles.length + conferencesAdded,
+              });
+            if (!insertErr) {
+              conferencesAdded++;
+              existingTitles.push(titleLower);
+            }
+          }
+          if (conferencesAdded > 0) {
+            result.conferences_added = conferencesAdded;
+            result.conferences_source = page.name;
           }
         }
       }
