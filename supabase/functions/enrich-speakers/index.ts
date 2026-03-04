@@ -292,15 +292,17 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Still fetch old site for metadata (video, languages) for ALL speakers
+      // Still fetch old site for metadata (video, languages, bio image, reviews) for ALL speakers
       if (mode === "all" || mode === "enrich_only") {
         const slugVariants = [speaker.slug];
         if (speaker.slug.match(/-\d+$/)) {
           slugVariants.push(speaker.slug.replace(/-\d+$/, ""));
         }
+        let oldSiteHtml: string | null = null;
         for (const sv of slugVariants) {
           const html = await fetchPage(`https://www.lesconferenciers.com/conferencier/${sv}/`);
           if (html && !html.includes("error404") && !html.includes("Aucun résultat")) {
+            oldSiteHtml = html;
             if (!speaker.languages || speaker.languages.length === 0) {
               const langs = extractLanguages(html);
               if (langs && langs.length > 0) updates.languages = langs;
@@ -309,6 +311,53 @@ Deno.serve(async (req) => {
               const videos = extractVideos(html);
               if (videos.length > 0) updates.video_url = videos[0];
             }
+            
+            // Extract bio image and inject into biography if not already present
+            const bioImageUrl = extractBioImage(html);
+            if (bioImageUrl && speaker.biography && !speaker.biography.includes("<img")) {
+              // Insert image after the 2nd paragraph in the biography
+              const paragraphs = speaker.biography.split("</p>");
+              if (paragraphs.length >= 3) {
+                const insertIdx = 2; // after 2nd </p>
+                paragraphs.splice(insertIdx, 0, `<img src="${bioImageUrl}" alt="${speaker.name}" loading="lazy" />`);
+                updates.biography = paragraphs.join("</p>");
+                result.bio_image = bioImageUrl;
+              } else if (paragraphs.length >= 2) {
+                paragraphs.splice(1, 0, `<img src="${bioImageUrl}" alt="${speaker.name}" loading="lazy" />`);
+                updates.biography = paragraphs.join("</p>");
+                result.bio_image = bioImageUrl;
+              }
+            }
+            
+            // Extract reviews from "Ce qu'ils en pensent" tab
+            const extractedReviews = extractReviews(html);
+            if (extractedReviews.length > 0) {
+              // Check existing reviews for this speaker
+              const { data: existingReviews } = await supabase
+                .from("reviews")
+                .select("author_name")
+                .eq("speaker_id", speaker.id);
+              const existingAuthors = (existingReviews || []).map(r => r.author_name.toLowerCase().trim());
+              
+              let reviewsAdded = 0;
+              for (const review of extractedReviews) {
+                if (existingAuthors.includes(review.author_name.toLowerCase().trim())) continue;
+                const { error: reviewErr } = await supabase
+                  .from("reviews")
+                  .insert({
+                    speaker_id: speaker.id,
+                    author_name: review.author_name,
+                    author_title: review.author_title || null,
+                    comment: review.comment,
+                    rating: 5,
+                  });
+                if (!reviewErr) reviewsAdded++;
+              }
+              if (reviewsAdded > 0) {
+                result.reviews_added = reviewsAdded;
+              }
+            }
+            
             break;
           }
         }
