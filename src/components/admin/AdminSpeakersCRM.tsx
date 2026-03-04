@@ -65,6 +65,12 @@ const AdminSpeakersCRM = () => {
   const [importSearching, setImportSearching] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
+  // Enrichment state
+  const [enriching, setEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState({ processed: 0, total: 0, current: "" });
+  const [showEnrichLog, setShowEnrichLog] = useState(false);
+  const [enrichLog, setEnrichLog] = useState<string[]>([]);
+
   // Edit dialog state
   const [editSpeaker, setEditSpeaker] = useState<Speaker | null>(null);
   const [editForm, setEditForm] = useState<Partial<Speaker>>({});
@@ -341,6 +347,61 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchReviews(editSpeaker.id);
   };
 
+  // Enrichment handler
+  const handleEnrichAll = async () => {
+    if (enriching) return;
+    setEnriching(true);
+    setShowEnrichLog(true);
+    setEnrichLog([]);
+    setEnrichProgress({ processed: 0, total: 0, current: "Démarrage..." });
+
+    const session = await supabase.auth.getSession();
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.data.session?.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    };
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enrich-speakers`;
+
+    let offset = 0;
+    let done = false;
+    const batchSize = 3;
+
+    while (!done) {
+      try {
+        const resp = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ offset, batch_size: batchSize, mode: "all" }),
+        });
+        const data = await resp.json();
+        if (!data.success) { setEnrichLog(prev => [...prev, `❌ Erreur: ${data.error}`]); break; }
+
+        done = data.done;
+        offset = data.next_offset;
+        setEnrichProgress({ processed: offset, total: data.total, current: "" });
+
+        for (const r of data.results || []) {
+          const updates = r.updates?.length ? r.updates.join(", ") : "rien";
+          const log = r.error
+            ? `❌ ${r.name}: ${r.error}`
+            : r.updates?.length
+              ? `✅ ${r.name}: ${updates}${r.bio_source ? ` (bio: ${r.bio_source})` : ""}`
+              : `⏭ ${r.name}: rien à mettre à jour`;
+          setEnrichLog(prev => [...prev, log]);
+        }
+      } catch (err: any) {
+        setEnrichLog(prev => [...prev, `❌ Erreur réseau: ${err.message}`]);
+        break;
+      }
+    }
+
+    setEnriching(false);
+    setEnrichProgress(prev => ({ ...prev, current: "Terminé !" }));
+    toast.success("Enrichissement terminé !");
+    fetchSpeakers();
+  };
+
   return (
     <div className="space-y-5">
       {/* Search & Filters */}
@@ -366,6 +427,15 @@ const AdminSpeakersCRM = () => {
           >
             <UserPlus className="h-4 w-4" /> Importer
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleEnrichAll}
+            disabled={enriching}
+          >
+            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Enrichissement ({enrichProgress.processed}/{enrichProgress.total})</> : <><Sparkles className="h-4 w-4" /> Enrichir tout</>}
+          </Button>
         </div>
 
         {/* Import inline */}
@@ -386,6 +456,25 @@ const AdminSpeakersCRM = () => {
                 {importSearching ? <><Loader2 className="h-4 w-4 animate-spin" /> Recherche…</> : <><Search className="h-4 w-4" /> Importer</>}
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Enrichment log */}
+        {showEnrichLog && enrichLog.length > 0 && (
+          <div className="border border-border rounded-lg p-4 bg-card space-y-2 max-h-60 overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-foreground">
+                Journal d'enrichissement {enrichProgress.processed}/{enrichProgress.total}
+              </p>
+              {!enriching && (
+                <Button variant="ghost" size="sm" onClick={() => setShowEnrichLog(false)}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+            {enrichLog.map((log, i) => (
+              <p key={i} className="text-xs text-muted-foreground font-mono">{log}</p>
+            ))}
           </div>
         )}
 
