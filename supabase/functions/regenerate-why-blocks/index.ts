@@ -23,12 +23,12 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Only process speakers that haven't been regenerated yet (why_expertise is null or very long)
+  // Process speakers missing why_expertise OR why_impact
   const { data: speakers, error } = await supabase
     .from("speakers")
     .select("id, name, role, themes, biography, gender, why_expertise, why_impact")
     .eq("archived", false)
-    .or("why_expertise.is.null,why_expertise.like.%intervention%adaptée%");
+    .or("why_expertise.is.null,why_impact.is.null");
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
