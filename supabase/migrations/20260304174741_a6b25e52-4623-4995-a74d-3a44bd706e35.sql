@@ -1,0 +1,1 @@
+DELETE FROM public.reviews WHERE id IN ('e42f30d4-d5a0-4673-bde8-1ff27ec1ffc6', 'c6db7134-74ce-4e03-8034-af5aad159621', 'e7fcb6ed-1b45-419d-8639-04481d9c4f6c');
