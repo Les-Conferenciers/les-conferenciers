@@ -218,47 +218,45 @@ Deno.serve(async (req) => {
     const result: any = { name: speaker.name, slug: speaker.slug, updates: {} };
     const updates: any = {};
 
+    // Only update bio for Souillet and Di Muzio
+    const bioAllowed = /souillet|di\s*muzio/i.test(speaker.name);
+
     try {
       // ── STEP 1: Get bold formatting from lesconferenciers.com ──
       if (mode === "all" || mode === "bold_only") {
-        // Try different URL patterns for the old site
         const slugVariants = [speaker.slug];
-        // Also try without numbers at the end (e.g., "justine-henin-2" -> "justine-henin")
         if (speaker.slug.match(/-\d+$/)) {
           slugVariants.push(speaker.slug.replace(/-\d+$/, ""));
         }
 
-        let oldSiteBio: string | null = null;
         for (const sv of slugVariants) {
           const html = await fetchPage(`https://www.lesconferenciers.com/conferencier/${sv}/`);
           if (html && !html.includes("error404") && !html.includes("Aucun résultat")) {
-            oldSiteBio = extractBioFromOldSite(html);
-            
-            // Also extract languages from flags
-            if (!speaker.languages || speaker.languages.length === 0) {
-              const langs = extractLanguages(html);
-              if (langs && langs.length > 0) {
-                updates.languages = langs;
+            // Bio only for allowed speakers
+            if (bioAllowed) {
+              const oldSiteBio = extractBioFromOldSite(html);
+              if (oldSiteBio) {
+                updates.biography = oldSiteBio;
+                result.bio_source = "lesconferenciers.com";
               }
             }
             
-            // Extract videos from old site
+            if (!speaker.languages || speaker.languages.length === 0) {
+              const langs = extractLanguages(html);
+              if (langs && langs.length > 0) updates.languages = langs;
+            }
+            
             if (!speaker.video_url) {
               const videos = extractVideos(html);
-              if (videos.length > 0) {
-                updates.video_url = videos[0];
-              }
+              if (videos.length > 0) updates.video_url = videos[0];
             }
             
             break;
           }
         }
 
-        if (oldSiteBio) {
-          updates.biography = oldSiteBio;
-          result.bio_source = "lesconferenciers.com";
-        } else if (speaker.biography && speaker.biography.length > 50) {
-          // Fallback: use AI to add bold formatting
+        // AI bold formatting only for allowed speakers
+        if (bioAllowed && !updates.biography && speaker.biography && speaker.biography.length > 50) {
           const formatted = await addBoldFormatting(speaker.name, speaker.biography);
           if (formatted) {
             updates.biography = formatted;
