@@ -27,19 +27,29 @@ import {
   Zap,
   BookOpen,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-const STATS = [
-  { icon: Users, value: "161+", label: "Conférenciers" },
-  { icon: Award, value: "500+", label: "Événements" },
-  { icon: Clock, value: "24h", label: "Temps de réponse" },
-  { icon: Star, value: "5/5", label: "Note Google" },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [speakerCount, setSpeakerCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase
+      .from("speakers")
+      .select("id", { count: "exact", head: true })
+      .eq("archived", false)
+      .then(({ count }) => setSpeakerCount(count || 0));
+  }, []);
+
+  const STATS = [
+    { icon: Users, value: `${speakerCount}+`, label: "Conférenciers" },
+    { icon: Award, value: "500+", label: "Événements" },
+    { icon: Clock, value: "24h", label: "Temps de réponse" },
+    { icon: Star, value: "5/5", label: "Note Google" },
+  ];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
