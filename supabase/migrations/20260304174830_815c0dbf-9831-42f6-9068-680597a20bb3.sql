@@ -1,0 +1,1 @@
+UPDATE public.reviews SET author_name = 'Martin Si' WHERE id = '4fab0520-dba4-4a75-bb2e-a7d9db81b4db';
