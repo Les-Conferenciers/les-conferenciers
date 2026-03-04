@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      google_reviews: {
+        Row: {
+          author_name: string
+          author_photo_url: string | null
+          avatar_color: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          relative_time: string | null
+          review_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_name: string
+          author_photo_url?: string | null
+          avatar_color?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          relative_time?: string | null
+          review_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_name?: string
+          author_photo_url?: string | null
+          avatar_color?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          relative_time?: string | null
+          review_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       proposal_speakers: {
         Row: {
           agency_commission: number | null
