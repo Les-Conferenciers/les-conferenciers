@@ -232,8 +232,10 @@ Deno.serve(async (req) => {
     const result: any = { name: speaker.name, slug: speaker.slug, updates: {} };
     const updates: any = {};
 
-    // Only update bio for Souillet and Di Muzio
-    const bioAllowed = /souillet|di\s*muzio/i.test(speaker.name);
+    // Only replace entire bio from old site for Souillet and Di Muzio
+    const bioReplaceAllowed = /souillet|di\s*muzio/i.test(speaker.name);
+    // Check if bio needs bold formatting (no <strong> tags)
+    const bioNeedsBold = speaker.biography && speaker.biography.length > 50 && !/<strong>/i.test(speaker.biography);
 
     try {
       // ── STEP 1: Get bold formatting from lesconferenciers.com ──
@@ -246,8 +248,8 @@ Deno.serve(async (req) => {
         for (const sv of slugVariants) {
           const html = await fetchPage(`https://www.lesconferenciers.com/conferencier/${sv}/`);
           if (html && !html.includes("error404") && !html.includes("Aucun résultat")) {
-            // Bio only for allowed speakers
-            if (bioAllowed) {
+            // Full bio replacement only for allowed speakers
+            if (bioReplaceAllowed) {
               const oldSiteBio = extractBioFromOldSite(html);
               if (oldSiteBio) {
                 updates.biography = oldSiteBio;
@@ -269,12 +271,12 @@ Deno.serve(async (req) => {
           }
         }
 
-        // AI bold formatting only for allowed speakers
-        if (bioAllowed && !updates.biography && speaker.biography && speaker.biography.length > 50) {
+        // AI bold formatting for ALL speakers whose bio lacks <strong> tags
+        if (!updates.biography && bioNeedsBold) {
           const formatted = await addBoldFormatting(speaker.name, speaker.biography);
           if (formatted) {
             updates.biography = formatted;
-            result.bio_source = "ai_formatting";
+            result.bio_source = "ai_bold_formatting";
           }
         }
       }
