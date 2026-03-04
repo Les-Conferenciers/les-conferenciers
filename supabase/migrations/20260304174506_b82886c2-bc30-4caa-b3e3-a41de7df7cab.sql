@@ -1,0 +1,1 @@
+DELETE FROM public.reviews WHERE id = 'fc4277a6-73f3-4c35-a612-013b34534030';
