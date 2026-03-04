@@ -436,7 +436,7 @@ const AdminSpeakersCRM = () => {
     fetchSpeakers();
   };
 
-
+  return (
     <div className="space-y-5">
       {/* Search & Filters */}
       <div className="space-y-3">
