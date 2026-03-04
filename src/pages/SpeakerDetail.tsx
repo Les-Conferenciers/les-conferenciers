@@ -762,6 +762,24 @@ const SpeakerDetail = () => {
               </p>
             </div>
 
+            {/* Themes sidebar */}
+            {themes.length > 0 && (
+              <div className="bg-card border border-border/40 rounded-2xl p-6">
+                <h3 className="font-serif font-bold text-foreground mb-3">Thématiques</h3>
+                <div className="flex flex-wrap gap-2">
+                  {themes.map((theme) => (
+                    <button
+                      key={theme}
+                      onClick={() => navigate(`/speakers?theme=${encodeURIComponent(theme)}`)}
+                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
+                    >
+                      {theme}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Formats proposés */}
             <div className="bg-card border border-border/40 rounded-2xl p-6">
               <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
@@ -806,23 +824,6 @@ const SpeakerDetail = () => {
                 <p className="text-sm text-foreground font-medium">{speaker.city}</p>
               </div>
             )}
-
-            {/* Themes sidebar */}
-            {themes.length > 0 && (
-              <div className="bg-card border border-border/40 rounded-2xl p-6">
-                <h3 className="font-serif font-bold text-foreground mb-3">Thématiques</h3>
-                <div className="flex flex-wrap gap-2">
-                  {themes.map((theme) => (
-                    <button
-                      key={theme}
-                      onClick={() => navigate(`/speakers?theme=${encodeURIComponent(theme)}`)}
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
-                    >
-                      {theme}
-                    </button>
-                  ))}
-                </div>
-              </div>
             )}
           </aside>
         </div>
