@@ -824,7 +824,7 @@ const SpeakerDetail = () => {
                 <p className="text-sm text-foreground font-medium">{speaker.city}</p>
               </div>
             )}
-            )}
+
           </aside>
         </div>
 
