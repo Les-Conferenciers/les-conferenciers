@@ -53,10 +53,64 @@ function extractBioFromOldSite(html: string): string | null {
   return bio;
 }
 
-// Conference extraction from competitor sites DISABLED
-// The regex-based approach was too unreliable and grabbed random HTML fragments
-// (carousel items, bio paragraphs, other speakers' cards) as "conferences".
-// Conference data should be managed manually via the admin CRM.
+// Extract bio image URL from lesconferenciers.com
+function extractBioImage(html: string): string | null {
+  const match = html.match(/<div class="bio-image">\s*<img[^>]*(?:data-src|src)="([^"]+)"/i);
+  if (match?.[1] && match[1].startsWith("http")) return match[1];
+  return null;
+}
+
+// Extract reviews from "Ce qu'ils en pensent" tab on lesconferenciers.com
+function extractReviews(html: string): { comment: string; author_name: string; author_title: string }[] {
+  const reviews: { comment: string; author_name: string; author_title: string }[] = [];
+  
+  // Find tab 3 content (Ce qu'ils en pensent)
+  const tab3Match = html.match(/<div class="et_pb_tab et_pb_tab_3[^"]*"[^>]*>([\s\S]*?)(?:<\/div>\s*<div class="et_pb_tab|<\/div>\s*<\/div>\s*<\/div>\s*<\/div>)/i);
+  if (!tab3Match) return reviews;
+  
+  const tabContent = tab3Match[1];
+  
+  // Extract review blocks: typically «...» followed by author name and title
+  // Pattern: « comment text » \n Author Name \n Author Title
+  const reviewBlocks = tabContent.match(/«\s*([\s\S]*?)\s*»/g);
+  if (!reviewBlocks) return reviews;
+  
+  // Get the full text content, strip HTML tags
+  const plainText = tabContent.replace(/<[^>]+>/g, "\n").replace(/&nbsp;/g, " ").replace(/\n{2,}/g, "\n").trim();
+  
+  // Split by « to find each review block
+  const parts = plainText.split(/«/).filter(p => p.includes("»"));
+  
+  for (const part of parts) {
+    const [commentPart, afterQuote] = part.split("»");
+    if (!commentPart || commentPart.trim().length < 10) continue;
+    
+    const comment = commentPart.trim();
+    
+    // After the closing » we expect author info on next lines
+    const lines = (afterQuote || "").split("\n").map(l => l.trim()).filter(l => l.length > 1);
+    
+    let authorName = "";
+    let authorTitle = "";
+    
+    if (lines.length >= 2) {
+      authorName = lines[0];
+      authorTitle = lines.slice(1).join(", ");
+    } else if (lines.length === 1) {
+      authorName = lines[0];
+    }
+    
+    // Clean up author name (remove leading/trailing special chars)
+    authorName = authorName.replace(/^[\s\-–—:,]+|[\s\-–—:,]+$/g, "").trim();
+    authorTitle = authorTitle.replace(/^[\s\-–—:,]+|[\s\-–—:,]+$/g, "").trim();
+    
+    if (comment.length > 10 && authorName.length > 2) {
+      reviews.push({ comment, author_name: authorName, author_title: authorTitle });
+    }
+  }
+  
+  return reviews;
+}
 
 // Extract video URLs from any HTML page
 function extractVideos(html: string): string[] {
