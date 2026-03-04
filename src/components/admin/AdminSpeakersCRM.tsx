@@ -401,8 +401,42 @@ const AdminSpeakersCRM = () => {
     toast.success("Enrichissement terminé !");
     fetchSpeakers();
   };
+  const handleRegenerateWhyAll = async () => {
+    if (enriching) return;
+    setEnriching(true);
+    setShowEnrichLog(true);
+    setEnrichLog([]);
+    setEnrichProgress({ processed: 0, total: 0, current: "Régénération expertise/impact..." });
 
-  return (
+    try {
+      const session = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-why-blocks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setEnrichLog([`✅ ${data.updated} speakers mis à jour, ${data.failed} erreurs (sur ${data.total} à traiter)`]);
+        toast.success(`Expertise/Impact régénérés pour ${data.updated} speakers`);
+      } else {
+        setEnrichLog([`❌ Erreur: ${data.error}`]);
+        toast.error("Erreur lors de la régénération");
+      }
+    } catch (err: any) {
+      setEnrichLog([`❌ Erreur réseau: ${err.message}`]);
+      toast.error("Erreur réseau");
+    }
+
+    setEnriching(false);
+    setEnrichProgress(prev => ({ ...prev, current: "Terminé !" }));
+    fetchSpeakers();
+  };
+
+
     <div className="space-y-5">
       {/* Search & Filters */}
       <div className="space-y-3">
