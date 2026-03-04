@@ -308,32 +308,8 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Conferences - add new ones that don't already exist
-          const newConfs = extractConferencesFromHtml(page.html!);
-          for (const conf of newConfs) {
-            const titleLower = conf.title.toLowerCase().trim();
-            // Skip if a similar title already exists
-            if (existingTitles.some(t => t === titleLower || t.includes(titleLower) || titleLower.includes(t))) continue;
-            // Skip generic/nav titles
-            if (/à propos|contact|accueil|biograph|témoignage|avis|profil/i.test(conf.title)) continue;
-            
-            const { error: insertErr } = await supabase
-              .from("speaker_conferences")
-              .insert({
-                speaker_id: speaker.id,
-                title: conf.title,
-                description: conf.description,
-                display_order: existingTitles.length + conferencesAdded,
-              });
-            if (!insertErr) {
-              conferencesAdded++;
-              existingTitles.push(titleLower);
-            }
-          }
-          if (conferencesAdded > 0) {
-            result.conferences_added = conferencesAdded;
-            result.conferences_source = page.name;
-          }
+          // Conference scraping DISABLED - was grabbing random HTML as conferences
+
         }
       }
 
