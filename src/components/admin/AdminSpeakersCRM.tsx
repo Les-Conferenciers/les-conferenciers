@@ -401,6 +401,40 @@ const AdminSpeakersCRM = () => {
     toast.success("Enrichissement terminé !");
     fetchSpeakers();
   };
+  const handleRegenerateWhyAll = async () => {
+    if (enriching) return;
+    setEnriching(true);
+    setShowEnrichLog(true);
+    setEnrichLog([]);
+    setEnrichProgress({ processed: 0, total: 0, current: "Régénération expertise/impact..." });
+
+    try {
+      const session = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-why-blocks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setEnrichLog([`✅ ${data.updated} speakers mis à jour, ${data.failed} erreurs (sur ${data.total} à traiter)`]);
+        toast.success(`Expertise/Impact régénérés pour ${data.updated} speakers`);
+      } else {
+        setEnrichLog([`❌ Erreur: ${data.error}`]);
+        toast.error("Erreur lors de la régénération");
+      }
+    } catch (err: any) {
+      setEnrichLog([`❌ Erreur réseau: ${err.message}`]);
+      toast.error("Erreur réseau");
+    }
+
+    setEnriching(false);
+    setEnrichProgress(prev => ({ ...prev, current: "Terminé !" }));
+    fetchSpeakers();
+  };
 
   return (
     <div className="space-y-5">
@@ -435,6 +469,15 @@ const AdminSpeakersCRM = () => {
             disabled={enriching}
           >
             {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Enrichissement ({enrichProgress.processed}/{enrichProgress.total})</> : <><Sparkles className="h-4 w-4" /> Enrichir tout</>}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleRegenerateWhyAll}
+            disabled={enriching}
+          >
+            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Régénération...</> : <><Sparkles className="h-4 w-4" /> Régénérer Expertise/Impact</>}
           </Button>
         </div>
 
