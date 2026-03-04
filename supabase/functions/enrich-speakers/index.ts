@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
   // Get speakers to process
   const { data: speakers, error } = await supabase
     .from("speakers")
-    .select("id, name, slug, biography, video_url, languages, city")
+    .select("id, name, slug, biography, video_url, languages, city, created_at")
     .eq("archived", false)
     .order("name")
     .range(offset, offset + batchSize - 1);
