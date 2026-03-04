@@ -232,14 +232,12 @@ Deno.serve(async (req) => {
     const result: any = { name: speaker.name, slug: speaker.slug, updates: {} };
     const updates: any = {};
 
-    // Only replace entire bio from old site for Souillet and Di Muzio
-    const bioReplaceAllowed = /souillet|di\s*muzio/i.test(speaker.name);
-    // Check if bio needs bold formatting (no <strong> tags)
-    const bioNeedsBold = speaker.biography && speaker.biography.length > 50 && !/<strong>/i.test(speaker.biography);
+    // Freeze bios for speakers imported before 2026-03-05 (existing batch)
+    const isExistingSpeaker = new Date(speaker.created_at) < new Date("2026-03-05T00:00:00Z");
 
     try {
-      // ── STEP 1: Get bold formatting from lesconferenciers.com ──
-      if (mode === "all" || mode === "bold_only") {
+      // ── STEP 1: Bio formatting (only for NEW speakers) ──
+      if (!isExistingSpeaker && (mode === "all" || mode === "bold_only")) {
         const slugVariants = [speaker.slug];
         if (speaker.slug.match(/-\d+$/)) {
           slugVariants.push(speaker.slug.replace(/-\d+$/, ""));
@@ -248,35 +246,44 @@ Deno.serve(async (req) => {
         for (const sv of slugVariants) {
           const html = await fetchPage(`https://www.lesconferenciers.com/conferencier/${sv}/`);
           if (html && !html.includes("error404") && !html.includes("Aucun résultat")) {
-            // Full bio replacement only for allowed speakers
-            if (bioReplaceAllowed) {
-              const oldSiteBio = extractBioFromOldSite(html);
-              if (oldSiteBio) {
-                updates.biography = oldSiteBio;
-                result.bio_source = "lesconferenciers.com";
-              }
+            const oldSiteBio = extractBioFromOldSite(html);
+            if (oldSiteBio) {
+              updates.biography = oldSiteBio;
+              result.bio_source = "lesconferenciers.com";
             }
-            
-            if (!speaker.languages || speaker.languages.length === 0) {
-              const langs = extractLanguages(html);
-              if (langs && langs.length > 0) updates.languages = langs;
-            }
-            
-            if (!speaker.video_url) {
-              const videos = extractVideos(html);
-              if (videos.length > 0) updates.video_url = videos[0];
-            }
-            
             break;
           }
         }
 
-        // AI bold formatting for ALL speakers whose bio lacks <strong> tags
+        // AI bold formatting fallback for new speakers
+        const bioNeedsBold = speaker.biography && speaker.biography.length > 50 && !/<strong>/i.test(speaker.biography);
         if (!updates.biography && bioNeedsBold) {
           const formatted = await addBoldFormatting(speaker.name, speaker.biography);
           if (formatted) {
             updates.biography = formatted;
             result.bio_source = "ai_bold_formatting";
+          }
+        }
+      }
+
+      // Still fetch old site for metadata (video, languages) for ALL speakers
+      if (mode === "all" || mode === "enrich_only") {
+        const slugVariants = [speaker.slug];
+        if (speaker.slug.match(/-\d+$/)) {
+          slugVariants.push(speaker.slug.replace(/-\d+$/, ""));
+        }
+        for (const sv of slugVariants) {
+          const html = await fetchPage(`https://www.lesconferenciers.com/conferencier/${sv}/`);
+          if (html && !html.includes("error404") && !html.includes("Aucun résultat")) {
+            if (!speaker.languages || speaker.languages.length === 0) {
+              const langs = extractLanguages(html);
+              if (langs && langs.length > 0) updates.languages = langs;
+            }
+            if (!speaker.video_url) {
+              const videos = extractVideos(html);
+              if (videos.length > 0) updates.video_url = videos[0];
+            }
+            break;
           }
         }
       }
