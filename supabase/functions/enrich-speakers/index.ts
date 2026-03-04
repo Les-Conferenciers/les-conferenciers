@@ -53,22 +53,36 @@ function extractBioFromOldSite(html: string): string | null {
   return bio;
 }
 
-// Extract conference descriptions from lesconferenciers.com
-function extractConferencesFromOldSite(html: string): { title: string; description: string }[] {
+// Extract conference titles and descriptions from competitor pages
+function extractConferencesFromHtml(html: string): { title: string; description: string }[] {
   const conferences: { title: string; description: string }[] = [];
   
-  // Find conference tab content
-  const confTabMatch = html.match(/Conférence[s]?<\/h4>([\s\S]*?)(?:<\/div>\s*<\/div>|$)/i);
-  if (confTabMatch) {
-    const content = confTabMatch[1].trim();
-    if (content.length > 50) {
-      conferences.push({
-        title: "Conférence",
-        description: content.replace(/<img[^>]*>/gi, "").trim()
-      });
+  // Pattern 1: h3/h4 followed by content (common across sites)
+  const headingBlocks = [...html.matchAll(/<h[34][^>]*>([\s\S]*?)<\/h[34]>\s*([\s\S]*?)(?=<h[34]|<\/section|<\/article|<footer|$)/gi)];
+  for (const m of headingBlocks) {
+    const title = m[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+    let desc = m[2].replace(/<img[^>]*>/gi, "").replace(/<!--[\s\S]*?-->/g, "").trim();
+    // Only keep if looks like a conference title
+    if (title.length > 8 && title.length < 250 && desc.length > 30 && !/menu|nav|footer|header|cookie/i.test(title)) {
+      conferences.push({ title, description: desc });
     }
   }
-  
+
+  // Pattern 2: conference cards/items with specific class names
+  const cardBlocks = [...html.matchAll(/class="[^"]*(?:conference|intervention|keynote|talk)[^"]*"[^>]*>([\s\S]*?)(?=class="[^"]*(?:conference|intervention|keynote|talk)|<\/section|$)/gi)];
+  for (const m of cardBlocks) {
+    const titleMatch = m[1].match(/<h[2345][^>]*>(.*?)<\/h[2345]>/i);
+    // Get all <p> text as description
+    const pTags = [...m[1].matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+    if (titleMatch) {
+      const title = titleMatch[1].replace(/<[^>]+>/g, "").trim();
+      const desc = pTags.map(p => p[1].trim()).filter(p => p.length > 10).join("\n\n");
+      if (title.length > 5 && desc.length > 20) {
+        conferences.push({ title, description: desc });
+      }
+    }
+  }
+
   return conferences;
 }
 
@@ -218,47 +232,45 @@ Deno.serve(async (req) => {
     const result: any = { name: speaker.name, slug: speaker.slug, updates: {} };
     const updates: any = {};
 
+    // Only update bio for Souillet and Di Muzio
+    const bioAllowed = /souillet|di\s*muzio/i.test(speaker.name);
+
     try {
       // ── STEP 1: Get bold formatting from lesconferenciers.com ──
       if (mode === "all" || mode === "bold_only") {
-        // Try different URL patterns for the old site
         const slugVariants = [speaker.slug];
-        // Also try without numbers at the end (e.g., "justine-henin-2" -> "justine-henin")
         if (speaker.slug.match(/-\d+$/)) {
           slugVariants.push(speaker.slug.replace(/-\d+$/, ""));
         }
 
-        let oldSiteBio: string | null = null;
         for (const sv of slugVariants) {
           const html = await fetchPage(`https://www.lesconferenciers.com/conferencier/${sv}/`);
           if (html && !html.includes("error404") && !html.includes("Aucun résultat")) {
-            oldSiteBio = extractBioFromOldSite(html);
-            
-            // Also extract languages from flags
-            if (!speaker.languages || speaker.languages.length === 0) {
-              const langs = extractLanguages(html);
-              if (langs && langs.length > 0) {
-                updates.languages = langs;
+            // Bio only for allowed speakers
+            if (bioAllowed) {
+              const oldSiteBio = extractBioFromOldSite(html);
+              if (oldSiteBio) {
+                updates.biography = oldSiteBio;
+                result.bio_source = "lesconferenciers.com";
               }
             }
             
-            // Extract videos from old site
+            if (!speaker.languages || speaker.languages.length === 0) {
+              const langs = extractLanguages(html);
+              if (langs && langs.length > 0) updates.languages = langs;
+            }
+            
             if (!speaker.video_url) {
               const videos = extractVideos(html);
-              if (videos.length > 0) {
-                updates.video_url = videos[0];
-              }
+              if (videos.length > 0) updates.video_url = videos[0];
             }
             
             break;
           }
         }
 
-        if (oldSiteBio) {
-          updates.biography = oldSiteBio;
-          result.bio_source = "lesconferenciers.com";
-        } else if (speaker.biography && speaker.biography.length > 50) {
-          // Fallback: use AI to add bold formatting
+        // AI bold formatting only for allowed speakers
+        if (bioAllowed && !updates.biography && speaker.biography && speaker.biography.length > 50) {
           const formatted = await addBoldFormatting(speaker.name, speaker.biography);
           if (formatted) {
             updates.biography = formatted;
@@ -269,7 +281,14 @@ Deno.serve(async (req) => {
 
       // ── STEP 2: Enrich from competitor sites ──
       if (mode === "all" || mode === "enrich_only") {
-        const slug = speaker.slug.replace(/-\d+$/, ""); // Remove trailing numbers
+        const slug = speaker.slug.replace(/-\d+$/, "");
+        
+        // Fetch existing conferences for this speaker
+        const { data: existingConfs } = await supabase
+          .from("speaker_conferences")
+          .select("title")
+          .eq("speaker_id", speaker.id);
+        const existingTitles = (existingConfs || []).map(c => c.title.toLowerCase().trim());
         
         // Fetch competitor pages in parallel
         const [oratorsHtml, wechampHtml, simoneHtml] = await Promise.all([
@@ -285,6 +304,7 @@ Deno.serve(async (req) => {
         ].filter(p => p.html && p.html.length > 2000 && !p.html.includes("error404") && !p.html.includes("Page non trouvée"));
 
         result.competitors_found = competitorPages.map(p => p.name);
+        let conferencesAdded = 0;
 
         for (const page of competitorPages) {
           // Video
@@ -312,6 +332,33 @@ Deno.serve(async (req) => {
               updates.city = city;
               result.city_source = page.name;
             }
+          }
+
+          // Conferences - add new ones that don't already exist
+          const newConfs = extractConferencesFromHtml(page.html!);
+          for (const conf of newConfs) {
+            const titleLower = conf.title.toLowerCase().trim();
+            // Skip if a similar title already exists
+            if (existingTitles.some(t => t === titleLower || t.includes(titleLower) || titleLower.includes(t))) continue;
+            // Skip generic/nav titles
+            if (/à propos|contact|accueil|biograph|témoignage|avis|profil/i.test(conf.title)) continue;
+            
+            const { error: insertErr } = await supabase
+              .from("speaker_conferences")
+              .insert({
+                speaker_id: speaker.id,
+                title: conf.title,
+                description: conf.description,
+                display_order: existingTitles.length + conferencesAdded,
+              });
+            if (!insertErr) {
+              conferencesAdded++;
+              existingTitles.push(titleLower);
+            }
+          }
+          if (conferencesAdded > 0) {
+            result.conferences_added = conferencesAdded;
+            result.conferences_source = page.name;
           }
         }
       }
