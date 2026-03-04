@@ -427,6 +427,15 @@ const AdminSpeakersCRM = () => {
           >
             <UserPlus className="h-4 w-4" /> Importer
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleEnrichAll}
+            disabled={enriching}
+          >
+            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Enrichissement ({enrichProgress.processed}/{enrichProgress.total})</> : <><Sparkles className="h-4 w-4" /> Enrichir tout</>}
+          </Button>
         </div>
 
         {/* Import inline */}
@@ -447,6 +456,25 @@ const AdminSpeakersCRM = () => {
                 {importSearching ? <><Loader2 className="h-4 w-4 animate-spin" /> Recherche…</> : <><Search className="h-4 w-4" /> Importer</>}
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Enrichment log */}
+        {showEnrichLog && enrichLog.length > 0 && (
+          <div className="border border-border rounded-lg p-4 bg-card space-y-2 max-h-60 overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-foreground">
+                Journal d'enrichissement {enrichProgress.processed}/{enrichProgress.total}
+              </p>
+              {!enriching && (
+                <Button variant="ghost" size="sm" onClick={() => setShowEnrichLog(false)}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+            {enrichLog.map((log, i) => (
+              <p key={i} className="text-xs text-muted-foreground font-mono">{log}</p>
+            ))}
           </div>
         )}
 
