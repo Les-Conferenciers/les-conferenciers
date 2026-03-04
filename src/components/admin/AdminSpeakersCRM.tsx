@@ -65,6 +65,12 @@ const AdminSpeakersCRM = () => {
   const [importSearching, setImportSearching] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
+  // Enrichment state
+  const [enriching, setEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState({ processed: 0, total: 0, current: "" });
+  const [showEnrichLog, setShowEnrichLog] = useState(false);
+  const [enrichLog, setEnrichLog] = useState<string[]>([]);
+
   // Edit dialog state
   const [editSpeaker, setEditSpeaker] = useState<Speaker | null>(null);
   const [editForm, setEditForm] = useState<Partial<Speaker>>({});
