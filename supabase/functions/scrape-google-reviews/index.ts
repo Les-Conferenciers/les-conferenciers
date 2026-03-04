@@ -3,7 +3,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const AVATAR_COLORS = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#FF6D01', '#46BDC6', '#7B1FA2', '#C2185B'];
+const AVATAR_COLORS = ['#EA4335', '#4285F4', '#34A853', '#FBBC05', '#FF6D01', '#46BDC6', '#7B1FA2', '#C2185B'];
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,7 +19,11 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Scrape Google Maps reviews page for "Les Conférenciers"
+    // Strategy: scrape the Google search results page for reviews
+    const searchUrl = 'https://www.google.com/maps/place/Les+Conf%C3%A9renciers/@48.856614,2.3522219,15z/data=!4m8!3m7!1s0x47e66fcd03d2b3b1:0x64bb3a83acbc7f0d!8m2!3d48.8712!4d2.3374!9m1!1b1!16s%2Fg%2F11t3yh0xyp';
+    
+    console.log('Scraping Google Maps reviews...');
+    
     const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -27,69 +31,105 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        url: 'https://www.google.com/maps/place/Les+Conf%C3%A9renciers/@48.8566,2.3522,15z/data=!4m8!3m7!1s0x47e66e2964e34e2d:0x8ddca9ee380ef7e0!8m2!3d48.8566!4d2.3522!9m1!1b1!16s%2Fg%2F11c1p_rnp7',
+        url: searchUrl,
         formats: ['markdown'],
-        waitFor: 5000,
+        waitFor: 8000,
       }),
     });
 
     const scrapeData = await scrapeResponse.json();
-    
-    if (!scrapeResponse.ok) {
-      console.error('Firecrawl error:', scrapeData);
-      throw new Error(`Firecrawl failed: ${JSON.stringify(scrapeData)}`);
-    }
-
     const markdown = scrapeData.data?.markdown || scrapeData.markdown || '';
     console.log('Scraped markdown length:', markdown.length);
-    console.log('Markdown preview:', markdown.substring(0, 2000));
+    
+    // Log a portion to understand structure
+    const reviewSection = markdown.substring(0, 5000);
+    console.log('Content preview:', reviewSection);
 
-    // Parse reviews from the markdown
-    const reviews = parseReviews(markdown);
-    console.log(`Parsed ${reviews.length} reviews`);
+    let reviews = parseGoogleMapsReviews(markdown);
+    console.log(`Parsed ${reviews.length} reviews from Maps`);
 
+    // If no reviews from Maps, try scraping the search results page
     if (reviews.length === 0) {
-      // Try alternative: search for the reviews
-      console.log('No reviews parsed from scrape, trying search approach...');
-      
-      const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
+      console.log('Trying alternative scrape...');
+      const altResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: 'Les Conférenciers avis Google site:google.com/maps',
-          limit: 1,
-          scrapeOptions: { formats: ['markdown'] },
+          url: 'https://www.google.com/search?q=%22les+conf%C3%A9renciers%22+avis+google',
+          formats: ['markdown'],
+          waitFor: 5000,
         }),
       });
 
-      const searchData = await searchResponse.json();
-      if (searchData.data?.[0]?.markdown) {
-        const altReviews = parseReviews(searchData.data[0].markdown);
-        console.log(`Parsed ${altReviews.length} reviews from search`);
-        if (altReviews.length > 0) {
-          reviews.push(...altReviews);
-        }
+      const altData = await altResponse.json();
+      const altMarkdown = altData.data?.markdown || altData.markdown || '';
+      console.log('Alt markdown length:', altMarkdown.length);
+      console.log('Alt preview:', altMarkdown.substring(0, 3000));
+      
+      reviews = parseGoogleMapsReviews(altMarkdown);
+      console.log(`Parsed ${reviews.length} reviews from search`);
+    }
+
+    // If still no reviews, try JSON extraction
+    if (reviews.length === 0) {
+      console.log('Trying JSON extraction approach...');
+      const jsonResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${firecrawlApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: 'https://www.google.com/maps/place/Les+Conf%C3%A9renciers/',
+          formats: [
+            {
+              type: 'json',
+              prompt: 'Extract all Google reviews from this page. For each review, extract: author_name, rating (1-5), comment (the review text), review_date (the date displayed)',
+              schema: {
+                type: 'object',
+                properties: {
+                  reviews: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        author_name: { type: 'string' },
+                        rating: { type: 'number' },
+                        comment: { type: 'string' },
+                        review_date: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          waitFor: 8000,
+        }),
+      });
+
+      const jsonData = await jsonResponse.json();
+      console.log('JSON extraction result:', JSON.stringify(jsonData).substring(0, 2000));
+
+      const extracted = jsonData.data?.json?.reviews || jsonData.json?.reviews || [];
+      if (extracted.length > 0) {
+        reviews = extracted.map((r: any) => ({
+          author_name: r.author_name || 'Anonyme',
+          rating: r.rating || 5,
+          comment: r.comment || '',
+          review_date: r.review_date || '',
+          relative_time: r.review_date || '',
+          author_photo_url: null,
+        }));
+        console.log(`Extracted ${reviews.length} reviews via JSON`);
       }
     }
 
     if (reviews.length > 0) {
-      // Clear existing reviews and insert new ones
-      await fetch(`${supabaseUrl}/rest/v1/google_reviews`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': supabaseServiceKey,
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        // Delete all
-        body: undefined,
-      });
-
-      // Actually need to use query param for delete all
+      // Clear existing and insert new
       await fetch(`${supabaseUrl}/rest/v1/google_reviews?id=not.is.null`, {
         method: 'DELETE',
         headers: {
@@ -99,8 +139,7 @@ Deno.serve(async (req) => {
         },
       });
 
-      // Insert new reviews
-      const insertResponse = await fetch(`${supabaseUrl}/rest/v1/google_reviews`, {
+      await fetch(`${supabaseUrl}/rest/v1/google_reviews`, {
         method: 'POST',
         headers: {
           'apikey': supabaseServiceKey,
@@ -108,19 +147,18 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
           'Prefer': 'return=representation',
         },
-        body: JSON.stringify(reviews.map((r, i) => ({
+        body: JSON.stringify(reviews.map((r: any, i: number) => ({
           author_name: r.author_name,
           rating: r.rating,
           comment: r.comment,
-          review_date: r.review_date,
-          relative_time: r.relative_time,
+          review_date: r.review_date || null,
+          relative_time: r.relative_time || null,
           avatar_color: AVATAR_COLORS[i % AVATAR_COLORS.length],
           author_photo_url: r.author_photo_url || null,
         }))),
       });
 
-      const insertData = await insertResponse.json();
-      console.log('Inserted reviews:', insertData.length);
+      console.log(`Inserted ${reviews.length} reviews`);
     }
 
     return new Response(
@@ -136,59 +174,53 @@ Deno.serve(async (req) => {
   }
 });
 
-function parseReviews(markdown: string) {
+function parseGoogleMapsReviews(markdown: string) {
   const reviews: any[] = [];
-  
-  // Try various patterns to extract reviews from Google Maps markdown
-  // Pattern 1: "Name\nX stars\nDate\nComment"
-  const starPattern = /([^\n]+)\n(\d)\s*(?:star|étoile|★)/gi;
-  let match;
-  
-  // Pattern 2: Look for review blocks with ratings
   const lines = markdown.split('\n').map(l => l.trim()).filter(Boolean);
-  
-  let i = 0;
-  while (i < lines.length) {
+
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
-    // Look for star ratings (e.g., "5 stars", "★★★★★", "5/5")
-    const starMatch = line.match(/^(\d)\s*(?:star|étoile|\/5)/i) || 
-                       line.match(/^(★{1,5})/) ||
-                       line.match(/(\d)\s*(?:star|étoile)/i);
-    
+
+    // Look for patterns like "5 stars" or star ratings
+    const starMatch = line.match(/^(\d)\s*(?:stars?|étoiles?)/i);
     if (starMatch) {
-      const rating = starMatch[1].length > 1 ? starMatch[1].length : parseInt(starMatch[1]);
-      // Look backwards for author name
-      const authorName = i > 0 ? lines[i - 1] : 'Anonyme';
-      // Look forward for date and comment
-      let date = '';
-      let comment = '';
-      
-      if (i + 1 < lines.length) {
-        const nextLine = lines[i + 1];
-        if (nextLine.match(/ago|il y a|janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre|\d{4}/i)) {
-          date = nextLine;
-          if (i + 2 < lines.length) {
-            comment = lines[i + 2];
-          }
-        } else {
-          comment = nextLine;
+      const rating = parseInt(starMatch[1]);
+      // Author is typically 1-3 lines before
+      let authorName = '';
+      for (let j = i - 1; j >= Math.max(0, i - 4); j--) {
+        const candidate = lines[j].replace(/[*#\[\]!\(\)]/g, '').trim();
+        if (candidate.length > 1 && candidate.length < 60 && 
+            !candidate.match(/^(local guide|review|photo|google|map|star|étoile|\d)/i)) {
+          authorName = candidate;
+          break;
         }
       }
       
-      if (authorName && !authorName.match(/^(google|map|avis|review|note)/i) && rating >= 1 && rating <= 5) {
+      // Date and comment are typically after
+      let date = '';
+      let comment = '';
+      for (let j = i + 1; j < Math.min(lines.length, i + 5); j++) {
+        const nextLine = lines[j].replace(/[*#\[\]]/g, '').trim();
+        if (!date && nextLine.match(/ago|il y a|week|month|year|day|hour|semaine|mois|an|jour|heure|new|nouveau|\d{4}/i)) {
+          date = nextLine;
+        } else if (nextLine.length > 20 && !nextLine.match(/^(like|share|partager|aimer|visited|visité|\d|local guide|review)/i)) {
+          comment = nextLine;
+          break;
+        }
+      }
+
+      if (authorName && rating >= 1 && rating <= 5) {
         reviews.push({
-          author_name: authorName.replace(/[*#\[\]]/g, '').trim(),
+          author_name: authorName,
           rating,
-          comment: comment.replace(/[*#\[\]]/g, '').trim().substring(0, 500),
+          comment: comment.substring(0, 500),
           review_date: date,
           relative_time: date,
           author_photo_url: null,
         });
       }
     }
-    i++;
   }
-  
+
   return reviews;
 }
