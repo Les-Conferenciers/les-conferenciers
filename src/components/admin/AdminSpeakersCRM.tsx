@@ -436,6 +436,15 @@ const AdminSpeakersCRM = () => {
           >
             {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Enrichissement ({enrichProgress.processed}/{enrichProgress.total})</> : <><Sparkles className="h-4 w-4" /> Enrichir tout</>}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleRegenerateWhyAll}
+            disabled={enriching}
+          >
+            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Régénération...</> : <><Sparkles className="h-4 w-4" /> Régénérer Expertise/Impact</>}
+          </Button>
         </div>
 
         {/* Import inline */}
