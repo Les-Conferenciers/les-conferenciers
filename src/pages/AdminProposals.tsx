@@ -96,10 +96,14 @@ const AdminProposals = () => {
   };
 
   const fetchConferences = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("speaker_conferences")
       .select("id, title, speaker_id")
       .order("display_order");
+    if (error) {
+      console.error("Erreur chargement conférences:", error);
+    }
+    console.log("Conférences chargées:", data?.length ?? 0);
     setConferences(data || []);
   };
 
