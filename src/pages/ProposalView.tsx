@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, Mail, User, MapPin, ExternalLink } from "lucide-react";
+import { Clock, Mail, User, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import nugget from "@/assets/nugget.png";
 
 type SpeakerConference = {
+  id: string;
   title: string;
   description: string | null;
 };
@@ -13,6 +14,7 @@ type SpeakerConference = {
 type ProposalData = {
   id: string;
   client_name: string;
+  recipient_name: string | null;
   message: string | null;
   expires_at: string;
   created_at: string;
@@ -20,6 +22,7 @@ type ProposalData = {
     total_price: number | null;
     travel_costs: number | null;
     display_order: number;
+    selected_conference_ids: string[] | null;
     speakers: {
       name: string;
       role: string | null;
@@ -44,7 +47,6 @@ const ProposalView = () => {
 
   useEffect(() => {
     const init = async () => {
-      // Check if admin is logged in
       const { data: { session } } = await supabase.auth.getSession();
       const admin = !!session;
       setIsAdmin(admin);
@@ -53,7 +55,7 @@ const ProposalView = () => {
 
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, client_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, speakers(name, role, image_url, themes, biography, key_points, slug, city, speaker_conferences(title, description)))")
+        .select("id, client_name, recipient_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, selected_conference_ids, speakers(name, role, image_url, themes, biography, key_points, slug, city, speaker_conferences(id, title, description)))")
         .eq("token", token)
         .single();
 
@@ -63,7 +65,6 @@ const ProposalView = () => {
         return;
       }
 
-      // Only block non-admin users when expired
       if (!admin && new Date(data.expires_at) < new Date()) {
         setExpired(true);
         setLoading(false);
@@ -131,12 +132,13 @@ const ProposalView = () => {
             <img src={nugget} alt="" className="h-6 w-6" />
             <p className="text-sm uppercase tracking-widest opacity-70">Les Conférenciers</p>
           </div>
-          <h1 className="text-3xl md:text-4xl font-serif font-bold">Votre sélection personnalisée</h1>
-          {proposal.client_name && (
-            <p className="text-sm opacity-80">Pour {proposal.client_name}</p>
-          )}
-          {proposal.message && (
-            <p className="text-sm opacity-80 max-w-xl mx-auto mt-4">{proposal.message}</p>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold">Votre proposition personnalisée</h1>
+          {(proposal.recipient_name || proposal.client_name) && (
+            <p className="text-lg md:text-xl opacity-90 font-medium">
+              {proposal.recipient_name
+                ? `${proposal.recipient_name} pour ${proposal.client_name}`
+                : `Pour ${proposal.client_name}`}
+            </p>
           )}
           {!isProposalExpired && (
             <div className="flex items-center justify-center gap-2 mt-4 text-xs opacity-60">
@@ -147,11 +149,29 @@ const ProposalView = () => {
         </div>
       </header>
 
+      {/* Personalized message */}
+      {proposal.message && (
+        <div className="max-w-4xl mx-auto px-4 -mt-6">
+          <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-sm">
+            <p className="text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line italic">
+              « {proposal.message} »
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">— L'équipe Les Conférenciers</p>
+          </div>
+        </div>
+      )}
+
       {/* Speaker Cards */}
-      <main className="max-w-4xl mx-auto px-4 py-12 space-y-8">
+      <main className={`max-w-4xl mx-auto px-4 ${proposal.message ? 'pt-8' : 'pt-12'} pb-12 space-y-8`}>
         {proposal.proposal_speakers.map((ps, i) => {
           const speaker = ps.speakers as any;
           if (!speaker) return null;
+
+          // Filter conferences: show selected ones if specified, otherwise show first one
+          const selectedIds = ps.selected_conference_ids;
+          const confsToShow = selectedIds && selectedIds.length > 0
+            ? speaker.speaker_conferences?.filter((c: SpeakerConference) => selectedIds.includes(c.id)) || []
+            : speaker.speaker_conferences?.slice(0, 1) || [];
 
           return (
             <div key={i} className="border border-border rounded-2xl overflow-hidden bg-card">
@@ -202,10 +222,12 @@ const ProposalView = () => {
                   </a>
 
                   {/* Conference Summary */}
-                  {speaker.speaker_conferences && speaker.speaker_conferences.length > 0 && (
-                    <div className="space-y-2 border-t border-border pt-4">
-                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Conférence</h3>
-                      {speaker.speaker_conferences.slice(0, 1).map((conf: SpeakerConference, idx: number) => (
+                  {confsToShow.length > 0 && (
+                    <div className="space-y-3 border-t border-border pt-4">
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+                        {confsToShow.length > 1 ? "Conférences" : "Conférence"}
+                      </h3>
+                      {confsToShow.map((conf: SpeakerConference, idx: number) => (
                         <div key={idx}>
                           {conf.title && <p className="text-sm font-semibold text-foreground">{conf.title}</p>}
                           {conf.description && (
