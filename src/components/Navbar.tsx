@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import nugget from "@/assets/nugget.png";
+import logo from "@/assets/les-conferenciers-logo.jpg";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,9 +22,8 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 text-xl font-bold font-serif tracking-tight text-primary">
-          <img src={nugget} alt="" className="h-8 w-8" />
-          <span>Agence <span className="text-accent">-</span> Les Conférenciers</span>
+        <Link to="/" className="flex items-center">
+          <img src={logo} alt="Les Conférenciers" className="h-10 object-contain" />
         </Link>
 
         {/* Desktop Navigation */}
