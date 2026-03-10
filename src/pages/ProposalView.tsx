@@ -174,27 +174,29 @@ const ProposalView = () => {
             : speaker.speaker_conferences?.slice(0, 1) || [];
 
           return (
-            <div key={i} className="border border-border rounded-2xl overflow-hidden bg-card">
-              <div className="md:flex">
-                {/* Photo */}
-                <div className="md:w-1/3 bg-muted">
-                  {speaker.image_url ? (
-                    <img
-                      src={speaker.image_url}
-                      alt={speaker.name}
-                      className="w-full h-64 md:h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-64 md:h-full flex items-center justify-center">
-                      <User className="h-16 w-16 text-muted-foreground" />
-                    </div>
-                  )}
+            <div key={i} className="border border-border rounded-2xl overflow-hidden bg-card p-6 md:p-8">
+              <div className="flex items-start gap-6">
+                {/* Medallion photo */}
+                <div className="flex-shrink-0">
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
+                    {speaker.image_url ? (
+                      <img
+                        src={speaker.image_url}
+                        alt={speaker.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="h-10 w-10 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Info */}
-                <div className="md:w-2/3 p-6 md:p-8 space-y-5">
+                <div className="flex-1 space-y-4">
                   <div>
-                    <h2 className="text-2xl font-serif font-bold text-foreground">Qui est {speaker.name}</h2>
+                    <h2 className="text-2xl font-serif font-bold text-foreground">{speaker.name}</h2>
                     {speaker.role && <p className="text-sm text-muted-foreground mt-1">{speaker.role}</p>}
                   </div>
 
@@ -203,11 +205,33 @@ const ProposalView = () => {
                     <ul className="space-y-1.5">
                       {speaker.key_points.map((point: string, idx: number) => (
                         <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                          <span className="text-accent mt-0.5">•</span>
+                          <span className="text-accent mt-0.5">✓</span>
                           <span>{point}</span>
                         </li>
                       ))}
                     </ul>
+                  )}
+
+                  {/* Conferences - title only + link */}
+                  {confsToShow.length > 0 && (
+                    <div className="space-y-2 border-t border-border pt-4">
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+                        {confsToShow.length > 1 ? "Conférences proposées" : "Conférence proposée"}
+                      </h3>
+                      {confsToShow.map((conf: SpeakerConference, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-foreground">« {conf.title} »</p>
+                          <a
+                            href={`${window.location.origin}/speaker/${speaker.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-accent hover:underline whitespace-nowrap ml-3"
+                          >
+                            Voir le détail →
+                          </a>
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   {/* Profile Link */}
@@ -220,23 +244,6 @@ const ProposalView = () => {
                     <ExternalLink className="h-3.5 w-3.5" />
                     Voir son profil complet
                   </a>
-
-                  {/* Conference Summary */}
-                  {confsToShow.length > 0 && (
-                    <div className="space-y-3 border-t border-border pt-4">
-                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
-                        {confsToShow.length > 1 ? "Conférences" : "Conférence"}
-                      </h3>
-                      {confsToShow.map((conf: SpeakerConference, idx: number) => (
-                        <div key={idx}>
-                          {conf.title && <p className="text-sm font-semibold text-foreground">{conf.title}</p>}
-                          {conf.description && (
-                            <p className="text-sm text-muted-foreground leading-relaxed mt-1 whitespace-pre-line">{conf.description}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
