@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin } from "lucide-react";
-import logo from "@/assets/les-conferenciers-logo.png";
+import nugget from "@/assets/nugget.png";
 
 const Footer = () => {
   return (
@@ -9,8 +9,9 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="inline-block mb-4">
-              <img src={logo} alt="Les Conférenciers - Agence de conférenciers et de célébrités" className="h-16 object-contain" />
+            <Link to="/" className="flex items-center gap-2 mb-4">
+              <img src={nugget} alt="" className="h-7 w-7" />
+              <span className="font-serif font-bold text-xl">Les Conférenciers</span>
             </Link>
             <p className="text-primary-foreground/70 max-w-md leading-relaxed text-sm">
               Agence de conférenciers et de célébrités. Trouvez le conférencier idéal pour vos événements professionnels.
