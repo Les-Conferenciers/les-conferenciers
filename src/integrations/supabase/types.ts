@@ -60,6 +60,7 @@ export type Database = {
           display_order: number | null
           id: string
           proposal_id: string
+          selected_conference_ids: string[] | null
           speaker_fee: number | null
           speaker_id: string
           total_price: number | null
@@ -71,6 +72,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           proposal_id: string
+          selected_conference_ids?: string[] | null
           speaker_fee?: number | null
           speaker_id: string
           total_price?: number | null
@@ -82,6 +84,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           proposal_id?: string
+          selected_conference_ids?: string[] | null
           speaker_fee?: number | null
           speaker_id?: string
           total_price?: number | null
@@ -112,6 +115,7 @@ export type Database = {
           expires_at: string
           id: string
           message: string | null
+          recipient_name: string | null
           sent_at: string | null
           status: string
           token: string
@@ -123,6 +127,7 @@ export type Database = {
           expires_at?: string
           id?: string
           message?: string | null
+          recipient_name?: string | null
           sent_at?: string | null
           status?: string
           token?: string
@@ -134,6 +139,7 @@ export type Database = {
           expires_at?: string
           id?: string
           message?: string | null
+          recipient_name?: string | null
           sent_at?: string | null
           status?: string
           token?: string
