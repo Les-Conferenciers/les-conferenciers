@@ -301,7 +301,8 @@ RÈGLES BIOGRAPHIE (CRITIQUES) :
 - Progression chronologique : parcours → expertise → conférences/impact
 - Ton professionnel, engageant et narratif (pas de liste sèche de faits)
 - IMPORTANT : Chaque paragraphe doit être sur une NOUVELLE LIGNE (pas tout collé)
-- REFORMULATION OBLIGATOIRE : Le texte doit être 100% original. Ne jamais recopier les phrases des sources. Reformule entièrement avec ton propre style.
+- REFORMULATION OBLIGATOIRE : Le texte doit être 100% original. Ne jamais recopier les phrases des sources. Reformule entièrement avec ton propre style. Chaque phrase doit être différente des sources.
+- INTERDICTION ABSOLUE : Ne mentionne JAMAIS les noms des sites sources (Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise). Aucun de ces noms ne doit apparaître dans le contenu généré, que ce soit dans la biographie, les conférences, les key_points, why_expertise, why_impact, seo_title ou meta_description.
 - SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière (ex: "Aujourd'hui, ses conférences inspirent…" ou "En tant que conférencier, il partage…"). Cela doit couler naturellement dans le récit, JAMAIS forcer de mots-clés.
 
 RÈGLES SEO (seo_title et meta_description) :
