@@ -497,7 +497,7 @@ const SpeakerDetail = () => {
                 {themes.map((theme) => (
                   <button
                     key={theme}
-                    onClick={() => navigate(`/speakers?theme=${encodeURIComponent(theme)}`)}
+                    onClick={() => navigate(`/conferenciers?theme=${encodeURIComponent(theme)}`)}
                     className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
                   >
                     {theme}
