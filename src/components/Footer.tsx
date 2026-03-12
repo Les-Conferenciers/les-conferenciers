@@ -9,9 +9,9 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="text-2xl font-serif font-bold tracking-tight flex items-center gap-2.5 mb-4">
-              <img src={nugget} alt="" className="h-8 w-8 brightness-0 invert" />
-              Agence <span className="text-accent">-</span> Les Conférenciers
+            <Link to="/" className="flex items-center gap-2 mb-4">
+              <img src={nugget} alt="" className="h-7 w-7" />
+              <span className="font-serif font-bold text-xl">Les Conférenciers</span>
             </Link>
             <p className="text-primary-foreground/70 max-w-md leading-relaxed text-sm">
               Agence de conférenciers et de célébrités. Trouvez le conférencier idéal pour vos événements professionnels.

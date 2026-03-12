@@ -88,15 +88,17 @@ const Admin = () => {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User } from "lucide-react";
 import { toast } from "sonner";
 
+type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
 type ProposalSpeaker = {
   speaker_id: string;
@@ -105,6 +107,7 @@ type ProposalSpeaker = {
   agency_commission: number | null;
   total_price: number | null;
   display_order: number;
+  selected_conference_ids: string[];
 };
 type Proposal = {
   id: string;
@@ -112,6 +115,7 @@ type Proposal = {
   client_name: string;
   client_email: string;
   message: string | null;
+  recipient_name: string | null;
   status: string;
   sent_at: string | null;
   expires_at: string;
@@ -122,7 +126,7 @@ type Proposal = {
     travel_costs: number | null;
     agency_commission: number | null;
     total_price: number | null;
-    speakers: { name: string } | null;
+    speakers: { name: string; image_url: string | null } | null;
   }[];
 };
 
@@ -131,25 +135,27 @@ const COMMISSION = 1000;
 const AdminProposalsContent = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  const [conferences, setConferences] = useState<SpeakerConference[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [recipientName, setRecipientName] = useState("");
   const [message, setMessage] = useState("");
   const [selectedSpeakers, setSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchProposals(), fetchSpeakers()]);
+    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
   }, []);
 
   const fetchProposals = async () => {
     setLoading(true);
     const { data } = await supabase
       .from("proposals")
-      .select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, speakers(name))")
+      .select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, speakers(name, image_url))")
       .order("created_at", { ascending: false });
     setProposals((data as any) || []);
     setLoading(false);
@@ -163,6 +169,17 @@ const AdminProposalsContent = () => {
     setSpeakers(data || []);
   };
 
+  const fetchConferences = async () => {
+    const { data } = await supabase
+      .from("speaker_conferences")
+      .select("id, title, speaker_id")
+      .order("display_order");
+    setConferences(data || []);
+  };
+
+  const getConferencesForSpeaker = (speakerId: string) =>
+    conferences.filter(c => c.speaker_id === speakerId);
+
   const addSpeaker = (speaker: Speaker) => {
     if (selectedSpeakers.length >= 3) { toast.error("Maximum 3 conférenciers"); return; }
     if (selectedSpeakers.find(s => s.speaker_id === speaker.id)) { toast.error("Déjà ajouté"); return; }
@@ -174,6 +191,7 @@ const AdminProposalsContent = () => {
       agency_commission: COMMISSION,
       total_price: (baseFee + COMMISSION) || null,
       display_order: prev.length,
+      selected_conference_ids: [],
     }]);
   };
 
@@ -181,11 +199,21 @@ const AdminProposalsContent = () => {
     setSelectedSpeakers(prev => prev.filter(s => s.speaker_id !== speakerId));
   };
 
+  const toggleConference = (speakerId: string, confId: string) => {
+    setSelectedSpeakers(prev => prev.map(s => {
+      if (s.speaker_id !== speakerId) return s;
+      const ids = s.selected_conference_ids.includes(confId)
+        ? s.selected_conference_ids.filter(id => id !== confId)
+        : [...s.selected_conference_ids, confId];
+      return { ...s, selected_conference_ids: ids };
+    }));
+  };
+
   const updateSpeakerField = (speakerId: string, field: keyof ProposalSpeaker, value: number | null) => {
     setSelectedSpeakers(prev => prev.map(s => {
       if (s.speaker_id !== speakerId) return s;
       const updated = { ...s, [field]: value };
-      if (field !== "total_price" && field !== "display_order") {
+      if (field !== "total_price" && field !== "display_order" && field !== "selected_conference_ids") {
         const fee = field === "speaker_fee" ? value : updated.speaker_fee;
         const travel = field === "travel_costs" ? value : updated.travel_costs;
         const comm = field === "agency_commission" ? value : updated.agency_commission;
@@ -196,6 +224,7 @@ const AdminProposalsContent = () => {
   };
 
   const getSpeakerName = (id: string) => speakers.find(s => s.id === id)?.name || "—";
+  const getSpeakerImage = (id: string) => speakers.find(s => s.id === id)?.image_url || null;
   const getSpeakerCity = (id: string) => speakers.find(s => s.id === id)?.city || null;
 
   const handleCreate = async () => {
@@ -206,7 +235,12 @@ const AdminProposalsContent = () => {
     setSubmitting(true);
     const { data: proposal, error } = await supabase
       .from("proposals")
-      .insert({ client_name: clientName, client_email: clientEmail, message: message || null })
+      .insert({
+        client_name: clientName,
+        client_email: clientEmail,
+        message: message || null,
+        recipient_name: recipientName || null,
+      })
       .select()
       .single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
@@ -220,6 +254,7 @@ const AdminProposalsContent = () => {
         agency_commission: s.agency_commission,
         total_price: s.total_price,
         display_order: i,
+        selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
       })));
     if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
     toast.success("Proposition créée !");
@@ -230,7 +265,7 @@ const AdminProposalsContent = () => {
   };
 
   const resetForm = () => {
-    setClientName(""); setClientEmail(""); setMessage(""); setSelectedSpeakers([]);
+    setClientName(""); setClientEmail(""); setMessage(""); setRecipientName(""); setSelectedSpeakers([]);
   };
 
   const handleSend = async (proposal: Proposal) => {
@@ -298,14 +333,24 @@ const AdminProposalsContent = () => {
               <div className="space-y-6 mt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Nom du client</Label>
-                    <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Société / Contact" />
+                    <Label>Société / Nom du client</Label>
+                    <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" />
                   </div>
                   <div className="space-y-2">
                     <Label>Email du client</Label>
                     <Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" />
                   </div>
                 </div>
+
+                {/* Recipient name */}
+                <div className="space-y-2">
+                  <Label>Prénom Nom du destinataire (optionnel)</Label>
+                  <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
+                  <p className="text-[11px] text-muted-foreground">
+                    Affiché en titre : « {recipientName || "Prénom Nom"} pour {clientName || "Société"} »
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Message personnalisé (optionnel)</Label>
                   <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Bonjour, suite à notre échange..." rows={3} />
@@ -315,17 +360,51 @@ const AdminProposalsContent = () => {
                   <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
                   {selectedSpeakers.map(ps => {
                     const city = getSpeakerCity(ps.speaker_id);
+                    const imageUrl = getSpeakerImage(ps.speaker_id);
+                    const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
                     return (
                       <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
-                            {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
+                          <div className="flex items-center gap-3">
+                            {/* Medallion photo */}
+                            <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                              {imageUrl ? (
+                                <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center">
+                                  <User className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
+                              {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
+                            </div>
                           </div>
                           <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
+
+                        {/* Conference selection */}
+                        {speakerConfs.length > 0 && (
+                          <div className="space-y-2 bg-muted/50 rounded-md p-3">
+                            <Label className="text-xs text-muted-foreground">Conférences à inclure</Label>
+                            {speakerConfs.map(conf => (
+                              <div key={conf.id} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`conf-${conf.id}`}
+                                  checked={ps.selected_conference_ids.includes(conf.id)}
+                                  onCheckedChange={() => toggleConference(ps.speaker_id, conf.id)}
+                                />
+                                <label htmlFor={`conf-${conf.id}`} className="text-sm cursor-pointer leading-tight">
+                                  {conf.title}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
@@ -403,8 +482,29 @@ const AdminProposalsContent = () => {
                   <div className="font-medium text-sm">{p.client_name}</div>
                   <div className="text-xs text-muted-foreground">{p.client_email}</div>
                 </TableCell>
-                <TableCell className="text-sm">
-                  {p.proposal_speakers?.map(ps => (ps.speakers as any)?.name).filter(Boolean).join(", ") || "—"}
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    {p.proposal_speakers?.map((ps, i) => {
+                      const speaker = ps.speakers as any;
+                      if (!speaker) return null;
+                      return (
+                        <div key={i} className="flex items-center gap-1.5" title={speaker.name}>
+                          <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                            {speaker.image_url ? (
+                              <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center">
+                                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
+                          {i < (p.proposal_speakers?.length || 0) - 1 && <span className="text-muted-foreground text-xs">·</span>}
+                        </div>
+                      );
+                    })}
+                    {(!p.proposal_speakers || p.proposal_speakers.length === 0) && "—"}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <span className={`text-xs px-2 py-1 rounded-full ${

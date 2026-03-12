@@ -22,9 +22,9 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 text-xl font-bold font-serif tracking-tight text-primary">
-          <img src={nugget} alt="" className="h-8 w-8" />
-          <span>Agence <span className="text-accent">-</span> Les Conférenciers</span>
+        <Link to="/" className="flex items-center gap-2">
+          <img src={nugget} alt="" className="h-7 w-7" />
+          <span className="font-serif font-bold text-lg text-foreground">Les Conférenciers</span>
         </Link>
 
         {/* Desktop Navigation */}
