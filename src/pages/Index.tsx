@@ -430,7 +430,7 @@ const Index = () => {
               size="lg"
               variant="outline"
               className="border-accent/50 text-accent hover:bg-accent/10 rounded-xl font-semibold"
-              onClick={() => navigate("/speakers")}
+              onClick={() => navigate("/conferenciers")}
             >
               Découvrir nos conférenciers
             </Button>
