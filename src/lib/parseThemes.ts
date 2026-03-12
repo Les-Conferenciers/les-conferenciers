@@ -1,4 +1,36 @@
 /**
+ * Canonical theme mappings: normalize duplicates caused by casing, hyphens, etc.
+ * Key = lowercased version, Value = canonical display form.
+ */
+const THEME_ALIASES: Record<string, string> = {
+  "bien etre": "Bien-être",
+  "bien-etre": "Bien-être",
+  "bien être": "Bien-être",
+  "bien-être": "Bien-être",
+  "bien-être au travail": "Bien-être au travail",
+  "bien etre au travail": "Bien-être au travail",
+  "cohesion de groupe": "Cohésion de groupe",
+  "cohésion de groupe": "Cohésion de groupe",
+  "cohesion d'equipe": "Cohésion d'équipe",
+  "cohésion d'equipe": "Cohésion d'équipe",
+  "cohésion d'équipe": "Cohésion d'équipe",
+  "cohesion d'équipe": "Cohésion d'équipe",
+  "cohesion": "Cohésion",
+  "cohésion": "Cohésion",
+  "bienveillance": "Bienveillance",
+  "bonheur": "Bonheur",
+  "changement climatique": "Changement climatique",
+};
+
+/** Normalize a single theme string to its canonical form */
+const normalizeTheme = (theme: string): string => {
+  const lower = theme.toLowerCase().trim();
+  if (THEME_ALIASES[lower]) return THEME_ALIASES[lower];
+  // Default: capitalize first letter, lowercase rest
+  return theme.charAt(0).toUpperCase() + theme.slice(1);
+};
+
+/**
  * Parse raw theme strings from the database.
  * Themes are stored as arrays with entries like:
  * "Thématiques :\nEntreprenariat | Performance | Motivation"
@@ -9,14 +41,12 @@ export const parseThemes = (themes: string[] | null): string[] => {
 
   const parsed: string[] = [];
   for (const raw of themes) {
-    // Remove "Thématiques" prefix (with optional ":" and whitespace/newlines)
     const cleaned = raw.replace(/^Thématiques\s*:?\s*/i, "").trim();
     if (!cleaned) continue;
-    // Split by " | " separator
-    const parts = cleaned.split("|").map((t) => t.trim()).filter(Boolean);
+    const parts = cleaned.split("|").map((t) => normalizeTheme(t)).filter(Boolean);
     parsed.push(...parts);
   }
-  return [...new Set(parsed)]; // deduplicate
+  return [...new Set(parsed)]; // deduplicate after normalization
 };
 
 // Deterministic color palette for theme badges
