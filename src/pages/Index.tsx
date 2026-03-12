@@ -398,7 +398,7 @@ const Index = () => {
           <FeaturedSpeakers />
 
           <div className="mt-12 text-center md:hidden">
-            <Button variant="outline" className="w-full" onClick={() => navigate("/speakers")}>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/conferenciers")}>
               Voir tous les conférenciers
             </Button>
           </div>
