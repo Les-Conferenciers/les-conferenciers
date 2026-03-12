@@ -296,7 +296,7 @@ const SpeakerDetail = () => {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Accueil", item: window.location.origin + "/" },
-          { "@type": "ListItem", position: 2, name: "Conférenciers", item: window.location.origin + "/speakers" },
+          { "@type": "ListItem", position: 2, name: "Conférenciers", item: window.location.origin + "/conferenciers" },
           { "@type": "ListItem", position: 3, name: `Conférence ${speaker.name}`, item: pageUrl },
         ],
       };
