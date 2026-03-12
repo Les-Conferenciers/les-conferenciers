@@ -264,10 +264,10 @@ const SpeakerDetail = () => {
         canonicalEl.setAttribute("rel", "canonical");
         document.head.appendChild(canonicalEl);
       }
-      canonicalEl.href = window.location.origin + `/speakers/${speaker.slug}`;
+      canonicalEl.href = window.location.origin + `/conferencier/${speaker.slug}`;
 
       const themes = parseThemes(speaker.themes);
-      const pageUrl = window.location.origin + `/speakers/${speaker.slug}`;
+      const pageUrl = window.location.origin + `/conferencier/${speaker.slug}`;
       const imageUrl = speaker.image_url || DEFAULT_IMAGE;
 
       const personJsonLd = {
