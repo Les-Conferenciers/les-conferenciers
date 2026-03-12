@@ -465,7 +465,7 @@ const SpeakerDetail = () => {
           <nav className="flex items-center gap-1.5 text-sm text-primary-foreground/60 mb-8" aria-label="Breadcrumb">
             <Link to="/" className="hover:text-accent transition-colors">Accueil</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <Link to="/speakers" className="hover:text-accent transition-colors">Conférenciers</Link>
+            <Link to="/conferenciers" className="hover:text-accent transition-colors">Conférenciers</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="text-primary-foreground font-medium">{speaker.name}</span>
           </nav>
