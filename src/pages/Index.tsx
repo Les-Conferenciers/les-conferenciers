@@ -54,7 +54,7 @@ const Index = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/speakers?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/conferenciers?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 
