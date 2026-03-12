@@ -390,7 +390,7 @@ const Index = () => {
                 Thierry Marx, Nina Métayer, Tony Estanguet, Julia de Funès… et bien d'autres
               </p>
             </div>
-            <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/speakers")}>
+            <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/conferenciers")}>
               Voir tous <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
