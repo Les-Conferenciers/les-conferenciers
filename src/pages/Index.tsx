@@ -54,7 +54,7 @@ const Index = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/speakers?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/conferenciers?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 
@@ -390,7 +390,7 @@ const Index = () => {
                 Thierry Marx, Nina Métayer, Tony Estanguet, Julia de Funès… et bien d'autres
               </p>
             </div>
-            <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/speakers")}>
+            <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/conferenciers")}>
               Voir tous <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -398,7 +398,7 @@ const Index = () => {
           <FeaturedSpeakers />
 
           <div className="mt-12 text-center md:hidden">
-            <Button variant="outline" className="w-full" onClick={() => navigate("/speakers")}>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/conferenciers")}>
               Voir tous les conférenciers
             </Button>
           </div>
@@ -430,7 +430,7 @@ const Index = () => {
               size="lg"
               variant="outline"
               className="border-accent/50 text-accent hover:bg-accent/10 rounded-xl font-semibold"
-              onClick={() => navigate("/speakers")}
+              onClick={() => navigate("/conferenciers")}
             >
               Découvrir nos conférenciers
             </Button>
