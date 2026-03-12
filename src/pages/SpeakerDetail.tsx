@@ -406,7 +406,7 @@ const SpeakerDetail = () => {
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Conférencier non trouvé</h1>
-            <Button onClick={() => navigate("/speakers")}>Retour à la liste</Button>
+            <Button onClick={() => navigate("/conferenciers")}>Retour à la liste</Button>
           </div>
         </div>
       </div>
