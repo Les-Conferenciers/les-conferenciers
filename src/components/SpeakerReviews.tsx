@@ -43,9 +43,6 @@ const SpeakerReviews = ({ speakerId, speakerName }: SpeakerReviewsProps) => {
       <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
         <span className="w-1 h-7 bg-accent rounded-full block"></span>
         Ce qu'ils en pensent
-        <span className="text-base font-normal text-muted-foreground ml-1">
-          ({reviews.length})
-        </span>
       </h2>
 
       {/* Summary */}
@@ -53,9 +50,6 @@ const SpeakerReviews = ({ speakerId, speakerName }: SpeakerReviewsProps) => {
         <div className="text-3xl font-bold text-foreground">{avgRating}</div>
         <div>
           <StarRating value={Math.round(Number(avgRating))} />
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {reviews.length} avis
-          </p>
         </div>
       </div>
 
