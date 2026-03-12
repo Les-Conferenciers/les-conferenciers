@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const lastmod = s.updated_at ? s.updated_at.split("T")[0] : now;
     xml += `
   <url>
-    <loc>${baseUrl}/speakers/${s.slug}</loc>
+    <loc>${baseUrl}/conferencier/${s.slug}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <lastmod>${lastmod}</lastmod>

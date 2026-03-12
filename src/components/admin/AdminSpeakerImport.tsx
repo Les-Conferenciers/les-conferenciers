@@ -466,7 +466,7 @@ const AdminSpeakerImport = () => {
             {/* Actions */}
             <div className="border-t border-border p-4 flex justify-between items-center bg-muted/30">
               <a
-                href={`/speaker/${editForm.slug}`}
+                href={`/conferencier/${editForm.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:text-accent flex items-center gap-1"
