@@ -1,1 +1,76 @@
+# Redirections 301 — anciennes URLs du site lesconferenciers.com
+
+# Pages principales
+/conferencier/   /conferenciers   301
+
+# Anciennes URLs WordPress — pages
+/nos-conferenciers/   /conferenciers   301
+/nos-conferenciers   /conferenciers   301
+/contact-2/   /contact   301
+/a-propos/   /   301
+/notre-approche/   /   301
+/mentions-legales/   /   301
+/politique-de-confidentialite/   /   301
+
+# Anciennes URLs catégories (/project_category/) → page conférenciers avec filtre
+/project_category/adaptabilite/   /conferenciers   301
+/project_category/audace/   /conferenciers   301
+/project_category/bien-etre/   /conferenciers   301
+/project_category/cohesion-d-equipe/   /conferenciers   301
+/project_category/communication/   /conferenciers   301
+/project_category/conduite-du-changement/   /conferenciers   301
+/project_category/confiance/   /conferenciers   301
+/project_category/creativite/   /conferenciers   301
+/project_category/culture-client/   /conferenciers   301
+/project_category/depassement-de-soi/   /conferenciers   301
+/project_category/diversite/   /conferenciers   301
+/project_category/droit-a-lerreur/   /conferenciers   301
+/project_category/economie/   /conferenciers   301
+/project_category/engagement/   /conferenciers   301
+/project_category/entrepreneuriat/   /conferenciers   301
+/project_category/environnement/   /conferenciers   301
+/project_category/experience-client/   /conferenciers   301
+/project_category/gestion-des-conflits/   /conferenciers   301
+/project_category/gestion-du-stress/   /conferenciers   301
+/project_category/innovation/   /conferenciers   301
+/project_category/intelligence-artificielle/   /conferenciers   301
+/project_category/intelligence-collective/   /conferenciers   301
+/project_category/leadership/   /conferenciers   301
+/project_category/management/   /conferenciers   301
+/project_category/motivation/   /conferenciers   301
+/project_category/negociation/   /conferenciers   301
+/project_category/performance/   /conferenciers   301
+/project_category/qualite-de-vie-au-travail/   /conferenciers   301
+/project_category/resilience/   /conferenciers   301
+/project_category/rse/   /conferenciers   301
+/project_category/sport/   /conferenciers   301
+/project_category/transformation-digitale/   /conferenciers   301
+/project_category/*   /conferenciers   301
+
+# Anciennes URLs speakers avec trailing slash → nouvelles URLs sans trailing slash
+/conferencier/:slug/   /conferencier/:slug   301
+
+# Anciennes URLs /speakers/ et /speaker/ → /conferencier/
+/speakers/:slug   /conferencier/:slug   301
+/speaker/:slug   /conferencier/:slug   301
+/speakers/   /conferenciers   301
+/speakers   /conferenciers   301
+
+# Slugs spéciaux — anciens slugs qui ne correspondent pas au nouveau site
+/conferencier/gael-chatelain-berry/   /conferencier/gael-chatelain   301
+/conferencier/justine-henin/   /conferencier/justine-henin-2   301
+
+# Anciennes URLs WordPress blog/articles
+/category/*   /blog   301
+/tag/*   /blog   301
+/author/*   /   301
+
+# WordPress assets et feeds
+/feed/   /   301
+/wp-content/*   /   301
+/wp-admin/   /   301
+/wp-login.php   /   301
+/xmlrpc.php   /   301
+
+# SPA catch-all (doit rester en dernier)
 /*    /index.html   200
