@@ -50,9 +50,6 @@ const SpeakerReviews = ({ speakerId, speakerName }: SpeakerReviewsProps) => {
         <div className="text-3xl font-bold text-foreground">{avgRating}</div>
         <div>
           <StarRating value={Math.round(Number(avgRating))} />
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {reviews.length} avis
-          </p>
         </div>
       </div>
 
