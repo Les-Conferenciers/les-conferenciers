@@ -132,6 +132,12 @@ const AdminSpeakersCRM = () => {
     return Array.from(citySet).sort();
   }, [speakers]);
 
+  const PROFILE_TYPES = [
+    "Sportif", "Militaire", "Ancien du GIGN", "Chef d'orchestre", "Patrouille de France",
+    "Chef cuisinier", "Astronaute", "Explorateur", "Économiste", "Philosophe",
+    "Journaliste", "Artiste", "Médecin", "Scientifique", "Entrepreneur",
+  ];
+
   const filteredSpeakers = useMemo(() => {
     const filtered = speakers.filter(s => {
       if (!showArchived && s.archived) return false;
@@ -149,6 +155,13 @@ const AdminSpeakersCRM = () => {
       if (cityFilter && s.city !== cityFilter) return false;
       if (feeFilter === "set" && !s.base_fee) return false;
       if (feeFilter === "unset" && s.base_fee) return false;
+      if (genderFilter !== "all" && s.gender !== genderFilter) return false;
+      if (profileFilter) {
+        const q = profileFilter.toLowerCase();
+        const roleMatch = (s.role || "").toLowerCase().includes(q) || (s.specialty || "").toLowerCase().includes(q);
+        const bioMatch = (s.biography || "").toLowerCase().includes(q);
+        if (!roleMatch && !bioMatch) return false;
+      }
       return true;
     });
 
@@ -163,7 +176,7 @@ const AdminSpeakersCRM = () => {
       }
       return 0;
     });
-  }, [speakers, search, themeFilter, cityFilter, feeFilter, showArchived, sortBy, sortDir]);
+  }, [speakers, search, themeFilter, cityFilter, feeFilter, genderFilter, profileFilter, showArchived, sortBy, sortDir]);
 
   const clearFilters = () => {
     setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all");
