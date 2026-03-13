@@ -95,7 +95,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp } from "lucide-react";
+import ContractInvoiceManager from "@/components/admin/ContractInvoiceManager";
 import { toast } from "sonner";
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
