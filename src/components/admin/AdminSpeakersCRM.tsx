@@ -225,6 +225,8 @@ const AdminSpeakersCRM = () => {
         gender: editForm.gender || 'male',
         why_expertise: editForm.why_expertise || null,
         why_impact: editForm.why_impact || null,
+        phone: editForm.phone || null,
+        email: editForm.email || null,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
