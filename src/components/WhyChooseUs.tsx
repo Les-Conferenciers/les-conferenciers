@@ -5,7 +5,7 @@ const REASONS = [
     icon: Users,
     title: "300+ conférenciers",
     description: "Tous les profils, toutes les thématiques, tous les budgets. En France et à l'international.",
-    stat: "161+",
+    stat: "300+",
     statLabel: "intervenants",
   },
   {
