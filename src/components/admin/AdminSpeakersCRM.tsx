@@ -179,9 +179,9 @@ const AdminSpeakersCRM = () => {
   }, [speakers, search, themeFilter, cityFilter, feeFilter, genderFilter, profileFilter, showArchived, sortBy, sortDir]);
 
   const clearFilters = () => {
-    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all");
+    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all"); setGenderFilter("all"); setProfileFilter("");
   };
-  const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all";
+  const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all" || genderFilter !== "all" || profileFilter;
 
   // Edit handlers
   const openEdit = (speaker: Speaker) => {
