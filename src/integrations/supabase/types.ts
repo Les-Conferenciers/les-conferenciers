@@ -16,7 +16,9 @@ export type Database = {
     Tables: {
       contracts: {
         Row: {
+          contract_lines: Json | null
           created_at: string
+          discount_percent: number | null
           event_date: string | null
           event_description: string | null
           event_format: string | null
@@ -31,7 +33,9 @@ export type Database = {
           token: string | null
         }
         Insert: {
+          contract_lines?: Json | null
           created_at?: string
+          discount_percent?: number | null
           event_date?: string | null
           event_description?: string | null
           event_format?: string | null
@@ -46,7 +50,9 @@ export type Database = {
           token?: string | null
         }
         Update: {
+          contract_lines?: Json | null
           created_at?: string
+          discount_percent?: number | null
           event_date?: string | null
           event_description?: string | null
           event_format?: string | null
