@@ -377,9 +377,9 @@ const AdminProposalsContent = () => {
     setEditClientName(p.client_name);
     setEditClientEmail(p.client_email);
     setEditRecipientName(p.recipient_name || "");
-    setEditMessage((p as any).message || getDefaultMessage(p.recipient_name || "", p.client_name));
-    setEditEmailSubject((p as any).email_subject || getDefaultEmailSubject(p.client_name));
-    setEditEmailBody((p as any).email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
+    setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
+    setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
     setEditDialogOpen(true);
   };
 
