@@ -35,6 +35,8 @@ type Speaker = {
   created_at: string;
   why_expertise: string | null;
   why_impact: string | null;
+  phone: string | null;
+  email: string | null;
 };
 
 type Review = {
