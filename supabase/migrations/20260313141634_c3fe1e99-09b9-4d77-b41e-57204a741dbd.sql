@@ -1,0 +1,1 @@
+ALTER TABLE public.proposals ADD COLUMN email_subject text, ADD COLUMN email_body text;

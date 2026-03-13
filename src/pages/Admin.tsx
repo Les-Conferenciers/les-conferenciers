@@ -95,9 +95,42 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import ContractInvoiceManager from "@/components/admin/ContractInvoiceManager";
 import { toast } from "sonner";
+
+const getDefaultMessage = (recipientName: string, clientName: string) =>
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},
+
+Suite à notre échange, j'ai le plaisir de vous transmettre une sélection de conférenciers soigneusement choisis pour ${clientName || "votre entreprise"}.
+
+Chaque profil a été retenu pour sa capacité à créer un moment fort, à captiver votre audience et à laisser une empreinte durable.
+
+Vous trouverez dans cette proposition les informations détaillées sur chaque intervenant : parcours, thématiques de conférence et conditions d'intervention.
+
+N'hésitez pas à me contacter pour en discuter, je suis à votre disposition pour affiner cette sélection.
+
+À très vite,
+Nelly Sabde
+Les Conférenciers`;
+
+const getDefaultEmailSubject = (clientName: string) =>
+  `Votre sélection de conférenciers sur mesure — ${clientName || "Les Conférenciers"}`;
+
+const getDefaultEmailBody = (recipientName: string, clientName: string) =>
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},
+
+Comme convenu, je vous transmets votre proposition personnalisée de conférenciers pour ${clientName || "votre événement"}.
+
+👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection. Vous y trouverez le profil complet de chaque intervenant, ses thématiques et les conditions d'intervention.
+
+Cette proposition est valable 30 jours — vous pouvez y revenir autant de fois que vous le souhaitez et y répondre directement en ligne.
+
+Si vous avez la moindre question, je reste disponible par retour de mail ou par téléphone.
+
+À très bientôt,
+Nelly Sabde — Les Conférenciers
+📞 06 XX XX XX XX`;
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
@@ -117,6 +150,8 @@ type Proposal = {
   client_email: string;
   message: string | null;
   recipient_name: string | null;
+  email_subject: string | null;
+  email_body: string | null;
   status: string;
   sent_at: string | null;
   expires_at: string;
@@ -161,9 +196,19 @@ const AdminProposalsContent = () => {
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [message, setMessage] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
   const [selectedSpeakers, setSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [pipelineTab, setPipelineTab] = useState("drafts");
+  const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editClientName, setEditClientName] = useState("");
+  const [editClientEmail, setEditClientEmail] = useState("");
+  const [editRecipientName, setEditRecipientName] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [editEmailSubject, setEditEmailSubject] = useState("");
+  const [editEmailBody, setEditEmailBody] = useState("");
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
@@ -286,14 +331,19 @@ const AdminProposalsContent = () => {
       return;
     }
     setSubmitting(true);
+    const finalMessage = message || getDefaultMessage(recipientName, clientName);
+    const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
+    const finalBody = emailBody || getDefaultEmailBody(recipientName, clientName);
     const { data: proposal, error } = await supabase
       .from("proposals")
       .insert({
         client_name: clientName,
         client_email: clientEmail,
-        message: message || null,
+        message: finalMessage,
         recipient_name: recipientName || null,
-      })
+        email_subject: finalSubject,
+        email_body: finalBody,
+      } as any)
       .select()
       .single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
@@ -310,7 +360,7 @@ const AdminProposalsContent = () => {
         selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
       })));
     if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
-    toast.success("Proposition créée !");
+    toast.success("Proposition créée avec les textes par défaut !");
     setDialogOpen(false);
     resetForm();
     fetchProposals();
@@ -318,7 +368,41 @@ const AdminProposalsContent = () => {
   };
 
   const resetForm = () => {
-    setClientName(""); setClientEmail(""); setMessage(""); setRecipientName(""); setSelectedSpeakers([]);
+    setClientName(""); setClientEmail(""); setMessage(""); setRecipientName("");
+    setEmailSubject(""); setEmailBody(""); setSelectedSpeakers([]);
+  };
+
+  const openEditDialog = (p: Proposal) => {
+    setEditingProposal(p);
+    setEditClientName(p.client_name);
+    setEditClientEmail(p.client_email);
+    setEditRecipientName(p.recipient_name || "");
+    setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
+    setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
+    setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProposal) return;
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("proposals")
+      .update({
+        client_name: editClientName,
+        client_email: editClientEmail,
+        recipient_name: editRecipientName || null,
+        message: editMessage || null,
+        email_subject: editEmailSubject || null,
+        email_body: editEmailBody || null,
+      } as any)
+      .eq("id", editingProposal.id);
+    if (error) { toast.error("Erreur sauvegarde"); setSubmitting(false); return; }
+    toast.success("Proposition mise à jour !");
+    setEditDialogOpen(false);
+    setEditingProposal(null);
+    fetchProposals();
+    setSubmitting(false);
   };
 
   const handleSend = async (proposal: Proposal) => {
@@ -603,6 +687,12 @@ const AdminProposalsContent = () => {
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
+              {/* Edit (draft or sent) */}
+              {(mode === "draft" || (mode === "sent" && p.status === "sent")) && (
+                <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)} title="Éditer">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
               {/* Draft: Send */}
               {mode === "draft" && (
                 <Button
@@ -780,6 +870,56 @@ const AdminProposalsContent = () => {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Edit dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Éditer la proposition</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Société / Nom du client</Label>
+                <Input value={editClientName} onChange={e => setEditClientName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Email du client</Label>
+                <Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Prénom Nom du destinataire</Label>
+              <Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} />
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition (page web)</h3>
+              <Textarea value={editMessage} onChange={e => setEditMessage(e.target.value)} rows={8} className="text-sm" />
+              <p className="text-[10px] text-muted-foreground mt-1">Ce texte apparaît sur la page de proposition vue par le client.</p>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Objet du mail</Label>
+                  <Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Corps du mail (texte avant le bouton CTA)</Label>
+                  <Textarea value={editEmailBody} onChange={e => setEditEmailBody(e.target.value)} rows={10} className="text-sm" />
+                  <p className="text-[10px] text-muted-foreground">Le bouton « Consulter la proposition » et la mention de validité 30 jours sont ajoutés automatiquement.</p>
+                </div>
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
+              {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
