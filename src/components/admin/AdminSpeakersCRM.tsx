@@ -200,6 +200,8 @@ const AdminSpeakersCRM = () => {
       gender: speaker.gender,
       why_expertise: speaker.why_expertise,
       why_impact: speaker.why_impact,
+      phone: speaker.phone,
+      email: speaker.email,
     });
   };
 
