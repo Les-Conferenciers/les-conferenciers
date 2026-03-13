@@ -368,8 +368,9 @@ const AdminProposalsContent = () => {
   };
 
   const resetForm = () => {
-    setClientName(""); setClientEmail(""); setMessage(""); setRecipientName("");
-    setEmailSubject(""); setEmailBody(""); setSelectedSpeakers([]);
+    setClientName(""); setClientEmail(""); setRecipientName(""); setSelectedSpeakers([]);
+    setEmailSubject(""); setEmailBody("");
+    setMessage("Voici ma sélection de profils pour votre événement. Avec plaisir pour en discuter ou l'affiner ensemble.\n\nNelly de l'Agence Les Conférenciers");
   };
 
   const openEditDialog = (p: Proposal) => {
@@ -507,8 +508,8 @@ const AdminProposalsContent = () => {
         </p>
       </div>
       <div className="space-y-2">
-        <Label>Message personnalisé (optionnel)</Label>
-        <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Bonjour, suite à notre échange..." rows={3} />
+        <Label>Message personnalisé (affiché sur la page proposition)</Label>
+        <Textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} className="text-sm" />
       </div>
       <div className="space-y-3">
         <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
