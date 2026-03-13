@@ -820,10 +820,10 @@ const SpeakerDetail = () => {
           <section className="mt-20">
             <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-2 flex items-center gap-3">
               <span className="w-1 h-7 bg-accent rounded-full block"></span>
-              Profils similaires
+              Conférenciers similaires
             </h2>
             <p className="text-muted-foreground mb-8 ml-4">
-              Des {conferencier_e(speaker)}s qui partagent des thématiques communes avec {speaker.name}
+              Des conférenciers qui partagent des thématiques communes avec {speaker.name}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {similarSpeakers.map((s) => (
