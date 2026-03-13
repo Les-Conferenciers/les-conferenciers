@@ -868,6 +868,56 @@ const AdminProposalsContent = () => {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Edit dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Éditer la proposition</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Société / Nom du client</Label>
+                <Input value={editClientName} onChange={e => setEditClientName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Email du client</Label>
+                <Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Prénom Nom du destinataire</Label>
+              <Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} />
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition (page web)</h3>
+              <Textarea value={editMessage} onChange={e => setEditMessage(e.target.value)} rows={8} className="text-sm" />
+              <p className="text-[10px] text-muted-foreground mt-1">Ce texte apparaît sur la page de proposition vue par le client.</p>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Objet du mail</Label>
+                  <Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Corps du mail (texte avant le bouton CTA)</Label>
+                  <Textarea value={editEmailBody} onChange={e => setEditEmailBody(e.target.value)} rows={10} className="text-sm" />
+                  <p className="text-[10px] text-muted-foreground">Le bouton « Consulter la proposition » et la mention de validité 30 jours sont ajoutés automatiquement.</p>
+                </div>
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
+              {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -33,7 +33,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "proposal_id required" }), { status: 400, headers: corsHeaders });
     }
 
-    // Fetch proposal with speakers using service role for full access
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -67,6 +66,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
+    // Use custom email subject/body or defaults
+    const emailSubject = proposal.email_subject || `Votre sélection de conférenciers sur mesure — ${proposal.client_name}`;
+    
+    // Build email body text - use custom or default
+    const recipientFirstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
+    const defaultBody = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
+
+Comme convenu, je vous transmets votre proposition personnalisée de conférenciers pour ${proposal.client_name}.
+
+Vous y trouverez le profil complet de chaque intervenant, ses thématiques et les conditions d'intervention.`;
+
+    const bodyText = proposal.email_body || defaultBody;
+    // Convert newlines to <br> for HTML
+    const bodyHtml = bodyText.replace(/\n/g, "<br>");
+
     const emailHtml = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
@@ -77,9 +91,7 @@ Deno.serve(async (req) => {
       <p style="color:#f5f0e8;opacity:0.7;font-size:14px;margin-top:8px;">Votre sélection personnalisée</p>
     </div>
     <div style="padding:30px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px;">
-      <p style="color:#333;font-size:15px;">Bonjour ${proposal.client_name},</p>
-      ${proposal.message ? `<p style="color:#555;font-size:14px;">${proposal.message}</p>` : ""}
-      <p style="color:#555;font-size:14px;">Nous avons préparé une sélection de conférenciers adaptés à vos besoins :</p>
+      <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
       <div style="background:#f8f6f1;padding:20px;border-radius:8px;margin:20px 0;">
         <pre style="font-family:Arial,sans-serif;color:#333;font-size:14px;white-space:pre-wrap;margin:0;">${speakerLines}</pre>
       </div>
@@ -88,7 +100,12 @@ Deno.serve(async (req) => {
           Consulter la proposition complète
         </a>
       </div>
-      <p style="color:#999;font-size:12px;text-align:center;">Ce lien est valide pendant 15 jours. Proposition confidentielle.</p>
+      <div style="background:#f0f7ff;border:1px solid #d0e3f7;border-radius:8px;padding:16px;margin:20px 0;">
+        <p style="color:#1a5276;font-size:13px;margin:0;text-align:center;">
+          📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
+        </p>
+      </div>
+      <p style="color:#999;font-size:11px;text-align:center;margin-top:20px;">Proposition confidentielle — Les Conférenciers</p>
     </div>
   </div>
 </body></html>`;
@@ -99,7 +116,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: "Les Conférenciers <contact@lesconferenciers.com>",
         to: [proposal.client_email],
-        subject: `Votre sélection de conférenciers — Les Conférenciers`,
+        subject: emailSubject,
         html: emailHtml,
       }),
     });
