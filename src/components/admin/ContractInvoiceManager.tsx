@@ -8,10 +8,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
-  FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil, Ban, CircleDollarSign,
+  FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil, Ban, CircleDollarSign, Trash2, Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +44,8 @@ type Contract = {
   signer_name: string | null;
   signed_at: string | null;
   created_at: string;
+  contract_lines: any;
+  discount_percent: number | null;
 };
 
 type Invoice = {
@@ -62,10 +64,26 @@ type Invoice = {
   created_at: string;
 };
 
+type ContractLine = {
+  id: string;
+  label: string;
+  amount_ht: number;
+  tva_rate: number;
+  type: "speaker" | "travel" | "custom";
+};
+
 type Props = {
   proposal: Proposal;
   onUpdate: () => void;
 };
+
+const generateId = () => Math.random().toString(36).slice(2, 10);
+
+const TVA_OPTIONS = [
+  { value: "0", label: "0%" },
+  { value: "5", label: "5%" },
+  { value: "20", label: "20%" },
+];
 
 const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [contract, setContract] = useState<Contract | null>(null);
@@ -80,6 +98,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [eventTime, setEventTime] = useState("");
   const [eventFormat, setEventFormat] = useState("Conférence");
   const [eventDescription, setEventDescription] = useState("");
+  const [contractLines, setContractLines] = useState<ContractLine[]>([]);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [saving, setSaving] = useState(false);
 
   // Contract email
@@ -123,11 +143,80 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setLoading(false);
   };
 
-  const totalHT = proposal.proposal_speakers.reduce((sum, s) => sum + (s.total_price || 0), 0);
+  // ─── Compute totals from contract lines ───
+  const computeTotals = (lines: ContractLine[], discount: number) => {
+    const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
+    const discountAmount = subtotalHT * (discount / 100);
+    const totalHTAfterDiscount = subtotalHT - discountAmount;
+    // Weighted TVA calculation
+    const totalTVA = lines.reduce((sum, l) => {
+      const lineShare = subtotalHT > 0 ? l.amount_ht / subtotalHT : 0;
+      const lineHTAfterDiscount = l.amount_ht - (discountAmount * lineShare);
+      return sum + lineHTAfterDiscount * (l.tva_rate / 100);
+    }, 0);
+    const totalTTC = totalHTAfterDiscount + totalTVA;
+    return { subtotalHT, discountAmount, totalHTAfterDiscount, totalTVA, totalTTC };
+  };
 
-  const speakerSummary = proposal.proposal_speakers
-    .map(s => s.speakers?.name || "—")
-    .join(", ");
+  // Use contract lines if stored, otherwise fallback to proposal speakers
+  const getEffectiveLines = (): ContractLine[] => {
+    if (contract?.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0) {
+      return contract.contract_lines as ContractLine[];
+    }
+    return proposal.proposal_speakers.map((ps, i) => ({
+      id: generateId(),
+      label: ps.speakers?.name || `Conférencier ${i + 1}`,
+      amount_ht: ps.total_price || 0,
+      tva_rate: 20,
+      type: "speaker" as const,
+    }));
+  };
+
+  const effectiveDiscount = contract?.discount_percent || 0;
+  const effectiveLines = getEffectiveLines();
+  const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount);
+
+  const speakerSummary = effectiveLines
+    .filter(l => l.type === "speaker")
+    .map(l => l.label)
+    .join(", ") || proposal.proposal_speakers.map(s => s.speakers?.name || "—").join(", ");
+
+  // ─── Contract lines helpers ───
+  const buildInitialLines = (): ContractLine[] => {
+    if (contract?.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0) {
+      return contract.contract_lines as ContractLine[];
+    }
+    return proposal.proposal_speakers.map((ps, i) => ({
+      id: generateId(),
+      label: ps.speakers?.name || `Conférencier ${i + 1}`,
+      amount_ht: ps.total_price || 0,
+      tva_rate: 20,
+      type: "speaker" as const,
+    }));
+  };
+
+  const updateLine = (id: string, field: keyof ContractLine, value: any) => {
+    setContractLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+  };
+
+  const removeLine = (id: string) => {
+    setContractLines(prev => prev.filter(l => l.id !== id));
+  };
+
+  const addLine = (type: ContractLine["type"]) => {
+    const defaults: Record<string, string> = {
+      speaker: "Conférencier",
+      travel: "Frais de déplacement",
+      custom: "Prestation complémentaire",
+    };
+    setContractLines(prev => [...prev, {
+      id: generateId(),
+      label: defaults[type],
+      amount_ht: 0,
+      tva_rate: 20,
+      type,
+    }]);
+  };
 
   // ─── Contract ───
 
@@ -138,6 +227,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setEventTime("");
     setEventFormat("Conférence");
     setEventDescription("");
+    setContractLines(buildInitialLines());
+    setDiscountPercent(0);
     setContractDialogOpen(true);
   };
 
@@ -149,6 +240,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setEventTime(contract.event_time || "");
     setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
+    setContractLines(buildInitialLines());
+    setDiscountPercent(contract.discount_percent || 0);
     setContractDialogOpen(true);
   };
 
@@ -160,6 +253,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       event_time: eventTime || null,
       event_format: eventFormat || null,
       event_description: eventDescription || null,
+      contract_lines: contractLines,
+      discount_percent: discountPercent || 0,
     };
 
     if (editingContract && contract) {
@@ -179,6 +274,9 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
 
   const openContractEmail = () => {
     if (!contract) return;
+    const lines = getEffectiveLines();
+    const disc = contract.discount_percent || 0;
+    const totals = computeTotals(lines, disc);
     const dateStr = contract.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "à définir";
     setContractEmailSubject(`Contrat de prestation — ${proposal.client_name} — Les Conférenciers`);
     setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
@@ -189,7 +287,7 @@ Suite à votre accord, je vous transmets le contrat de prestation pour votre év
 • Conférencier(s) : ${speakerSummary}
 • Date : ${dateStr}
 • Lieu : ${contract.event_location || "à définir"}
-• Montant total TTC : ${(totalHT * 1.2).toLocaleString("fr-FR")} €
+• Montant total TTC : ${totals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €${disc > 0 ? ` (remise ${disc}% incluse)` : ""}
 
 👉 Cliquez sur le bouton ci-dessous pour consulter le contrat et le signer électroniquement. Il vous suffira de renseigner votre nom complet et de cocher la case d'acceptation.
 
@@ -228,7 +326,7 @@ Nelly Sabde — Les Conférenciers`);
   const handleCreateInvoice = async () => {
     setCreatingInvoice(true);
     const multiplier = invoiceType === "total" ? 1 : 0.5;
-    const amountHT = totalHT * multiplier;
+    const amountHT = totalHTAfterDiscount * multiplier;
     const tvaRate = 20;
     const amountTTC = amountHT * (1 + tvaRate / 100);
 
@@ -340,6 +438,9 @@ Nelly Sabde — Les Conférenciers`);
   const getContractSignUrl = () =>
     contract?.token ? `${window.location.origin}/signer-contrat/${contract.token}` : null;
 
+  // Totals for contract dialog (live)
+  const dialogTotals = computeTotals(contractLines, discountPercent);
+
   if (loading) return <div className="text-muted-foreground text-xs py-2">Chargement…</div>;
 
   return (
@@ -363,20 +464,17 @@ Nelly Sabde — Les Conférenciers`);
               {contract.status === "signed" ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}` :
                contract.status === "sent" ? "Envoyé" : "Brouillon"}
             </span>
-            {contract.status === "draft" && (
+            {(contract.status === "draft" || contract.status === "sent") && (
               <>
                 <Button size="sm" variant="ghost" onClick={openEditContract} title="Éditer">
                   <Pencil className="h-3 w-3" />
                 </Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
-                  <Send className="h-3 w-3" /> Envoyer
-                </Button>
+                {contract.status === "draft" && (
+                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
+                    <Send className="h-3 w-3" /> Envoyer
+                  </Button>
+                )}
               </>
-            )}
-            {contract.status === "sent" && (
-              <Button size="sm" variant="ghost" onClick={openEditContract} title="Éditer">
-                <Pencil className="h-3 w-3" />
-              </Button>
             )}
             <Button size="sm" variant="ghost" asChild>
               <a href={`/admin/contrat/${contract.id}`} target="_blank" rel="noopener noreferrer" className="gap-1">
@@ -395,13 +493,14 @@ Nelly Sabde — Les Conférenciers`);
 
       {/* Contract form dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif">
               {editingContract ? "Modifier" : "Créer"} le contrat — {proposal.client_name}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-5 mt-2">
+            {/* Event details */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Date de l'événement</Label>
@@ -425,18 +524,115 @@ Nelly Sabde — Les Conférenciers`);
               <Textarea placeholder="Informations complémentaires..." value={eventDescription} onChange={e => setEventDescription(e.target.value)} rows={2} />
             </div>
 
-            {/* Speaker summary */}
-            <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Conférencier(s) :</p>
-              {proposal.proposal_speakers.map((ps, i) => (
-                <div key={i} className="flex justify-between text-xs">
-                  <span>{ps.speakers?.name || "—"}</span>
-                  <span className="font-medium">{(ps.total_price || 0).toLocaleString("fr-FR")} € HT</span>
+            {/* ─── Editable line items ─── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Lignes de facturation</Label>
+              </div>
+
+              {contractLines.map((line) => (
+                <div key={line.id} className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                        line.type === "speaker" ? "bg-primary/10 text-primary" :
+                        line.type === "travel" ? "bg-blue-100 text-blue-700" :
+                        "bg-purple-100 text-purple-700"
+                      }`}>
+                        {line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}
+                      </span>
+                    </div>
+                    <Input
+                      value={line.label}
+                      onChange={e => updateLine(line.id, "label", e.target.value)}
+                      className="h-8 text-sm"
+                      placeholder="Libellé"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
+                        <Input
+                          type="number"
+                          value={line.amount_ht}
+                          onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-muted-foreground">TVA</Label>
+                        <Select value={String(line.tva_rate)} onValueChange={v => updateLine(line.id, "tva_rate", Number(v))}>
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TVA_OPTIONS.map(o => (
+                              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive mt-6" onClick={() => removeLine(line.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               ))}
-              <div className="border-t border-border pt-2 flex justify-between text-sm font-semibold">
-                <span>Total</span>
-                <span>{totalHT.toLocaleString("fr-FR")} € HT — {(totalHT * 1.2).toLocaleString("fr-FR")} € TTC</span>
+
+              {/* Add line buttons */}
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("speaker")}>
+                  <Plus className="h-3 w-3" /> Conférencier
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("travel")}>
+                  <Plus className="h-3 w-3" /> Frais de déplacement
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("custom")}>
+                  <Plus className="h-3 w-3" /> Autre prestation
+                </Button>
+              </div>
+            </div>
+
+            {/* Discount */}
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+              <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex-1">
+                <Label className="text-xs">Remise globale (%)</Label>
+                <p className="text-[10px] text-muted-foreground">Facultatif — sera déduite du sous-total HT</p>
+              </div>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={discountPercent}
+                onChange={e => setDiscountPercent(Number(e.target.value))}
+                className="w-20 h-8 text-sm text-right"
+              />
+            </div>
+
+            {/* Totals */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Sous-total HT</span>
+                <span>{dialogTotals.subtotalHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              </div>
+              {discountPercent > 0 && (
+                <div className="flex justify-between text-red-600">
+                  <span>Remise ({discountPercent}%)</span>
+                  <span>-{dialogTotals.discountAmount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                </div>
+              )}
+              <div className="flex justify-between text-muted-foreground">
+                <span>Total HT{discountPercent > 0 ? " après remise" : ""}</span>
+                <span>{dialogTotals.totalHTAfterDiscount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>TVA</span>
+                <span>{dialogTotals.totalTVA.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              </div>
+              <div className="border-t border-border pt-2 flex justify-between font-bold text-base">
+                <span>Total TTC</span>
+                <span>{dialogTotals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
             </div>
 
@@ -501,7 +697,6 @@ Nelly Sabde — Les Conférenciers`);
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {/* Status badge */}
                   {inv.status === "paid" ? (
                     <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium flex items-center gap-1">
                       <CheckCircle className="h-3 w-3" /> Payée le {formatDate(inv.paid_at)}
@@ -521,25 +716,21 @@ Nelly Sabde — Les Conférenciers`);
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {/* Edit (draft only) */}
                   {inv.status === "draft" && (
                     <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)} title="Éditer">
                       <Pencil className="h-3 w-3" />
                     </Button>
                   )}
-                  {/* View */}
                   <Button size="sm" variant="ghost" asChild title="Voir la facture">
                     <a href={`/admin/facture/${inv.id}`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </Button>
-                  {/* Send (draft) */}
                   {inv.status === "draft" && (
                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => openInvoiceEmail(inv)}>
                       <Send className="h-3 w-3" /> Envoyer
                     </Button>
                   )}
-                  {/* Mark paid (sent) */}
                   {inv.status === "sent" && (
                     <Button
                       size="sm"
@@ -549,7 +740,6 @@ Nelly Sabde — Les Conférenciers`);
                       <CheckCircle className="h-3 w-3" /> Marquer payée
                     </Button>
                   )}
-                  {/* Undo paid */}
                   {inv.status === "paid" && (
                     <Button size="sm" variant="ghost" className="gap-1 text-xs text-muted-foreground" onClick={() => handleMarkUnpaid(inv)} title="Annuler le paiement">
                       <Ban className="h-3 w-3" /> Annuler
@@ -596,15 +786,20 @@ Nelly Sabde — Les Conférenciers`);
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Montant HT</span>
-                <span>{(totalHT * (invoiceType === "total" ? 1 : 0.5)).toLocaleString("fr-FR")} €</span>
+                <span>{(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">TVA 20%</span>
-                <span>{(totalHT * (invoiceType === "total" ? 1 : 0.5) * 0.2).toLocaleString("fr-FR")} €</span>
+                <span>{(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5) * 0.2).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
+              {effectiveDiscount > 0 && (
+                <div className="flex justify-between text-xs text-muted-foreground italic">
+                  <span>Remise {effectiveDiscount}% déjà appliquée</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold border-t pt-1">
                 <span>Total TTC</span>
-                <span>{(totalHT * (invoiceType === "total" ? 1 : 0.5) * 1.2).toLocaleString("fr-FR")} €</span>
+                <span>{(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5) * 1.2).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
             </div>
             <Button className="w-full" onClick={handleCreateInvoice} disabled={creatingInvoice}>
@@ -637,7 +832,7 @@ Nelly Sabde — Les Conférenciers`);
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
               <span>Total TTC</span>
-              <span>{(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR")} €</span>
+              <span>{(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
             </div>
             <Button className="w-full" onClick={handleSaveInvoice}>
               Enregistrer les modifications
