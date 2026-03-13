@@ -514,16 +514,23 @@ const AdminProposalsContent = () => {
                       ? "bg-destructive/10 text-destructive"
                       : p.status === "archived"
                       ? "bg-muted text-muted-foreground"
+                      : p.status === "accepted"
+                      ? "bg-blue-100 text-blue-700"
                       : p.status === "sent"
                       ? "bg-green-100 text-green-700"
                       : "bg-muted text-muted-foreground"
                   }`}>
-                    {isExpired(p.expires_at) ? "Expiré" : p.status === "archived" ? "Archivé" : p.status === "sent" ? "Envoyé" : "Brouillon"}
+                    {isExpired(p.expires_at) ? "Expiré" : p.status === "archived" ? "Archivé" : p.status === "accepted" ? "Accepté" : p.status === "sent" ? "Envoyé" : "Brouillon"}
                   </span>
                 </TableCell>
                 <TableCell className="text-xs whitespace-nowrap">{formatDate(p.expires_at)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
+                    {p.status === "accepted" && (
+                      <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)} title="Contrat & Factures">
+                        {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
                       {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                     </Button>
@@ -553,6 +560,30 @@ const AdminProposalsContent = () => {
                   </div>
                 </TableCell>
               </TableRow>
+              {/* Expanded contract/invoice management */}
+              {expandedId === p.id && p.status === "accepted" && (
+                <TableRow>
+                  <TableCell colSpan={6} className="bg-muted/30 px-6 py-2">
+                    <ContractInvoiceManager
+                      proposal={{
+                        id: p.id,
+                        client_name: p.client_name,
+                        client_email: p.client_email,
+                        recipient_name: p.recipient_name,
+                        status: p.status,
+                        proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
+                          speaker_fee: ps.speaker_fee,
+                          travel_costs: ps.travel_costs,
+                          agency_commission: ps.agency_commission,
+                          total_price: ps.total_price,
+                          speakers: ps.speakers,
+                        })),
+                      }}
+                      onUpdate={fetchProposals}
+                    />
+                  </TableCell>
+                </TableRow>
+              )}
             ))}
             {proposals.length === 0 && !loading && (
               <TableRow>
