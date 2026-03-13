@@ -39,6 +39,8 @@ const App = () => (
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/propositions" element={<Navigate to="/admin?tab=propositions" replace />} />
           <Route path="/proposition/:token" element={<ProposalView />} />
+          <Route path="/admin/contrat/:id" element={<ContractView />} />
+          <Route path="/admin/facture/:id" element={<InvoiceView />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
