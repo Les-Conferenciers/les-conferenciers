@@ -130,7 +130,7 @@ type Proposal = {
   }[];
 };
 
-const COMMISSION = 1000;
+const COMMISSION = 1300;
 
 const AdminProposalsContent = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
