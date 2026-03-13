@@ -584,7 +584,7 @@ const AdminProposalsContent = () => {
                     />
                   </TableCell>
                 </TableRow>
-              )}
+              </React.Fragment>
             ))}
             {proposals.length === 0 && !loading && (
               <TableRow>
