@@ -95,9 +95,42 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import ContractInvoiceManager from "@/components/admin/ContractInvoiceManager";
 import { toast } from "sonner";
+
+const getDefaultMessage = (recipientName: string, clientName: string) =>
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},
+
+Suite à notre échange, j'ai le plaisir de vous transmettre une sélection de conférenciers soigneusement choisis pour ${clientName || "votre entreprise"}.
+
+Chaque profil a été retenu pour sa capacité à créer un moment fort, à captiver votre audience et à laisser une empreinte durable.
+
+Vous trouverez dans cette proposition les informations détaillées sur chaque intervenant : parcours, thématiques de conférence et conditions d'intervention.
+
+N'hésitez pas à me contacter pour en discuter, je suis à votre disposition pour affiner cette sélection.
+
+À très vite,
+Nelly Sabde
+Les Conférenciers`;
+
+const getDefaultEmailSubject = (clientName: string) =>
+  `Votre sélection de conférenciers sur mesure — ${clientName || "Les Conférenciers"}`;
+
+const getDefaultEmailBody = (recipientName: string, clientName: string) =>
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},
+
+Comme convenu, je vous transmets votre proposition personnalisée de conférenciers pour ${clientName || "votre événement"}.
+
+👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection. Vous y trouverez le profil complet de chaque intervenant, ses thématiques et les conditions d'intervention.
+
+Cette proposition est valable 30 jours — vous pouvez y revenir autant de fois que vous le souhaitez et y répondre directement en ligne.
+
+Si vous avez la moindre question, je reste disponible par retour de mail ou par téléphone.
+
+À très bientôt,
+Nelly Sabde — Les Conférenciers
+📞 06 XX XX XX XX`;
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
