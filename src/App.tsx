@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import ProposalView from "./pages/ProposalView";
 import ContractView from "./pages/ContractView";
+import ContractSign from "./pages/ContractSign";
 import InvoiceView from "./pages/InvoiceView";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/admin/propositions" element={<Navigate to="/admin?tab=propositions" replace />} />
           <Route path="/proposition/:token" element={<ProposalView />} />
           <Route path="/admin/contrat/:id" element={<ContractView />} />
+          <Route path="/signer-contrat/:token" element={<ContractSign />} />
           <Route path="/admin/facture/:id" element={<InvoiceView />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

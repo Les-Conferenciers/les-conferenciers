@@ -25,7 +25,10 @@ export type Database = {
           id: string
           proposal_id: string
           signed_at: string | null
+          signer_ip: string | null
+          signer_name: string | null
           status: string
+          token: string | null
         }
         Insert: {
           created_at?: string
@@ -37,7 +40,10 @@ export type Database = {
           id?: string
           proposal_id: string
           signed_at?: string | null
+          signer_ip?: string | null
+          signer_name?: string | null
           status?: string
+          token?: string | null
         }
         Update: {
           created_at?: string
@@ -49,7 +55,10 @@ export type Database = {
           id?: string
           proposal_id?: string
           signed_at?: string | null
+          signer_ip?: string | null
+          signer_name?: string | null
           status?: string
+          token?: string | null
         }
         Relationships: [
           {

@@ -5,11 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const COMPANY_BANK = {
-  iban: "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
-  bic: "XXXXXXXX",
-};
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -33,9 +28,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { invoice_id, email_subject, email_body } = await req.json();
-    if (!invoice_id) {
-      return new Response(JSON.stringify({ error: "invoice_id required" }), { status: 400, headers: corsHeaders });
+    const { contract_id, email_subject, email_body } = await req.json();
+    if (!contract_id) {
+      return new Response(JSON.stringify({ error: "contract_id required" }), { status: 400, headers: corsHeaders });
     }
 
     const adminClient = createClient(
@@ -43,25 +38,26 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: invoice, error: iErr } = await adminClient
-      .from("invoices")
-      .select("*, proposal:proposals(client_name, client_email, recipient_name)")
-      .eq("id", invoice_id)
+    const { data: contract, error: cErr } = await adminClient
+      .from("contracts")
+      .select("*, proposal:proposals(client_name, client_email, recipient_name, token, proposal_speakers(total_price, speakers(name)))")
+      .eq("id", contract_id)
       .single();
 
-    if (iErr || !invoice) {
-      return new Response(JSON.stringify({ error: "Invoice not found" }), { status: 404, headers: corsHeaders });
+    if (cErr || !contract) {
+      return new Response(JSON.stringify({ error: "Contract not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const proposal = invoice.proposal;
+    const proposal = contract.proposal;
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
-    const invoiceUrl = `${req.headers.get("origin") || "https://lesconferenciers.com"}/admin/facture/${invoice.id}`;
-    const bodyHtml = (email_body || `Bonjour,\n\nVeuillez trouver votre facture ${invoice.invoice_number}.\n\nCordialement,\nLes Conférenciers`).replace(/\n/g, "<br>");
-    const subject = email_subject || `Facture ${invoice.invoice_number} — ${proposal.client_name}`;
+    const signUrl = `${req.headers.get("origin") || "https://lesconferenciers.com"}/signer-contrat/${contract.token}`;
+    const bodyHtml = (email_body || "").replace(/\n/g, "<br>");
+
+    const subject = email_subject || `Contrat de prestation — ${proposal.client_name} — Les Conférenciers`;
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -70,19 +66,14 @@ Deno.serve(async (req) => {
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
     <div style="text-align:center;padding:30px;background:#1a2332;border-radius:12px 12px 0 0;">
       <h1 style="color:#f5f0e8;font-size:24px;margin:0;">Les Conférenciers</h1>
-      <p style="color:#f5f0e8;opacity:0.7;font-size:14px;margin-top:8px;">Facture ${invoice.invoice_number}</p>
+      <p style="color:#f5f0e8;opacity:0.7;font-size:14px;margin-top:8px;">Contrat de prestation</p>
     </div>
     <div style="padding:30px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px;">
       <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
       <div style="text-align:center;margin:30px 0;">
-        <a href="${invoiceUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
-          Consulter la facture
+        <a href="${signUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
+          Consulter et signer le contrat
         </a>
-      </div>
-      <div style="background:#f8f6f1;padding:16px;border-radius:8px;margin:20px 0;">
-        <p style="color:#333;font-size:13px;margin:0 0 4px;font-weight:bold;">Coordonnées bancaires :</p>
-        <p style="color:#555;font-size:13px;margin:0;">IBAN : ${COMPANY_BANK.iban}</p>
-        <p style="color:#555;font-size:13px;margin:0;">BIC : ${COMPANY_BANK.bic}</p>
       </div>
       <p style="color:#999;font-size:11px;text-align:center;margin-top:20px;">Document confidentiel — Les Conférenciers</p>
     </div>
@@ -105,7 +96,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Email send failed", details: errBody }), { status: 500, headers: corsHeaders });
     }
 
-    await adminClient.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoice_id);
+    await adminClient.from("contracts").update({ status: "sent" }).eq("id", contract_id);
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
