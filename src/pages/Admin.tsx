@@ -368,8 +368,9 @@ const AdminProposalsContent = () => {
   };
 
   const resetForm = () => {
-    setClientName(""); setClientEmail(""); setMessage(""); setRecipientName("");
-    setEmailSubject(""); setEmailBody(""); setSelectedSpeakers([]);
+    setClientName(""); setClientEmail(""); setRecipientName(""); setSelectedSpeakers([]);
+    setEmailSubject(""); setEmailBody("");
+    setMessage("Voici ma sélection de profils pour votre événement. Avec plaisir pour en discuter ou l'affiner ensemble.\n\nNelly de l'Agence Les Conférenciers");
   };
 
   const openEditDialog = (p: Proposal) => {
