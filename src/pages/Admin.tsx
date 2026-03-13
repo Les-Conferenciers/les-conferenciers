@@ -150,6 +150,8 @@ type Proposal = {
   client_email: string;
   message: string | null;
   recipient_name: string | null;
+  email_subject: string | null;
+  email_body: string | null;
   status: string;
   sent_at: string | null;
   expires_at: string;
