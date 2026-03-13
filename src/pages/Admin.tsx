@@ -141,6 +141,7 @@ const AdminProposalsContent = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
