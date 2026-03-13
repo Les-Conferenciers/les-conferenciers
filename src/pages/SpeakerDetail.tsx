@@ -52,10 +52,6 @@ const generateFAQ = (speaker: any) => {
       answer: `Pour réserver ${speaker.name}, contactez notre agence via le formulaire de contact ou par téléphone au 06 95 93 97 91. Nelly, votre interlocutrice dédiée, vous enverra un devis personnalisé sous 24 heures.`,
     },
     {
-      question: `Quel est le tarif d'une conférence avec ${speaker.name} ?`,
-      answer: `Le tarif dépend de plusieurs facteurs : la durée de l'intervention, le format (conférence, table ronde, webconférence), le lieu et la date. Contactez-nous pour recevoir une proposition adaptée à votre budget.`,
-    },
-    {
       question: `Une session de questions-réponses est-elle prévue à l'issue de la conférence ?`,
       answer: `Oui, la plupart de nos ${conferencier_e(speaker)}s proposent un temps d'échange avec le public après leur intervention. ${speaker.name} ${fem ? "est disponible" : "est disponible"} pour répondre aux questions de vos participants et approfondir les sujets abordés.`,
     },
