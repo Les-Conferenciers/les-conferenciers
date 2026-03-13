@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import ProposalView from "./pages/ProposalView";
+import ContractView from "./pages/ContractView";
+import InvoiceView from "./pages/InvoiceView";
 
 const queryClient = new QueryClient();
 
