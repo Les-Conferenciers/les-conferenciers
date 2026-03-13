@@ -58,6 +58,8 @@ const AdminSpeakersCRM = () => {
   const [themeFilter, setThemeFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
+  const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female">("all");
+  const [profileFilter, setProfileFilter] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "base_fee">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
