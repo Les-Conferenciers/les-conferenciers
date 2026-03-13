@@ -133,11 +133,11 @@ const GoogleReviews = () => {
         </div>
 
         {/* Reviews Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {reviews.map((review) => (
             <div
               key={review.id}
-              className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 relative"
+              className="bg-card border border-border/50 rounded-xl p-7 shadow-sm hover:shadow-md transition-shadow duration-300 relative"
             >
               {/* Google icon */}
               <div className="absolute top-5 right-5">
