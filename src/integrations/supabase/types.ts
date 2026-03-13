@@ -222,6 +222,8 @@ export type Database = {
           client_email: string
           client_name: string
           created_at: string
+          email_body: string | null
+          email_subject: string | null
           expires_at: string
           id: string
           message: string | null
@@ -234,6 +236,8 @@ export type Database = {
           client_email: string
           client_name: string
           created_at?: string
+          email_body?: string | null
+          email_subject?: string | null
           expires_at?: string
           id?: string
           message?: string | null
@@ -246,6 +250,8 @@ export type Database = {
           client_email?: string
           client_name?: string
           created_at?: string
+          email_body?: string | null
+          email_subject?: string | null
           expires_at?: string
           id?: string
           message?: string | null
