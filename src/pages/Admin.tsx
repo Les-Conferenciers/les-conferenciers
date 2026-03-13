@@ -187,7 +187,7 @@ const AdminProposalsContent = () => {
     setSelectedSpeakers(prev => [...prev, {
       speaker_id: speaker.id,
       speaker_fee: baseFee || null,
-      travel_costs: null,
+      travel_costs: 0,
       agency_commission: COMMISSION,
       total_price: (baseFee + COMMISSION) || null,
       display_order: prev.length,
