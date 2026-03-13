@@ -2,112 +2,113 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const COMPANY_BANK = {
+  iban: "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
+  bic: "XXXXXXXX",
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS")
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
 
   try {
-    const { invoice_id } = await req.json();
-    if (!invoice_id) throw new Error("invoice_id required");
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendKey = Deno.env.get("RESEND_API_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
-    // Get invoice + proposal
-    const { data: invoice, error: invErr } = await supabase
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+
+    const { invoice_id, email_subject, email_body } = await req.json();
+    if (!invoice_id) {
+      return new Response(JSON.stringify({ error: "invoice_id required" }), { status: 400, headers: corsHeaders });
+    }
+
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: invoice, error: iErr } = await adminClient
       .from("invoices")
       .select("*, proposal:proposals(client_name, client_email, recipient_name)")
       .eq("id", invoice_id)
       .single();
 
-    if (invErr || !invoice) throw new Error("Invoice not found");
+    if (iErr || !invoice) {
+      return new Response(JSON.stringify({ error: "Invoice not found" }), { status: 404, headers: corsHeaders });
+    }
 
-    const proposal = invoice.proposal as any;
-    const typeLabel =
-      invoice.invoice_type === "acompte"
-        ? "Facture d'acompte"
-        : invoice.invoice_type === "solde"
-        ? "Facture de solde"
-        : "Facture";
+    const proposal = invoice.proposal;
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
+    }
 
-    // Determine the base URL (use origin header or fallback)
-    const origin = req.headers.get("origin") || "https://lesconferenciers.com";
-    const invoiceUrl = `${origin}/admin/facture/${invoice.id}`;
+    const invoiceUrl = `${req.headers.get("origin") || "https://lesconferenciers.com"}/admin/facture/${invoice.id}`;
+    const bodyHtml = (email_body || `Bonjour,\n\nVeuillez trouver votre facture ${invoice.invoice_number}.\n\nCordialement,\nLes Conférenciers`).replace(/\n/g, "<br>");
+    const subject = email_subject || `Facture ${invoice.invoice_number} — ${proposal.client_name}`;
 
-    const html = `
-      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-        <h1 style="font-size: 22px; color: #1a1a1a; margin-bottom: 8px;">
-          ${typeLabel} — ${invoice.invoice_number}
-        </h1>
-        <p style="color: #666; margin-bottom: 24px;">
-          ${proposal.recipient_name ? `Bonjour ${proposal.recipient_name},` : "Bonjour,"}
-        </p>
-        <p style="color: #333; line-height: 1.6;">
-          Veuillez trouver ci-dessous votre ${typeLabel.toLowerCase()} n°${invoice.invoice_number}
-          d'un montant de <strong>${invoice.amount_ttc.toLocaleString("fr-FR")} € TTC</strong>.
-        </p>
-        ${invoice.due_date ? `<p style="color: #333;">Échéance : <strong>${new Date(invoice.due_date).toLocaleDateString("fr-FR")}</strong></p>` : ""}
-        <div style="margin: 24px 0;">
-          <a href="${invoiceUrl}" 
-             style="display: inline-block; background: #1a1a1a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-size: 14px;">
-            Consulter la facture
-          </a>
-        </div>
-        <p style="color: #999; font-size: 12px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
-          LES CONFERENCIERS — SAS EVE — 4 B Villa de la Gare, 92140 Clamart<br>
-          SIRET : 848 829 743 00014 — contact@lesconferenciers.com
-        </p>
+    const emailHtml = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#ffffff;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+    <div style="text-align:center;padding:30px;background:#1a2332;border-radius:12px 12px 0 0;">
+      <h1 style="color:#f5f0e8;font-size:24px;margin:0;">Les Conférenciers</h1>
+      <p style="color:#f5f0e8;opacity:0.7;font-size:14px;margin-top:8px;">Facture ${invoice.invoice_number}</p>
+    </div>
+    <div style="padding:30px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px;">
+      <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
+      <div style="text-align:center;margin:30px 0;">
+        <a href="${invoiceUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
+          Consulter la facture
+        </a>
       </div>
-    `;
+      <div style="background:#f8f6f1;padding:16px;border-radius:8px;margin:20px 0;">
+        <p style="color:#333;font-size:13px;margin:0 0 4px;font-weight:bold;">Coordonnées bancaires :</p>
+        <p style="color:#555;font-size:13px;margin:0;">IBAN : ${COMPANY_BANK.iban}</p>
+        <p style="color:#555;font-size:13px;margin:0;">BIC : ${COMPANY_BANK.bic}</p>
+      </div>
+      <p style="color:#999;font-size:11px;text-align:center;margin-top:20px;">Document confidentiel — Les Conférenciers</p>
+    </div>
+  </div>
+</body></html>`;
 
-    const emailRes = await fetch("https://api.resend.com/emails", {
+    const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
         from: "Les Conférenciers <contact@lesconferenciers.com>",
         to: [proposal.client_email],
-        subject: `${typeLabel} ${invoice.invoice_number} — Les Conférenciers`,
-        html,
+        subject,
+        html: emailHtml,
       }),
     });
 
-    if (!emailRes.ok) {
-      const errBody = await emailRes.text();
-      throw new Error(`Resend error: ${errBody}`);
+    if (!resendRes.ok) {
+      const errBody = await resendRes.text();
+      return new Response(JSON.stringify({ error: "Email send failed", details: errBody }), { status: 500, headers: corsHeaders });
     }
 
-    // Also notify agency
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Les Conférenciers <contact@lesconferenciers.com>",
-        to: ["nellysabde@lesconferenciers.com"],
-        subject: `${typeLabel} ${invoice.invoice_number} envoyée à ${proposal.client_name}`,
-        html: `<p>La ${typeLabel.toLowerCase()} <strong>${invoice.invoice_number}</strong> (${invoice.amount_ttc.toLocaleString("fr-FR")} € TTC) a été envoyée à <strong>${proposal.client_email}</strong>.</p>`,
-      }),
-    });
+    await adminClient.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoice_id);
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
   }
 });
