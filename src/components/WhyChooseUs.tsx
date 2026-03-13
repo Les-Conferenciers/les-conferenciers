@@ -3,7 +3,7 @@ import { Users, Award, Search, Handshake } from "lucide-react";
 const REASONS = [
   {
     icon: Users,
-    title: "161+ conférenciers",
+    title: "300+ conférenciers",
     description: "Tous les profils, toutes les thématiques, tous les budgets. En France et à l'international.",
     stat: "161+",
     statLabel: "intervenants",
