@@ -685,6 +685,12 @@ const AdminProposalsContent = () => {
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
+              {/* Edit (draft or sent) */}
+              {(mode === "draft" || (mode === "sent" && p.status === "sent")) && (
+                <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)} title="Éditer">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
               {/* Draft: Send */}
               {mode === "draft" && (
                 <Button
