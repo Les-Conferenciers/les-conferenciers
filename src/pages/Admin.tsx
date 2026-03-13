@@ -860,6 +860,8 @@ const AdminProposalsContent = () => {
           {renderTable(drafts, "draft")}
         </TabsContent>
 
+        {/* HIDDEN: Envoyées & Missions terminées — à réactiver plus tard */}
+        {/*
         <TabsContent value="sent">
           {renderTable(sent, "sent")}
         </TabsContent>
@@ -867,6 +869,7 @@ const AdminProposalsContent = () => {
         <TabsContent value="completed">
           {renderTable(completed, "completed")}
         </TabsContent>
+        */}
 
         {archived.length > 0 && (
           <TabsContent value="archived">
