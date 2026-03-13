@@ -563,6 +563,15 @@ const AdminSpeakersCRM = () => {
             <option value="set">Tarif renseigné</option>
             <option value="unset">Tarif non renseigné</option>
           </select>
+          <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={genderFilter} onChange={e => setGenderFilter(e.target.value as any)}>
+            <option value="all">Sexe : tous</option>
+            <option value="male">Homme</option>
+            <option value="female">Femme</option>
+          </select>
+          <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={profileFilter} onChange={e => setProfileFilter(e.target.value)}>
+            <option value="">Profil : tous</option>
+            {PROFILE_TYPES.map(p => <option key={p} value={p.toLowerCase()}>{p}</option>)}
+          </select>
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground">
               <X className="h-3.5 w-3.5" /> Réinitialiser
