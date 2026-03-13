@@ -168,6 +168,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     await supabase.from("invoices").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", invoice.id);
     toast.success(`Facture ${invoice.invoice_number} marquée payée`);
     fetchData();
+    onUpdate();
   };
 
   const formatDate = (d: string | null) =>
