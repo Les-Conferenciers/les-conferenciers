@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
@@ -21,6 +21,7 @@ const Speakers = () => {
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(initialTheme);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+  const [showAllThemes, setShowAllThemes] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -42,20 +43,24 @@ const Speakers = () => {
     },
   });
 
-  // Extract top 10 most cited themes
-  const allThemes = (() => {
-    if (!allSpeakers) return [];
+  // Extract all themes sorted by frequency
+  const { topThemes, allThemes } = (() => {
+    if (!allSpeakers) return { topThemes: [], allThemes: [] };
     const counts = new Map<string, number>();
     allSpeakers.forEach((s) => {
       parseThemes(s.themes).forEach((t) => {
         counts.set(t, (counts.get(t) || 0) + 1);
       });
     });
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([theme]) => theme);
+    const sorted = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1]);
+    
+    const top10 = sorted.slice(0, 10).map(([theme]) => theme);
+    const all = sorted.map(([theme]) => theme).sort((a, b) => a.localeCompare(b, "fr"));
+    return { topThemes: top10, allThemes: all };
   })();
+
+  const displayedThemes = showAllThemes ? allThemes : topThemes;
 
   // Filter speakers
   const speakers = allSpeakers?.filter((s) => {
@@ -103,7 +108,7 @@ const Speakers = () => {
           Conférenciers professionnels pour vos événements
         </h1>
         <h2 className="text-primary-foreground/80 max-w-2xl mx-auto text-lg font-normal">
-          Découvrez notre sélection de {allSpeakers?.length ?? "..."} conférenciers et intervenants d'exception.
+          Parmi nos 300 conférenciers et intervenants d'exception, trouvez celui qui marquera votre événement.
         </h2>
       </div>
 
@@ -122,7 +127,7 @@ const Speakers = () => {
         </div>
 
         {/* Theme filters */}
-        <div className="flex flex-wrap gap-2 mb-10">
+        <div className="flex flex-wrap gap-2 mb-4">
           <button
             onClick={() => setSelectedTheme(null)}
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
@@ -133,7 +138,7 @@ const Speakers = () => {
           >
             Tous
           </button>
-          {allThemes.map((theme) => (
+          {displayedThemes.map((theme) => (
             <button
               key={theme}
               onClick={() => handleThemeClick(theme)}
@@ -147,6 +152,21 @@ const Speakers = () => {
             </button>
           ))}
         </div>
+
+        {/* Show all / less toggle */}
+        {allThemes.length > 10 && (
+          <div className="mb-10">
+            <button
+              onClick={() => setShowAllThemes(!showAllThemes)}
+              className="text-sm text-accent font-semibold hover:underline inline-flex items-center gap-1"
+            >
+              {showAllThemes ? "Voir moins de catégories" : `Voir toutes les catégories (${allThemes.length})`}
+              <ChevronDown className={`h-4 w-4 transition-transform ${showAllThemes ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+        )}
+
+        {!showAllThemes && allThemes.length <= 10 && <div className="mb-10" />}
 
         {/* Results */}
         {isLoading ? (
