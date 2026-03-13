@@ -478,7 +478,8 @@ const AdminProposalsContent = () => {
           </TableHeader>
           <TableBody>
             {proposals.map(p => (
-              <TableRow key={p.id} className={isExpired(p.expires_at) ? "opacity-50" : ""}>
+              <React.Fragment key={p.id}>
+              <TableRow className={isExpired(p.expires_at) ? "opacity-50" : ""}>
                 <TableCell className="text-xs whitespace-nowrap">{formatDate(p.created_at)}</TableCell>
                 <TableCell>
                   <div className="font-medium text-sm">{p.client_name}</div>
