@@ -329,14 +329,19 @@ const AdminProposalsContent = () => {
       return;
     }
     setSubmitting(true);
+    const finalMessage = message || getDefaultMessage(recipientName, clientName);
+    const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
+    const finalBody = emailBody || getDefaultEmailBody(recipientName, clientName);
     const { data: proposal, error } = await supabase
       .from("proposals")
       .insert({
         client_name: clientName,
         client_email: clientEmail,
-        message: message || null,
+        message: finalMessage,
         recipient_name: recipientName || null,
-      })
+        email_subject: finalSubject,
+        email_body: finalBody,
+      } as any)
       .select()
       .single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
@@ -353,7 +358,7 @@ const AdminProposalsContent = () => {
         selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
       })));
     if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
-    toast.success("Proposition créée !");
+    toast.success("Proposition créée avec les textes par défaut !");
     setDialogOpen(false);
     resetForm();
     fetchProposals();
@@ -361,7 +366,41 @@ const AdminProposalsContent = () => {
   };
 
   const resetForm = () => {
-    setClientName(""); setClientEmail(""); setMessage(""); setRecipientName(""); setSelectedSpeakers([]);
+    setClientName(""); setClientEmail(""); setMessage(""); setRecipientName("");
+    setEmailSubject(""); setEmailBody(""); setSelectedSpeakers([]);
+  };
+
+  const openEditDialog = (p: Proposal) => {
+    setEditingProposal(p);
+    setEditClientName(p.client_name);
+    setEditClientEmail(p.client_email);
+    setEditRecipientName(p.recipient_name || "");
+    setEditMessage((p as any).message || getDefaultMessage(p.recipient_name || "", p.client_name));
+    setEditEmailSubject((p as any).email_subject || getDefaultEmailSubject(p.client_name));
+    setEditEmailBody((p as any).email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProposal) return;
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("proposals")
+      .update({
+        client_name: editClientName,
+        client_email: editClientEmail,
+        recipient_name: editRecipientName || null,
+        message: editMessage || null,
+        email_subject: editEmailSubject || null,
+        email_body: editEmailBody || null,
+      } as any)
+      .eq("id", editingProposal.id);
+    if (error) { toast.error("Erreur sauvegarde"); setSubmitting(false); return; }
+    toast.success("Proposition mise à jour !");
+    setEditDialogOpen(false);
+    setEditingProposal(null);
+    fetchProposals();
+    setSubmitting(false);
   };
 
   const handleSend = async (proposal: Proposal) => {
