@@ -194,9 +194,19 @@ const AdminProposalsContent = () => {
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [message, setMessage] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
   const [selectedSpeakers, setSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [pipelineTab, setPipelineTab] = useState("drafts");
+  const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editClientName, setEditClientName] = useState("");
+  const [editClientEmail, setEditClientEmail] = useState("");
+  const [editRecipientName, setEditRecipientName] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [editEmailSubject, setEditEmailSubject] = useState("");
+  const [editEmailBody, setEditEmailBody] = useState("");
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
