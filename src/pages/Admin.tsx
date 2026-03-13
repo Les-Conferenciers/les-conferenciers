@@ -370,7 +370,7 @@ const AdminProposalsContent = () => {
   const resetForm = () => {
     setClientName(""); setClientEmail(""); setRecipientName(""); setSelectedSpeakers([]);
     setEmailSubject(""); setEmailBody("");
-    setMessage("Voici ma sélection de profils pour votre événement. Avec plaisir pour en discuter ou l'affiner ensemble.\n\nNelly de l'Agence Les Conférenciers");
+    setMessage("Voici ma sélection de profils pour votre événement. Avec plaisir pour en discuter ou l'affiner ensemble.");
   };
 
   const openEditDialog = (p: Proposal) => {
