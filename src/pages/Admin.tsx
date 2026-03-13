@@ -550,6 +550,15 @@ const AdminProposalsContent = () => {
                       <Send className="h-3 w-3" />
                       {sending === p.id ? "Envoi…" : "Envoyer"}
                     </Button>
+                    {p.status !== "accepted" && p.status !== "archived" && (
+                      <Button variant="outline" size="sm" className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={async () => {
+                        await supabase.from("proposals").update({ status: "accepted" }).eq("id", p.id);
+                        toast.success("Proposition passée en « Accepté » (simulation)");
+                        fetchProposals();
+                      }} title="Simuler acceptation">
+                        <Check className="h-3 w-3" /> Simuler accepté
+                      </Button>
+                    )}
                     {p.status !== "archived" && (
                       <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver">
                         <Archive className="h-4 w-4 text-muted-foreground" />
