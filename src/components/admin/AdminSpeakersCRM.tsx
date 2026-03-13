@@ -688,6 +688,18 @@ const AdminSpeakersCRM = () => {
                 </div>
               </div>
 
+              {/* Phone & Email (internal only) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">📱 Téléphone (interne)</Label>
+                  <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} placeholder="06 12 34 56 78" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">📧 Email (interne)</Label>
+                  <Input type="email" value={editForm.email || ""} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} placeholder="contact@speaker.com" />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
