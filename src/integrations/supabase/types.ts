@@ -280,6 +280,7 @@ export type Database = {
           biography: string | null
           city: string | null
           created_at: string
+          email: string | null
           featured: boolean | null
           gender: string | null
           id: string
@@ -288,6 +289,7 @@ export type Database = {
           languages: string[] | null
           meta_description: string | null
           name: string
+          phone: string | null
           role: string | null
           seo_title: string | null
           slug: string
@@ -304,6 +306,7 @@ export type Database = {
           biography?: string | null
           city?: string | null
           created_at?: string
+          email?: string | null
           featured?: boolean | null
           gender?: string | null
           id?: string
@@ -312,6 +315,7 @@ export type Database = {
           languages?: string[] | null
           meta_description?: string | null
           name: string
+          phone?: string | null
           role?: string | null
           seo_title?: string | null
           slug: string
@@ -328,6 +332,7 @@ export type Database = {
           biography?: string | null
           city?: string | null
           created_at?: string
+          email?: string | null
           featured?: boolean | null
           gender?: string | null
           id?: string
@@ -336,6 +341,7 @@ export type Database = {
           languages?: string[] | null
           meta_description?: string | null
           name?: string
+          phone?: string | null
           role?: string | null
           seo_title?: string | null
           slug?: string
