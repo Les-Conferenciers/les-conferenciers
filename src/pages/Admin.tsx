@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -95,7 +95,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp } from "lucide-react";
+import ContractInvoiceManager from "@/components/admin/ContractInvoiceManager";
 import { toast } from "sonner";
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
@@ -140,6 +141,7 @@ const AdminProposalsContent = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -476,7 +478,8 @@ const AdminProposalsContent = () => {
           </TableHeader>
           <TableBody>
             {proposals.map(p => (
-              <TableRow key={p.id} className={isExpired(p.expires_at) ? "opacity-50" : ""}>
+              <React.Fragment key={p.id}>
+              <TableRow className={isExpired(p.expires_at) ? "opacity-50" : ""}>
                 <TableCell className="text-xs whitespace-nowrap">{formatDate(p.created_at)}</TableCell>
                 <TableCell>
                   <div className="font-medium text-sm">{p.client_name}</div>
@@ -512,16 +515,23 @@ const AdminProposalsContent = () => {
                       ? "bg-destructive/10 text-destructive"
                       : p.status === "archived"
                       ? "bg-muted text-muted-foreground"
+                      : p.status === "accepted"
+                      ? "bg-blue-100 text-blue-700"
                       : p.status === "sent"
                       ? "bg-green-100 text-green-700"
                       : "bg-muted text-muted-foreground"
                   }`}>
-                    {isExpired(p.expires_at) ? "Expiré" : p.status === "archived" ? "Archivé" : p.status === "sent" ? "Envoyé" : "Brouillon"}
+                    {isExpired(p.expires_at) ? "Expiré" : p.status === "archived" ? "Archivé" : p.status === "accepted" ? "Accepté" : p.status === "sent" ? "Envoyé" : "Brouillon"}
                   </span>
                 </TableCell>
                 <TableCell className="text-xs whitespace-nowrap">{formatDate(p.expires_at)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
+                    {p.status === "accepted" && (
+                      <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)} title="Contrat & Factures">
+                        {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
                       {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                     </Button>
@@ -551,6 +561,31 @@ const AdminProposalsContent = () => {
                   </div>
                 </TableCell>
               </TableRow>
+              {/* Expanded contract/invoice management */}
+              {expandedId === p.id && p.status === "accepted" && (
+                <TableRow>
+                  <TableCell colSpan={6} className="bg-muted/30 px-6 py-2">
+                    <ContractInvoiceManager
+                      proposal={{
+                        id: p.id,
+                        client_name: p.client_name,
+                        client_email: p.client_email,
+                        recipient_name: p.recipient_name,
+                        status: p.status,
+                        proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
+                          speaker_fee: ps.speaker_fee,
+                          travel_costs: ps.travel_costs,
+                          agency_commission: ps.agency_commission,
+                          total_price: ps.total_price,
+                          speakers: ps.speakers,
+                        })),
+                      }}
+                      onUpdate={fetchProposals}
+                    />
+                  </TableCell>
+                </TableRow>
+              )}
+              </React.Fragment>
             ))}
             {proposals.length === 0 && !loading && (
               <TableRow>

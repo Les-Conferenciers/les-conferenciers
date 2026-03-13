@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      contracts: {
+        Row: {
+          created_at: string
+          event_date: string | null
+          event_description: string | null
+          event_format: string | null
+          event_location: string | null
+          event_time: string | null
+          id: string
+          proposal_id: string
+          signed_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          event_date?: string | null
+          event_description?: string | null
+          event_format?: string | null
+          event_location?: string | null
+          event_time?: string | null
+          id?: string
+          proposal_id: string
+          signed_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string | null
+          event_description?: string | null
+          event_format?: string | null
+          event_location?: string | null
+          event_time?: string | null
+          id?: string
+          proposal_id?: string
+          signed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_reviews: {
         Row: {
           author_name: string
@@ -52,6 +99,69 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount_ht: number
+          amount_ttc: number
+          contract_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          invoice_type: string
+          paid_at: string | null
+          proposal_id: string
+          sent_at: string | null
+          status: string
+          tva_rate: number
+        }
+        Insert: {
+          amount_ht: number
+          amount_ttc: number
+          contract_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          invoice_type?: string
+          paid_at?: string | null
+          proposal_id: string
+          sent_at?: string | null
+          status?: string
+          tva_rate?: number
+        }
+        Update: {
+          amount_ht?: number
+          amount_ttc?: number
+          contract_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          invoice_type?: string
+          paid_at?: string | null
+          proposal_id?: string
+          sent_at?: string | null
+          status?: string
+          tva_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proposal_speakers: {
         Row: {
@@ -359,7 +469,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_invoice_number: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
