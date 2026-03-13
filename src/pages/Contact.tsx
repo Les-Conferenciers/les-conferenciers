@@ -202,12 +202,12 @@ const Contact = () => {
               <img
                 src={nellySabde}
                 alt="Nelly, fondatrice de l'agence"
-                className="w-full object-cover object-top aspect-square"
+                className="w-full object-cover object-[center_30%] aspect-[3/4]"
               />
               <div className="px-5 pb-5 pt-4">
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mt-1.5">
-                  Elle connaît en profondeur chaque conférencier du catalogue et vous accompagne personnellement de A à Z.
+                  Elle vous accompagne personnellement de A à Z pour trouver le conférencier idéal pour votre événement.
                 </p>
                 <p className="text-xs text-accent font-medium mt-3 italic">
                   « Un seul interlocuteur, une relation de confiance. »
@@ -216,24 +216,24 @@ const Contact = () => {
             </div>
 
             {/* Avis */}
-            <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-                <span className="font-semibold text-xs text-foreground">Avis Google</span>
+            <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                <span className="font-semibold text-sm text-foreground">Avis Google</span>
                 <div className="flex gap-0.5 ml-auto">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
               </div>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {[
                   { name: "Marie L.", text: "Accompagnement exceptionnel !" },
                   { name: "Thomas B.", text: "Réactivité et professionnalisme." },
                 ].map((r) => (
                   <div key={r.name} className="border-l-2 border-accent/30 pl-3">
-                    <p className="text-xs text-muted-foreground italic">"{r.text}"</p>
-                    <p className="text-xs font-medium text-foreground mt-0.5">— {r.name}</p>
+                    <p className="text-sm text-muted-foreground italic">"{r.text}"</p>
+                    <p className="text-sm font-medium text-foreground mt-0.5">— {r.name}</p>
                   </div>
                 ))}
               </div>

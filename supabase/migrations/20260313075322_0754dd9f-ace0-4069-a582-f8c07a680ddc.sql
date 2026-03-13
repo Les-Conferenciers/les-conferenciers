@@ -1,0 +1,2 @@
+ALTER TABLE public.speakers ADD COLUMN IF NOT EXISTS phone text DEFAULT NULL;
+ALTER TABLE public.speakers ADD COLUMN IF NOT EXISTS email text DEFAULT NULL;
