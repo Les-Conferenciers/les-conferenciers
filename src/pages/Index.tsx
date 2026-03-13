@@ -9,9 +9,7 @@ import ValueProposition from "@/components/ValueProposition";
 import GoogleReviews from "@/components/GoogleReviews";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Search,
   Star,
   ArrowRight,
   Users,
@@ -30,18 +28,38 @@ import {
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { parseThemes } from "@/lib/parseThemes";
 
 const Index = () => {
-  const [searchQuery, setSearchQuery] = useState("");
   const [speakerCount, setSpeakerCount] = useState(0);
+  const [topThemes, setTopThemes] = useState<string[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase
-      .from("speakers")
-      .select("id", { count: "exact", head: true })
-      .eq("archived", false)
-      .then(({ count }) => setSpeakerCount(count || 0));
+    const fetchData = async () => {
+      const { data, count } = await supabase
+        .from("speakers")
+        .select("themes", { count: "exact" })
+        .eq("archived", false)
+        .limit(500);
+      setSpeakerCount(count || 0);
+
+      // Extract top themes for category search
+      if (data) {
+        const counts = new Map<string, number>();
+        data.forEach((s: any) => {
+          parseThemes(s.themes).forEach((t: string) => {
+            counts.set(t, (counts.get(t) || 0) + 1);
+          });
+        });
+        const sorted = Array.from(counts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 12)
+          .map(([theme]) => theme);
+        setTopThemes(sorted);
+      }
+    };
+    fetchData();
   }, []);
 
   const STATS = [
@@ -50,13 +68,6 @@ const Index = () => {
     { icon: Clock, value: "24h", label: "Temps de réponse" },
     { icon: Star, value: "5/5", label: "Note Google" },
   ];
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/speakers?search=${encodeURIComponent(searchQuery)}`);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -121,30 +132,27 @@ const Index = () => {
             <span className="text-primary-foreground/60 text-sm">— 54 avis Google</span>
           </div>
 
-          {/* Search */}
-          <form
-            onSubmit={handleSearch}
-            className="flex flex-col md:flex-row gap-4 max-w-xl mx-auto animate-fade-in"
+          {/* Category search (rubriques only, no name search) */}
+          <div
+            className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto animate-fade-in"
             style={{ animationDelay: "0.3s" }}
           >
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-              <Input
-                type="text"
-                placeholder="Rechercher par nom, thème ou expertise..."
-                className="pl-10 h-14 bg-background text-foreground border-none shadow-lg text-lg rounded-xl"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button
-              type="submit"
-              size="lg"
-              className="h-14 px-8 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-lg rounded-xl"
+            {topThemes.map((theme) => (
+              <button
+                key={theme}
+                onClick={() => navigate(`/conferenciers?theme=${encodeURIComponent(theme)}`)}
+                className="px-4 py-2 rounded-full bg-primary-foreground/10 border border-primary-foreground/20 text-sm text-primary-foreground/90 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-200"
+              >
+                {theme}
+              </button>
+            ))}
+            <button
+              onClick={() => navigate("/conferenciers")}
+              className="px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200"
             >
-              Rechercher
-            </Button>
-          </form>
+              Tous les conférenciers →
+            </button>
+          </div>
         </div>
       </section>
 
@@ -173,7 +181,7 @@ const Index = () => {
             {/* Left — Text */}
             <div>
               <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent border border-accent/20 rounded-full text-sm font-medium tracking-wider uppercase mb-5">
-                Le problème
+                Le constat
               </span>
               <h2 className="text-3xl font-serif font-bold leading-tight mb-10 md:text-4xl">
                 Trouvez l'orateur idéal
@@ -221,7 +229,7 @@ const Index = () => {
               <div className="mt-10 flex items-center gap-3">
                 <div className="h-px flex-grow bg-primary-foreground/10" />
                 <span className="text-primary-foreground/40 text-sm font-medium italic">
-                  C'est exactement pour cela que nous existons.
+                  C'est pour cela que nous vous accompagnons.
                 </span>
                 <div className="h-px flex-grow bg-primary-foreground/10" />
               </div>
@@ -246,7 +254,7 @@ const Index = () => {
                 </div>
                 {/* Badge */}
                 <div className="absolute -top-4 -right-4 bg-accent text-accent-foreground px-4 py-2 rounded-xl shadow-lg font-bold text-sm">
-                  161+ profils vérifiés
+                  300+ profils vérifiés
                 </div>
               </div>
             </div>
@@ -287,7 +295,7 @@ const Index = () => {
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
                 Trouver le bon conférencier est <strong className="text-foreground">chronophage</strong> : recherches,
-                comparaisons, négociations, logistique… Nelly connaît en profondeur chaque conférencier du catalogue et accompagne les entreprises pour leur
+                comparaisons, négociations, logistique… Nelly accompagne les entreprises pour leur
                 faire <strong className="text-foreground">gagner du temps</strong> et{" "}
                 <strong className="text-foreground">sécuriser chaque étape</strong> de l'organisation.
               </p>
@@ -295,7 +303,6 @@ const Index = () => {
               <ul className="space-y-3">
                 {[
                   "Un seul interlocuteur — relation directe et personnalisée",
-                  "Connaissance approfondie de chaque conférencier proposé",
                   "Devis détaillé sous 24 heures",
                   "Coordination logistique complète, de A à Z",
                   "Suivi personnalisé avant, pendant et après l'événement",
@@ -342,7 +349,7 @@ const Index = () => {
               Beaucoup de nos clients nous posent cette question. Voici la réponse.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               {
                 icon: UserCheck,
@@ -352,15 +359,9 @@ const Index = () => {
               },
               {
                 icon: Zap,
-                title: "Réactivité exceptionnelle",
+                title: "Grande réactivité",
                 description:
                   "Tous les mails sont traités dans la journée. Vous recevez un devis détaillé sous 24h avec des profils adaptés à votre brief.",
-              },
-              {
-                icon: BookOpen,
-                title: "Connaissance approfondie",
-                description:
-                  "Nous connaissons en profondeur chaque conférencier que nous proposons : son style, ses thématiques, son impact sur scène. Zéro mauvaise surprise.",
               },
             ].map((item) => (
               <div
@@ -390,15 +391,30 @@ const Index = () => {
                 Thierry Marx, Nina Métayer, Tony Estanguet, Julia de Funès… et bien d'autres
               </p>
             </div>
-            <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/speakers")}>
+            <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/conferenciers")}>
               Voir tous <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
 
           <FeaturedSpeakers />
 
-          <div className="mt-12 text-center md:hidden">
-            <Button variant="outline" className="w-full" onClick={() => navigate("/speakers")}>
+          {/* Mention: not all speakers are listed */}
+          <div className="mt-10 text-center bg-card border border-border/40 rounded-2xl p-6 max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              <strong className="text-foreground">Tous nos conférenciers ne sont pas présents sur le site.</strong>{" "}
+              Vous cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4 gap-2"
+              onClick={() => navigate("/contact")}
+            >
+              Nous contacter <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="mt-8 text-center md:hidden">
+            <Button variant="outline" className="w-full" onClick={() => navigate("/conferenciers")}>
               Voir tous les conférenciers
             </Button>
           </div>
@@ -430,7 +446,7 @@ const Index = () => {
               size="lg"
               variant="outline"
               className="border-accent/50 text-accent hover:bg-accent/10 rounded-xl font-semibold"
-              onClick={() => navigate("/speakers")}
+              onClick={() => navigate("/conferenciers")}
             >
               Découvrir nos conférenciers
             </Button>

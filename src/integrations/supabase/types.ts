@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      contracts: {
+        Row: {
+          contract_lines: Json | null
+          created_at: string
+          discount_percent: number | null
+          event_date: string | null
+          event_description: string | null
+          event_format: string | null
+          event_location: string | null
+          event_time: string | null
+          id: string
+          proposal_id: string
+          signed_at: string | null
+          signer_ip: string | null
+          signer_name: string | null
+          status: string
+          token: string | null
+        }
+        Insert: {
+          contract_lines?: Json | null
+          created_at?: string
+          discount_percent?: number | null
+          event_date?: string | null
+          event_description?: string | null
+          event_format?: string | null
+          event_location?: string | null
+          event_time?: string | null
+          id?: string
+          proposal_id: string
+          signed_at?: string | null
+          signer_ip?: string | null
+          signer_name?: string | null
+          status?: string
+          token?: string | null
+        }
+        Update: {
+          contract_lines?: Json | null
+          created_at?: string
+          discount_percent?: number | null
+          event_date?: string | null
+          event_description?: string | null
+          event_format?: string | null
+          event_location?: string | null
+          event_time?: string | null
+          id?: string
+          proposal_id?: string
+          signed_at?: string | null
+          signer_ip?: string | null
+          signer_name?: string | null
+          status?: string
+          token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_reviews: {
         Row: {
           author_name: string
@@ -52,6 +114,69 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount_ht: number
+          amount_ttc: number
+          contract_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          invoice_type: string
+          paid_at: string | null
+          proposal_id: string
+          sent_at: string | null
+          status: string
+          tva_rate: number
+        }
+        Insert: {
+          amount_ht: number
+          amount_ttc: number
+          contract_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          invoice_type?: string
+          paid_at?: string | null
+          proposal_id: string
+          sent_at?: string | null
+          status?: string
+          tva_rate?: number
+        }
+        Update: {
+          amount_ht?: number
+          amount_ttc?: number
+          contract_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          invoice_type?: string
+          paid_at?: string | null
+          proposal_id?: string
+          sent_at?: string | null
+          status?: string
+          tva_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proposal_speakers: {
         Row: {
@@ -112,6 +237,8 @@ export type Database = {
           client_email: string
           client_name: string
           created_at: string
+          email_body: string | null
+          email_subject: string | null
           expires_at: string
           id: string
           message: string | null
@@ -124,6 +251,8 @@ export type Database = {
           client_email: string
           client_name: string
           created_at?: string
+          email_body?: string | null
+          email_subject?: string | null
           expires_at?: string
           id?: string
           message?: string | null
@@ -136,6 +265,8 @@ export type Database = {
           client_email?: string
           client_name?: string
           created_at?: string
+          email_body?: string | null
+          email_subject?: string | null
           expires_at?: string
           id?: string
           message?: string | null
@@ -280,6 +411,7 @@ export type Database = {
           biography: string | null
           city: string | null
           created_at: string
+          email: string | null
           featured: boolean | null
           gender: string | null
           id: string
@@ -288,6 +420,7 @@ export type Database = {
           languages: string[] | null
           meta_description: string | null
           name: string
+          phone: string | null
           role: string | null
           seo_title: string | null
           slug: string
@@ -304,6 +437,7 @@ export type Database = {
           biography?: string | null
           city?: string | null
           created_at?: string
+          email?: string | null
           featured?: boolean | null
           gender?: string | null
           id?: string
@@ -312,6 +446,7 @@ export type Database = {
           languages?: string[] | null
           meta_description?: string | null
           name: string
+          phone?: string | null
           role?: string | null
           seo_title?: string | null
           slug: string
@@ -328,6 +463,7 @@ export type Database = {
           biography?: string | null
           city?: string | null
           created_at?: string
+          email?: string | null
           featured?: boolean | null
           gender?: string | null
           id?: string
@@ -336,6 +472,7 @@ export type Database = {
           languages?: string[] | null
           meta_description?: string | null
           name?: string
+          phone?: string | null
           role?: string | null
           seo_title?: string | null
           slug?: string
@@ -353,7 +490,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_invoice_number: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

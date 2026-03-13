@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -95,8 +95,42 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import ContractInvoiceManager from "@/components/admin/ContractInvoiceManager";
 import { toast } from "sonner";
+
+const getDefaultMessage = (recipientName: string, clientName: string) =>
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},
+
+Suite à notre échange, j'ai le plaisir de vous transmettre une sélection de conférenciers soigneusement choisis pour ${clientName || "votre entreprise"}.
+
+Chaque profil a été retenu pour sa capacité à créer un moment fort, à captiver votre audience et à laisser une empreinte durable.
+
+Vous trouverez dans cette proposition les informations détaillées sur chaque intervenant : parcours, thématiques de conférence et conditions d'intervention.
+
+N'hésitez pas à me contacter pour en discuter, je suis à votre disposition pour affiner cette sélection.
+
+À très vite,
+Nelly Sabde
+Les Conférenciers`;
+
+const getDefaultEmailSubject = (clientName: string) =>
+  `Votre sélection de conférenciers sur mesure — ${clientName || "Les Conférenciers"}`;
+
+const getDefaultEmailBody = (recipientName: string, clientName: string) =>
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},
+
+Comme convenu, je vous transmets votre proposition personnalisée de conférenciers pour ${clientName || "votre événement"}.
+
+👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection. Vous y trouverez le profil complet de chaque intervenant, ses thématiques et les conditions d'intervention.
+
+Cette proposition est valable 30 jours — vous pouvez y revenir autant de fois que vous le souhaitez et y répondre directement en ligne.
+
+Si vous avez la moindre question, je reste disponible par retour de mail ou par téléphone.
+
+À très bientôt,
+Nelly Sabde — Les Conférenciers
+📞 06 XX XX XX XX`;
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
@@ -116,6 +150,8 @@ type Proposal = {
   client_email: string;
   message: string | null;
   recipient_name: string | null;
+  email_subject: string | null;
+  email_body: string | null;
   status: string;
   sent_at: string | null;
   expires_at: string;
@@ -130,22 +166,49 @@ type Proposal = {
   }[];
 };
 
-const COMMISSION = 1000;
+const COMMISSION = 1300;
+
+type ContractData = {
+  id: string;
+  proposal_id: string;
+  status: string;
+};
+type InvoiceData = {
+  id: string;
+  proposal_id: string;
+  invoice_type: string;
+  status: string;
+  paid_at: string | null;
+};
 
 const AdminProposalsContent = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [conferences, setConferences] = useState<SpeakerConference[]>([]);
+  const [contracts, setContracts] = useState<ContractData[]>([]);
+  const [allInvoices, setAllInvoices] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [message, setMessage] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
   const [selectedSpeakers, setSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [pipelineTab, setPipelineTab] = useState("drafts");
+  const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editClientName, setEditClientName] = useState("");
+  const [editClientEmail, setEditClientEmail] = useState("");
+  const [editRecipientName, setEditRecipientName] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [editEmailSubject, setEditEmailSubject] = useState("");
+  const [editEmailBody, setEditEmailBody] = useState("");
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
@@ -153,11 +216,17 @@ const AdminProposalsContent = () => {
 
   const fetchProposals = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("proposals")
-      .select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, speakers(name, image_url))")
-      .order("created_at", { ascending: false });
-    setProposals((data as any) || []);
+    const [proposalsRes, contractsRes, invoicesRes] = await Promise.all([
+      supabase
+        .from("proposals")
+        .select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, speakers(name, image_url))")
+        .order("created_at", { ascending: false }),
+      supabase.from("contracts").select("id, proposal_id, status"),
+      supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at"),
+    ]);
+    setProposals((proposalsRes.data as any) || []);
+    setContracts((contractsRes.data as any) || []);
+    setAllInvoices((invoicesRes.data as any) || []);
     setLoading(false);
   };
 
@@ -177,6 +246,35 @@ const AdminProposalsContent = () => {
     setConferences(data || []);
   };
 
+  // Pipeline status computation
+  const getPipelineStatus = (p: Proposal) => {
+    const pInvoices = allInvoices.filter(i => i.proposal_id === p.id);
+    const pContract = contracts.find(c => c.proposal_id === p.id);
+    const allPaid = pInvoices.length > 0 && pInvoices.every(i => i.status === "paid");
+    const somePaid = pInvoices.some(i => i.status === "paid");
+    const hasAcompte = pInvoices.some(i => i.invoice_type === "acompte");
+    const hasAcompteSent = pInvoices.some(i => i.invoice_type === "acompte" && (i.status === "sent" || i.status === "paid"));
+
+    if (allPaid && pInvoices.length > 0) return "fully_paid";
+    if (somePaid) return "partial_paid";
+    if (hasAcompteSent) return "acompte_sent";
+    if (hasAcompte) return "acompte_created";
+    if (pContract) return "contrat_sent";
+    return "accepted";
+  };
+
+  const isFullyPaid = (p: Proposal) => getPipelineStatus(p) === "fully_paid";
+
+  // Filter proposals into tabs
+  const drafts = proposals.filter(p => p.status === "draft");
+  const sent = proposals.filter(p =>
+    (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p)
+  );
+  const completed = proposals.filter(p =>
+    p.status === "accepted" && isFullyPaid(p)
+  );
+  const archived = proposals.filter(p => p.status === "archived");
+
   const getConferencesForSpeaker = (speakerId: string) =>
     conferences.filter(c => c.speaker_id === speakerId);
 
@@ -187,7 +285,7 @@ const AdminProposalsContent = () => {
     setSelectedSpeakers(prev => [...prev, {
       speaker_id: speaker.id,
       speaker_fee: baseFee || null,
-      travel_costs: null,
+      travel_costs: 0,
       agency_commission: COMMISSION,
       total_price: (baseFee + COMMISSION) || null,
       display_order: prev.length,
@@ -233,14 +331,19 @@ const AdminProposalsContent = () => {
       return;
     }
     setSubmitting(true);
+    const finalMessage = message || getDefaultMessage(recipientName, clientName);
+    const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
+    const finalBody = emailBody || getDefaultEmailBody(recipientName, clientName);
     const { data: proposal, error } = await supabase
       .from("proposals")
       .insert({
         client_name: clientName,
         client_email: clientEmail,
-        message: message || null,
+        message: finalMessage,
         recipient_name: recipientName || null,
-      })
+        email_subject: finalSubject,
+        email_body: finalBody,
+      } as any)
       .select()
       .single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
@@ -257,7 +360,7 @@ const AdminProposalsContent = () => {
         selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
       })));
     if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
-    toast.success("Proposition créée !");
+    toast.success("Proposition créée avec les textes par défaut !");
     setDialogOpen(false);
     resetForm();
     fetchProposals();
@@ -265,7 +368,42 @@ const AdminProposalsContent = () => {
   };
 
   const resetForm = () => {
-    setClientName(""); setClientEmail(""); setMessage(""); setRecipientName(""); setSelectedSpeakers([]);
+    setClientName(""); setClientEmail(""); setRecipientName(""); setSelectedSpeakers([]);
+    setEmailSubject(""); setEmailBody("");
+    setMessage("Voici ma sélection de profils pour votre événement. Avec plaisir pour en discuter ou l'affiner ensemble.");
+  };
+
+  const openEditDialog = (p: Proposal) => {
+    setEditingProposal(p);
+    setEditClientName(p.client_name);
+    setEditClientEmail(p.client_email);
+    setEditRecipientName(p.recipient_name || "");
+    setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
+    setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
+    setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProposal) return;
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("proposals")
+      .update({
+        client_name: editClientName,
+        client_email: editClientEmail,
+        recipient_name: editRecipientName || null,
+        message: editMessage || null,
+        email_subject: editEmailSubject || null,
+        email_body: editEmailBody || null,
+      } as any)
+      .eq("id", editingProposal.id);
+    if (error) { toast.error("Erreur sauvegarde"); setSubmitting(false); return; }
+    toast.success("Proposition mise à jour !");
+    setEditDialogOpen(false);
+    setEditingProposal(null);
+    fetchProposals();
+    setSubmitting(false);
   };
 
   const handleSend = async (proposal: Proposal) => {
@@ -282,6 +420,26 @@ const AdminProposalsContent = () => {
       toast.error("Erreur d'envoi");
     }
     setSending(null);
+  };
+
+  const handleReminder = async (proposal: Proposal) => {
+    setSending(proposal.id);
+    try {
+      const { error } = await supabase.functions.invoke("send-proposal-reminder", {
+        body: { proposal_id: proposal.id },
+      });
+      if (error) throw error;
+      toast.success("Relance envoyée !");
+    } catch {
+      toast.error("Erreur d'envoi de relance");
+    }
+    setSending(null);
+  };
+
+  const handleAccept = async (id: string) => {
+    await supabase.from("proposals").update({ status: "accepted" }).eq("id", id);
+    toast.success("Proposition passée en « Accepté »");
+    fetchProposals();
   };
 
   const handleArchive = async (id: string) => {
@@ -312,6 +470,347 @@ const AdminProposalsContent = () => {
 
   const isExpired = (expiresAt: string) => new Date(expiresAt) < new Date();
 
+  const getRemainingDays = (expiresAt: string) => {
+    const diff = new Date(expiresAt).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const getPipelineLabel = (status: string) => {
+    const map: Record<string, { label: string; color: string }> = {
+      accepted: { label: "Accepté", color: "bg-blue-100 text-blue-700" },
+      contrat_sent: { label: "Contrat créé", color: "bg-indigo-100 text-indigo-700" },
+      acompte_created: { label: "Acompte créé", color: "bg-amber-100 text-amber-700" },
+      acompte_sent: { label: "Acompte envoyé", color: "bg-orange-100 text-orange-700" },
+      partial_paid: { label: "Payé partiellement", color: "bg-yellow-100 text-yellow-700" },
+      fully_paid: { label: "Payé 100%", color: "bg-green-100 text-green-700" },
+    };
+    return map[status] || { label: status, color: "bg-muted text-muted-foreground" };
+  };
+
+  // Shared speaker creation form
+  const renderSpeakerForm = () => (
+    <div className="space-y-6 mt-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Société / Nom du client</Label>
+          <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" />
+        </div>
+        <div className="space-y-2">
+          <Label>Email du client</Label>
+          <Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Prénom Nom du destinataire (optionnel)</Label>
+        <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
+        <p className="text-[11px] text-muted-foreground">
+          Affiché en titre : « {recipientName || "Prénom Nom"} pour {clientName || "Société"} »
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label>Message personnalisé (affiché sur la page proposition)</Label>
+        <Textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} className="text-sm" />
+      </div>
+      <div className="space-y-3">
+        <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
+        {selectedSpeakers.map(ps => {
+          const city = getSpeakerCity(ps.speaker_id);
+          const imageUrl = getSpeakerImage(ps.speaker_id);
+          const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
+          return (
+            <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                    {imageUrl ? (
+                      <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
+                    {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+              {speakerConfs.length > 0 && (
+                <div className="space-y-2 bg-muted/50 rounded-md p-3">
+                  <Label className="text-xs text-muted-foreground">Conférences à inclure</Label>
+                  {speakerConfs.map(conf => (
+                    <div key={conf.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`conf-${conf.id}`}
+                        checked={ps.selected_conference_ids.includes(conf.id)}
+                        onCheckedChange={() => toggleConference(ps.speaker_id, conf.id)}
+                      />
+                      <label htmlFor={`conf-${conf.id}`} className="text-sm cursor-pointer leading-tight">
+                        {conf.title}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
+                  <Input type="number" placeholder="0" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label>
+                  <Input type="number" placeholder="0" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Commission agence (€)</Label>
+                  <Input type="number" placeholder="1000" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label>
+                  <Input type="number" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} className="font-bold" />
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Base BDD : {speakers.find(s => s.id === ps.speaker_id)?.base_fee?.toLocaleString("fr-FR") ?? "—"} € · Commission auto : +{COMMISSION.toLocaleString("fr-FR")} €
+              </p>
+            </div>
+          );
+        })}
+        {selectedSpeakers.length < 3 && (
+          <div className="border border-dashed border-border rounded-lg p-3">
+            <Label className="text-xs text-muted-foreground mb-2 block">Ajouter un conférencier</Label>
+            <select
+              className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
+              value=""
+              onChange={e => {
+                const sp = speakers.find(s => s.id === e.target.value);
+                if (sp) addSpeaker(sp);
+              }}
+            >
+              <option value="">Sélectionner…</option>
+              {speakers
+                .filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id))
+                .map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}{s.base_fee ? ` — ${s.base_fee.toLocaleString("fr-FR")} €` : ""}{s.city ? ` (${s.city})` : ""}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+      </div>
+      <Button className="w-full" onClick={handleCreate} disabled={submitting}>
+        {submitting ? "Création…" : "Créer la proposition"}
+      </Button>
+    </div>
+  );
+
+  // Shared proposal row renderer
+  const renderProposalRow = (p: Proposal, mode: "draft" | "sent" | "completed") => {
+    const remaining = getRemainingDays(p.expires_at);
+    const expired = isExpired(p.expires_at);
+    const pipelineStatus = p.status === "accepted" ? getPipelineStatus(p) : null;
+    const pipelineInfo = pipelineStatus ? getPipelineLabel(pipelineStatus) : null;
+
+    return (
+      <React.Fragment key={p.id}>
+        <TableRow className={expired && mode !== "completed" ? "opacity-50" : ""}>
+          <TableCell className="text-xs whitespace-nowrap">{formatDate(p.created_at)}</TableCell>
+          <TableCell>
+            <div className="font-medium text-sm">{p.client_name}</div>
+            <div className="text-xs text-muted-foreground">{p.client_email}</div>
+          </TableCell>
+          <TableCell>
+            <div className="flex items-center gap-1.5">
+              {p.proposal_speakers?.map((ps, i) => {
+                const speaker = ps.speakers as any;
+                if (!speaker) return null;
+                return (
+                  <div key={i} className="flex items-center gap-1.5" title={speaker.name}>
+                    <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                      {speaker.image_url ? (
+                        <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center">
+                          <User className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
+                    {i < (p.proposal_speakers?.length || 0) - 1 && <span className="text-muted-foreground text-xs">·</span>}
+                  </div>
+                );
+              })}
+              {(!p.proposal_speakers || p.proposal_speakers.length === 0) && "—"}
+            </div>
+          </TableCell>
+          <TableCell>
+            {mode === "draft" && (
+              <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Brouillon</span>
+            )}
+            {mode === "sent" && p.status === "sent" && (
+              <div className="space-y-1">
+                <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">En attente</span>
+                {!expired && (
+                  <div className="text-[10px] text-muted-foreground">{remaining}j restants</div>
+                )}
+                {expired && (
+                  <span className="text-[10px] text-destructive font-medium">Expiré</span>
+                )}
+              </div>
+            )}
+            {mode === "sent" && p.status === "accepted" && pipelineInfo && (
+              <span className={`text-xs px-2 py-1 rounded-full ${pipelineInfo.color}`}>{pipelineInfo.label}</span>
+            )}
+            {mode === "completed" && (
+              <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">✓ Mission terminée</span>
+            )}
+          </TableCell>
+          <TableCell className="text-right">
+            <div className="flex items-center justify-end gap-1 flex-wrap">
+              {/* Expand for contract/invoice management */}
+              {p.status === "accepted" && mode === "sent" && (
+                <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)} title="Contrat & Factures">
+                  {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              )}
+              {/* Copy link */}
+              <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
+                {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              </Button>
+              {/* View online */}
+              <Button variant="ghost" size="sm" asChild title="Voir en ligne">
+                <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+              {/* Edit (draft or sent) */}
+              {(mode === "draft" || (mode === "sent" && p.status === "sent")) && (
+                <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)} title="Éditer">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              {/* Draft: Send */}
+              {mode === "draft" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => handleSend(p)}
+                  disabled={sending === p.id}
+                >
+                  <Send className="h-3 w-3" />
+                  {sending === p.id ? "Envoi…" : "Envoyer"}
+                </Button>
+              )}
+              {/* Sent & pending: Relance + Accept */}
+              {mode === "sent" && p.status === "sent" && (
+                <>
+                  {!expired && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
+                      onClick={() => handleReminder(p)}
+                      disabled={sending === p.id}
+                      title="Envoyer une relance"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      {sending === p.id ? "Envoi…" : "Relancer"}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                    onClick={() => handleAccept(p.id)}
+                    title="Marquer comme accepté"
+                  >
+                    <Check className="h-3 w-3" /> Accepter
+                  </Button>
+                </>
+              )}
+              {/* Completed: expand to view details */}
+              {mode === "completed" && (
+                <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)} title="Voir détails">
+                  {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              )}
+              {/* Archive */}
+              {mode !== "completed" && p.status !== "archived" && (
+                <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver">
+                  <Archive className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              )}
+              {/* Delete (draft only) */}
+              {mode === "draft" && (
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              )}
+            </div>
+          </TableCell>
+        </TableRow>
+        {/* Expanded contract/invoice management */}
+        {expandedId === p.id && (p.status === "accepted") && (
+          <TableRow>
+            <TableCell colSpan={5} className="bg-muted/30 px-6 py-2">
+              <ContractInvoiceManager
+                proposal={{
+                  id: p.id,
+                  client_name: p.client_name,
+                  client_email: p.client_email,
+                  recipient_name: p.recipient_name,
+                  status: p.status,
+                  proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
+                    speaker_fee: ps.speaker_fee,
+                    travel_costs: ps.travel_costs,
+                    agency_commission: ps.agency_commission,
+                    total_price: ps.total_price,
+                    speakers: ps.speakers,
+                  })),
+                }}
+                onUpdate={fetchProposals}
+              />
+            </TableCell>
+          </TableRow>
+        )}
+      </React.Fragment>
+    );
+  };
+
+  const renderTable = (items: Proposal[], mode: "draft" | "sent" | "completed") => (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Client</TableHead>
+            <TableHead>Conférenciers</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map(p => renderProposalRow(p, mode))}
+          {items.length === 0 && !loading && (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                {mode === "draft" && "Aucun brouillon."}
+                {mode === "sent" && "Aucune proposition envoyée."}
+                {mode === "completed" && "Aucune mission terminée."}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -330,238 +829,104 @@ const AdminProposalsContent = () => {
               <DialogHeader>
                 <DialogTitle className="font-serif">Créer une proposition</DialogTitle>
               </DialogHeader>
-              <div className="space-y-6 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Société / Nom du client</Label>
-                    <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email du client</Label>
-                    <Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" />
-                  </div>
-                </div>
-
-                {/* Recipient name */}
-                <div className="space-y-2">
-                  <Label>Prénom Nom du destinataire (optionnel)</Label>
-                  <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
-                  <p className="text-[11px] text-muted-foreground">
-                    Affiché en titre : « {recipientName || "Prénom Nom"} pour {clientName || "Société"} »
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Message personnalisé (optionnel)</Label>
-                  <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Bonjour, suite à notre échange..." rows={3} />
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
-                  {selectedSpeakers.map(ps => {
-                    const city = getSpeakerCity(ps.speaker_id);
-                    const imageUrl = getSpeakerImage(ps.speaker_id);
-                    const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
-                    return (
-                      <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {/* Medallion photo */}
-                            <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                              {imageUrl ? (
-                                <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center">
-                                  <User className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
-                              {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-
-                        {/* Conference selection */}
-                        {speakerConfs.length > 0 && (
-                          <div className="space-y-2 bg-muted/50 rounded-md p-3">
-                            <Label className="text-xs text-muted-foreground">Conférences à inclure</Label>
-                            {speakerConfs.map(conf => (
-                              <div key={conf.id} className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`conf-${conf.id}`}
-                                  checked={ps.selected_conference_ids.includes(conf.id)}
-                                  onCheckedChange={() => toggleConference(ps.speaker_id, conf.id)}
-                                />
-                                <label htmlFor={`conf-${conf.id}`} className="text-sm cursor-pointer leading-tight">
-                                  {conf.title}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
-                            <Input type="number" placeholder="0" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label>
-                            <Input type="number" placeholder="0" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Commission agence (€)</Label>
-                            <Input type="number" placeholder="1000" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label>
-                            <Input type="number" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} className="font-bold" />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">
-                          Base BDD : {speakers.find(s => s.id === ps.speaker_id)?.base_fee?.toLocaleString("fr-FR") ?? "—"} € · Commission auto : +{COMMISSION.toLocaleString("fr-FR")} €
-                        </p>
-                      </div>
-                    );
-                  })}
-                  {selectedSpeakers.length < 3 && (
-                    <div className="border border-dashed border-border rounded-lg p-3">
-                      <Label className="text-xs text-muted-foreground mb-2 block">Ajouter un conférencier</Label>
-                      <select
-                        className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
-                        value=""
-                        onChange={e => {
-                          const sp = speakers.find(s => s.id === e.target.value);
-                          if (sp) addSpeaker(sp);
-                        }}
-                      >
-                        <option value="">Sélectionner…</option>
-                        {speakers
-                          .filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id))
-                          .map(s => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}{s.base_fee ? ` — ${s.base_fee.toLocaleString("fr-FR")} €` : ""}{s.city ? ` (${s.city})` : ""}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                <Button className="w-full" onClick={handleCreate} disabled={submitting}>
-                  {submitting ? "Création…" : "Créer la proposition"}
-                </Button>
-              </div>
+              {renderSpeakerForm()}
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      <div className="border border-border rounded-xl overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Conférenciers</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Expire le</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {proposals.map(p => (
-              <TableRow key={p.id} className={isExpired(p.expires_at) ? "opacity-50" : ""}>
-                <TableCell className="text-xs whitespace-nowrap">{formatDate(p.created_at)}</TableCell>
-                <TableCell>
-                  <div className="font-medium text-sm">{p.client_name}</div>
-                  <div className="text-xs text-muted-foreground">{p.client_email}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    {p.proposal_speakers?.map((ps, i) => {
-                      const speaker = ps.speakers as any;
-                      if (!speaker) return null;
-                      return (
-                        <div key={i} className="flex items-center gap-1.5" title={speaker.name}>
-                          <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                            {speaker.image_url ? (
-                              <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center">
-                                <User className="h-3.5 w-3.5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
-                          {i < (p.proposal_speakers?.length || 0) - 1 && <span className="text-muted-foreground text-xs">·</span>}
-                        </div>
-                      );
-                    })}
-                    {(!p.proposal_speakers || p.proposal_speakers.length === 0) && "—"}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    isExpired(p.expires_at)
-                      ? "bg-destructive/10 text-destructive"
-                      : p.status === "archived"
-                      ? "bg-muted text-muted-foreground"
-                      : p.status === "sent"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    {isExpired(p.expires_at) ? "Expiré" : p.status === "archived" ? "Archivé" : p.status === "sent" ? "Envoyé" : "Brouillon"}
-                  </span>
-                </TableCell>
-                <TableCell className="text-xs whitespace-nowrap">{formatDate(p.expires_at)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
-                      {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                    <Button variant="ghost" size="sm" asChild title="Voir en ligne">
-                      <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1"
-                      onClick={() => handleSend(p)}
-                      disabled={sending === p.id}
-                    >
-                      <Send className="h-3 w-3" />
-                      {sending === p.id ? "Envoi…" : "Envoyer"}
-                    </Button>
-                    {p.status !== "archived" && (
-                      <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver">
-                        <Archive className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {proposals.length === 0 && !loading && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                  Aucune proposition pour le moment.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <Tabs value={pipelineTab} onValueChange={setPipelineTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="drafts" className="gap-1.5 text-xs">
+            📝 Brouillons {drafts.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{drafts.length}</span>}
+          </TabsTrigger>
+          {/* HIDDEN: Envoyées & Missions terminées — à réactiver plus tard */}
+          {/*
+          <TabsTrigger value="sent" className="gap-1.5 text-xs">
+            📤 Envoyées {sent.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{sent.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="gap-1.5 text-xs">
+            ✅ Missions terminées {completed.length > 0 && <span className="ml-1 bg-green-100 text-green-700 rounded-full px-1.5 text-[10px]">{completed.length}</span>}
+          </TabsTrigger>
+          */}
+          {archived.length > 0 && (
+            <TabsTrigger value="archived" className="gap-1.5 text-xs">
+              📦 Archivées <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{archived.length}</span>
+            </TabsTrigger>
+          )}
+        </TabsList>
+
+        <TabsContent value="drafts">
+          {renderTable(drafts, "draft")}
+        </TabsContent>
+
+        {/* HIDDEN: Envoyées & Missions terminées — à réactiver plus tard */}
+        {/*
+        <TabsContent value="sent">
+          {renderTable(sent, "sent")}
+        </TabsContent>
+
+        <TabsContent value="completed">
+          {renderTable(completed, "completed")}
+        </TabsContent>
+        */}
+
+        {archived.length > 0 && (
+          <TabsContent value="archived">
+            {renderTable(archived, "draft")}
+          </TabsContent>
+        )}
+      </Tabs>
+
+      {/* Edit dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Éditer la proposition</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Société / Nom du client</Label>
+                <Input value={editClientName} onChange={e => setEditClientName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Email du client</Label>
+                <Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Prénom Nom du destinataire</Label>
+              <Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} />
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition (page web)</h3>
+              <Textarea value={editMessage} onChange={e => setEditMessage(e.target.value)} rows={8} className="text-sm" />
+              <p className="text-[10px] text-muted-foreground mt-1">Ce texte apparaît sur la page de proposition vue par le client.</p>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Objet du mail</Label>
+                  <Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Corps du mail (texte avant le bouton CTA)</Label>
+                  <Textarea value={editEmailBody} onChange={e => setEditEmailBody(e.target.value)} rows={10} className="text-sm" />
+                  <p className="text-[10px] text-muted-foreground">Le bouton « Consulter la proposition » et la mention de validité 30 jours sont ajoutés automatiquement.</p>
+                </div>
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
+              {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

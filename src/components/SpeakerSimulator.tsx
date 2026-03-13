@@ -669,7 +669,7 @@ const SpeakerSimulator = () => {
                         <Button
                           variant="ghost"
                           className="w-full text-accent hover:text-accent hover:bg-accent/10 rounded-xl text-sm font-medium"
-                          onClick={() => navigate(`/speakers/${speaker.slug}`)}
+                          onClick={() => navigate(`/conferencier/${speaker.slug}`)}
                         >
                           Voir le profil
                         </Button>

@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, Mail, User, ExternalLink } from "lucide-react";
+import { Clock, Mail, User, ExternalLink, Phone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import nugget from "@/assets/nugget.png";
 
 type SpeakerConference = {
@@ -14,6 +24,7 @@ type SpeakerConference = {
 type ProposalData = {
   id: string;
   client_name: string;
+  client_email: string;
   recipient_name: string | null;
   message: string | null;
   expires_at: string;
@@ -44,6 +55,15 @@ const ProposalView = () => {
   const [expired, setExpired] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  // Form state
+  const [formCompany, setFormCompany] = useState("");
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formMessage, setFormMessage] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -55,7 +75,7 @@ const ProposalView = () => {
 
       const { data, error } = await supabase
         .from("proposals")
-        .select("id, client_name, recipient_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, selected_conference_ids, speakers(name, role, image_url, themes, biography, key_points, slug, city, speaker_conferences(id, title, description)))")
+        .select("id, client_name, client_email, recipient_name, message, expires_at, created_at, proposal_speakers(total_price, travel_costs, display_order, selected_conference_ids, speakers(name, role, image_url, themes, biography, key_points, slug, city, speaker_conferences(id, title, description)))")
         .eq("token", token)
         .single();
 
@@ -73,10 +93,47 @@ const ProposalView = () => {
 
       (data as any).proposal_speakers?.sort((a: any, b: any) => a.display_order - b.display_order);
       setProposal(data as any);
+
+      // Pre-fill form
+      setFormCompany(data.client_name || "");
+      setFormName((data as any).recipient_name || "");
+      setFormEmail(data.client_email || "");
+      setFormMessage("Bonjour, je suis intéressé par cette proposition, merci de me recontacter.");
+
       setLoading(false);
     };
     init();
   }, [token]);
+
+  const handleSubmitResponse = async () => {
+    if (!formCompany || !formName || !formEmail || !formMessage) {
+      toast({ title: "Champs requis", description: "Veuillez remplir tous les champs obligatoires.", variant: "destructive" });
+      return;
+    }
+
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-proposal-response", {
+        body: {
+          company_name: formCompany,
+          full_name: formName,
+          email: formEmail,
+          phone: formPhone,
+          message: formMessage,
+          proposal_id: proposal?.id,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Message envoyé !", description: "Nous vous recontacterons dans les plus brefs délais." });
+      setDialogOpen(false);
+    } catch (err) {
+      toast({ title: "Erreur", description: "Une erreur est survenue. Veuillez réessayer.", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -153,10 +210,10 @@ const ProposalView = () => {
       {proposal.message && (
         <div className="max-w-4xl mx-auto px-4 -mt-6">
           <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-sm">
-            <p className="text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line italic">
-              « {proposal.message} »
+            <p className="text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
+              {proposal.message}
             </p>
-            <p className="text-xs text-muted-foreground mt-3">— L'équipe Les Conférenciers</p>
+            <p className="text-xs text-muted-foreground mt-3">— Nelly de l'Agence Les Conférenciers</p>
           </div>
         </div>
       )}
@@ -167,7 +224,6 @@ const ProposalView = () => {
           const speaker = ps.speakers as any;
           if (!speaker) return null;
 
-          // Filter conferences: show selected ones if specified, otherwise show first one
           const selectedIds = ps.selected_conference_ids;
           const confsToShow = selectedIds && selectedIds.length > 0
             ? speaker.speaker_conferences?.filter((c: SpeakerConference) => selectedIds.includes(c.id)) || []
@@ -176,15 +232,10 @@ const ProposalView = () => {
           return (
             <div key={i} className="border border-border rounded-2xl overflow-hidden bg-card p-6 md:p-8">
               <div className="flex items-start gap-6">
-                {/* Medallion photo */}
                 <div className="flex-shrink-0">
                   <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
                     {speaker.image_url ? (
-                      <img
-                        src={speaker.image_url}
-                        alt={speaker.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={speaker.image_url} alt={speaker.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <User className="h-10 w-10 text-muted-foreground" />
@@ -193,14 +244,12 @@ const ProposalView = () => {
                   </div>
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 space-y-4">
                   <div>
                     <h2 className="text-2xl font-serif font-bold text-foreground">{speaker.name}</h2>
                     {speaker.role && <p className="text-sm text-muted-foreground mt-1">{speaker.role}</p>}
                   </div>
 
-                  {/* Key Points */}
                   {speaker.key_points && speaker.key_points.length > 0 && (
                     <ul className="space-y-1.5">
                       {speaker.key_points.map((point: string, idx: number) => (
@@ -212,7 +261,6 @@ const ProposalView = () => {
                     </ul>
                   )}
 
-                  {/* Conferences - title only + link */}
                   {confsToShow.length > 0 && (
                     <div className="space-y-2 border-t border-border pt-4">
                       <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
@@ -222,7 +270,7 @@ const ProposalView = () => {
                         <div key={idx} className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-foreground">« {conf.title} »</p>
                           <a
-                            href={`${window.location.origin}/speaker/${speaker.slug}`}
+                            href={`${window.location.origin}/conferencier/${speaker.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-accent hover:underline whitespace-nowrap ml-3"
@@ -234,9 +282,8 @@ const ProposalView = () => {
                     </div>
                   )}
 
-                  {/* Profile Link */}
                   <a
-                    href={`${window.location.origin}/speaker/${speaker.slug}`}
+                    href={`${window.location.origin}/conferencier/${speaker.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline font-medium"
@@ -297,13 +344,49 @@ const ProposalView = () => {
         {/* CTA */}
         <div className="text-center pt-8 space-y-4">
           <p className="text-muted-foreground text-sm">Un profil vous intéresse ? Contactez-nous pour concrétiser votre événement.</p>
-          <Button asChild size="lg">
-            <a href="mailto:nellysabde@lesconferenciers.com?subject=Suite à votre proposition">
-              <Mail className="h-4 w-4 mr-2" /> Répondre à cette proposition
-            </a>
+          <Button size="lg" onClick={() => setDialogOpen(true)}>
+            <Mail className="h-4 w-4 mr-2" /> Répondre à cette proposition
           </Button>
         </div>
       </main>
+
+      {/* Response Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Répondre à cette proposition</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <Label htmlFor="company">Nom de la société *</Label>
+              <Input id="company" value={formCompany} onChange={(e) => setFormCompany(e.target.value)} placeholder="Votre société" />
+            </div>
+            <div>
+              <Label htmlFor="fullname">Nom complet *</Label>
+              <Input id="fullname" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Prénom Nom" />
+            </div>
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input id="email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="email@exemple.com" />
+            </div>
+            <div>
+              <Label htmlFor="phone">Téléphone</Label>
+              <Input id="phone" type="tel" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="06 12 34 56 78" />
+            </div>
+            <div>
+              <Label htmlFor="message">Message *</Label>
+              <Textarea id="message" value={formMessage} onChange={(e) => setFormMessage(e.target.value)} rows={3} />
+            </div>
+            <Button className="w-full" onClick={handleSubmitResponse} disabled={sending}>
+              {sending ? (
+                <span className="flex items-center gap-2"><div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> Envoi en cours…</span>
+              ) : (
+                <span className="flex items-center gap-2"><Send className="h-4 w-4" /> Envoyer</span>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">

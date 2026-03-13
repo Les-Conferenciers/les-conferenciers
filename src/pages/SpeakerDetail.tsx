@@ -52,10 +52,6 @@ const generateFAQ = (speaker: any) => {
       answer: `Pour réserver ${speaker.name}, contactez notre agence via le formulaire de contact ou par téléphone au 06 95 93 97 91. Nelly, votre interlocutrice dédiée, vous enverra un devis personnalisé sous 24 heures.`,
     },
     {
-      question: `Quel est le tarif d'une conférence avec ${speaker.name} ?`,
-      answer: `Le tarif dépend de plusieurs facteurs : la durée de l'intervention, le format (conférence, table ronde, webconférence), le lieu et la date. Contactez-nous pour recevoir une proposition adaptée à votre budget.`,
-    },
-    {
       question: `Une session de questions-réponses est-elle prévue à l'issue de la conférence ?`,
       answer: `Oui, la plupart de nos ${conferencier_e(speaker)}s proposent un temps d'échange avec le public après leur intervention. ${speaker.name} ${fem ? "est disponible" : "est disponible"} pour répondre aux questions de vos participants et approfondir les sujets abordés.`,
     },
@@ -264,10 +260,10 @@ const SpeakerDetail = () => {
         canonicalEl.setAttribute("rel", "canonical");
         document.head.appendChild(canonicalEl);
       }
-      canonicalEl.href = window.location.origin + `/speakers/${speaker.slug}`;
+      canonicalEl.href = window.location.origin + `/conferencier/${speaker.slug}`;
 
       const themes = parseThemes(speaker.themes);
-      const pageUrl = window.location.origin + `/speakers/${speaker.slug}`;
+      const pageUrl = window.location.origin + `/conferencier/${speaker.slug}`;
       const imageUrl = speaker.image_url || DEFAULT_IMAGE;
 
       const personJsonLd = {
@@ -296,7 +292,7 @@ const SpeakerDetail = () => {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Accueil", item: window.location.origin + "/" },
-          { "@type": "ListItem", position: 2, name: "Conférenciers", item: window.location.origin + "/speakers" },
+          { "@type": "ListItem", position: 2, name: "Conférenciers", item: window.location.origin + "/conferenciers" },
           { "@type": "ListItem", position: 3, name: `Conférence ${speaker.name}`, item: pageUrl },
         ],
       };
@@ -406,7 +402,7 @@ const SpeakerDetail = () => {
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Conférencier non trouvé</h1>
-            <Button onClick={() => navigate("/speakers")}>Retour à la liste</Button>
+            <Button onClick={() => navigate("/conferenciers")}>Retour à la liste</Button>
           </div>
         </div>
       </div>
@@ -465,7 +461,7 @@ const SpeakerDetail = () => {
           <nav className="flex items-center gap-1.5 text-sm text-primary-foreground/60 mb-8" aria-label="Breadcrumb">
             <Link to="/" className="hover:text-accent transition-colors">Accueil</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <Link to="/speakers" className="hover:text-accent transition-colors">Conférenciers</Link>
+            <Link to="/conferenciers" className="hover:text-accent transition-colors">Conférenciers</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="text-primary-foreground font-medium">{speaker.name}</span>
           </nav>
@@ -497,7 +493,7 @@ const SpeakerDetail = () => {
                 {themes.map((theme) => (
                   <button
                     key={theme}
-                    onClick={() => navigate(`/speakers?theme=${encodeURIComponent(theme)}`)}
+                    onClick={() => navigate(`/conferenciers?theme=${encodeURIComponent(theme)}`)}
                     className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
                   >
                     {theme}
@@ -770,7 +766,7 @@ const SpeakerDetail = () => {
                   {themes.map((theme) => (
                     <button
                       key={theme}
-                      onClick={() => navigate(`/speakers?theme=${encodeURIComponent(theme)}`)}
+                      onClick={() => navigate(`/conferenciers?theme=${encodeURIComponent(theme)}`)}
                       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
                     >
                       {theme}
@@ -814,16 +810,7 @@ const SpeakerDetail = () => {
               </div>
             )}
 
-            {/* Localisation */}
-            {speaker.city && (
-              <div className="bg-card border border-border/40 rounded-2xl p-6">
-                <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                  Localisation
-                </h3>
-                <p className="text-sm text-foreground font-medium">{speaker.city}</p>
-              </div>
-            )}
+            {/* Localisation removed from front - kept in CRM only */}
 
           </aside>
         </div>
@@ -833,10 +820,10 @@ const SpeakerDetail = () => {
           <section className="mt-20">
             <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-2 flex items-center gap-3">
               <span className="w-1 h-7 bg-accent rounded-full block"></span>
-              Profils similaires
+              Conférenciers similaires
             </h2>
             <p className="text-muted-foreground mb-8 ml-4">
-              Des {conferencier_e(speaker)}s qui partagent des thématiques communes avec {speaker.name}
+              Des conférenciers qui partagent des thématiques communes avec {speaker.name}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {similarSpeakers.map((s) => (
