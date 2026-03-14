@@ -20,9 +20,10 @@ export interface Speaker {
 interface SpeakerCardProps {
   speaker: Speaker;
   onThemeClick?: (theme: string) => void;
+  onNavigate?: () => void;
 }
 
-const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
+const SpeakerCard = ({ speaker, onThemeClick, onNavigate }: SpeakerCardProps) => {
   const navigate = useNavigate();
   const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg"
     ? speaker.image_url
