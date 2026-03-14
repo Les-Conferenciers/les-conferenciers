@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.test-contact-form]
 verify_jwt = false
+
+[functions.resync-speaker-from-site]
+verify_jwt = false
