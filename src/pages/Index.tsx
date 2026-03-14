@@ -63,7 +63,7 @@ const Index = () => {
   }, []);
 
   const STATS = [
-    { icon: Users, value: `${speakerCount}+`, label: "Conférenciers" },
+    { icon: Users, value: "300+", label: "Conférenciers" },
     { icon: Award, value: "500+", label: "Événements" },
     { icon: Clock, value: "24h", label: "Temps de réponse" },
     { icon: Star, value: "5/5", label: "Note Google" },
