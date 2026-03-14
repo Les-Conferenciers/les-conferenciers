@@ -42,7 +42,7 @@ const Speakers = () => {
   const { data: allSpeakers, isLoading } = useQuery({
     queryKey: ["speakers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("speakers").select("*").eq("archived", false).limit(500);
+      const { data, error } = await supabase.from("speakers").select("*").eq("archived", false).order("name", { ascending: true }).limit(500);
       if (error) throw error;
       return data as Speaker[];
     },
