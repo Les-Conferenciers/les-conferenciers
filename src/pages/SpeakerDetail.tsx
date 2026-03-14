@@ -778,7 +778,10 @@ const SpeakerDetail = () => {
                 Formats proposés
               </h3>
               <div className="space-y-2">
-                {["Conférence", "Webconférence", "Table ronde"].map((format) => (
+                {(["andre-comte-sponville", "catherine-destivelle"].includes(speaker.slug)
+                  ? ["Conférence", "Table ronde"]
+                  : ["Conférence", "Webconférence", "Table ronde"]
+                ).map((format) => (
                   <div key={format} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Check className="h-3.5 w-3.5 text-accent" />
                     <span>{format}</span>
