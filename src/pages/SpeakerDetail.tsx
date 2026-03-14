@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
 import { Check, Mail, ChevronRight, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles, Play, Users } from "lucide-react";
+import nuggetIcon from "@/assets/nugget.png";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { useEffect, useState } from "react";
@@ -501,12 +502,12 @@ const SpeakerDetail = () => {
                 ))}
               </div>
 
-              {/* Key Points inline */}
+              {/* Key Points */}
               {speaker.key_points && speaker.key_points.length > 0 && (
-                <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center md:justify-start">
+                <div className="flex flex-col gap-2 items-center md:items-start">
                   {speaker.key_points.slice(0, 4).map((point: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm text-primary-foreground/80">
-                      <Check className="h-4 w-4 text-accent flex-shrink-0" />
+                    <div key={idx} className="flex items-center gap-2.5 text-sm text-primary-foreground/80">
+                      <img src={nuggetIcon} alt="" className="h-4 w-4 flex-shrink-0 object-contain" />
                       <span>{point}</span>
                     </div>
                   ))}
