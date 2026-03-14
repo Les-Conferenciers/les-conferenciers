@@ -35,6 +35,8 @@ const Speakers = () => {
 
   useEffect(() => {
     setDisplayCount(PAGE_SIZE);
+    sessionStorage.removeItem(SCROLL_KEY);
+    sessionStorage.removeItem(DISPLAY_COUNT_KEY);
   }, [searchQuery, selectedTheme]);
 
   const { data: allSpeakers, isLoading } = useQuery({
