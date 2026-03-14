@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -457,6 +457,61 @@ const AdminSpeakersCRM = () => {
     fetchSpeakers();
   };
 
+  // WeChamp conference enrichment
+  const handleEnrichConferences = async () => {
+    if (enriching) return;
+    setEnriching(true);
+    setShowEnrichLog(true);
+    setEnrichLog([]);
+    setEnrichProgress({ processed: 0, total: 0, current: "Scraping WeChamp + IA..." });
+
+    const session = await supabase.auth.getSession();
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.data.session?.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    };
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-wechamp-conferences`;
+
+    let offset = 0;
+    let done = false;
+
+    while (!done) {
+      try {
+        const resp = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ offset, batchSize: 3 }),
+        });
+        const data = await resp.json();
+        if (!data.success) { setEnrichLog(prev => [...prev, `❌ Erreur: ${data.error}`]); break; }
+
+        done = data.done;
+        offset = data.next_offset;
+        setEnrichProgress({ processed: offset, total: data.totalMissing, current: "" });
+
+        for (const r of data.results || []) {
+          const log = r.status === 'ok'
+            ? `✅ ${r.name}: ${r.count} conférence(s) → ${r.titles?.join(', ')}`
+            : r.status === 'not_found_on_wechamp'
+              ? `⏭ ${r.name}: pas trouvé sur WeChamp`
+              : r.status === 'no_conferences_found'
+                ? `⏭ ${r.name}: pas de conférences trouvées`
+                : `❌ ${r.name}: ${r.error || r.status}`;
+          setEnrichLog(prev => [...prev, log]);
+        }
+      } catch (err: any) {
+        setEnrichLog(prev => [...prev, `❌ Erreur réseau: ${err.message}`]);
+        break;
+      }
+    }
+
+    setEnriching(false);
+    setEnrichProgress(prev => ({ ...prev, current: "Terminé !" }));
+    toast.success("Enrichissement conférences terminé !");
+    fetchSpeakers();
+  };
+
   return (
     <div className="space-y-5">
       {/* Search & Filters */}
@@ -499,6 +554,15 @@ const AdminSpeakersCRM = () => {
             disabled={enriching}
           >
             {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Régénération...</> : <><Sparkles className="h-4 w-4" /> Régénérer Expertise/Impact</>}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleEnrichConferences}
+            disabled={enriching}
+          >
+            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Conférences...</> : <><Mic className="h-4 w-4" /> Enrichir Conférences (WeChamp)</>}
           </Button>
         </div>
 

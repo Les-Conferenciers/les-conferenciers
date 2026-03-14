@@ -2,3 +2,6 @@ project_id = "ibvjijamybwagxrniyjv"
 
 [functions.search-competitor-speakers]
 verify_jwt = false
+
+[functions.scrape-wechamp-conferences]
+verify_jwt = false
