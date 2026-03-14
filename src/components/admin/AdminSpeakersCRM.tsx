@@ -402,6 +402,68 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchReviews(editSpeaker.id);
   };
 
+  // Conference CRUD handlers
+  const handleAddConference = async () => {
+    if (!editSpeaker || !newConference.title.trim()) return;
+    const maxOrder = conferences.reduce((max, c) => Math.max(max, c.display_order || 0), 0);
+    const { error } = await supabase.from("speaker_conferences").insert({
+      speaker_id: editSpeaker.id,
+      title: newConference.title.trim(),
+      description: newConference.description.trim() || null,
+      display_order: maxOrder + 1,
+    } as any);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Conférence ajoutée");
+    setNewConference({ title: "", description: "" });
+    setShowAddConference(false);
+    fetchConferences(editSpeaker.id);
+  };
+
+  const handleDeleteConference = async (confId: string) => {
+    const { error } = await supabase.from("speaker_conferences").delete().eq("id", confId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Conférence supprimée");
+    if (editSpeaker) fetchConferences(editSpeaker.id);
+  };
+
+  const handleSaveConference = async (confId: string) => {
+    const { error } = await supabase.from("speaker_conferences").update({
+      title: editConfForm.title,
+      description: editConfForm.description || null,
+    } as any).eq("id", confId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Conférence mise à jour");
+    setEditingConfId(null);
+    if (editSpeaker) fetchConferences(editSpeaker.id);
+  };
+
+  const handleReformulateConference = async (confId: string) => {
+    const conf = conferences.find(c => c.id === confId);
+    if (!conf || !editSpeaker) return;
+    setRegeneratingConf(confId);
+    try {
+      const { data, error } = await supabase.functions.invoke("format-conference-descriptions", {
+        body: {
+          speaker_id: editSpeaker.id,
+          conference_id: confId,
+          title: conf.title,
+          description: conf.description || "",
+          speaker_name: editSpeaker.name,
+          speaker_role: editSpeaker.specialty || editSpeaker.role || "",
+        },
+      });
+      if (error) throw error;
+      if (data?.description) {
+        await supabase.from("speaker_conferences").update({ description: data.description } as any).eq("id", confId);
+        toast.success("Description reformulée par l'IA !");
+        fetchConferences(editSpeaker.id);
+      }
+    } catch (err: any) {
+      toast.error(`Erreur IA : ${err.message}`);
+    }
+    setRegeneratingConf(null);
+  };
+
   // Enrichment handler
   const handleEnrichAll = async () => {
     if (enriching) return;
