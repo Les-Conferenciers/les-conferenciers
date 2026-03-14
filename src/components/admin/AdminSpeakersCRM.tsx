@@ -145,8 +145,12 @@ const AdminSpeakersCRM = () => {
   useEffect(() => {
     if (editSpeaker) {
       fetchReviews(editSpeaker.id);
+      fetchConferences(editSpeaker.id);
       setShowReviewForm(false);
+      setShowAddConference(false);
+      setEditingConfId(null);
       setNewReview({ author_name: "", author_title: "", rating: 5, comment: "" });
+      setNewConference({ title: "", description: "" });
     }
   }, [editSpeaker?.id]);
 
