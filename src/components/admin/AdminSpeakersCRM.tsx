@@ -49,6 +49,16 @@ type Review = {
   created_at: string;
 };
 
+type Conference = {
+  id: string;
+  speaker_id: string;
+  title: string;
+  description: string | null;
+  bullet_points: string[] | null;
+  bonus: string | null;
+  display_order: number | null;
+};
+
 const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
 
 const AdminSpeakersCRM = () => {
