@@ -556,6 +556,14 @@ const AdminSpeakersCRM = () => {
             disabled={enriching}
           >
             {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Régénération...</> : <><Sparkles className="h-4 w-4" /> Régénérer Expertise/Impact</>}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleEnrichConferences}
+            disabled={enriching}
+          >
+            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Conférences...</> : <><Mic className="h-4 w-4" /> Enrichir Conférences (WeChamp)</>}
           </Button>
         </div>
 
