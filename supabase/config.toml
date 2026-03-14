@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.import-old-site-conferences]
 verify_jwt = false
+
+[functions.cleanup-html-entities]
+verify_jwt = false
