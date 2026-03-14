@@ -945,6 +945,99 @@ const AdminSpeakersCRM = () => {
                 />
               </div>
 
+              {/* Conferences section */}
+              <div className="border-t border-border pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Mic className="h-4 w-4" /> Conférences ({conferences.length})
+                  </Label>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAddConference(!showAddConference)}>
+                    <Plus className="h-3.5 w-3.5" /> Ajouter
+                  </Button>
+                </div>
+
+                {showAddConference && (
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Titre</Label>
+                      <Input value={newConference.title} onChange={e => setNewConference(p => ({ ...p, title: e.target.value }))} placeholder="Titre de la conférence" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Description (HTML)</Label>
+                      <RichTextEditor
+                        value={newConference.description}
+                        onChange={(val) => setNewConference(p => ({ ...p, description: val }))}
+                        placeholder="Description de la conférence…"
+                        minHeight="120px"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleAddConference} disabled={!newConference.title.trim()}>Ajouter</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowAddConference(false)}>Annuler</Button>
+                    </div>
+                  </div>
+                )}
+
+                {loadingConferences ? (
+                  <p className="text-xs text-muted-foreground">Chargement…</p>
+                ) : conferences.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucune conférence pour ce conférencier.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {conferences.map(conf => (
+                      <div key={conf.id} className="p-3 bg-muted/20 rounded-lg text-sm space-y-2">
+                        {editingConfId === conf.id ? (
+                          <>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Titre</Label>
+                              <Input value={editConfForm.title} onChange={e => setEditConfForm(p => ({ ...p, title: e.target.value }))} />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Description</Label>
+                              <RichTextEditor
+                                value={editConfForm.description}
+                                onChange={(val) => setEditConfForm(p => ({ ...p, description: val }))}
+                                placeholder="Description…"
+                                minHeight="120px"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" className="gap-1" onClick={() => handleSaveConference(conf.id)}>
+                                <Save className="h-3.5 w-3.5" /> Enregistrer
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingConfId(null)}>Annuler</Button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-semibold text-foreground">{conf.title}</h4>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                  setEditingConfId(conf.id);
+                                  setEditConfForm({ title: conf.title, description: conf.description || "" });
+                                }} title="Modifier">
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReformulateConference(conf.id)} disabled={regeneratingConf === conf.id} title="Reformuler avec l'IA">
+                                  {regeneratingConf === conf.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteConference(conf.id)} title="Supprimer">
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                            {conf.description && (
+                              <div className="text-xs text-muted-foreground prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: conf.description }} />
+                            )}
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={editForm.featured ?? false} onChange={e => setEditForm(p => ({ ...p, featured: e.target.checked }))} className="rounded border-input" />
