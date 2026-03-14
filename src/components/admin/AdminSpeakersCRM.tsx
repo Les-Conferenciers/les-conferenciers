@@ -511,8 +511,6 @@ const AdminSpeakersCRM = () => {
     toast.success("Enrichissement conférences terminé !");
     fetchSpeakers();
   };
-    fetchSpeakers();
-  };
 
   return (
     <div className="space-y-5">
