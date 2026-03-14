@@ -14,18 +14,25 @@ function extractConferencesFromHtml(html: string): Array<{ title: string; descri
   const conferences: Array<{ title: string; description: string }> = [];
 
   // Extract conference titles from carousel h3 tags
-  const carouselMatch = html.match(/aria-label=\\\"Conférences effectué[^\\\"]*\\\"[\\\\s\\\\S]*?<\\\\/div>\\\\s*<\\\\/div>/);
+  const carouselPattern = new RegExp('aria-label="Conf\u00e9rences effectu\u00e9[^"]*"[\\s\\S]*?<\\/div>\\s*<\\/div>');
+  const carouselMatch = html.match(carouselPattern);
   if (!carouselMatch) return [];
 
   const carouselHtml = carouselMatch[0];
 
   // Extract unique titles from h3 tags (carousel has duplicates due to cloning)
-  const h3Pattern = /<h3>([\\\\s\\\\S]*?)<\\\\/h3>/g;
+  const h3Pattern = new RegExp('<h3>([\\s\\S]*?)<\\/h3>', 'g');
   const titleSet = new Set<string>();
   const orderedTitles: string[] = [];
   let match;
   while ((match = h3Pattern.exec(carouselHtml)) !== null) {
-    const title = match[1].trim().replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#8217;/g, "'").replace(/&rsquo;/g, "'").replace(/&laquo;/g, '«').replace(/&raquo;/g, '»');
+    const title = match[1].trim()
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&#8217;/g, "'")
+      .replace(/&rsquo;/g, "'")
+      .replace(/&laquo;/g, '\u00ab')
+      .replace(/&raquo;/g, '\u00bb');
     if (title && !titleSet.has(title)) {
       titleSet.add(title);
       orderedTitles.push(title);
@@ -34,15 +41,16 @@ function extractConferencesFromHtml(html: string): Array<{ title: string; descri
 
   // Extract modal descriptions
   for (let i = 0; i < orderedTitles.length; i++) {
-    const modalId = `modal-conference-${i}`;
-    const modalPattern = new RegExp(`id=\\\"${modalId}\\\"[\\\\\\\\s\\\\\\\\S]*?<div class=\\\"modal-body\\\">([\\\\\\\\s\\\\\\\\S]*?)<\\\\\\\\/div>\\\\\\\\s*<\\\\\\\\/div>\\\\\\\\s*<\\\\\\\\/div>`);
+    const modalId = 'modal-conference-' + i;
+    const modalPattern = new RegExp('id="' + modalId + '"[\\s\\S]*?<div class="modal-body">([\\s\\S]*?)<\\/div>\\s*<\\/div>\\s*<\\/div>');
     const modalMatch = html.match(modalPattern);
     
     let description = '';
     if (modalMatch) {
       description = modalMatch[1].trim();
       // Clean HTML but keep formatting tags
-      description = description.replace(/<a[^>]*>([\\\\s\\\\S]*?)<\\\\/a>/g, '$1'); // Remove links but keep text
+      const linkPattern = new RegExp('<a[^>]*>([\\s\\S]*?)<\\/a>', 'g');
+      description = description.replace(linkPattern, '$1');
       description = description.replace(/&nbsp;/g, ' ');
     }
 
