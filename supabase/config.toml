@@ -2,3 +2,18 @@ project_id = "ibvjijamybwagxrniyjv"
 
 [functions.search-competitor-speakers]
 verify_jwt = false
+
+[functions.scrape-wechamp-conferences]
+verify_jwt = false
+
+[functions.format-conference-descriptions]
+verify_jwt = false
+
+[functions.generate-conferences]
+verify_jwt = false
+
+[functions.import-old-site-conferences]
+verify_jwt = false
+
+[functions.cleanup-html-entities]
+verify_jwt = false

@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
 import { Check, Mail, ChevronRight, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles, Play, Users } from "lucide-react";
+import nuggetIcon from "@/assets/nugget.png";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { useEffect, useState } from "react";
@@ -419,9 +420,6 @@ const SpeakerDetail = () => {
   
   if (isHtmlBio) {
     // HTML bio from rich text editor or AI formatting — already has <strong> etc.
-    // Just remove speaker name from the very start
-    processedBio = removeNameFromBio(processedBio.replace(/^<p>/, ""), speaker.name);
-    if (!processedBio.startsWith("<")) processedBio = "<p>" + processedBio;
     // Don't double-apply highlightBioKeywords if already rich HTML
     const hasExistingStrong = (processedBio.match(/<strong>/g) || []).length >= 2;
     if (!hasExistingStrong) {
@@ -430,10 +428,7 @@ const SpeakerDetail = () => {
   } else {
     // Plain text bio — split into paragraphs
     const rawBioParagraphs = processedBio.split("\n").filter(Boolean);
-    const bioParagraphs = rawBioParagraphs.map((p: string, i: number) => 
-      i === 0 ? removeNameFromBio(p, speaker.name) : p
-    );
-    processedBio = bioParagraphs.map(p => `<p>${highlightBioKeywords(formatBioForWeb(p))}</p>`).join("");
+    processedBio = rawBioParagraphs.map(p => `<p>${highlightBioKeywords(formatBioForWeb(p))}</p>`).join("");
   }
 
   // Language flag mapping
@@ -501,12 +496,12 @@ const SpeakerDetail = () => {
                 ))}
               </div>
 
-              {/* Key Points inline */}
+              {/* Key Points */}
               {speaker.key_points && speaker.key_points.length > 0 && (
-                <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center md:justify-start">
+                <div className="flex flex-col gap-2 items-center md:items-start">
                   {speaker.key_points.slice(0, 4).map((point: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm text-primary-foreground/80">
-                      <Check className="h-4 w-4 text-accent flex-shrink-0" />
+                    <div key={idx} className="flex items-center gap-2.5 text-sm text-primary-foreground/80">
+                      <img src={nuggetIcon} alt="" className="h-4 w-4 flex-shrink-0 object-contain" />
                       <span>{point}</span>
                     </div>
                   ))}
