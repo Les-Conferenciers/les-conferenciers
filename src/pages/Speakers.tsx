@@ -13,14 +13,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 
 const PAGE_SIZE = 20;
+const SCROLL_KEY = "speakers-scroll-pos";
+const DISPLAY_COUNT_KEY = "speakers-display-count";
 
 const Speakers = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
   const initialTheme = searchParams.get("theme") || null;
+  const savedDisplayCount = sessionStorage.getItem(DISPLAY_COUNT_KEY);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(initialTheme);
-  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+  const [displayCount, setDisplayCount] = useState(savedDisplayCount ? parseInt(savedDisplayCount, 10) : PAGE_SIZE);
   const [showAllThemes, setShowAllThemes] = useState(false);
 
   useEffect(() => {
