@@ -556,6 +556,7 @@ const AdminSpeakersCRM = () => {
             disabled={enriching}
           >
             {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Régénération...</> : <><Sparkles className="h-4 w-4" /> Régénérer Expertise/Impact</>}
+          </Button>
           <Button
             variant="outline"
             size="sm"
