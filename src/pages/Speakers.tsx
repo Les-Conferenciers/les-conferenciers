@@ -83,6 +83,29 @@ const Speakers = () => {
   const visibleSpeakers = speakers?.slice(0, displayCount);
   const hasMore = speakers ? displayCount < speakers.length : false;
 
+  // Save displayCount to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem(DISPLAY_COUNT_KEY, String(displayCount));
+  }, [displayCount]);
+
+  // Restore scroll position after speakers are rendered
+  const hasRestoredScroll = useRef(false);
+  useEffect(() => {
+    if (hasRestoredScroll.current || !visibleSpeakers?.length) return;
+    const savedPos = sessionStorage.getItem(SCROLL_KEY);
+    if (savedPos) {
+      hasRestoredScroll.current = true;
+      requestAnimationFrame(() => {
+        window.scrollTo(0, parseInt(savedPos, 10));
+      });
+    }
+  }, [visibleSpeakers]);
+
+  // Save scroll position before navigating to a speaker
+  const saveScrollPosition = useCallback(() => {
+    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+  }, []);
+
   // Infinite scroll via IntersectionObserver
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadMore = useCallback(() => {
