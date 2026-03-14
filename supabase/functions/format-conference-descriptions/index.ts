@@ -80,7 +80,71 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Get all conferences without HTML formatting
+  const body = await req.json().catch(() => ({}));
+
+  // Single conference AI reformulation mode
+  if (body.conference_id && body.speaker_name) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const prompt = `Tu es un rédacteur expert pour une agence de conférenciers premium (lesconferenciers.com).
+Reformule la description de cette conférence pour la rendre percutante, engageante et professionnelle.
+
+Conférencier : ${body.speaker_name} (${body.speaker_role || ""})
+Titre de la conférence : ${body.title}
+Description actuelle : ${body.description || "Aucune description"}
+
+Règles :
+- Utilise des balises HTML (<p>, <strong>) pour structurer
+- 2-4 paragraphes maximum
+- Mets en gras les termes clés et chiffres marquants
+- Ton professionnel mais engageant, orienté bénéfices pour l'audience
+- Ne mentionne AUCUN concurrent (Orators, WeChamp, Simone & Nelson)
+- Retourne UNIQUEMENT le HTML de la description, rien d'autre`;
+
+    try {
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!aiResp.ok) {
+        const errText = await aiResp.text();
+        return new Response(JSON.stringify({ error: `AI error: ${aiResp.status} ${errText}` }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const aiData = await aiResp.json();
+      let description = aiData.choices?.[0]?.message?.content || "";
+      // Clean markdown code blocks if present
+      description = description.replace(/^```html\n?/i, "").replace(/\n?```$/i, "").trim();
+
+      return new Response(JSON.stringify({ success: true, description }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Batch formatting mode (existing)
   const { data: conferences, error } = await supabase
     .from("speaker_conferences")
     .select("id, title, description")
@@ -100,38 +164,19 @@ Deno.serve(async (req) => {
 
   for (const conf of conferences || []) {
     const desc = conf.description || "";
-    
-    // Skip if already has HTML paragraph tags
-    if (/<p>|<br\s*\/?>/.test(desc)) {
-      skipped++;
-      continue;
-    }
-    
-    // Skip very short descriptions
-    if (desc.length < 50) {
-      skipped++;
-      continue;
-    }
+    if (/<p>|<br\s*\/?>/.test(desc)) { skipped++; continue; }
+    if (desc.length < 50) { skipped++; continue; }
 
     const newDesc = formatPlainTextToHtml(desc);
-    
     if (newDesc !== desc) {
       const { error: updateErr } = await supabase
         .from("speaker_conferences")
         .update({ description: newDesc })
         .eq("id", conf.id);
-      
-      if (updateErr) {
-        errors.push(`${conf.id}: ${updateErr.message}`);
-      } else {
-        formatted++;
-      }
-    } else {
-      skipped++;
-    }
+      if (updateErr) { errors.push(`${conf.id}: ${updateErr.message}`); }
+      else { formatted++; }
+    } else { skipped++; }
   }
-
-  console.log(`Formatted: ${formatted}, Skipped: ${skipped}, Errors: ${errors.length}`);
 
   return new Response(
     JSON.stringify({ success: true, formatted, skipped, errors, total: conferences?.length }),

@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.scrape-wechamp-conferences]
 verify_jwt = false
+
+[functions.format-conference-descriptions]
+verify_jwt = false

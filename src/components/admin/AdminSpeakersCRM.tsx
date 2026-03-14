@@ -49,6 +49,16 @@ type Review = {
   created_at: string;
 };
 
+type Conference = {
+  id: string;
+  speaker_id: string;
+  title: string;
+  description: string | null;
+  bullet_points: string[] | null;
+  bonus: string | null;
+  display_order: number | null;
+};
+
 const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
 
 const AdminSpeakersCRM = () => {
@@ -89,6 +99,15 @@ const AdminSpeakersCRM = () => {
   const [newReview, setNewReview] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
 
+  // Conferences state
+  const [conferences, setConferences] = useState<Conference[]>([]);
+  const [loadingConferences, setLoadingConferences] = useState(false);
+  const [newConference, setNewConference] = useState({ title: "", description: "" });
+  const [showAddConference, setShowAddConference] = useState(false);
+  const [regeneratingConf, setRegeneratingConf] = useState<string | null>(null);
+  const [editingConfId, setEditingConfId] = useState<string | null>(null);
+  const [editConfForm, setEditConfForm] = useState<{ title: string; description: string }>({ title: "", description: "" });
+
   const fetchSpeakers = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -97,6 +116,17 @@ const AdminSpeakersCRM = () => {
       .order("name");
     setSpeakers(data || []);
     setLoading(false);
+  };
+
+  const fetchConferences = async (speakerId: string) => {
+    setLoadingConferences(true);
+    const { data } = await supabase
+      .from("speaker_conferences")
+      .select("*")
+      .eq("speaker_id", speakerId)
+      .order("display_order");
+    setConferences((data as Conference[]) || []);
+    setLoadingConferences(false);
   };
 
   const fetchReviews = async (speakerId: string) => {
@@ -115,8 +145,12 @@ const AdminSpeakersCRM = () => {
   useEffect(() => {
     if (editSpeaker) {
       fetchReviews(editSpeaker.id);
+      fetchConferences(editSpeaker.id);
       setShowReviewForm(false);
+      setShowAddConference(false);
+      setEditingConfId(null);
       setNewReview({ author_name: "", author_title: "", rating: 5, comment: "" });
+      setNewConference({ title: "", description: "" });
     }
   }, [editSpeaker?.id]);
 
@@ -366,6 +400,68 @@ const AdminSpeakersCRM = () => {
     if (error) { toast.error("Erreur"); return; }
     toast.success("Avis supprimé");
     if (editSpeaker) fetchReviews(editSpeaker.id);
+  };
+
+  // Conference CRUD handlers
+  const handleAddConference = async () => {
+    if (!editSpeaker || !newConference.title.trim()) return;
+    const maxOrder = conferences.reduce((max, c) => Math.max(max, c.display_order || 0), 0);
+    const { error } = await supabase.from("speaker_conferences").insert({
+      speaker_id: editSpeaker.id,
+      title: newConference.title.trim(),
+      description: newConference.description.trim() || null,
+      display_order: maxOrder + 1,
+    } as any);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Conférence ajoutée");
+    setNewConference({ title: "", description: "" });
+    setShowAddConference(false);
+    fetchConferences(editSpeaker.id);
+  };
+
+  const handleDeleteConference = async (confId: string) => {
+    const { error } = await supabase.from("speaker_conferences").delete().eq("id", confId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Conférence supprimée");
+    if (editSpeaker) fetchConferences(editSpeaker.id);
+  };
+
+  const handleSaveConference = async (confId: string) => {
+    const { error } = await supabase.from("speaker_conferences").update({
+      title: editConfForm.title,
+      description: editConfForm.description || null,
+    } as any).eq("id", confId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Conférence mise à jour");
+    setEditingConfId(null);
+    if (editSpeaker) fetchConferences(editSpeaker.id);
+  };
+
+  const handleReformulateConference = async (confId: string) => {
+    const conf = conferences.find(c => c.id === confId);
+    if (!conf || !editSpeaker) return;
+    setRegeneratingConf(confId);
+    try {
+      const { data, error } = await supabase.functions.invoke("format-conference-descriptions", {
+        body: {
+          speaker_id: editSpeaker.id,
+          conference_id: confId,
+          title: conf.title,
+          description: conf.description || "",
+          speaker_name: editSpeaker.name,
+          speaker_role: editSpeaker.specialty || editSpeaker.role || "",
+        },
+      });
+      if (error) throw error;
+      if (data?.description) {
+        await supabase.from("speaker_conferences").update({ description: data.description } as any).eq("id", confId);
+        toast.success("Description reformulée par l'IA !");
+        fetchConferences(editSpeaker.id);
+      }
+    } catch (err: any) {
+      toast.error(`Erreur IA : ${err.message}`);
+    }
+    setRegeneratingConf(null);
   };
 
   // Enrichment handler
@@ -847,6 +943,99 @@ const AdminSpeakersCRM = () => {
                   placeholder="Impact mesurable des interventions…"
                   rows={3}
                 />
+              </div>
+
+              {/* Conferences section */}
+              <div className="border-t border-border pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Mic className="h-4 w-4" /> Conférences ({conferences.length})
+                  </Label>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAddConference(!showAddConference)}>
+                    <Plus className="h-3.5 w-3.5" /> Ajouter
+                  </Button>
+                </div>
+
+                {showAddConference && (
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Titre</Label>
+                      <Input value={newConference.title} onChange={e => setNewConference(p => ({ ...p, title: e.target.value }))} placeholder="Titre de la conférence" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Description (HTML)</Label>
+                      <RichTextEditor
+                        value={newConference.description}
+                        onChange={(val) => setNewConference(p => ({ ...p, description: val }))}
+                        placeholder="Description de la conférence…"
+                        minHeight="120px"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleAddConference} disabled={!newConference.title.trim()}>Ajouter</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowAddConference(false)}>Annuler</Button>
+                    </div>
+                  </div>
+                )}
+
+                {loadingConferences ? (
+                  <p className="text-xs text-muted-foreground">Chargement…</p>
+                ) : conferences.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Aucune conférence pour ce conférencier.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {conferences.map(conf => (
+                      <div key={conf.id} className="p-3 bg-muted/20 rounded-lg text-sm space-y-2">
+                        {editingConfId === conf.id ? (
+                          <>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Titre</Label>
+                              <Input value={editConfForm.title} onChange={e => setEditConfForm(p => ({ ...p, title: e.target.value }))} />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Description</Label>
+                              <RichTextEditor
+                                value={editConfForm.description}
+                                onChange={(val) => setEditConfForm(p => ({ ...p, description: val }))}
+                                placeholder="Description…"
+                                minHeight="120px"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" className="gap-1" onClick={() => handleSaveConference(conf.id)}>
+                                <Save className="h-3.5 w-3.5" /> Enregistrer
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingConfId(null)}>Annuler</Button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-semibold text-foreground">{conf.title}</h4>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                  setEditingConfId(conf.id);
+                                  setEditConfForm({ title: conf.title, description: conf.description || "" });
+                                }} title="Modifier">
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReformulateConference(conf.id)} disabled={regeneratingConf === conf.id} title="Reformuler avec l'IA">
+                                  {regeneratingConf === conf.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteConference(conf.id)} title="Supprimer">
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                            {conf.description && (
+                              <div className="text-xs text-muted-foreground prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: conf.description }} />
+                            )}
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-6">
