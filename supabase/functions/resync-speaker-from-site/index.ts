@@ -6,89 +6,137 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function extractBioFromHtml(html: string): { biography: string; keyPoints: string[]; languages: string[]; conferences: { title: string; description: string }[] } {
+function decodeEntities(str: string): string {
+  return str
+    .replace(/&rsquo;/g, "'")
+    .replace(/&lsquo;/g, "'")
+    .replace(/&rdquo;/g, '"')
+    .replace(/&ldquo;/g, '"')
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&eacute;/g, "é")
+    .replace(/&egrave;/g, "è")
+    .replace(/&agrave;/g, "à")
+    .replace(/&ccedil;/g, "ç")
+    .replace(/&ocirc;/g, "ô")
+    .replace(/&ucirc;/g, "û")
+    .replace(/&icirc;/g, "î")
+    .replace(/&acirc;/g, "â")
+    .replace(/&ecirc;/g, "ê")
+    .replace(/&uuml;/g, "ü")
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&#8211;/g, "–")
+    .replace(/&#8212;/g, "—")
+    .replace(/&#8230;/g, "…");
+}
+
+function getTabContent(html: string, tabIndex: number): string {
+  // Split by tab divs
+  const tabParts = html.split(/<div class="et_pb_tab et_pb_tab_/);
+  if (tabIndex + 1 >= tabParts.length) return '';
+  
+  const tabSection = tabParts[tabIndex + 1]; // +1 because first split part is before any tab
+  
+  // Extract content between et_pb_tab_content tags
+  const contentMatch = tabSection.match(/<div class="et_pb_tab_content">([\s\S]*?)(?:<\/div>\s*<\/div>)/);
+  if (!contentMatch) return '';
+  
+  return decodeEntities(contentMatch[1].trim());
+}
+
+function extractBioFromHtml(html: string) {
   // Extract key points (pépites)
   const keyPoints: string[] = [];
   const pepiteRegex = /<li class="pepite">(.*?)<\/li>/gs;
   let match;
   while ((match = pepiteRegex.exec(html)) !== null) {
-    const text = match[1].replace(/<[^>]+>/g, '').trim();
+    const text = decodeEntities(match[1].replace(/<[^>]+>/g, '').trim());
     if (text) keyPoints.push(text);
   }
 
   // Extract languages from flags
   const languages: string[] = [];
-  if (html.includes('france') || html.includes('la-france') || html.includes('Parle français')) {
+  // Check the header area (before the tabs) for language flags
+  const headerArea = html.split('et_pb_tabs')[0] || '';
+  if (headerArea.includes('france') || headerArea.includes('la-france') || headerArea.includes('français')) {
     languages.push('Français');
   }
-  if (html.includes('english') || html.includes('anglais') || html.includes('Parle anglais')) {
+  if (headerArea.includes('english') || headerArea.includes('anglais')) {
     languages.push('Anglais');
   }
-  if (html.includes('espagnol') || html.includes('spain') || html.includes('espagne')) {
+  if (headerArea.includes('espagnol') || headerArea.includes('spain') || headerArea.includes('espagne')) {
     languages.push('Espagnol');
   }
-  if (html.includes('allemand') || html.includes('german') || html.includes('allemagne')) {
+  if (headerArea.includes('allemand') || headerArea.includes('german') || headerArea.includes('allemagne')) {
     languages.push('Allemand');
   }
   if (languages.length === 0) languages.push('Français');
 
-  // Extract biography from the first tab
-  let biography = '';
-  const bioTabMatch = html.match(/et_pb_tab_0.*?<div class="et_pb_tab_content">(.*?)<\/div>\s*<\/div>\s*<div class="et_pb_tab et_pb_tab_1/s);
-  if (bioTabMatch) {
-    biography = bioTabMatch[1];
-    // Clean up the bio - remove lazy-loaded base64 images but keep real image URLs
-    biography = biography.replace(/<img[^>]*src="data:image[^"]*"[^>]*data-src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g, '<img src="$1" alt="$2" class="float-right ml-6 mb-4 rounded-lg w-64 max-w-[40%]" />');
+  // Extract biography from Tab 0
+  let biography = getTabContent(html, 0);
+  if (biography) {
+    // Replace lazy-loaded images with real URLs
+    biography = biography.replace(/<img[^>]*src="data:image[^"]*"[^>]*data-src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g, 
+      '<img src="$1" alt="$2" class="float-right ml-6 mb-4 rounded-lg w-64 max-w-[40%]" />');
+    // Remove remaining data: images
     biography = biography.replace(/<img[^>]*src="data:image[^"]*"[^>]*>/g, '');
-    // Remove div wrappers but keep content
+    // Clean bio wrapper divs
     biography = biography.replace(/<div class="bio">/g, '');
     biography = biography.replace(/<div class="bio-text">/g, '');
-    biography = biography.replace(/<div class="bio-image">.*?<\/div>/gs, '');
+    biography = biography.replace(/<div class="bio-image">[\s\S]*?<\/div>/g, '');
     biography = biography.replace(/<\/div>/g, '');
-    // Remove h2 with class fiche - these are section headers within the bio
-    // Keep them as they provide structure
-    biography = biography.replace(/<h2 class="fiche">/g, '<h2>');
-    // Clean residual classes
-    biography = biography.replace(/class="p\d+"/g, '');
-    biography = biography.replace(/\s+class=""/g, '');
+    // Clean classes
+    biography = biography.replace(/\s*class="fiche"/g, '');
+    biography = biography.replace(/\s*class="p\d+"/g, '');
+    biography = biography.replace(/\s*class=""/g, '');
+    biography = biography.replace(/\s*data-[a-z-]+="[^"]*"/g, '');
+    biography = biography.replace(/\s*style="[^"]*"/g, '');
     biography = biography.trim();
   }
 
-  // Extract conferences from the second tab
+  // Extract conferences from Tab 1
   const conferences: { title: string; description: string }[] = [];
-  const confTabMatch = html.match(/et_pb_tab_1.*?<div class="et_pb_tab_content">(.*?)<\/div>\s*<\/div>\s*<div class="et_pb_tab et_pb_tab_2/s);
-  if (confTabMatch) {
-    let confContent = confTabMatch[1];
+  const confContent = getTabContent(html, 1);
+  if (confContent) {
+    let cleanConf = confContent;
     // Remove lazy-loaded images
-    confContent = confContent.replace(/<img[^>]*src="data:image[^"]*"[^>]*>/g, '');
-    confContent = confContent.replace(/<img[^>]*>/g, '');
+    cleanConf = cleanConf.replace(/<img[^>]*src="data:image[^"]*"[^>]*>/g, '');
+    cleanConf = cleanConf.replace(/<img[^>]*>/g, '');
+    // Clean data attributes and styles
+    cleanConf = cleanConf.replace(/\s*data-[a-z-]+="[^"]*"/g, '');
+    cleanConf = cleanConf.replace(/\s*class="[^"]*"/g, '');
+    cleanConf = cleanConf.replace(/\s*style="[^"]*"/g, '');
+
+    // Split by h2 or h4 headers
+    const parts = cleanConf.split(/<h[24][^>]*>/);
     
-    // Split by h2 or h4 headers to get individual conferences
-    const confSections = confContent.split(/<h[24][^>]*>/);
-    
-    for (let i = 1; i < confSections.length; i++) {
-      const section = confSections[i];
-      const titleEndIdx = section.indexOf('</h');
-      if (titleEndIdx === -1) continue;
+    for (let i = 1; i < parts.length; i++) {
+      const section = parts[i];
+      const titleEndMatch = section.match(/<\/h[24]>/);
+      if (!titleEndMatch) continue;
       
-      const title = section.substring(0, titleEndIdx).replace(/<[^>]+>/g, '').trim();
-      let description = section.substring(section.indexOf('>', titleEndIdx) + 1).trim();
-      
-      // Clean up description
-      description = description.replace(/class="p\d+"/g, '');
-      description = description.replace(/\s+class=""/g, '');
-      description = description.trim();
+      const titleEndIdx = section.indexOf(titleEndMatch[0]);
+      const title = decodeEntities(section.substring(0, titleEndIdx).replace(/<[^>]+>/g, '').trim());
+      let description = section.substring(titleEndIdx + titleEndMatch[0].length).trim();
       
       if (title && description) {
         conferences.push({ title, description });
       }
     }
 
-    // If no h2/h4 headers found but there's content, treat as single conference
-    if (conferences.length === 0 && confContent.trim()) {
-      const cleanContent = confContent.replace(/<h[24][^>]*>.*?<\/h[24]>/g, '').trim();
-      if (cleanContent) {
-        conferences.push({ title: 'Conférence', description: cleanContent });
+    // If no headers found but there's content, treat as single conference
+    if (conferences.length === 0 && cleanConf.trim().length > 50) {
+      // Check for a simple h4 title
+      const h4Match = cleanConf.match(/<h4>(.*?)<\/h4>/);
+      if (h4Match) {
+        const title = decodeEntities(h4Match[1].replace(/<[^>]+>/g, '').trim());
+        const description = cleanConf.replace(/<h4>.*?<\/h4>/, '').trim();
+        if (description) conferences.push({ title, description });
+      } else {
+        conferences.push({ title: 'Conférence', description: cleanConf.trim() });
       }
     }
   }
@@ -102,7 +150,7 @@ serve(async (req) => {
   }
 
   try {
-    const { slugs, dryRun = false } = await req.json();
+    const { slugs, dryRun = false, skipBio = false, skipConferences = false } = await req.json();
     
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -131,7 +179,8 @@ serve(async (req) => {
             languages: extracted.languages,
             conferenceCount: extracted.conferences.length,
             conferenceTitles: extracted.conferences.map(c => c.title),
-            bioPreview: extracted.biography.substring(0, 200),
+            bioPreview: extracted.biography.substring(0, 300),
+            confPreview: extracted.conferences.map(c => ({ title: c.title, descPreview: c.description.substring(0, 150) })),
           };
           continue;
         }
@@ -148,9 +197,8 @@ serve(async (req) => {
           continue;
         }
 
-        // Update biography and metadata
         const updateData: any = {};
-        if (extracted.biography) updateData.biography = extracted.biography;
+        if (!skipBio && extracted.biography) updateData.biography = extracted.biography;
         if (extracted.keyPoints.length > 0) updateData.key_points = extracted.keyPoints;
         if (extracted.languages.length > 0) updateData.languages = extracted.languages;
 
@@ -158,12 +206,9 @@ serve(async (req) => {
           await supabase.from('speakers').update(updateData).eq('id', speaker.id);
         }
 
-        // Update conferences only if we found them on the original site
-        if (extracted.conferences.length > 0) {
-          // Delete existing conferences
+        if (!skipConferences && extracted.conferences.length > 0) {
           await supabase.from('speaker_conferences').delete().eq('speaker_id', speaker.id);
           
-          // Insert new conferences
           for (let i = 0; i < extracted.conferences.length; i++) {
             await supabase.from('speaker_conferences').insert({
               speaker_id: speaker.id,
@@ -176,14 +221,17 @@ serve(async (req) => {
 
         results[slug] = {
           success: true,
-          bioUpdated: !!extracted.biography,
-          keyPointsUpdated: extracted.keyPoints.length > 0,
-          languagesUpdated: extracted.languages.length > 0,
-          conferencesReplaced: extracted.conferences.length,
+          bioUpdated: !skipBio && !!extracted.biography,
+          keyPointsCount: extracted.keyPoints.length,
+          languagesUpdated: extracted.languages,
+          conferencesReplaced: skipConferences ? 0 : extracted.conferences.length,
         };
       } catch (err) {
         results[slug] = { error: err instanceof Error ? err.message : 'Unknown error' };
       }
+      
+      // Small delay between requests
+      await new Promise(r => setTimeout(r, 500));
     }
 
     return new Response(JSON.stringify({ results }), {
