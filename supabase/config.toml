@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.cleanup-html-entities]
 verify_jwt = false
+
+[functions.test-contact-form]
+verify_jwt = false
