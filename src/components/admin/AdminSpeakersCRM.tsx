@@ -99,6 +99,15 @@ const AdminSpeakersCRM = () => {
   const [newReview, setNewReview] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
 
+  // Conferences state
+  const [conferences, setConferences] = useState<Conference[]>([]);
+  const [loadingConferences, setLoadingConferences] = useState(false);
+  const [newConference, setNewConference] = useState({ title: "", description: "" });
+  const [showAddConference, setShowAddConference] = useState(false);
+  const [regeneratingConf, setRegeneratingConf] = useState<string | null>(null);
+  const [editingConfId, setEditingConfId] = useState<string | null>(null);
+  const [editConfForm, setEditConfForm] = useState<{ title: string; description: string }>({ title: "", description: "" });
+
   const fetchSpeakers = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -107,6 +116,17 @@ const AdminSpeakersCRM = () => {
       .order("name");
     setSpeakers(data || []);
     setLoading(false);
+  };
+
+  const fetchConferences = async (speakerId: string) => {
+    setLoadingConferences(true);
+    const { data } = await supabase
+      .from("speaker_conferences")
+      .select("*")
+      .eq("speaker_id", speakerId)
+      .order("display_order");
+    setConferences((data as Conference[]) || []);
+    setLoadingConferences(false);
   };
 
   const fetchReviews = async (speakerId: string) => {
