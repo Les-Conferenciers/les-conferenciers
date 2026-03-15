@@ -451,9 +451,45 @@ Nelly Sabde — Les Conférenciers`);
 
   // ─── Liaison Sheet ───
   const openLiaisonDialog = () => {
+    const speaker = proposal.proposal_speakers[0]?.speakers;
+    const speakerName = speaker?.name || "";
+    const speakerFirstName = speakerName.split(" ")[0];
+    const isFormal = speaker?.formal_address !== false;
+    const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
+
     setLiaisonNotes(event?.visio_notes || "");
     setLiaisonTechNeeds("Vidéoprojecteur");
     setLiaisonArrival("");
+    setLiaisonTab("client");
+
+    // Client email template
+    setLiaisonClientSubject(`Feuille de liaison — ${speakerName} — ${proposal.client_name}`);
+    setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
+
+Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
+
+Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}${(speaker as any)?.phone ? " laissant apparaître son numéro de téléphone portable" : ""}.
+
+Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
+
+Excellente fin de journée à vous !
+
+Nelly Sabde — Les Conférenciers`);
+
+    // Speaker email template
+    setLiaisonSpeakerSubject(`Feuille de liaison — ${proposal.client_name}`);
+    setLiaisonSpeakerBody(`${speakerFirstName},
+
+${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
+
+${isFormal ? "À très bientôt !" : "A très vite !"}
+
+Nelly Sabde — Les Conférenciers`);
+
+    // Pre-fill CC with speaker email if sending to client first
+    const speakerEmail = (speaker as any)?.email || "";
+    setLiaisonCcEmails(speakerEmail ? speakerEmail : "");
+
     setLiaisonDialogOpen(true);
   };
 
@@ -461,15 +497,10 @@ Nelly Sabde — Les Conférenciers`);
     setSendingLiaison(true);
     const speaker = proposal.proposal_speakers[0]?.speakers;
     const speakerName = speaker?.name || "";
-    const isFormal = speaker?.formal_address !== false;
     const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
-    
-    // Email to client
-    const clientBody = `Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
-Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
-
-Vous trouverez ci-dessous la feuille de liaison pour l'intervention de ${speakerName}${(speaker as any)?.phone ? ` laissant apparaître son numéro de téléphone portable` : ""}.
+    // Build liaison sheet content block
+    const liaisonContent = `
 
 📋 FEUILLE DE LIAISON
 
@@ -483,54 +514,34 @@ Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
 Besoins techniques :
 ${liaisonTechNeeds}
 
-Contact client : ${proposal.recipient_name || ""} — ${proposal.client_email}
+Contact client : ${proposal.recipient_name || proposal.client_name} — ${proposal.client_email}
 Contact conférencier : ${speakerName}${(speaker as any)?.phone ? ` — ${(speaker as any).phone}` : ""}
+${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
 
-${liaisonNotes ? `Commentaires :\n${liaisonNotes}` : ""}
-
-Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
-
-Excellente fin de journée à vous !
-
-Nelly Sabde — Les Conférenciers`;
-
-    // Email to speaker
-    const firstName = speakerName.split(" ")[0];
-    const speakerBody = `${isFormal ? `Bonjour ${firstName},` : `${firstName},`}
-
-${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
-
-📋 FEUILLE DE LIAISON
-
-Date : ${dateStr}
-Lieu : ${contract?.event_location || ""}
-Horaires : ${contract?.event_time || ""}
-Auditoire : ${event?.audience_size || ""}
-Thématique : ${event?.theme || ""}
-Arrivée sur place : ${liaisonArrival || "à confirmer"}
-
-Besoins techniques :
-${liaisonTechNeeds}
-
-Contact client : ${proposal.recipient_name || proposal.client_name}
-
-${liaisonNotes ? `Commentaires :\n${liaisonNotes}` : ""}
-
-${isFormal ? "À très bientôt !" : "A très vite !"}
-
-Nelly Sabde — Les Conférenciers`;
+    const ccList = liaisonCcEmails.split(",").map(e => e.trim()).filter(Boolean);
 
     try {
       // Send to client
       await supabase.functions.invoke("send-contact-email", {
-        body: { to: proposal.client_email, subject: `Feuille de liaison — ${speakerName} — ${proposal.client_name}`, body: clientBody, from_name: "Les Conférenciers" },
+        body: {
+          to: proposal.client_email,
+          subject: liaisonClientSubject,
+          body: liaisonClientBody + liaisonContent,
+          from_name: "Les Conférenciers",
+          cc: ccList.length > 0 ? ccList : undefined,
+        },
       });
 
       // Send to speaker if has email
       const speakerEmail = (speaker as any)?.email;
       if (speakerEmail) {
         await supabase.functions.invoke("send-contact-email", {
-          body: { to: speakerEmail, subject: `Feuille de liaison — ${proposal.client_name}`, body: speakerBody, from_name: "Les Conférenciers" },
+          body: {
+            to: speakerEmail,
+            subject: liaisonSpeakerSubject,
+            body: liaisonSpeakerBody + liaisonContent,
+            from_name: "Les Conférenciers",
+          },
         });
       }
 
