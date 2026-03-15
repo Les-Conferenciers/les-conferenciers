@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import {
   FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil,
-  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon, UserPlus,
+  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon, UserPlus, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
