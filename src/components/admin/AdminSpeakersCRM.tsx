@@ -343,7 +343,7 @@ const AdminSpeakersCRM = () => {
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     
-    const { error } = await supabase.from("speakers").insert({
+    const { data: inserted, error } = await supabase.from("speakers").insert({
       name: manualForm.name.trim(),
       slug,
       role: manualForm.specialty || null,
@@ -358,13 +358,17 @@ const AdminSpeakersCRM = () => {
       languages: manualForm.languages ? manualForm.languages.split(",").map(l => l.trim()).filter(Boolean) : [],
       biography: manualForm.biography || null,
       archived: manualForm.archived,
-    } as any);
+    } as any).select().single();
     setCreatingManual(false);
     if (error) { toast.error(`Erreur : ${error.message}`); return; }
-    toast.success(`${manualForm.name} créé avec succès !`);
+    toast.success(`${manualForm.name} créé avec succès ! Ouvrez la fiche pour compléter les détails.`);
     setShowManualCreate(false);
     setManualForm({ name: "", specialty: "", city: "", base_fee: "", fee_details: "", phone: "", email: "", gender: "male", themes: "", languages: "Français", biography: "", archived: false });
-    fetchSpeakers();
+    await fetchSpeakers();
+    // Auto-open edit dialog for the newly created speaker
+    if (inserted) {
+      openEdit(inserted as Speaker);
+    }
   };
 
   // AI Regeneration
