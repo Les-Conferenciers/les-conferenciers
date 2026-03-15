@@ -567,6 +567,7 @@ Nelly Sabde — Les Conférenciers`);
 
     setLiaisonNotes(event?.visio_notes || "");
     setLiaisonTechNeeds("Vidéoprojecteur");
+    setLiaisonSalleSetup("Salle installée en largeur avec une allée centrale si possible");
     setLiaisonArrival("");
     setLiaisonTab("client");
 
@@ -594,9 +595,10 @@ ${isFormal ? "À très bientôt !" : "A très vite !"}
 
 Nelly Sabde — Les Conférenciers`);
 
-    // Pre-fill CC with speaker email if sending to client first
+    // Pre-fill CC: speaker email for client tab, client email for speaker tab
     const speakerEmail = speaker?.email || "";
-    setLiaisonCcEmails(speakerEmail ? speakerEmail : "");
+    setLiaisonClientCc(speakerEmail);
+    setLiaisonSpeakerCc("");
 
     setLiaisonDialogOpen(true);
   };
