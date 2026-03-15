@@ -29,6 +29,7 @@ type Proposal = {
   client_name: string;
   client_email: string;
   recipient_name: string | null;
+  client_id: string | null;
   status: string;
   proposal_speakers: {
     id?: string;
@@ -141,6 +142,16 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [saving, setSaving] = useState(false);
+  // Client for contract creation
+  const [contractClientId, setContractClientId] = useState<string>("");
+  const [showCreateClientInContract, setShowCreateClientInContract] = useState(false);
+  const [newContractClientCompany, setNewContractClientCompany] = useState("");
+  const [newContractClientContact, setNewContractClientContact] = useState("");
+  const [newContractClientEmail, setNewContractClientEmail] = useState("");
+  const [newContractClientPhone, setNewContractClientPhone] = useState("");
+  const [newContractClientSiret, setNewContractClientSiret] = useState("");
+  const [newContractClientAddress, setNewContractClientAddress] = useState("");
+  const [newContractClientCity, setNewContractClientCity] = useState("");
 
   // Contract email
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
@@ -341,6 +352,11 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEditingContract(false);
     setEventDate(""); setEventLocation(""); setEventTime(""); setEventFormat("Conférence"); setEventDescription("");
     setContractLines(buildInitialLines()); setDiscountPercent(0);
+    // Pre-select client if proposal already has one
+    setContractClientId(proposal.client_id || "");
+    setShowCreateClientInContract(false);
+    setNewContractClientCompany(""); setNewContractClientContact(""); setNewContractClientEmail("");
+    setNewContractClientPhone(""); setNewContractClientSiret(""); setNewContractClientAddress(""); setNewContractClientCity("");
     setContractDialogOpen(true);
   };
 
@@ -351,10 +367,39 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
+    setContractClientId(proposal.client_id || "");
+    setShowCreateClientInContract(false);
     setContractDialogOpen(true);
   };
 
+  const handleCreateContractClient = async () => {
+    if (!newContractClientCompany) { toast.error("Nom de société requis"); return; }
+    if (!newContractClientEmail) { toast.error("Email requis pour le contrat"); return; }
+    setCreatingClient(true);
+    const { data, error } = await supabase.from("clients").insert({
+      company_name: newContractClientCompany,
+      contact_name: newContractClientContact || null,
+      email: newContractClientEmail || null,
+      phone: newContractClientPhone || null,
+      siret: newContractClientSiret || null,
+      address: newContractClientAddress || null,
+      city: newContractClientCity || null,
+    } as any).select().single();
+    if (error || !data) { toast.error("Erreur création client"); setCreatingClient(false); return; }
+    toast.success("Client créé !");
+    await fetchClients();
+    setContractClientId((data as any).id);
+    setShowCreateClientInContract(false);
+    setNewContractClientCompany(""); setNewContractClientContact(""); setNewContractClientEmail("");
+    setNewContractClientPhone(""); setNewContractClientSiret(""); setNewContractClientAddress(""); setNewContractClientCity("");
+    setCreatingClient(false);
+  };
+
   const handleSaveContract = async () => {
+    if (!contractClientId) {
+      toast.error("Veuillez sélectionner ou créer un client avant de créer le contrat");
+      return;
+    }
     setSaving(true);
     const payload = {
       event_date: eventDate || null,
@@ -365,6 +410,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
     };
+    // Link client to proposal
+    await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
     if (editingContract && contract) {
       const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
       if (error) toast.error("Erreur mise à jour"); else toast.success("Contrat mis à jour !");
@@ -372,7 +419,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       const { error } = await supabase.from("contracts").insert({ proposal_id: proposal.id, ...payload } as any);
       if (error) { toast.error("Erreur création contrat"); console.error(error); } else toast.success("Contrat créé !");
     }
-    setContractDialogOpen(false); fetchData(); setSaving(false);
+    setContractDialogOpen(false); fetchData(); onUpdate(); setSaving(false);
   };
 
   // ─── Contract email ───
@@ -1199,6 +1246,96 @@ Nelly Sabde — Les Conférenciers`);
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 mt-2">
+            {/* Client selector - mandatory */}
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+              <Label className="text-xs font-semibold flex items-center gap-2">
+                <User className="h-3.5 w-3.5" /> Client (obligatoire pour le contrat) *
+              </Label>
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
+                  value={contractClientId}
+                  onChange={e => {
+                    if (e.target.value === "__new__") {
+                      setShowCreateClientInContract(true);
+                      setContractClientId("");
+                    } else {
+                      setContractClientId(e.target.value);
+                      setShowCreateClientInContract(false);
+                    }
+                  }}
+                >
+                  <option value="">— Sélectionner un client —</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.company_name}{c.contact_name ? ` — ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
+                    </option>
+                  ))}
+                  <option value="__new__">➕ Créer un nouveau client…</option>
+                </select>
+              </div>
+              {!contractClientId && !showCreateClientInContract && (
+                <p className="text-[10px] text-destructive">⚠ Un client doit être sélectionné pour éditer le bon de commande</p>
+              )}
+
+              {showCreateClientInContract && (
+                <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <UserPlus className="h-3.5 w-3.5" /> Nouveau client
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Société *</Label>
+                      <Input value={newContractClientCompany} onChange={e => setNewContractClientCompany(e.target.value)} placeholder="SNCF" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Nom du contact</Label>
+                      <Input value={newContractClientContact} onChange={e => setNewContractClientContact(e.target.value)} placeholder="Pascal Dupont" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Email *</Label>
+                      <Input type="email" value={newContractClientEmail} onChange={e => setNewContractClientEmail(e.target.value)} placeholder="email@societe.com" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Téléphone</Label>
+                      <Input value={newContractClientPhone} onChange={e => setNewContractClientPhone(e.target.value)} placeholder="06 XX XX XX XX" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">SIRET</Label>
+                      <Input value={newContractClientSiret} onChange={e => setNewContractClientSiret(e.target.value)} placeholder="123 456 789 00012" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Ville</Label>
+                      <Input value={newContractClientCity} onChange={e => setNewContractClientCity(e.target.value)} placeholder="Paris" className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Adresse</Label>
+                      <Input value={newContractClientAddress} onChange={e => setNewContractClientAddress(e.target.value)} placeholder="12 rue de la Paix" className="h-8 text-sm" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleCreateContractClient} disabled={creatingClient} className="gap-1">
+                      <UserPlus className="h-3 w-3" /> {creatingClient ? "Création…" : "Créer et sélectionner"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowCreateClientInContract(false)}>Annuler</Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Show selected client info */}
+              {contractClientId && (() => {
+                const c = clients.find(cl => cl.id === contractClientId);
+                return c ? (
+                  <div className="text-[10px] text-muted-foreground space-y-0.5 bg-background p-2 rounded border border-border/50">
+                    <p><strong>{c.company_name}</strong>{c.contact_name ? ` — ${c.contact_name}` : ""}</p>
+                    {c.email && <p>📧 {c.email}</p>}
+                    {c.siret && <p>🏢 SIRET : {c.siret}</p>}
+                    {c.address && <p>📍 {c.address}{c.city ? `, ${c.city}` : ""}</p>}
+                  </div>
+                ) : null;
+              })()}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-xs">Horaires</Label><Input placeholder="14h00 - 15h30" value={eventTime} onChange={e => setEventTime(e.target.value)} /></div>

@@ -41,6 +41,7 @@ type Proposal = {
   client_email: string;
   message: string | null;
   recipient_name: string | null;
+  client_id: string | null;
   status: string;
   sent_at: string | null;
   accepted_at: string | null;
@@ -442,6 +443,7 @@ Belle journée,`;
                     client_name: p.client_name,
                     client_email: p.client_email,
                     recipient_name: p.recipient_name,
+                    client_id: p.client_id || null,
                     status: p.status,
                     proposal_speakers: p.proposal_speakers?.map(ps => ({
                       ...ps,
