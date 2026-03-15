@@ -215,6 +215,13 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     }
   }, [loading, event]);
 
+  // Sync visio quick picker from event data
+  useEffect(() => {
+    if (event?.visio_date) setVisioQuickDate(new Date(event.visio_date + "T12:00:00"));
+    else setVisioQuickDate(undefined);
+    setVisioQuickTime(event?.visio_time || "");
+  }, [event?.visio_date, event?.visio_time]);
+
   // ─── Compute totals ───
   const computeTotals = (lines: ContractLine[], discount: number) => {
     const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
