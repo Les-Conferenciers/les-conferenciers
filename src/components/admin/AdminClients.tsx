@@ -23,6 +23,7 @@ type Client = {
   city: string | null;
   siret: string | null;
   notes: string | null;
+  status: string;
   created_at: string;
 };
 
@@ -38,6 +39,7 @@ const AdminClients = () => {
   const [proposals, setProposals] = useState<ProposalSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "prospect" | "client">("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -51,6 +53,7 @@ const AdminClients = () => {
   const [city, setCity] = useState("");
   const [siret, setSiret] = useState("");
   const [notes, setNotes] = useState("");
+  const [formStatus, setFormStatus] = useState("prospect");
 
   useEffect(() => {
     fetchClients();
@@ -77,7 +80,7 @@ const AdminClients = () => {
 
   const resetForm = () => {
     setCompanyName(""); setContactName(""); setEmail(""); setPhone("");
-    setAddress(""); setCity(""); setSiret(""); setNotes("");
+    setAddress(""); setCity(""); setSiret(""); setNotes(""); setFormStatus("prospect");
     setEditing(null);
   };
 
@@ -96,6 +99,7 @@ const AdminClients = () => {
     setCity(c.city || "");
     setSiret(c.siret || "");
     setNotes(c.notes || "");
+    setFormStatus((c as any).status || "prospect");
     setDialogOpen(true);
   };
 
@@ -110,6 +114,7 @@ const AdminClients = () => {
       city: city || null,
       siret: siret || null,
       notes: notes || null,
+      status: formStatus,
     };
     if (editing) {
       const { error } = await supabase.from("clients").update(payload).eq("id", editing.id);
@@ -141,11 +146,13 @@ const AdminClients = () => {
 
   const filtered = clients.filter(c => {
     const q = search.toLowerCase();
-    return !q ||
+    const matchesSearch = !q ||
       c.company_name.toLowerCase().includes(q) ||
       c.contact_name?.toLowerCase().includes(q) ||
       c.email?.toLowerCase().includes(q) ||
       c.phone?.includes(q);
+    const matchesStatus = statusFilter === "all" || (c as any).status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
   const formatDate = (iso: string) =>
@@ -161,9 +168,14 @@ const AdminClients = () => {
     return map[s] || { label: s, cls: "bg-muted text-muted-foreground" };
   };
 
+  const clientStatusBadge = (status: string) => {
+    if (status === "client") return <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Client</span>;
+    return <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">Prospect</span>;
+  };
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -173,9 +185,20 @@ const AdminClients = () => {
             className="pl-10"
           />
         </div>
-        <Button size="sm" className="gap-2 ml-4" onClick={openCreate}>
-          <Plus className="h-4 w-4" /> Nouveau client
-        </Button>
+        <div className="flex items-center gap-2">
+          <select
+            className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as any)}
+          >
+            <option value="all">Tous</option>
+            <option value="prospect">Prospects</option>
+            <option value="client">Clients</option>
+          </select>
+          <Button size="sm" className="gap-2" onClick={openCreate}>
+            <Plus className="h-4 w-4" /> Nouveau client
+          </Button>
+        </div>
       </div>
 
       <div className="border border-border rounded-xl overflow-hidden">
@@ -187,6 +210,7 @@ const AdminClients = () => {
               <TableHead>Email</TableHead>
               <TableHead>Téléphone</TableHead>
               <TableHead>Ville</TableHead>
+              <TableHead>Statut</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -226,6 +250,7 @@ const AdminClients = () => {
                     ) : "—"}
                   </TableCell>
                   <TableCell className="text-sm">{c.city || "—"}</TableCell>
+                  <TableCell>{clientStatusBadge((c as any).status || "prospect")}</TableCell>
                   <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
@@ -241,7 +266,7 @@ const AdminClients = () => {
             })}
             {filtered.length === 0 && !loading && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                   {search ? "Aucun client trouvé" : "Aucun client. Créez votre premier contact !"}
                 </TableCell>
               </TableRow>
@@ -291,9 +316,22 @@ const AdminClients = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label>Société *</Label>
-              <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="SNCF" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Société *</Label>
+                <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="SNCF" />
+              </div>
+              <div className="space-y-2">
+                <Label>Statut</Label>
+                <select
+                  className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
+                  value={formStatus}
+                  onChange={e => setFormStatus(e.target.value)}
+                >
+                  <option value="prospect">Prospect</option>
+                  <option value="client">Client</option>
+                </select>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">

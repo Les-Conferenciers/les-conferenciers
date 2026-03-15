@@ -44,7 +44,14 @@ const Speakers = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("speakers").select("*").eq("archived", false).order("name", { ascending: true }).limit(500);
       if (error) throw error;
-      return data as Speaker[];
+      // Sort by last name
+      const speakers = data as Speaker[];
+      speakers.sort((a, b) => {
+        const aLast = a.name.trim().split(/\s+/).pop()?.toLowerCase() || "";
+        const bLast = b.name.trim().split(/\s+/).pop()?.toLowerCase() || "";
+        return aLast.localeCompare(bLast, "fr");
+      });
+      return speakers;
     },
   });
 
