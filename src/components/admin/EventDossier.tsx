@@ -752,6 +752,19 @@ ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
     setEditVisioTime(event?.visio_time || "");
     setEditVisioNotes(event?.visio_notes || "");
     setEditEventNotes(event?.notes || "");
+    setEditEventTitle(event?.event_title || "");
+    setEditContactOnSiteName(event?.contact_on_site_name || "");
+    setEditContactOnSitePhone(event?.contact_on_site_phone || "");
+    setEditContactOnSiteEmail(event?.contact_on_site_email || "");
+    setEditTechNeeds(event?.tech_needs || "");
+    setEditRoomSetup(event?.room_setup || "");
+    setEditArrivalInfo(event?.arrival_info || "");
+    setEditDressCode(event?.dress_code || "");
+    setEditSpecialRequests(event?.special_requests || "");
+    setEditConferenceTitle(event?.conference_title || "");
+    setEditConferenceDuration(event?.conference_duration || "");
+    setEditParkingInfo(event?.parking_info || "");
+    setEditHotelInfo(event?.hotel_info || "");
     setEventEditOpen(true);
   };
 
@@ -766,6 +779,19 @@ ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
       visio_time: editVisioTime || null,
       visio_notes: editVisioNotes || null,
       notes: editEventNotes || null,
+      event_title: editEventTitle || null,
+      contact_on_site_name: editContactOnSiteName || null,
+      contact_on_site_phone: editContactOnSitePhone || null,
+      contact_on_site_email: editContactOnSiteEmail || null,
+      tech_needs: editTechNeeds || null,
+      room_setup: editRoomSetup || null,
+      arrival_info: editArrivalInfo || null,
+      dress_code: editDressCode || null,
+      special_requests: editSpecialRequests || null,
+      conference_title: editConferenceTitle || null,
+      conference_duration: editConferenceDuration || null,
+      parking_info: editParkingInfo || null,
+      hotel_info: editHotelInfo || null,
     } as any).eq("id", event.id);
     if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
     setEventEditOpen(false);
