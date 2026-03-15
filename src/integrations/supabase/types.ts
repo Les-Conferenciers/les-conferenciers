@@ -391,6 +391,30 @@ export type Database = {
           },
         ]
       }
+      proposal_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_preset: boolean
+          name: string
+          speaker_ids: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_preset?: boolean
+          name: string
+          speaker_ids?: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_preset?: boolean
+          name?: string
+          speaker_ids?: string[]
+        }
+        Relationships: []
+      }
       proposals: {
         Row: {
           accepted_at: string | null
