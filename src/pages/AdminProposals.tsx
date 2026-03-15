@@ -267,7 +267,22 @@ Belle journée,`;
   const handleCreate = async () => {
     if (!clientName || !clientEmail || selectedSpeakers.length === 0) { toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier"); return; }
     setSubmitting(true);
-    const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: message || null, recipient_name: recipientName || null }).select().single();
+    // Build contextual message with event details
+    let contextLine = "";
+    if (eventCity || eventDate || audienceSize) {
+      const parts = [];
+      if (eventCity && eventDate) parts.push(`pour votre événement qui aura lieu à ${eventCity} le ${eventDate}`);
+      else if (eventCity) parts.push(`pour votre événement à ${eventCity}`);
+      else if (eventDate) parts.push(`pour votre événement le ${eventDate}`);
+      if (audienceSize) parts.push(`devant un auditoire de ${audienceSize} personnes`);
+      contextLine = parts.join(", ");
+    }
+    if (isEnglish) {
+      contextLine = contextLine ? `${contextLine} (intervention en anglais)` : "(intervention en anglais)";
+    }
+    const finalMessage = contextLine ? `${message}\n\n${contextLine}` : message;
+    
+    const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null }).select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     await supabase.from("proposal_speakers").insert(selectedSpeakers.map((s, i) => ({
       proposal_id: proposal.id, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee, travel_costs: s.travel_costs,
@@ -276,7 +291,7 @@ Belle journée,`;
     })));
     toast.success("Proposition créée !"); setDialogOpen(false); resetForm(); fetchAll(); setSubmitting(false);
   };
-  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setSelectedSpeakers([]); };
+  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setEventCity(""); setEventDate(""); setAudienceSize(""); setIsEnglish(false); setSelectedSpeakers([]); };
 
   const handleSend = async (proposal: Proposal) => {
     setSending(proposal.id);
