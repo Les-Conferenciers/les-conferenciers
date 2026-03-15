@@ -596,6 +596,31 @@ Belle journée,`;
                 <Checkbox checked={isEnglish} onCheckedChange={(v) => setIsEnglish(!!v)} />
                 <span className="text-sm">Intervention en anglais</span>
               </label>
+              {/* Templates */}
+              {templates.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">{TEMPLATE_ICON} Modèles de proposition</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {templates.map(tpl => (
+                      <div key={tpl.id} className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs gap-1"
+                          onClick={() => applyTemplate(tpl)}
+                        >
+                          {tpl.is_preset ? "⭐" : "📌"} {tpl.name} ({tpl.speaker_ids.length})
+                        </Button>
+                        {!tpl.is_preset && (
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => deleteTemplate(tpl.id)}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="space-y-3">
                 <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
                 {selectedSpeakers.map(ps => {
