@@ -643,9 +643,9 @@ Nelly Sabde — Les Conférenciers`);
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
     setLiaisonNotes(event?.visio_notes || "");
-    setLiaisonTechNeeds("Vidéoprojecteur");
-    setLiaisonSalleSetup("Salle installée en largeur avec une allée centrale si possible");
-    setLiaisonArrival("");
+    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur");
+    setLiaisonSalleSetup(event?.room_setup || "Salle installée en largeur avec une allée centrale si possible");
+    setLiaisonArrival(event?.arrival_info || "");
     setLiaisonTab("client");
 
     // Client email template
