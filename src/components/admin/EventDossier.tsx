@@ -1100,12 +1100,27 @@ Nelly Sabde — Les Conférenciers`);
       </div>
 
       {/* Event details summary */}
-      {event && (event.audience_size || event.theme || event.visio_date) && (
-        <div className="bg-muted/20 rounded-lg p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          {event.audience_size && <div><span className="text-muted-foreground">Auditoire :</span> {event.audience_size}</div>}
-          {event.theme && <div><span className="text-muted-foreground">Thématique :</span> {event.theme}</div>}
-          {event.speaker_budget && <div><span className="text-muted-foreground">Budget speaker :</span> {event.speaker_budget.toLocaleString("fr-FR")} €</div>}
-          {event.visio_date && <div><span className="text-muted-foreground">Visio :</span> {formatDate(event.visio_date)} {event.visio_time || ""}</div>}
+      {event && (event.audience_size || event.theme || event.visio_date || event.event_title || event.contact_on_site_name || event.conference_title) && (
+        <div className="bg-muted/20 rounded-lg p-3 space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            {event.event_title && <div><span className="text-muted-foreground">Événement :</span> {event.event_title}</div>}
+            {event.conference_title && <div><span className="text-muted-foreground">Conférence :</span> {event.conference_title}</div>}
+            {event.conference_duration && <div><span className="text-muted-foreground">Durée :</span> {event.conference_duration}</div>}
+            {event.audience_size && <div><span className="text-muted-foreground">Auditoire :</span> {event.audience_size}</div>}
+            {event.theme && <div><span className="text-muted-foreground">Thématique :</span> {event.theme}</div>}
+            {event.speaker_budget && <div><span className="text-muted-foreground">Budget speaker :</span> {event.speaker_budget.toLocaleString("fr-FR")} €</div>}
+            {event.visio_date && <div><span className="text-muted-foreground">Visio :</span> {formatDate(event.visio_date)} {event.visio_time || ""}</div>}
+            {event.dress_code && <div><span className="text-muted-foreground">Dress code :</span> {event.dress_code}</div>}
+          </div>
+          {(event.contact_on_site_name || event.tech_needs || event.arrival_info) && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs border-t border-border/50 pt-2">
+              {event.contact_on_site_name && <div><span className="text-muted-foreground">Contact sur place :</span> {event.contact_on_site_name} {event.contact_on_site_phone ? `(${event.contact_on_site_phone})` : ""}</div>}
+              {event.tech_needs && <div><span className="text-muted-foreground">Technique :</span> {event.tech_needs}</div>}
+              {event.arrival_info && <div><span className="text-muted-foreground">Arrivée :</span> {event.arrival_info}</div>}
+              {event.parking_info && <div><span className="text-muted-foreground">Parking :</span> {event.parking_info}</div>}
+              {event.hotel_info && <div><span className="text-muted-foreground">Hôtel :</span> {event.hotel_info}</div>}
+            </div>
+          )}
         </div>
       )}
 
