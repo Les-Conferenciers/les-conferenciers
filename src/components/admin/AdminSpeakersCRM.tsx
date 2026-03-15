@@ -254,12 +254,12 @@ const AdminSpeakersCRM = () => {
       }
       return 0;
     });
-  }, [speakers, search, themeFilter, cityFilter, feeFilter, feeMinFilter, feeMaxFilter, genderFilter, profileFilter, showArchived, sortBy, sortDir]);
+  }, [speakers, search, themeFilter, cityFilter, feeFilter, feeMinFilter, feeMaxFilter, genderFilter, profileFilter, showArchived, visibilityFilter, sortBy, sortDir]);
 
   const clearFilters = () => {
-    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all"); setFeeMinFilter(""); setFeeMaxFilter(""); setGenderFilter("all"); setProfileFilter("");
+    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all"); setFeeMinFilter(""); setFeeMaxFilter(""); setGenderFilter("all"); setProfileFilter(""); setVisibilityFilter("all");
   };
-  const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all" || feeMinFilter || feeMaxFilter || genderFilter !== "all" || profileFilter;
+  const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all" || feeMinFilter || feeMaxFilter || genderFilter !== "all" || profileFilter || visibilityFilter !== "all";
 
   // Edit handlers
   const openEdit = (speaker: Speaker) => {
