@@ -240,6 +240,19 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editVisioTime, setEditVisioTime] = useState("");
   const [editVisioNotes, setEditVisioNotes] = useState("");
   const [editEventNotes, setEditEventNotes] = useState("");
+  const [editEventTitle, setEditEventTitle] = useState("");
+  const [editContactOnSiteName, setEditContactOnSiteName] = useState("");
+  const [editContactOnSitePhone, setEditContactOnSitePhone] = useState("");
+  const [editContactOnSiteEmail, setEditContactOnSiteEmail] = useState("");
+  const [editTechNeeds, setEditTechNeeds] = useState("");
+  const [editRoomSetup, setEditRoomSetup] = useState("");
+  const [editArrivalInfo, setEditArrivalInfo] = useState("");
+  const [editDressCode, setEditDressCode] = useState("");
+  const [editSpecialRequests, setEditSpecialRequests] = useState("");
+  const [editConferenceTitle, setEditConferenceTitle] = useState("");
+  const [editConferenceDuration, setEditConferenceDuration] = useState("");
+  const [editParkingInfo, setEditParkingInfo] = useState("");
+  const [editHotelInfo, setEditHotelInfo] = useState("");
 
   useEffect(() => {
     fetchData();
