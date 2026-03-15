@@ -175,6 +175,8 @@ const AdminSpeakersCRM = () => {
       setEditingConfId(null);
       setNewReview({ author_name: "", author_title: "", rating: 5, comment: "" });
       setNewConference({ title: "", description: "" });
+      setShowEnrichSingle(false);
+      setEnrichUrl("");
     }
   }, [editSpeaker?.id]);
 
