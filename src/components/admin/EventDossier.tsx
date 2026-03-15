@@ -351,6 +351,11 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEditingContract(false);
     setEventDate(""); setEventLocation(""); setEventTime(""); setEventFormat("Conférence"); setEventDescription("");
     setContractLines(buildInitialLines()); setDiscountPercent(0);
+    // Pre-select client if proposal already has one
+    setContractClientId(proposal.client_id || "");
+    setShowCreateClientInContract(false);
+    setNewContractClientCompany(""); setNewContractClientContact(""); setNewContractClientEmail("");
+    setNewContractClientPhone(""); setNewContractClientSiret(""); setNewContractClientAddress(""); setNewContractClientCity("");
     setContractDialogOpen(true);
   };
 
