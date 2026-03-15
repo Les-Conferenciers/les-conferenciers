@@ -586,6 +586,18 @@ ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
     fetchData();
   };
 
+  // ─── Visio quick save ───
+  const handleSaveVisioQuick = async () => {
+    if (!event) return;
+    const dateStr = visioQuickDate ? visioQuickDate.toISOString().split("T")[0] : null;
+    await supabase.from("events").update({
+      visio_date: dateStr,
+      visio_time: visioQuickTime || null,
+    } as any).eq("id", event.id);
+    toast.success("Visio enregistrée");
+    fetchData();
+  };
+
   // ─── Invoices ───
   const handleCreateInvoice = async () => {
     setCreatingInvoice(true);
