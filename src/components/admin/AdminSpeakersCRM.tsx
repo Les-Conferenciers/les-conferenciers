@@ -103,6 +103,11 @@ const AdminSpeakersCRM = () => {
   const [enrichProgress, setEnrichProgress] = useState({ processed: 0, total: 0, current: "" });
   const [showEnrichLog, setShowEnrichLog] = useState(false);
   const [enrichLog, setEnrichLog] = useState<string[]>([]);
+  
+  // Single speaker enrichment
+  const [enrichingSingle, setEnrichingSingle] = useState(false);
+  const [enrichUrl, setEnrichUrl] = useState("");
+  const [showEnrichSingle, setShowEnrichSingle] = useState(false);
 
   // Edit dialog state
   const [editSpeaker, setEditSpeaker] = useState<Speaker | null>(null);
