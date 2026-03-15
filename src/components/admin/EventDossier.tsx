@@ -840,16 +840,26 @@ Nelly Sabde — Les Conférenciers`);
   if (loading) return <div className="text-muted-foreground text-xs py-2">Chargement…</div>;
 
   // ─── Tracking Dashboard ───
+  // Each step can be toggled manually via clicking
   const steps = [
-    { label: "Contrat client", done: contract?.status === "sent" || contract?.status === "signed", date: contract?.created_at },
-    { label: "Info conférencier", done: !!event?.info_sent_speaker_at, date: event?.info_sent_speaker_at },
-    { label: "Contrat signé", done: contract?.status === "signed", date: contract?.signed_at },
-    { label: "Facture acompte", done: invoices.some(i => i.invoice_type === "acompte" && (i.status === "sent" || i.status === "paid")), date: invoices.find(i => i.invoice_type === "acompte")?.sent_at },
-    { label: "Visio prépa", done: !!event?.visio_date, date: event?.visio_date },
-    { label: "Feuille liaison", done: !!event?.liaison_sheet_sent_at, date: event?.liaison_sheet_sent_at },
-    { label: "Facture finale", done: invoices.some(i => (i.invoice_type === "solde" || i.invoice_type === "total") && (i.status === "sent" || i.status === "paid")), date: invoices.find(i => i.invoice_type === "solde" || i.invoice_type === "total")?.sent_at },
-    { label: "Conf. payé", done: !!event?.speaker_paid_at, date: event?.speaker_paid_at },
+    { label: "Contrat client", done: contract?.status === "sent" || contract?.status === "signed", date: contract?.created_at, toggleKey: null as string | null },
+    { label: "Info conférencier", done: !!event?.info_sent_speaker_at, date: event?.info_sent_speaker_at, toggleKey: "info_sent_speaker_at" },
+    { label: "Contrat signé", done: contract?.status === "signed", date: contract?.signed_at, toggleKey: null },
+    { label: "Facture acompte", done: invoices.some(i => i.invoice_type === "acompte" && (i.status === "sent" || i.status === "paid")), date: invoices.find(i => i.invoice_type === "acompte")?.sent_at, toggleKey: null },
+    { label: "Visio prépa", done: !!event?.visio_date, date: event?.visio_date, toggleKey: null },
+    { label: "Feuille liaison", done: !!event?.liaison_sheet_sent_at, date: event?.liaison_sheet_sent_at, toggleKey: "liaison_sheet_sent_at" },
+    { label: "Facture finale", done: invoices.some(i => (i.invoice_type === "solde" || i.invoice_type === "total") && (i.status === "sent" || i.status === "paid")), date: invoices.find(i => i.invoice_type === "solde" || i.invoice_type === "total")?.sent_at, toggleKey: null },
+    { label: "Conf. payé", done: !!event?.speaker_paid_at, date: event?.speaker_paid_at, toggleKey: "speaker_paid_at" },
   ];
+
+  const handleToggleStep = async (step: typeof steps[0]) => {
+    if (!event || !step.toggleKey) return;
+    const newValue = step.done ? null : new Date().toISOString();
+    await supabase.from("events").update({ [step.toggleKey]: newValue } as any).eq("id", event.id);
+    toast.success(step.done ? `"${step.label}" décoché` : `"${step.label}" coché`);
+    fetchData();
+    onUpdate();
+  };
 
   return (
     <div className="space-y-6 mt-4 border-t border-border pt-4">
