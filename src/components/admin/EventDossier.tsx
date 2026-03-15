@@ -5,17 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil,
-  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User,
+  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // ── Types ──
 
@@ -144,6 +149,16 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonTechNeeds, setLiaisonTechNeeds] = useState("");
   const [liaisonArrival, setLiaisonArrival] = useState("");
   const [sendingLiaison, setSendingLiaison] = useState(false);
+  const [liaisonClientSubject, setLiaisonClientSubject] = useState("");
+  const [liaisonClientBody, setLiaisonClientBody] = useState("");
+  const [liaisonSpeakerSubject, setLiaisonSpeakerSubject] = useState("");
+  const [liaisonSpeakerBody, setLiaisonSpeakerBody] = useState("");
+  const [liaisonCcEmails, setLiaisonCcEmails] = useState("");
+  const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
+
+  // Visio quick picker
+  const [visioQuickDate, setVisioQuickDate] = useState<Date | undefined>();
+  const [visioQuickTime, setVisioQuickTime] = useState("");
 
   // Invoice form
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
@@ -199,6 +214,13 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       supabase.from("events").insert({ proposal_id: proposal.id } as any).then(() => fetchData());
     }
   }, [loading, event]);
+
+  // Sync visio quick picker from event data
+  useEffect(() => {
+    if (event?.visio_date) setVisioQuickDate(new Date(event.visio_date + "T12:00:00"));
+    else setVisioQuickDate(undefined);
+    setVisioQuickTime(event?.visio_time || "");
+  }, [event?.visio_date, event?.visio_time]);
 
   // ─── Compute totals ───
   const computeTotals = (lines: ContractLine[], discount: number) => {
@@ -429,9 +451,45 @@ Nelly Sabde — Les Conférenciers`);
 
   // ─── Liaison Sheet ───
   const openLiaisonDialog = () => {
+    const speaker = proposal.proposal_speakers[0]?.speakers;
+    const speakerName = speaker?.name || "";
+    const speakerFirstName = speakerName.split(" ")[0];
+    const isFormal = speaker?.formal_address !== false;
+    const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
+
     setLiaisonNotes(event?.visio_notes || "");
     setLiaisonTechNeeds("Vidéoprojecteur");
     setLiaisonArrival("");
+    setLiaisonTab("client");
+
+    // Client email template
+    setLiaisonClientSubject(`Feuille de liaison — ${speakerName} — ${proposal.client_name}`);
+    setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
+
+Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
+
+Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}${(speaker as any)?.phone ? " laissant apparaître son numéro de téléphone portable" : ""}.
+
+Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
+
+Excellente fin de journée à vous !
+
+Nelly Sabde — Les Conférenciers`);
+
+    // Speaker email template
+    setLiaisonSpeakerSubject(`Feuille de liaison — ${proposal.client_name}`);
+    setLiaisonSpeakerBody(`${speakerFirstName},
+
+${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
+
+${isFormal ? "À très bientôt !" : "A très vite !"}
+
+Nelly Sabde — Les Conférenciers`);
+
+    // Pre-fill CC with speaker email if sending to client first
+    const speakerEmail = (speaker as any)?.email || "";
+    setLiaisonCcEmails(speakerEmail ? speakerEmail : "");
+
     setLiaisonDialogOpen(true);
   };
 
@@ -439,15 +497,10 @@ Nelly Sabde — Les Conférenciers`);
     setSendingLiaison(true);
     const speaker = proposal.proposal_speakers[0]?.speakers;
     const speakerName = speaker?.name || "";
-    const isFormal = speaker?.formal_address !== false;
     const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
-    
-    // Email to client
-    const clientBody = `Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
-Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
-
-Vous trouverez ci-dessous la feuille de liaison pour l'intervention de ${speakerName}${(speaker as any)?.phone ? ` laissant apparaître son numéro de téléphone portable` : ""}.
+    // Build liaison sheet content block
+    const liaisonContent = `
 
 📋 FEUILLE DE LIAISON
 
@@ -461,54 +514,34 @@ Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
 Besoins techniques :
 ${liaisonTechNeeds}
 
-Contact client : ${proposal.recipient_name || ""} — ${proposal.client_email}
+Contact client : ${proposal.recipient_name || proposal.client_name} — ${proposal.client_email}
 Contact conférencier : ${speakerName}${(speaker as any)?.phone ? ` — ${(speaker as any).phone}` : ""}
+${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
 
-${liaisonNotes ? `Commentaires :\n${liaisonNotes}` : ""}
-
-Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
-
-Excellente fin de journée à vous !
-
-Nelly Sabde — Les Conférenciers`;
-
-    // Email to speaker
-    const firstName = speakerName.split(" ")[0];
-    const speakerBody = `${isFormal ? `Bonjour ${firstName},` : `${firstName},`}
-
-${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
-
-📋 FEUILLE DE LIAISON
-
-Date : ${dateStr}
-Lieu : ${contract?.event_location || ""}
-Horaires : ${contract?.event_time || ""}
-Auditoire : ${event?.audience_size || ""}
-Thématique : ${event?.theme || ""}
-Arrivée sur place : ${liaisonArrival || "à confirmer"}
-
-Besoins techniques :
-${liaisonTechNeeds}
-
-Contact client : ${proposal.recipient_name || proposal.client_name}
-
-${liaisonNotes ? `Commentaires :\n${liaisonNotes}` : ""}
-
-${isFormal ? "À très bientôt !" : "A très vite !"}
-
-Nelly Sabde — Les Conférenciers`;
+    const ccList = liaisonCcEmails.split(",").map(e => e.trim()).filter(Boolean);
 
     try {
       // Send to client
       await supabase.functions.invoke("send-contact-email", {
-        body: { to: proposal.client_email, subject: `Feuille de liaison — ${speakerName} — ${proposal.client_name}`, body: clientBody, from_name: "Les Conférenciers" },
+        body: {
+          to: proposal.client_email,
+          subject: liaisonClientSubject,
+          body: liaisonClientBody + liaisonContent,
+          from_name: "Les Conférenciers",
+          cc: ccList.length > 0 ? ccList : undefined,
+        },
       });
 
       // Send to speaker if has email
       const speakerEmail = (speaker as any)?.email;
       if (speakerEmail) {
         await supabase.functions.invoke("send-contact-email", {
-          body: { to: speakerEmail, subject: `Feuille de liaison — ${proposal.client_name}`, body: speakerBody, from_name: "Les Conférenciers" },
+          body: {
+            to: speakerEmail,
+            subject: liaisonSpeakerSubject,
+            body: liaisonSpeakerBody + liaisonContent,
+            from_name: "Les Conférenciers",
+          },
         });
       }
 
@@ -550,6 +583,18 @@ Nelly Sabde — Les Conférenciers`;
     } as any).eq("id", event.id);
     if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
     setEventEditOpen(false);
+    fetchData();
+  };
+
+  // ─── Visio quick save ───
+  const handleSaveVisioQuick = async () => {
+    if (!event) return;
+    const dateStr = visioQuickDate ? visioQuickDate.toISOString().split("T")[0] : null;
+    await supabase.from("events").update({
+      visio_date: dateStr,
+      visio_time: visioQuickTime || null,
+    } as any).eq("id", event.id);
+    toast.success("Visio enregistrée");
     fetchData();
   };
 
@@ -714,21 +759,59 @@ Nelly Sabde — Les Conférenciers`);
       </div>
 
       <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-        {steps.map((step, i) => (
-          <div key={i} className={`text-center p-2 rounded-lg border text-[10px] leading-tight ${
+        {steps.map((step, i) => {
+          const stepClasses = `text-center p-2 rounded-lg border text-[10px] leading-tight ${
             step.done
               ? "bg-green-50 border-green-200 text-green-700"
               : "bg-muted/30 border-border text-muted-foreground"
-          }`}>
-            <div className="text-base mb-0.5">{step.done ? "✓" : "○"}</div>
-            <div className="font-medium">{step.label}</div>
-            {step.done && step.date && (
-              <div className="text-[8px] mt-0.5 opacity-70">
-                {new Date(step.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-              </div>
-            )}
-          </div>
-        ))}
+          }`;
+          const stepContent = (
+            <>
+              <div className="text-base mb-0.5">{step.done ? "✓" : "○"}</div>
+              <div className="font-medium">{step.label}</div>
+              {step.done && step.date && (
+                <div className="text-[8px] mt-0.5 opacity-70">
+                  {new Date(step.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
+                </div>
+              )}
+            </>
+          );
+
+          // Visio step gets a Calendar popover
+          if (i === 4) {
+            return (
+              <Popover key={i}>
+                <PopoverTrigger asChild>
+                  <button className={cn(stepClasses, "cursor-pointer hover:border-primary/50 transition-colors")}>
+                    {stepContent}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4 space-y-3" align="center">
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5" /> Visio préparatoire
+                  </Label>
+                  <Calendar
+                    mode="single"
+                    selected={visioQuickDate}
+                    onSelect={setVisioQuickDate}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Heure</Label>
+                    <Input value={visioQuickTime} onChange={e => setVisioQuickTime(e.target.value)} placeholder="10h00" className="h-8 text-sm" />
+                  </div>
+                  <Button size="sm" className="w-full" onClick={handleSaveVisioQuick}>Enregistrer</Button>
+                </PopoverContent>
+              </Popover>
+            );
+          }
+
+          return (
+            <div key={i} className={stepClasses}>
+              {stepContent}
+            </div>
+          );
+        })}
       </div>
 
       {/* Event details summary */}
@@ -1022,13 +1105,69 @@ Nelly Sabde — Les Conférenciers`);
 
       {/* Liaison sheet dialog */}
       <Dialog open={liaisonDialogOpen} onOpenChange={setLiaisonDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Feuille de liaison — {proposal.client_name}</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="space-y-2"><Label className="text-xs">Arrivée du conférencier sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" /></div>
-            <div className="space-y-2"><Label className="text-xs">Besoins techniques</Label><Textarea value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} rows={3} placeholder="Vidéoprojecteur, micro..." /></div>
-            <div className="space-y-2"><Label className="text-xs">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={3} /></div>
-            <p className="text-[10px] text-muted-foreground">📧 Sera envoyée au client ({proposal.client_email}) et au conférencier</p>
+          <div className="space-y-5 mt-2">
+            {/* Liaison details */}
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+              <Label className="text-xs font-semibold">📋 Détails de la liaison</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Arrivée sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Besoins techniques</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" /></div>
+            </div>
+
+            {/* Email tabs */}
+            <div className="flex gap-2">
+              <button onClick={() => setLiaisonTab("client")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${liaisonTab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                📧 Email Client
+              </button>
+              <button onClick={() => setLiaisonTab("speaker")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${liaisonTab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                🎤 Email Conférencier
+              </button>
+            </div>
+
+            {/* Variables hint */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs space-y-1">
+              <span className="font-semibold text-amber-800">Variables utilisées :</span>
+              <div className="flex flex-wrap gap-2 mt-1">
+                <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-mono text-[11px]">
+                  {liaisonTab === "client"
+                    ? (proposal.recipient_name?.split(" ")[0] || "Prénom client")
+                    : (proposal.proposal_speakers[0]?.speakers?.name?.split(" ")[0] || "Prénom conf.")}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-mono text-[11px]">
+                  {proposal.proposal_speakers[0]?.speakers?.name || "Nom complet conférencier"}
+                </span>
+              </div>
+            </div>
+
+            {liaisonTab === "client" ? (
+              <div className="space-y-3">
+                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
+              </div>
+            )}
+
+            {/* CC recipients */}
+            <div className="space-y-1">
+              <Label className="text-xs">Destinataires en copie (CC)</Label>
+              <Input value={liaisonCcEmails} onChange={e => setLiaisonCcEmails(e.target.value)} placeholder="email1@example.com, email2@example.com" className="text-sm" />
+              <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+            </div>
+
+            <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
+              <p>📧 <strong>Client :</strong> {proposal.client_email}</p>
+              <p>🎤 <strong>Conférencier :</strong> {(proposal.proposal_speakers[0]?.speakers as any)?.email || "Pas d'email renseigné"}</p>
+              {liaisonCcEmails && <p>📋 <strong>CC :</strong> {liaisonCcEmails}</p>}
+            </div>
+
             <Button className="w-full" onClick={handleSendLiaisonSheet} disabled={sendingLiaison}>
               <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer la feuille de liaison"}
             </Button>
