@@ -622,13 +622,15 @@ Thématique : ${event?.theme || ""}
 Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
 
 Besoins techniques :
-${liaisonTechNeeds}
+${liaisonTechNeeds ? `- ${liaisonTechNeeds}` : ""}
+${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 
 Contact client : ${proposal.recipient_name || proposal.client_name} — ${proposal.client_email}
 Contact conférencier : ${speakerName}${speaker?.phone ? ` — ${speaker.phone}` : ""}
 ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
 
-    const ccList = liaisonCcEmails.split(",").map(e => e.trim()).filter(Boolean);
+    const clientCcList = liaisonClientCc.split(",").map(e => e.trim()).filter(Boolean);
+    const speakerCcList = liaisonSpeakerCc.split(",").map(e => e.trim()).filter(Boolean);
 
     try {
       // Send to client
@@ -638,7 +640,7 @@ ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
           subject: liaisonClientSubject,
           body: liaisonClientBody + liaisonContent,
           from_name: "Les Conférenciers",
-          cc: ccList.length > 0 ? ccList : undefined,
+          cc: clientCcList.length > 0 ? clientCcList : undefined,
         },
       });
 
@@ -651,6 +653,7 @@ ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
             subject: liaisonSpeakerSubject,
             body: liaisonSpeakerBody + liaisonContent,
             from_name: "Les Conférenciers",
+            cc: speakerCcList.length > 0 ? speakerCcList : undefined,
           },
         });
       }
