@@ -674,6 +674,20 @@ Belle journée,`;
                   </div>
                 )}
               </div>
+              {/* Save as template */}
+              {selectedSpeakers.length > 0 && (
+                <div className="flex items-center gap-2 border border-dashed border-border rounded-lg p-3">
+                  <Input
+                    placeholder="Nom du modèle…"
+                    value={saveTemplateName}
+                    onChange={e => setSaveTemplateName(e.target.value)}
+                    className="flex-1 h-8 text-sm"
+                  />
+                  <Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap" onClick={saveAsTemplate}>
+                    {TEMPLATE_ICON} Sauvegarder comme modèle
+                  </Button>
+                </div>
+              )}
               <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? "Création…" : "Créer la proposition"}</Button>
             </div>
           </DialogContent>
