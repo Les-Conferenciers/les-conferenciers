@@ -836,13 +836,11 @@ const AdminSpeakersCRM = () => {
         )}
 
         <div className="flex flex-wrap gap-2 items-center">
-          <button
-            onClick={() => setShowArchived(!showArchived)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${showArchived ? "bg-orange-100 text-orange-800 border-orange-200" : "bg-background text-foreground border-input"}`}
-          >
-            <Archive className="h-3.5 w-3.5" />
-            {showArchived ? "Archivés" : "Actifs"}
-          </button>
+          <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={visibilityFilter} onChange={e => setVisibilityFilter(e.target.value as any)}>
+            <option value="all">Visibilité : tous</option>
+            <option value="online">🟢 En ligne</option>
+            <option value="offline">🔴 Hors ligne (CRM uniquement)</option>
+          </select>
           <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={themeFilter} onChange={e => setThemeFilter(e.target.value)}>
             <option value="">Toutes les thématiques</option>
             {allThemes.map(t => <option key={t} value={t}>{t}</option>)}
