@@ -41,6 +41,7 @@ type Proposal = {
   client_email: string;
   message: string | null;
   recipient_name: string | null;
+  client_id: string | null;
   status: string;
   sent_at: string | null;
   accepted_at: string | null;

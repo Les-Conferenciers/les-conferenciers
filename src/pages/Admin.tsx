@@ -161,6 +161,7 @@ type Proposal = {
   client_email: string;
   message: string | null;
   recipient_name: string | null;
+  client_id: string | null;
   email_subject: string | null;
   email_body: string | null;
   status: string;
