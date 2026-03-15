@@ -1105,13 +1105,69 @@ Nelly Sabde — Les Conférenciers`);
 
       {/* Liaison sheet dialog */}
       <Dialog open={liaisonDialogOpen} onOpenChange={setLiaisonDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Feuille de liaison — {proposal.client_name}</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="space-y-2"><Label className="text-xs">Arrivée du conférencier sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" /></div>
-            <div className="space-y-2"><Label className="text-xs">Besoins techniques</Label><Textarea value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} rows={3} placeholder="Vidéoprojecteur, micro..." /></div>
-            <div className="space-y-2"><Label className="text-xs">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={3} /></div>
-            <p className="text-[10px] text-muted-foreground">📧 Sera envoyée au client ({proposal.client_email}) et au conférencier</p>
+          <div className="space-y-5 mt-2">
+            {/* Liaison details */}
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+              <Label className="text-xs font-semibold">📋 Détails de la liaison</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Arrivée sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Besoins techniques</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" /></div>
+            </div>
+
+            {/* Email tabs */}
+            <div className="flex gap-2">
+              <button onClick={() => setLiaisonTab("client")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${liaisonTab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                📧 Email Client
+              </button>
+              <button onClick={() => setLiaisonTab("speaker")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${liaisonTab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                🎤 Email Conférencier
+              </button>
+            </div>
+
+            {/* Variables hint */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs space-y-1">
+              <span className="font-semibold text-amber-800">Variables utilisées :</span>
+              <div className="flex flex-wrap gap-2 mt-1">
+                <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-mono text-[11px]">
+                  {liaisonTab === "client"
+                    ? (proposal.recipient_name?.split(" ")[0] || "Prénom client")
+                    : (proposal.proposal_speakers[0]?.speakers?.name?.split(" ")[0] || "Prénom conf.")}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-mono text-[11px]">
+                  {proposal.proposal_speakers[0]?.speakers?.name || "Nom complet conférencier"}
+                </span>
+              </div>
+            </div>
+
+            {liaisonTab === "client" ? (
+              <div className="space-y-3">
+                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
+              </div>
+            )}
+
+            {/* CC recipients */}
+            <div className="space-y-1">
+              <Label className="text-xs">Destinataires en copie (CC)</Label>
+              <Input value={liaisonCcEmails} onChange={e => setLiaisonCcEmails(e.target.value)} placeholder="email1@example.com, email2@example.com" className="text-sm" />
+              <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+            </div>
+
+            <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
+              <p>📧 <strong>Client :</strong> {proposal.client_email}</p>
+              <p>🎤 <strong>Conférencier :</strong> {(proposal.proposal_speakers[0]?.speakers as any)?.email || "Pas d'email renseigné"}</p>
+              {liaisonCcEmails && <p>📋 <strong>CC :</strong> {liaisonCcEmails}</p>}
+            </div>
+
             <Button className="w-full" onClick={handleSendLiaisonSheet} disabled={sendingLiaison}>
               <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer la feuille de liaison"}
             </Button>
