@@ -1384,8 +1384,8 @@ const AdminSpeakersCRM = () => {
               {/* Actions */}
               <div className="flex justify-between items-center gap-2 pt-2 border-t border-border">
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="gap-1.5 text-orange-600" onClick={() => handleArchive(editSpeaker)}>
-                    {editSpeaker.archived ? <><ArchiveRestore className="h-3.5 w-3.5" /> Restaurer</> : <><Archive className="h-3.5 w-3.5" /> Archiver</>}
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleArchive(editSpeaker)}>
+                    {editSpeaker.archived ? <><Eye className="h-3.5 w-3.5" /> Mettre en ligne</> : <><EyeOff className="h-3.5 w-3.5" /> Mettre hors ligne</>}
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
