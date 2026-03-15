@@ -129,6 +129,7 @@ export type Database = {
           liaison_sheet_sent_at: string | null
           notes: string | null
           proposal_id: string
+          selected_speaker_id: string | null
           speaker_budget: number | null
           speaker_paid_at: string | null
           theme: string | null
@@ -147,6 +148,7 @@ export type Database = {
           liaison_sheet_sent_at?: string | null
           notes?: string | null
           proposal_id: string
+          selected_speaker_id?: string | null
           speaker_budget?: number | null
           speaker_paid_at?: string | null
           theme?: string | null
@@ -165,6 +167,7 @@ export type Database = {
           liaison_sheet_sent_at?: string | null
           notes?: string | null
           proposal_id?: string
+          selected_speaker_id?: string | null
           speaker_budget?: number | null
           speaker_paid_at?: string | null
           theme?: string | null
@@ -179,6 +182,13 @@ export type Database = {
             columns: ["proposal_id"]
             isOneToOne: true
             referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_selected_speaker_id_fkey"
+            columns: ["selected_speaker_id"]
+            isOneToOne: false
+            referencedRelation: "speakers"
             referencedColumns: ["id"]
           },
         ]

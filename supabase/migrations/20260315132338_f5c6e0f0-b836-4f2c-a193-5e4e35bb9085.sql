@@ -1,0 +1,1 @@
+ALTER TABLE public.events ADD COLUMN selected_speaker_id uuid REFERENCES public.speakers(id) ON DELETE SET NULL;
