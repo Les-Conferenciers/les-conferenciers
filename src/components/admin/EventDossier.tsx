@@ -929,11 +929,12 @@ Nelly Sabde — Les Conférenciers`);
 
       <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
         {steps.map((step, i) => {
+          const isClickable = !!step.toggleKey;
           const stepClasses = `text-center p-2 rounded-lg border text-[10px] leading-tight ${
             step.done
               ? "bg-green-50 border-green-200 text-green-700"
               : "bg-muted/30 border-border text-muted-foreground"
-          }`;
+          } ${isClickable ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}`;
           const stepContent = (
             <>
               <div className="text-base mb-0.5">{step.done ? "✓" : "○"}</div>
@@ -972,6 +973,15 @@ Nelly Sabde — Les Conférenciers`);
                   <Button size="sm" className="w-full" onClick={handleSaveVisioQuick}>Enregistrer</Button>
                 </PopoverContent>
               </Popover>
+            );
+          }
+
+          // Toggleable steps
+          if (isClickable) {
+            return (
+              <button key={i} className={stepClasses} onClick={() => handleToggleStep(step)} title={`Cliquer pour ${step.done ? "décocher" : "cocher"}`}>
+                {stepContent}
+              </button>
             );
           }
 
