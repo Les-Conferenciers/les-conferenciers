@@ -151,13 +151,14 @@ Belle journée,`;
 
   const fetchAll = async () => {
     setLoading(true);
-    const [propRes, spkRes, confRes, evtRes, ctrRes, invRes] = await Promise.all([
+    const [propRes, spkRes, confRes, evtRes, ctrRes, invRes, tplRes] = await Promise.all([
       supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, speakers(name, image_url, formal_address, phone, email))").order("created_at", { ascending: false }),
       supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, city").order("name"),
       supabase.from("speaker_conferences").select("id, title, speaker_id").order("display_order"),
       supabase.from("events").select("id, proposal_id, info_sent_speaker_at, contract_sent_speaker_at, visio_date, liaison_sheet_sent_at, speaker_paid_at, selected_speaker_id"),
       supabase.from("contracts").select("id, proposal_id, status, signed_at"),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, sent_at, paid_at"),
+      supabase.from("proposal_templates").select("*").order("is_preset", { ascending: false }).order("name"),
     ]);
     setProposals((propRes.data as any) || []);
     setSpeakers(spkRes.data || []);
@@ -165,6 +166,7 @@ Belle journée,`;
     setEvents((evtRes.data as any) || []);
     setContracts((ctrRes.data as any) || []);
     setInvoices((invRes.data as any) || []);
+    setTemplates((tplRes.data as any) || []);
     setLoading(false);
   };
 
