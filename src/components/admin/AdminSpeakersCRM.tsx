@@ -80,6 +80,7 @@ const AdminSpeakersCRM = () => {
   const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female">("all");
   const [profileFilter, setProfileFilter] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [visibilityFilter, setVisibilityFilter] = useState<"all" | "online" | "offline">("all");
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "base_fee">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -102,6 +103,11 @@ const AdminSpeakersCRM = () => {
   const [enrichProgress, setEnrichProgress] = useState({ processed: 0, total: 0, current: "" });
   const [showEnrichLog, setShowEnrichLog] = useState(false);
   const [enrichLog, setEnrichLog] = useState<string[]>([]);
+  
+  // Single speaker enrichment
+  const [enrichingSingle, setEnrichingSingle] = useState(false);
+  const [enrichUrl, setEnrichUrl] = useState("");
+  const [showEnrichSingle, setShowEnrichSingle] = useState(false);
 
   // Edit dialog state
   const [editSpeaker, setEditSpeaker] = useState<Speaker | null>(null);
@@ -169,6 +175,8 @@ const AdminSpeakersCRM = () => {
       setEditingConfId(null);
       setNewReview({ author_name: "", author_title: "", rating: 5, comment: "" });
       setNewConference({ title: "", description: "" });
+      setShowEnrichSingle(false);
+      setEnrichUrl("");
     }
   }, [editSpeaker?.id]);
 
@@ -193,8 +201,14 @@ const AdminSpeakersCRM = () => {
 
   const filteredSpeakers = useMemo(() => {
     const filtered = speakers.filter(s => {
-      if (!showArchived && s.archived) return false;
-      if (showArchived && !s.archived) return false;
+      // Visibility filter
+      if (visibilityFilter === "online" && s.archived) return false;
+      if (visibilityFilter === "offline" && !s.archived) return false;
+      // Legacy archived toggle (when visibilityFilter is "all")
+      if (visibilityFilter === "all") {
+        if (!showArchived && s.archived) return false;
+        if (showArchived && !s.archived) return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         const nameMatch = s.name.toLowerCase().includes(q);
@@ -208,7 +222,6 @@ const AdminSpeakersCRM = () => {
       if (cityFilter && s.city !== cityFilter) return false;
       if (feeFilter === "set" && !s.base_fee) return false;
       if (feeFilter === "unset" && s.base_fee) return false;
-      // Fee range filter
       if (feeMinFilter) {
         const min = Number(feeMinFilter);
         if (!isNaN(min) && (!s.base_fee || s.base_fee < min)) return false;
@@ -243,12 +256,12 @@ const AdminSpeakersCRM = () => {
       }
       return 0;
     });
-  }, [speakers, search, themeFilter, cityFilter, feeFilter, feeMinFilter, feeMaxFilter, genderFilter, profileFilter, showArchived, sortBy, sortDir]);
+  }, [speakers, search, themeFilter, cityFilter, feeFilter, feeMinFilter, feeMaxFilter, genderFilter, profileFilter, showArchived, visibilityFilter, sortBy, sortDir]);
 
   const clearFilters = () => {
-    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all"); setFeeMinFilter(""); setFeeMaxFilter(""); setGenderFilter("all"); setProfileFilter("");
+    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all"); setFeeMinFilter(""); setFeeMaxFilter(""); setGenderFilter("all"); setProfileFilter(""); setVisibilityFilter("all");
   };
-  const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all" || feeMinFilter || feeMaxFilter || genderFilter !== "all" || profileFilter;
+  const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all" || feeMinFilter || feeMaxFilter || genderFilter !== "all" || profileFilter || visibilityFilter !== "all";
 
   // Edit handlers
   const openEdit = (speaker: Speaker) => {
@@ -332,7 +345,7 @@ const AdminSpeakersCRM = () => {
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     
-    const { error } = await supabase.from("speakers").insert({
+    const { data: inserted, error } = await supabase.from("speakers").insert({
       name: manualForm.name.trim(),
       slug,
       role: manualForm.specialty || null,
@@ -347,13 +360,17 @@ const AdminSpeakersCRM = () => {
       languages: manualForm.languages ? manualForm.languages.split(",").map(l => l.trim()).filter(Boolean) : [],
       biography: manualForm.biography || null,
       archived: manualForm.archived,
-    } as any);
+    } as any).select().single();
     setCreatingManual(false);
     if (error) { toast.error(`Erreur : ${error.message}`); return; }
-    toast.success(`${manualForm.name} créé avec succès !`);
+    toast.success(`${manualForm.name} créé avec succès ! Ouvrez la fiche pour compléter les détails.`);
     setShowManualCreate(false);
     setManualForm({ name: "", specialty: "", city: "", base_fee: "", fee_details: "", phone: "", email: "", gender: "male", themes: "", languages: "Français", biography: "", archived: false });
-    fetchSpeakers();
+    await fetchSpeakers();
+    // Auto-open edit dialog for the newly created speaker
+    if (inserted) {
+      openEdit(inserted as Speaker);
+    }
   };
 
   // AI Regeneration
@@ -675,6 +692,76 @@ const AdminSpeakersCRM = () => {
     fetchSpeakers();
   };
 
+  // Single speaker enrichment from URL
+  const handleEnrichSingle = async () => {
+    if (!editSpeaker || !enrichUrl.trim()) return;
+    setEnrichingSingle(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.data.session?.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      };
+      
+      // Use the import search flow with the speaker's name
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-competitor-speakers`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ name: editSpeaker.name, enrich: true }),
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || "Conférencier non trouvé sur ce site");
+      
+      const profile = data.profile;
+      const updateData: any = {};
+      if (profile.biography) updateData.biography = profile.biography;
+      if (profile.photo_url && (!editSpeaker.image_url || editSpeaker.image_url === "/placeholder.svg")) updateData.image_url = profile.photo_url;
+      if (profile.role && !editSpeaker.role) { updateData.role = profile.role; updateData.specialty = profile.role; }
+      if (profile.themes?.length && (!editSpeaker.themes || editSpeaker.themes.length === 0)) updateData.themes = profile.themes;
+      if (profile.languages?.length && (!editSpeaker.languages || editSpeaker.languages.length === 0)) updateData.languages = profile.languages;
+      if (profile.video_url && !editSpeaker.video_url) updateData.video_url = profile.video_url;
+      if (profile.city && !editSpeaker.city) updateData.city = profile.city;
+      if (profile.why_expertise && !editSpeaker.why_expertise) updateData.why_expertise = profile.why_expertise;
+      if (profile.why_impact && !editSpeaker.why_impact) updateData.why_impact = profile.why_impact;
+      if (profile.key_points?.length) updateData.key_points = profile.key_points;
+
+      if (Object.keys(updateData).length > 0) {
+        await supabase.from("speakers").update(updateData).eq("id", editSpeaker.id);
+      }
+
+      // Import conferences if none exist yet
+      if (profile.conferences?.length) {
+        const existingConfs = await supabase.from("speaker_conferences").select("id").eq("speaker_id", editSpeaker.id);
+        if (!existingConfs.data?.length) {
+          for (let i = 0; i < profile.conferences.length; i++) {
+            const conf = profile.conferences[i];
+            await supabase.from("speaker_conferences").insert({
+              speaker_id: editSpeaker.id,
+              title: conf.title,
+              description: conf.description || null,
+              display_order: i,
+            } as any);
+          }
+        }
+      }
+      
+      const updatedFields = Object.keys(updateData);
+      toast.success(`Fiche enrichie ! ${updatedFields.length > 0 ? "Champs : " + updatedFields.join(", ") : "Aucun nouveau champ"}`);
+      setShowEnrichSingle(false);
+      setEnrichUrl("");
+      await fetchSpeakers();
+      const { data: refreshed } = await supabase.from("speakers")
+        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email")
+        .eq("id", editSpeaker.id).single();
+      if (refreshed) openEdit(refreshed as Speaker);
+      fetchConferences(editSpeaker.id);
+    } catch (err: any) {
+      toast.error(`Erreur : ${err.message}`);
+    }
+    setEnrichingSingle(false);
+  };
+
   return (
     <div className="space-y-5">
       {/* Search & Filters */}
@@ -821,13 +908,11 @@ const AdminSpeakersCRM = () => {
         )}
 
         <div className="flex flex-wrap gap-2 items-center">
-          <button
-            onClick={() => setShowArchived(!showArchived)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${showArchived ? "bg-orange-100 text-orange-800 border-orange-200" : "bg-background text-foreground border-input"}`}
-          >
-            <Archive className="h-3.5 w-3.5" />
-            {showArchived ? "Archivés" : "Actifs"}
-          </button>
+          <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={visibilityFilter} onChange={e => setVisibilityFilter(e.target.value as any)}>
+            <option value="all">Visibilité : tous</option>
+            <option value="online">🟢 En ligne</option>
+            <option value="offline">🔴 Hors ligne (CRM uniquement)</option>
+          </select>
           <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={themeFilter} onChange={e => setThemeFilter(e.target.value)}>
             <option value="">Toutes les thématiques</option>
             {allThemes.map(t => <option key={t} value={t}>{t}</option>)}
@@ -912,7 +997,10 @@ const AdminSpeakersCRM = () => {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm text-foreground truncate">{speaker.name}</span>
                   {speaker.featured && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground font-medium">★</span>}
-                  {speaker.archived && <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-medium">Archivé</span>}
+                  {speaker.archived
+                    ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-medium">Hors ligne</span>
+                    : <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">En ligne</span>
+                  }
                 </div>
                 {(speaker.specialty || speaker.role) && <p className="text-xs text-muted-foreground truncate">{speaker.specialty || speaker.role}</p>}
               </div>
@@ -953,7 +1041,35 @@ const AdminSpeakersCRM = () => {
           </DialogHeader>
           {editSpeaker && (
             <div className="space-y-5 mt-2">
-              {/* Avatar preview */}
+              {/* Visibility badge + Enrich button */}
+              <div className="flex items-center justify-between">
+                <span className={`text-xs px-2 py-1 rounded font-medium ${editSpeaker.archived ? "bg-destructive/10 text-destructive" : "bg-green-100 text-green-700"}`}>
+                  {editSpeaker.archived ? "🔴 Hors ligne (CRM uniquement)" : "🟢 En ligne"}
+                </span>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowEnrichSingle(!showEnrichSingle)}>
+                  <Sparkles className="h-3.5 w-3.5" /> Enrichir la fiche
+                </Button>
+              </div>
+
+              {/* Enrich from URL */}
+              {showEnrichSingle && (
+                <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Renseignez l'URL d'un site concurrent pour enrichir automatiquement cette fiche (biographie, conférences, photo…).
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="https://www.simoneetnelson.com/conferencier/..."
+                      value={enrichUrl}
+                      onChange={e => setEnrichUrl(e.target.value)}
+                      className="flex-grow"
+                    />
+                    <Button size="sm" disabled={enrichingSingle || !enrichUrl.trim()} onClick={handleEnrichSingle} className="gap-1.5 min-w-[120px]">
+                      {enrichingSingle ? <><Loader2 className="h-4 w-4 animate-spin" /> Enrichissement…</> : <><Search className="h-4 w-4" /> Enrichir</>}
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-4">
                 <img src={editForm.image_url || DEFAULT_IMAGE} alt="" className="w-16 h-16 rounded-xl object-cover" />
                 <div className="flex-grow space-y-1">
@@ -1268,8 +1384,8 @@ const AdminSpeakersCRM = () => {
               {/* Actions */}
               <div className="flex justify-between items-center gap-2 pt-2 border-t border-border">
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="gap-1.5 text-orange-600" onClick={() => handleArchive(editSpeaker)}>
-                    {editSpeaker.archived ? <><ArchiveRestore className="h-3.5 w-3.5" /> Restaurer</> : <><Archive className="h-3.5 w-3.5" /> Archiver</>}
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleArchive(editSpeaker)}>
+                    {editSpeaker.archived ? <><Eye className="h-3.5 w-3.5" /> Mettre en ligne</> : <><EyeOff className="h-3.5 w-3.5" /> Mettre hors ligne</>}
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

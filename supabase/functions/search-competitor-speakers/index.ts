@@ -381,19 +381,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { name } = await req.json();
+    const { name, enrich } = await req.json();
     if (!name || name.trim().length < 2) {
       return new Response(JSON.stringify({ success: false, error: "Nom requis (min 2 caractères)" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const slug = slugify(name.trim());
-    console.log(`Searching "${name}" → slug: ${slug}`);
+    console.log(`Searching "${name}" → slug: ${slug}${enrich ? " (enrich mode)" : ""}`);
 
-    // Check if speaker already exists
+    // Check if speaker already exists (skip in enrich mode)
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: existing } = await supabase.from("speakers").select("id, name, slug").or(`slug.eq.${slug},name.ilike.%${name.trim()}%`).limit(1);
-    if (existing && existing.length > 0) {
-      return new Response(JSON.stringify({ success: false, error: `Ce conférencier existe déjà : ${existing[0].name}`, existing: existing[0] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!enrich) {
+      const { data: existing } = await supabase.from("speakers").select("id, name, slug").or(`slug.eq.${slug},name.ilike.%${name.trim()}%`).limit(1);
+      if (existing && existing.length > 0) {
+        return new Response(JSON.stringify({ success: false, error: `Ce conférencier existe déjà : ${existing[0].name}`, existing: existing[0] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     // Fetch all 3 sources in parallel
