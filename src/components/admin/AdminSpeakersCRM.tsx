@@ -199,8 +199,14 @@ const AdminSpeakersCRM = () => {
 
   const filteredSpeakers = useMemo(() => {
     const filtered = speakers.filter(s => {
-      if (!showArchived && s.archived) return false;
-      if (showArchived && !s.archived) return false;
+      // Visibility filter
+      if (visibilityFilter === "online" && s.archived) return false;
+      if (visibilityFilter === "offline" && !s.archived) return false;
+      // Legacy archived toggle (when visibilityFilter is "all")
+      if (visibilityFilter === "all") {
+        if (!showArchived && s.archived) return false;
+        if (showArchived && !s.archived) return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         const nameMatch = s.name.toLowerCase().includes(q);
@@ -214,7 +220,6 @@ const AdminSpeakersCRM = () => {
       if (cityFilter && s.city !== cityFilter) return false;
       if (feeFilter === "set" && !s.base_fee) return false;
       if (feeFilter === "unset" && s.base_fee) return false;
-      // Fee range filter
       if (feeMinFilter) {
         const min = Number(feeMinFilter);
         if (!isNaN(min) && (!s.base_fee || s.base_fee < min)) return false;
