@@ -351,6 +351,7 @@ export type Database = {
       }
       proposals: {
         Row: {
+          accepted_at: string | null
           client_email: string
           client_id: string | null
           client_name: string
@@ -368,6 +369,7 @@ export type Database = {
           token: string
         }
         Insert: {
+          accepted_at?: string | null
           client_email: string
           client_id?: string | null
           client_name: string
@@ -385,6 +387,7 @@ export type Database = {
           token?: string
         }
         Update: {
+          accepted_at?: string | null
           client_email?: string
           client_id?: string | null
           client_name?: string
