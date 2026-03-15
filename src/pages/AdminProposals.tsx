@@ -442,6 +442,7 @@ Belle journée,`;
                     client_name: p.client_name,
                     client_email: p.client_email,
                     recipient_name: p.recipient_name,
+                    client_id: p.client_id || null,
                     status: p.status,
                     proposal_speakers: p.proposal_speakers?.map(ps => ({
                       ...ps,

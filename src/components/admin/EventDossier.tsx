@@ -367,10 +367,39 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
+    setContractClientId(proposal.client_id || "");
+    setShowCreateClientInContract(false);
     setContractDialogOpen(true);
   };
 
+  const handleCreateContractClient = async () => {
+    if (!newContractClientCompany) { toast.error("Nom de société requis"); return; }
+    if (!newContractClientEmail) { toast.error("Email requis pour le contrat"); return; }
+    setCreatingClient(true);
+    const { data, error } = await supabase.from("clients").insert({
+      company_name: newContractClientCompany,
+      contact_name: newContractClientContact || null,
+      email: newContractClientEmail || null,
+      phone: newContractClientPhone || null,
+      siret: newContractClientSiret || null,
+      address: newContractClientAddress || null,
+      city: newContractClientCity || null,
+    } as any).select().single();
+    if (error || !data) { toast.error("Erreur création client"); setCreatingClient(false); return; }
+    toast.success("Client créé !");
+    await fetchClients();
+    setContractClientId((data as any).id);
+    setShowCreateClientInContract(false);
+    setNewContractClientCompany(""); setNewContractClientContact(""); setNewContractClientEmail("");
+    setNewContractClientPhone(""); setNewContractClientSiret(""); setNewContractClientAddress(""); setNewContractClientCity("");
+    setCreatingClient(false);
+  };
+
   const handleSaveContract = async () => {
+    if (!contractClientId) {
+      toast.error("Veuillez sélectionner ou créer un client avant de créer le contrat");
+      return;
+    }
     setSaving(true);
     const payload = {
       event_date: eventDate || null,
@@ -381,6 +410,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
     };
+    // Link client to proposal
+    await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
     if (editingContract && contract) {
       const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
       if (error) toast.error("Erreur mise à jour"); else toast.success("Contrat mis à jour !");
@@ -388,7 +419,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       const { error } = await supabase.from("contracts").insert({ proposal_id: proposal.id, ...payload } as any);
       if (error) { toast.error("Erreur création contrat"); console.error(error); } else toast.success("Contrat créé !");
     }
-    setContractDialogOpen(false); fetchData(); setSaving(false);
+    setContractDialogOpen(false); fetchData(); onUpdate(); setSaving(false);
   };
 
   // ─── Contract email ───

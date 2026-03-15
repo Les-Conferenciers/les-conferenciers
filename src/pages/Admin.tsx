@@ -609,7 +609,7 @@ const AdminProposalsContent = () => {
               <EventDossier
                 proposal={{
                   id: p.id, client_name: p.client_name, client_email: p.client_email,
-                  recipient_name: p.recipient_name, status: p.status,
+                  recipient_name: p.recipient_name, client_id: p.client_id || null, status: p.status,
                   proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
                     speaker_id: ps.speaker_id,
                     speaker_fee: ps.speaker_fee, travel_costs: ps.travel_costs,
