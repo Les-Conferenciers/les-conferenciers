@@ -1394,14 +1394,29 @@ Nelly Sabde — Les Conférenciers`);
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Feuille de liaison — {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-5 mt-2">
-            {/* Liaison details */}
+            {/* Liaison details - matching the DOCX template fields */}
             <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
-              <Label className="text-xs font-semibold">📋 Détails de la liaison</Label>
+              <Label className="text-xs font-semibold">📋 Champs de la feuille de liaison</Label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Arrivée sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Arrivée du conférencier sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
                 <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Besoins techniques</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
               </div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Configuration de la salle</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Salle en largeur avec allée centrale" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
+              
+              {/* Preview of what the liaison sheet will contain */}
+              <div className="bg-background rounded border border-border p-3 text-[11px] text-muted-foreground space-y-0.5">
+                <p className="font-semibold text-foreground text-xs mb-1">Aperçu de la feuille :</p>
+                <p>📅 Date : {contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR") : "—"}</p>
+                <p>📍 Lieu : {contract?.event_location || "—"}</p>
+                <p>🕐 Horaires : {contract?.event_time || "—"}</p>
+                <p>👥 Auditoire : {event?.audience_size || "—"}</p>
+                <p>🎯 Thématique : {event?.theme || "—"}</p>
+                <p>🚗 Arrivée : {liaisonArrival || "à confirmer"}</p>
+                <p>🔧 Technique : {liaisonTechNeeds || "—"}{liaisonSalleSetup ? `, ${liaisonSalleSetup}` : ""}</p>
+                <p>📞 Client : {proposal.recipient_name || proposal.client_name}</p>
+                <p>📞 Conférencier : {speakerInfo?.name || "—"}{speakerInfo?.phone ? ` — ${speakerInfo.phone}` : ""}</p>
+              </div>
             </div>
 
             {/* Email tabs */}
@@ -1414,44 +1429,31 @@ Nelly Sabde — Les Conférenciers`);
               </button>
             </div>
 
-            {/* Variables hint */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs space-y-1">
-              <span className="font-semibold text-amber-800">Variables utilisées :</span>
-              <div className="flex flex-wrap gap-2 mt-1">
-                <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-mono text-[11px]">
-                  {liaisonTab === "client"
-                    ? (proposal.recipient_name?.split(" ")[0] || "Prénom client")
-                    : (speakerInfo?.name?.split(" ")[0] || "Prénom conf.")}
-                </span>
-                <span className="px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-mono text-[11px]">
-                  {speakerInfo?.name || "Nom complet conférencier"}
-                </span>
-              </div>
-            </div>
-
             {liaisonTab === "client" ? (
               <div className="space-y-3">
                 <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
                 <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">CC (copie pour le mail client)</Label>
+                  <Input value={liaisonClientCc} onChange={e => setLiaisonClientCc(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
+                  <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
                 <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">CC (copie pour le mail conférencier)</Label>
+                  <Input value={liaisonSpeakerCc} onChange={e => setLiaisonSpeakerCc(e.target.value)} placeholder="client@email.com" className="text-sm" />
+                  <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+                </div>
               </div>
             )}
 
-            {/* CC recipients */}
-            <div className="space-y-1">
-              <Label className="text-xs">Destinataires en copie (CC)</Label>
-              <Input value={liaisonCcEmails} onChange={e => setLiaisonCcEmails(e.target.value)} placeholder="email1@example.com, email2@example.com" className="text-sm" />
-              <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
-            </div>
-
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>📧 <strong>Client :</strong> {proposal.client_email}</p>
-              <p>🎤 <strong>Conférencier :</strong> {speakerInfo?.email || "Pas d'email renseigné"}</p>
-              {liaisonCcEmails && <p>📋 <strong>CC :</strong> {liaisonCcEmails}</p>}
+              <p>📧 <strong>Client :</strong> {proposal.client_email}{liaisonClientCc ? ` (CC: ${liaisonClientCc})` : ""}</p>
+              <p>🎤 <strong>Conférencier :</strong> {speakerInfo?.email || "Pas d'email renseigné"}{liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}</p>
             </div>
 
             <Button className="w-full" onClick={handleSendLiaisonSheet} disabled={sendingLiaison}>
