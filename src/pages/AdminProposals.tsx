@@ -271,7 +271,7 @@ Belle journée,`;
     })));
     toast.success("Proposition créée !"); setDialogOpen(false); resetForm(); fetchAll(); setSubmitting(false);
   };
-  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(""); setRecipientName(""); setSelectedSpeakers([]); };
+  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setSelectedSpeakers([]); };
 
   const handleSend = async (proposal: Proposal) => {
     setSending(proposal.id);
