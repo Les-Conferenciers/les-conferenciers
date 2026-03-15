@@ -109,6 +109,7 @@ const AdminProposals = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [contracts, setContracts] = useState<ContractData[]>([]);
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
@@ -116,6 +117,7 @@ const AdminProposals = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("sent");
   const [stepFilter, setStepFilter] = useState<string | null>(null);
+  const [saveTemplateName, setSaveTemplateName] = useState("");
 
   // Form state
   const [clientName, setClientName] = useState("");
