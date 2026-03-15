@@ -149,6 +149,16 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonTechNeeds, setLiaisonTechNeeds] = useState("");
   const [liaisonArrival, setLiaisonArrival] = useState("");
   const [sendingLiaison, setSendingLiaison] = useState(false);
+  const [liaisonClientSubject, setLiaisonClientSubject] = useState("");
+  const [liaisonClientBody, setLiaisonClientBody] = useState("");
+  const [liaisonSpeakerSubject, setLiaisonSpeakerSubject] = useState("");
+  const [liaisonSpeakerBody, setLiaisonSpeakerBody] = useState("");
+  const [liaisonCcEmails, setLiaisonCcEmails] = useState("");
+  const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
+
+  // Visio quick picker
+  const [visioQuickDate, setVisioQuickDate] = useState<Date | undefined>();
+  const [visioQuickTime, setVisioQuickTime] = useState("");
 
   // Invoice form
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
