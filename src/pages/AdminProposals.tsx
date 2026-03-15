@@ -542,6 +542,15 @@ Belle journée,`;
                 <p className="text-[11px] text-muted-foreground">Affiché en titre : « Votre proposition personnalisée — {recipientName || "Prénom Nom"} pour {clientName || "Société"} »</p>
               </div>
               <div className="space-y-2"><Label>Message personnalisé (optionnel)</Label><Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Bonjour, suite à notre échange..." rows={3} /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2"><Label>Ville de l'événement</Label><Input value={eventCity} onChange={e => setEventCity(e.target.value)} placeholder="Paris" /></div>
+                <div className="space-y-2"><Label>Date de l'événement</Label><Input value={eventDate} onChange={e => setEventDate(e.target.value)} placeholder="15 mars 2026" /></div>
+                <div className="space-y-2"><Label>Taille auditoire</Label><Input value={audienceSize} onChange={e => setAudienceSize(e.target.value)} placeholder="200" /></div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={isEnglish} onCheckedChange={(v) => setIsEnglish(!!v)} />
+                <span className="text-sm">Intervention en anglais</span>
+              </label>
               <div className="space-y-3">
                 <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
                 {selectedSpeakers.map(ps => {
