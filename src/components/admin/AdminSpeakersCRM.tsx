@@ -633,33 +633,7 @@ const AdminSpeakersCRM = () => {
           >
             <UserPlus className="h-4 w-4" /> Importer
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={handleEnrichAll}
-            disabled={enriching}
-          >
-            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Enrichissement ({enrichProgress.processed}/{enrichProgress.total})</> : <><Sparkles className="h-4 w-4" /> Enrichir tout</>}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={handleRegenerateWhyAll}
-            disabled={enriching}
-          >
-            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Régénération...</> : <><Sparkles className="h-4 w-4" /> Régénérer Expertise/Impact</>}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={handleEnrichConferences}
-            disabled={enriching}
-          >
-            {enriching ? <><Loader2 className="h-4 w-4 animate-spin" /> Conférences...</> : <><Mic className="h-4 w-4" /> Enrichir Conférences (WeChamp)</>}
-          </Button>
+          {/* Boutons enrichissement masqués pour le moment */}
         </div>
 
         {/* Import inline */}
