@@ -20,9 +20,10 @@ export interface Speaker {
 interface SpeakerCardProps {
   speaker: Speaker;
   onThemeClick?: (theme: string) => void;
+  onNavigate?: () => void;
 }
 
-const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
+const SpeakerCard = ({ speaker, onThemeClick, onNavigate }: SpeakerCardProps) => {
   const navigate = useNavigate();
   const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg"
     ? speaker.image_url
@@ -40,7 +41,7 @@ const SpeakerCard = ({ speaker, onThemeClick }: SpeakerCardProps) => {
   };
 
   return (
-    <Link to={`/conferencier/${speaker.slug}`} className="group block h-full">
+    <Link to={`/conferencier/${speaker.slug}`} className="group block h-full" onClick={onNavigate}>
       <Card className="h-full overflow-hidden border border-border/40 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-card">
         <div className="flex justify-center pt-6 pb-2">
           <div className="w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-accent/20 shadow-lg group-hover:border-accent/40 transition-all duration-300">

@@ -16,6 +16,8 @@ import ProposalView from "./pages/ProposalView";
 import ContractView from "./pages/ContractView";
 import ContractSign from "./pages/ContractSign";
 import InvoiceView from "./pages/InvoiceView";
+import SpeakerContractView from "./pages/SpeakerContractView";
+import LiaisonSheetView from "./pages/LiaisonSheetView";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +31,6 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/conferenciers" element={<Speakers />} />
           <Route path="/conferencier/:slug" element={<SpeakerDetail />} />
-          {/* Legacy redirects */}
           <Route path="/speakers" element={<Navigate to="/conferenciers" replace />} />
           <Route path="/speakers/:slug" element={<SpeakerDetail />} />
           <Route path="/speaker/:slug" element={<SpeakerDetail />} />
@@ -41,9 +42,10 @@ const App = () => (
           <Route path="/admin/propositions" element={<Navigate to="/admin?tab=propositions" replace />} />
           <Route path="/proposition/:token" element={<ProposalView />} />
           <Route path="/admin/contrat/:id" element={<ContractView />} />
+          <Route path="/admin/contrat-conferencier/:id" element={<SpeakerContractView />} />
+          <Route path="/admin/feuille-liaison/:id" element={<LiaisonSheetView />} />
           <Route path="/signer-contrat/:token" element={<ContractSign />} />
           <Route path="/admin/facture/:id" element={<InvoiceView />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

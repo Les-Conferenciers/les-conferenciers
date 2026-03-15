@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { contract_id, email_subject, email_body } = await req.json();
+    const { contract_id, email_subject, email_body, recipient_email } = await req.json();
     if (!contract_id) {
       return new Response(JSON.stringify({ error: "contract_id required" }), { status: 400, headers: corsHeaders });
     }
@@ -84,8 +84,8 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
-        from: "Les Conférenciers <contact@lesconferenciers.com>",
-        to: [proposal.client_email],
+        from: "Les Conférenciers <onboarding@resend.dev>",
+        to: [recipient_email || proposal.client_email],
         subject,
         html: emailHtml,
       }),

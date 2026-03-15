@@ -13,14 +13,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 
 const PAGE_SIZE = 20;
+const SCROLL_KEY = "speakers-scroll-pos";
+const DISPLAY_COUNT_KEY = "speakers-display-count";
 
 const Speakers = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
   const initialTheme = searchParams.get("theme") || null;
+  const savedDisplayCount = sessionStorage.getItem(DISPLAY_COUNT_KEY);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(initialTheme);
-  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+  const [displayCount, setDisplayCount] = useState(savedDisplayCount ? parseInt(savedDisplayCount, 10) : PAGE_SIZE);
   const [showAllThemes, setShowAllThemes] = useState(false);
 
   useEffect(() => {
@@ -32,14 +35,23 @@ const Speakers = () => {
 
   useEffect(() => {
     setDisplayCount(PAGE_SIZE);
+    sessionStorage.removeItem(SCROLL_KEY);
+    sessionStorage.removeItem(DISPLAY_COUNT_KEY);
   }, [searchQuery, selectedTheme]);
 
   const { data: allSpeakers, isLoading } = useQuery({
     queryKey: ["speakers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("speakers").select("*").eq("archived", false).limit(500);
+      const { data, error } = await supabase.from("speakers").select("*").eq("archived", false).order("name", { ascending: true }).limit(500);
       if (error) throw error;
-      return data as Speaker[];
+      // Sort by last name
+      const speakers = data as Speaker[];
+      speakers.sort((a, b) => {
+        const aLast = a.name.trim().split(/\s+/).pop()?.toLowerCase() || "";
+        const bLast = b.name.trim().split(/\s+/).pop()?.toLowerCase() || "";
+        return aLast.localeCompare(bLast, "fr");
+      });
+      return speakers;
     },
   });
 
@@ -77,6 +89,29 @@ const Speakers = () => {
 
   const visibleSpeakers = speakers?.slice(0, displayCount);
   const hasMore = speakers ? displayCount < speakers.length : false;
+
+  // Save displayCount to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem(DISPLAY_COUNT_KEY, String(displayCount));
+  }, [displayCount]);
+
+  // Restore scroll position after speakers are rendered
+  const hasRestoredScroll = useRef(false);
+  useEffect(() => {
+    if (hasRestoredScroll.current || !visibleSpeakers?.length) return;
+    const savedPos = sessionStorage.getItem(SCROLL_KEY);
+    if (savedPos) {
+      hasRestoredScroll.current = true;
+      requestAnimationFrame(() => {
+        window.scrollTo(0, parseInt(savedPos, 10));
+      });
+    }
+  }, [visibleSpeakers]);
+
+  // Save scroll position before navigating to a speaker
+  const saveScrollPosition = useCallback(() => {
+    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+  }, []);
 
   // Infinite scroll via IntersectionObserver
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -190,7 +225,7 @@ const Speakers = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {visibleSpeakers?.map((speaker) => (
-                <SpeakerCard key={speaker.id} speaker={speaker} onThemeClick={handleThemeClick} />
+                <SpeakerCard key={speaker.id} speaker={speaker} onThemeClick={handleThemeClick} onNavigate={saveScrollPosition} />
               ))}
             </div>
 

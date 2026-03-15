@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_name: string
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          siret: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_name: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          siret?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_name?: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          siret?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           contract_lines: Json | null
@@ -72,6 +117,120 @@ export type Database = {
             columns: ["proposal_id"]
             isOneToOne: true
             referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          arrival_info: string | null
+          audience_size: string | null
+          bdc_number: string | null
+          conference_duration: string | null
+          conference_title: string | null
+          contact_on_site_email: string | null
+          contact_on_site_name: string | null
+          contact_on_site_phone: string | null
+          contract_sent_speaker_at: string | null
+          created_at: string
+          dress_code: string | null
+          event_title: string | null
+          hotel_info: string | null
+          id: string
+          info_sent_speaker_at: string | null
+          liaison_sheet_sent_at: string | null
+          notes: string | null
+          parking_info: string | null
+          proposal_id: string
+          room_setup: string | null
+          selected_speaker_id: string | null
+          speaker_budget: number | null
+          speaker_paid_at: string | null
+          special_requests: string | null
+          tech_needs: string | null
+          theme: string | null
+          updated_at: string
+          visio_date: string | null
+          visio_notes: string | null
+          visio_time: string | null
+        }
+        Insert: {
+          arrival_info?: string | null
+          audience_size?: string | null
+          bdc_number?: string | null
+          conference_duration?: string | null
+          conference_title?: string | null
+          contact_on_site_email?: string | null
+          contact_on_site_name?: string | null
+          contact_on_site_phone?: string | null
+          contract_sent_speaker_at?: string | null
+          created_at?: string
+          dress_code?: string | null
+          event_title?: string | null
+          hotel_info?: string | null
+          id?: string
+          info_sent_speaker_at?: string | null
+          liaison_sheet_sent_at?: string | null
+          notes?: string | null
+          parking_info?: string | null
+          proposal_id: string
+          room_setup?: string | null
+          selected_speaker_id?: string | null
+          speaker_budget?: number | null
+          speaker_paid_at?: string | null
+          special_requests?: string | null
+          tech_needs?: string | null
+          theme?: string | null
+          updated_at?: string
+          visio_date?: string | null
+          visio_notes?: string | null
+          visio_time?: string | null
+        }
+        Update: {
+          arrival_info?: string | null
+          audience_size?: string | null
+          bdc_number?: string | null
+          conference_duration?: string | null
+          conference_title?: string | null
+          contact_on_site_email?: string | null
+          contact_on_site_name?: string | null
+          contact_on_site_phone?: string | null
+          contract_sent_speaker_at?: string | null
+          created_at?: string
+          dress_code?: string | null
+          event_title?: string | null
+          hotel_info?: string | null
+          id?: string
+          info_sent_speaker_at?: string | null
+          liaison_sheet_sent_at?: string | null
+          notes?: string | null
+          parking_info?: string | null
+          proposal_id?: string
+          room_setup?: string | null
+          selected_speaker_id?: string | null
+          speaker_budget?: number | null
+          speaker_paid_at?: string | null
+          special_requests?: string | null
+          tech_needs?: string | null
+          theme?: string | null
+          updated_at?: string
+          visio_date?: string | null
+          visio_notes?: string | null
+          visio_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_selected_speaker_id_fkey"
+            columns: ["selected_speaker_id"]
+            isOneToOne: false
+            referencedRelation: "speakers"
             referencedColumns: ["id"]
           },
         ]
@@ -232,9 +391,35 @@ export type Database = {
           },
         ]
       }
+      proposal_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_preset: boolean
+          name: string
+          speaker_ids: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_preset?: boolean
+          name: string
+          speaker_ids?: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_preset?: boolean
+          name?: string
+          speaker_ids?: string[]
+        }
+        Relationships: []
+      }
       proposals: {
         Row: {
+          accepted_at: string | null
           client_email: string
+          client_id: string | null
           client_name: string
           created_at: string
           email_body: string | null
@@ -243,12 +428,16 @@ export type Database = {
           id: string
           message: string | null
           recipient_name: string | null
+          reminder1_sent_at: string | null
+          reminder2_sent_at: string | null
           sent_at: string | null
           status: string
           token: string
         }
         Insert: {
+          accepted_at?: string | null
           client_email: string
+          client_id?: string | null
           client_name: string
           created_at?: string
           email_body?: string | null
@@ -257,12 +446,16 @@ export type Database = {
           id?: string
           message?: string | null
           recipient_name?: string | null
+          reminder1_sent_at?: string | null
+          reminder2_sent_at?: string | null
           sent_at?: string | null
           status?: string
           token?: string
         }
         Update: {
+          accepted_at?: string | null
           client_email?: string
+          client_id?: string | null
           client_name?: string
           created_at?: string
           email_body?: string | null
@@ -271,11 +464,21 @@ export type Database = {
           id?: string
           message?: string | null
           recipient_name?: string | null
+          reminder1_sent_at?: string | null
+          reminder2_sent_at?: string | null
           sent_at?: string | null
           status?: string
           token?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -413,6 +616,8 @@ export type Database = {
           created_at: string
           email: string | null
           featured: boolean | null
+          fee_details: string | null
+          formal_address: boolean | null
           gender: string | null
           id: string
           image_url: string | null
@@ -439,6 +644,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           featured?: boolean | null
+          fee_details?: string | null
+          formal_address?: boolean | null
           gender?: string | null
           id?: string
           image_url?: string | null
@@ -465,6 +672,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           featured?: boolean | null
+          fee_details?: string | null
+          formal_address?: boolean | null
           gender?: string | null
           id?: string
           image_url?: string | null

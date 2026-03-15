@@ -305,9 +305,7 @@ const ProposalView = () => {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 pr-4 font-medium text-muted-foreground">Conférencier</th>
-                  <th className="text-left py-3 pr-4 font-medium text-muted-foreground">Localisation</th>
-                  <th className="text-right py-3 pr-4 font-medium text-muted-foreground">Frais de déplacement</th>
-                  <th className="text-right py-3 font-medium text-muted-foreground">Prix total TTC</th>
+                  <th className="text-right py-3 font-medium text-muted-foreground">Tarif HT</th>
                 </tr>
               </thead>
               <tbody>
@@ -319,15 +317,9 @@ const ProposalView = () => {
                       <td className="py-4 pr-4">
                         <span className="font-medium text-foreground">{speaker.name}</span>
                       </td>
-                      <td className="py-4 pr-4 text-muted-foreground">
-                        {speaker.city || "—"}
-                      </td>
-                      <td className="py-4 pr-4 text-right text-muted-foreground">
-                        {ps.travel_costs ? `${ps.travel_costs.toLocaleString("fr-FR")} €` : "Inclus"}
-                      </td>
                       <td className="py-4 text-right">
                         {ps.total_price ? (
-                          <span className="font-bold text-foreground text-lg">{ps.total_price.toLocaleString("fr-FR")} €</span>
+                          <span className="font-bold text-foreground text-lg">{ps.total_price.toLocaleString("fr-FR")} € HT</span>
                         ) : "Sur devis"}
                       </td>
                     </tr>
@@ -336,9 +328,6 @@ const ProposalView = () => {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-muted-foreground mt-4 italic">
-            Les tarifs incluent la prestation du conférencier et la commission d'agence. Les frais de déplacement sont indiqués séparément le cas échéant.
-          </p>
         </div>
 
         {/* CTA */}

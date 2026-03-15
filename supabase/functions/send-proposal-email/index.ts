@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     const { data: proposal, error: pErr } = await adminClient
       .from("proposals")
-      .select("*, proposal_speakers(total_price, display_order, speakers(name, role))")
+      .select("*, proposal_speakers(total_price, speaker_fee, agency_commission, travel_costs, display_order, speakers(name, role))")
       .eq("id", proposal_id)
       .single();
 
@@ -48,18 +48,29 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Proposal not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const proposalUrl = `${req.headers.get("origin") || "https://lesconferenciers.com"}/proposition/${proposal.token}`;
+    const origin = req.headers.get("origin") || "https://lesconferenciers.com";
+    const proposalUrl = `${origin}/proposition/${proposal.token}`;
+    const bannerUrl = `${origin}/images/les-conferenciers-banniere.png`;
+    const signatureUrl = `${origin}/images/les-conferenciers-signature.png`;
 
-    // Build speaker list for email
+    // Build speaker list for email - show HT, no commission mention
     const speakerLines = (proposal.proposal_speakers || [])
       .sort((a: any, b: any) => a.display_order - b.display_order)
       .map((ps: any) => {
         const name = ps.speakers?.name || "Conférencier";
         const role = ps.speakers?.role || "";
-        const price = ps.total_price ? `${Number(ps.total_price).toLocaleString("fr-FR")} € TTC` : "";
-        return `• ${name}${role ? ` — ${role}` : ""}${price ? ` — ${price}` : ""}`;
+        // Show HT price (total_price minus any TVA would be HT, but since we store HT already, just show it)
+        const priceHT = ps.total_price ? `${Number(ps.total_price).toLocaleString("fr-FR")} € HT` : "";
+        return `<tr>
+          <td style="padding:12px 16px;border-bottom:1px solid #eee;font-size:14px;color:#333;">
+            <strong>${name}</strong>${role ? `<br><span style="color:#888;font-size:12px;">${role}</span>` : ""}
+          </td>
+          <td style="padding:12px 16px;border-bottom:1px solid #eee;font-size:14px;color:#333;text-align:right;white-space:nowrap;">
+            ${priceHT}
+          </td>
+        </tr>`;
       })
-      .join("\n");
+      .join("");
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
@@ -83,18 +94,29 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
 
     const emailHtml = `
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#ffffff;">
-  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
-    <div style="text-align:center;padding:30px;background:#1a2332;border-radius:12px 12px 0 0;">
-      <h1 style="color:#f5f0e8;font-size:24px;margin:0;">Les Conférenciers</h1>
-      <p style="color:#f5f0e8;opacity:0.7;font-size:14px;margin-top:8px;">Votre sélection personnalisée</p>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+    <!-- Banner Header -->
+    <div style="text-align:center;background:#1a2332;">
+      <img src="${bannerUrl}" alt="Les Conférenciers" style="width:100%;max-width:600px;display:block;" />
     </div>
-    <div style="padding:30px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px;">
+    
+    <div style="padding:30px 30px 20px;">
       <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
-      <div style="background:#f8f6f1;padding:20px;border-radius:8px;margin:20px 0;">
-        <pre style="font-family:Arial,sans-serif;color:#333;font-size:14px;white-space:pre-wrap;margin:0;">${speakerLines}</pre>
-      </div>
+      
+      <table style="width:100%;border-collapse:collapse;margin:24px 0;border:1px solid #eee;border-radius:8px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f8f6f1;">
+            <th style="padding:10px 16px;text-align:left;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Conférencier</th>
+            <th style="padding:10px 16px;text-align:right;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Tarif HT</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${speakerLines}
+        </tbody>
+      </table>
+
       <div style="text-align:center;margin:30px 0;">
         <a href="${proposalUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
           Consulter la proposition complète
@@ -105,7 +127,15 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
           📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
         </p>
       </div>
-      <p style="color:#999;font-size:11px;text-align:center;margin-top:20px;">Proposition confidentielle — Les Conférenciers</p>
+    </div>
+
+    <!-- Signature -->
+    <div style="padding:0 30px 30px;">
+      <img src="${signatureUrl}" alt="Nelly SABDE | Agence Les Conférenciers" style="width:100%;max-width:500px;display:block;" />
+    </div>
+
+    <div style="background:#1a2332;padding:16px;text-align:center;">
+      <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Proposition confidentielle — Les Conférenciers</p>
     </div>
   </div>
 </body></html>`;
@@ -114,7 +144,7 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
-        from: "Les Conférenciers <contact@lesconferenciers.com>",
+        from: "Les Conférenciers <onboarding@resend.dev>",
         to: [proposal.client_email],
         subject: emailSubject,
         html: emailHtml,
