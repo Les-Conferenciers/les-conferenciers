@@ -708,7 +708,7 @@ const AdminSpeakersCRM = () => {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-competitor-speakers`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ name: editSpeaker.name, url: enrichUrl.trim() }),
+        body: JSON.stringify({ name: editSpeaker.name, enrich: true }),
       });
       const data = await resp.json();
       if (!data.success) throw new Error(data.error || "Conférencier non trouvé sur ce site");
