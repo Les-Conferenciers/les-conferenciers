@@ -268,6 +268,46 @@ Belle journée,`;
   const getSpeakerImage = (id: string) => speakers.find(s => s.id === id)?.image_url || null;
   const getSpeakerCity = (id: string) => speakers.find(s => s.id === id)?.city || null;
 
+  // ─── Template helpers ───
+  const applyTemplate = (tpl: ProposalTemplate) => {
+    const tplSpeakers = tpl.speaker_ids
+      .map(id => speakers.find(s => s.id === id))
+      .filter(Boolean)
+      .slice(0, 3) as Speaker[];
+    setSelectedSpeakers(tplSpeakers.map((sp, i) => ({
+      speaker_id: sp.id,
+      speaker_fee: sp.base_fee || null,
+      travel_costs: null,
+      agency_commission: COMMISSION,
+      total_price: ((sp.base_fee || 0) + COMMISSION) || null,
+      display_order: i,
+      selected_conference_ids: [],
+    })));
+    toast.success(`Modèle "${tpl.name}" appliqué`);
+  };
+
+  const saveAsTemplate = async () => {
+    if (!saveTemplateName.trim() || selectedSpeakers.length === 0) {
+      toast.error("Donnez un nom et ajoutez au moins 1 conférencier");
+      return;
+    }
+    const { error } = await supabase.from("proposal_templates").insert({
+      name: saveTemplateName.trim(),
+      speaker_ids: selectedSpeakers.map(s => s.speaker_id),
+      is_preset: false,
+    } as any);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success(`Modèle "${saveTemplateName}" sauvegardé !`);
+    setSaveTemplateName("");
+    fetchAll();
+  };
+
+  const deleteTemplate = async (id: string) => {
+    await supabase.from("proposal_templates").delete().eq("id", id);
+    toast.success("Modèle supprimé");
+    fetchAll();
+  };
+
   // ─── CRUD ───
   const handleCreate = async () => {
     if (!clientName || !clientEmail || selectedSpeakers.length === 0) { toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier"); return; }
