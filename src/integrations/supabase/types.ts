@@ -120,18 +120,31 @@ export type Database = {
       }
       events: {
         Row: {
+          arrival_info: string | null
           audience_size: string | null
           bdc_number: string | null
+          conference_duration: string | null
+          conference_title: string | null
+          contact_on_site_email: string | null
+          contact_on_site_name: string | null
+          contact_on_site_phone: string | null
           contract_sent_speaker_at: string | null
           created_at: string
+          dress_code: string | null
+          event_title: string | null
+          hotel_info: string | null
           id: string
           info_sent_speaker_at: string | null
           liaison_sheet_sent_at: string | null
           notes: string | null
+          parking_info: string | null
           proposal_id: string
+          room_setup: string | null
           selected_speaker_id: string | null
           speaker_budget: number | null
           speaker_paid_at: string | null
+          special_requests: string | null
+          tech_needs: string | null
           theme: string | null
           updated_at: string
           visio_date: string | null
@@ -139,18 +152,31 @@ export type Database = {
           visio_time: string | null
         }
         Insert: {
+          arrival_info?: string | null
           audience_size?: string | null
           bdc_number?: string | null
+          conference_duration?: string | null
+          conference_title?: string | null
+          contact_on_site_email?: string | null
+          contact_on_site_name?: string | null
+          contact_on_site_phone?: string | null
           contract_sent_speaker_at?: string | null
           created_at?: string
+          dress_code?: string | null
+          event_title?: string | null
+          hotel_info?: string | null
           id?: string
           info_sent_speaker_at?: string | null
           liaison_sheet_sent_at?: string | null
           notes?: string | null
+          parking_info?: string | null
           proposal_id: string
+          room_setup?: string | null
           selected_speaker_id?: string | null
           speaker_budget?: number | null
           speaker_paid_at?: string | null
+          special_requests?: string | null
+          tech_needs?: string | null
           theme?: string | null
           updated_at?: string
           visio_date?: string | null
@@ -158,18 +184,31 @@ export type Database = {
           visio_time?: string | null
         }
         Update: {
+          arrival_info?: string | null
           audience_size?: string | null
           bdc_number?: string | null
+          conference_duration?: string | null
+          conference_title?: string | null
+          contact_on_site_email?: string | null
+          contact_on_site_name?: string | null
+          contact_on_site_phone?: string | null
           contract_sent_speaker_at?: string | null
           created_at?: string
+          dress_code?: string | null
+          event_title?: string | null
+          hotel_info?: string | null
           id?: string
           info_sent_speaker_at?: string | null
           liaison_sheet_sent_at?: string | null
           notes?: string | null
+          parking_info?: string | null
           proposal_id?: string
+          room_setup?: string | null
           selected_speaker_id?: string | null
           speaker_budget?: number | null
           speaker_paid_at?: string | null
+          special_requests?: string | null
+          tech_needs?: string | null
           theme?: string | null
           updated_at?: string
           visio_date?: string | null
