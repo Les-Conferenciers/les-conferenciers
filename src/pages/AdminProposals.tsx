@@ -86,7 +86,7 @@ type InvoiceData = {
 };
 
 const COMMISSION = 1000;
-
+const TEMPLATE_ICON = "📋";
 // Step definitions for the pipeline
 const PIPELINE_STEPS = [
   { key: "proposal_sent", label: "Proposition envoyée" },
