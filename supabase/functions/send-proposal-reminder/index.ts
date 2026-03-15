@@ -139,7 +139,7 @@ Nelly Sabde — Les Conférenciers`;
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
-        from: "Les Conférenciers <contact@lesconferenciers.com>",
+        from: "Les Conférenciers <onboarding@resend.dev>",
         to: [proposal.client_email],
         subject: emailSubject,
         html: emailHtml,
