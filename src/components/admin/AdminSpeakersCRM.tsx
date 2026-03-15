@@ -690,6 +690,48 @@ const AdminSpeakersCRM = () => {
     fetchSpeakers();
   };
 
+  // Single speaker enrichment from URL
+  const handleEnrichSingle = async () => {
+    if (!editSpeaker || !enrichUrl.trim()) return;
+    setEnrichingSingle(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.data.session?.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      };
+      
+      // Use the resync function with a custom URL
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resync-speaker-from-site`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ speaker_id: editSpeaker.id, url: enrichUrl.trim() }),
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || "Enrichissement échoué");
+      
+      toast.success(`Fiche enrichie avec succès ! ${data.updates?.join(", ") || ""}`);
+      setShowEnrichSingle(false);
+      setEnrichUrl("");
+      // Refresh speaker data
+      await fetchSpeakers();
+      // Reload the edit form with fresh data
+      const { data: refreshed } = await supabase.from("speakers")
+        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email")
+        .eq("id", editSpeaker.id).single();
+      if (refreshed) {
+        setEditSpeaker(refreshed as Speaker);
+        openEdit(refreshed as Speaker);
+      }
+      // Reload conferences
+      fetchConferences(editSpeaker.id);
+    } catch (err: any) {
+      toast.error(`Erreur : ${err.message}`);
+    }
+    setEnrichingSingle(false);
+  };
+
   return (
     <div className="space-y-5">
       {/* Search & Filters */}
