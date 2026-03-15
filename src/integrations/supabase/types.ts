@@ -26,6 +26,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           siret: string | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -39,6 +40,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           siret?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -52,6 +54,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           siret?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -589,6 +592,7 @@ export type Database = {
           created_at: string
           email: string | null
           featured: boolean | null
+          fee_details: string | null
           formal_address: boolean | null
           gender: string | null
           id: string
@@ -616,6 +620,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           featured?: boolean | null
+          fee_details?: string | null
           formal_address?: boolean | null
           gender?: string | null
           id?: string
@@ -643,6 +648,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           featured?: boolean | null
+          fee_details?: string | null
           formal_address?: boolean | null
           gender?: string | null
           id?: string

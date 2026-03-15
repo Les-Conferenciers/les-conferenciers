@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic } from "lucide-react";
+import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic, Eye, EyeOff } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -26,6 +26,7 @@ type Speaker = {
   biography: string | null;
   specialty: string | null;
   base_fee: number | null;
+  fee_details: string | null;
   city: string | null;
   languages: string[] | null;
   video_url: string | null;
@@ -61,6 +62,12 @@ type Conference = {
 
 const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
 
+// Helper: extract last name for sorting
+const getLastName = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+};
+
 const AdminSpeakersCRM = () => {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +75,8 @@ const AdminSpeakersCRM = () => {
   const [themeFilter, setThemeFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [feeFilter, setFeeFilter] = useState<"all" | "set" | "unset">("all");
+  const [feeMinFilter, setFeeMinFilter] = useState<string>("");
+  const [feeMaxFilter, setFeeMaxFilter] = useState<string>("");
   const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female">("all");
   const [profileFilter, setProfileFilter] = useState("");
   const [showArchived, setShowArchived] = useState(false);
@@ -78,6 +87,15 @@ const AdminSpeakersCRM = () => {
   const [importName, setImportName] = useState("");
   const [importSearching, setImportSearching] = useState(false);
   const [showImport, setShowImport] = useState(false);
+
+  // Manual creation state
+  const [showManualCreate, setShowManualCreate] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    name: "", specialty: "", city: "", base_fee: "" as string, fee_details: "",
+    phone: "", email: "", gender: "male", themes: "", languages: "Français",
+    biography: "", archived: false,
+  });
+  const [creatingManual, setCreatingManual] = useState(false);
 
   // Enrichment state
   const [enriching, setEnriching] = useState(false);
@@ -112,9 +130,9 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email")
       .order("name");
-    setSpeakers(data || []);
+    setSpeakers((data as any) || []);
     setLoading(false);
   };
 
@@ -167,9 +185,10 @@ const AdminSpeakersCRM = () => {
   }, [speakers]);
 
   const PROFILE_TYPES = [
-    "Sportif", "Militaire", "Ancien du GIGN", "Chef d'orchestre", "Patrouille de France",
-    "Chef cuisinier", "Astronaute", "Explorateur", "Économiste", "Philosophe",
-    "Journaliste", "Artiste", "Médecin", "Scientifique", "Entrepreneur",
+    "Ancien du GIGN", "Artiste", "Astronaute", "Chef cuisinier", "Chef d'orchestre",
+    "Conférencier illusionniste", "Économiste", "Entrepreneur", "Explorateur",
+    "Journaliste", "Médecin", "Militaire", "Patrouille de France", "Philosophe",
+    "Scientifique", "Sportif",
   ];
 
   const filteredSpeakers = useMemo(() => {
@@ -189,6 +208,15 @@ const AdminSpeakersCRM = () => {
       if (cityFilter && s.city !== cityFilter) return false;
       if (feeFilter === "set" && !s.base_fee) return false;
       if (feeFilter === "unset" && s.base_fee) return false;
+      // Fee range filter
+      if (feeMinFilter) {
+        const min = Number(feeMinFilter);
+        if (!isNaN(min) && (!s.base_fee || s.base_fee < min)) return false;
+      }
+      if (feeMaxFilter) {
+        const max = Number(feeMaxFilter);
+        if (!isNaN(max) && (!s.base_fee || s.base_fee > max)) return false;
+      }
       if (genderFilter !== "all" && s.gender !== genderFilter) return false;
       if (profileFilter) {
         const q = profileFilter.toLowerCase();
@@ -201,7 +229,12 @@ const AdminSpeakersCRM = () => {
 
     return filtered.sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;
-      if (sortBy === "name") return a.name.localeCompare(b.name) * dir;
+      if (sortBy === "name") {
+        // Sort by last name
+        const aLast = getLastName(a.name).toLowerCase();
+        const bLast = getLastName(b.name).toLowerCase();
+        return aLast.localeCompare(bLast, "fr") * dir;
+      }
       if (sortBy === "created_at") return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
       if (sortBy === "base_fee") {
         const aFee = a.base_fee ?? (sortDir === "asc" ? Infinity : -Infinity);
@@ -210,12 +243,12 @@ const AdminSpeakersCRM = () => {
       }
       return 0;
     });
-  }, [speakers, search, themeFilter, cityFilter, feeFilter, genderFilter, profileFilter, showArchived, sortBy, sortDir]);
+  }, [speakers, search, themeFilter, cityFilter, feeFilter, feeMinFilter, feeMaxFilter, genderFilter, profileFilter, showArchived, sortBy, sortDir]);
 
   const clearFilters = () => {
-    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all"); setGenderFilter("all"); setProfileFilter("");
+    setSearch(""); setThemeFilter(""); setCityFilter(""); setFeeFilter("all"); setFeeMinFilter(""); setFeeMaxFilter(""); setGenderFilter("all"); setProfileFilter("");
   };
-  const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all" || genderFilter !== "all" || profileFilter;
+  const hasFilters = search || themeFilter || cityFilter || feeFilter !== "all" || feeMinFilter || feeMaxFilter || genderFilter !== "all" || profileFilter;
 
   // Edit handlers
   const openEdit = (speaker: Speaker) => {
@@ -225,6 +258,7 @@ const AdminSpeakersCRM = () => {
       specialty: speaker.specialty || speaker.role,
       city: speaker.city,
       base_fee: speaker.base_fee,
+      fee_details: (speaker as any).fee_details,
       biography: speaker.biography,
       image_url: speaker.image_url,
       video_url: speaker.video_url,
@@ -250,6 +284,7 @@ const AdminSpeakersCRM = () => {
         specialty: editForm.specialty || null,
         city: editForm.city || null,
         base_fee: editForm.base_fee || null,
+        fee_details: (editForm as any).fee_details || null,
         biography: editForm.biography || null,
         image_url: editForm.image_url || null,
         video_url: editForm.video_url || null,
@@ -286,6 +321,38 @@ const AdminSpeakersCRM = () => {
     if (error) { toast.error("Erreur de suppression"); return; }
     toast.success("Fiche supprimée définitivement");
     setEditSpeaker(null);
+    fetchSpeakers();
+  };
+
+  // Manual speaker creation
+  const handleManualCreate = async () => {
+    if (!manualForm.name.trim()) { toast.error("Le nom est requis"); return; }
+    setCreatingManual(true);
+    const slug = manualForm.name.trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    
+    const { error } = await supabase.from("speakers").insert({
+      name: manualForm.name.trim(),
+      slug,
+      role: manualForm.specialty || null,
+      specialty: manualForm.specialty || null,
+      city: manualForm.city || null,
+      base_fee: manualForm.base_fee ? Number(manualForm.base_fee) : null,
+      fee_details: manualForm.fee_details || null,
+      phone: manualForm.phone || null,
+      email: manualForm.email || null,
+      gender: manualForm.gender,
+      themes: manualForm.themes ? manualForm.themes.split(",").map(t => t.trim()).filter(Boolean) : [],
+      languages: manualForm.languages ? manualForm.languages.split(",").map(l => l.trim()).filter(Boolean) : [],
+      biography: manualForm.biography || null,
+      archived: manualForm.archived,
+    } as any);
+    setCreatingManual(false);
+    if (error) { toast.error(`Erreur : ${error.message}`); return; }
+    toast.success(`${manualForm.name} créé avec succès !`);
+    setShowManualCreate(false);
+    setManualForm({ name: "", specialty: "", city: "", base_fee: "", fee_details: "", phone: "", email: "", gender: "male", themes: "", languages: "Français", biography: "", archived: false });
     fetchSpeakers();
   };
 
@@ -633,7 +700,14 @@ const AdminSpeakersCRM = () => {
           >
             <UserPlus className="h-4 w-4" /> Importer
           </Button>
-          {/* Boutons enrichissement masqués pour le moment */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setShowManualCreate(!showManualCreate)}
+          >
+            <Plus className="h-4 w-4" /> Créer manuellement
+          </Button>
         </div>
 
         {/* Import inline */}
@@ -653,6 +727,76 @@ const AdminSpeakersCRM = () => {
               <Button onClick={handleImportSearch} disabled={importSearching} size="sm" className="gap-1.5 min-w-[120px]">
                 {importSearching ? <><Loader2 className="h-4 w-4 animate-spin" /> Recherche…</> : <><Search className="h-4 w-4" /> Importer</>}
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Manual creation inline */}
+        {showManualCreate && (
+          <div className="border border-border rounded-lg p-4 bg-card space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Créez une fiche conférencier manuellement. Vous pouvez choisir de l'afficher ou non sur le site.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Nom *</Label>
+                <Input value={manualForm.name} onChange={e => setManualForm(p => ({ ...p, name: e.target.value }))} placeholder="Thomas d'Ansembourg" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Titre / Rôle</Label>
+                <Input value={manualForm.specialty} onChange={e => setManualForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Auteur, Psychothérapeute" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Ville</Label>
+                <Input value={manualForm.city} onChange={e => setManualForm(p => ({ ...p, city: e.target.value }))} placeholder="Bruxelles" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
+                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} placeholder="4000" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Genre</Label>
+                <select className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={manualForm.gender} onChange={e => setManualForm(p => ({ ...p, gender: e.target.value }))}>
+                  <option value="male">Masculin</option>
+                  <option value="female">Féminin</option>
+                </select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Détails tarifs</Label>
+              <Input value={manualForm.fee_details} onChange={e => setManualForm(p => ({ ...p, fee_details: e.target.value }))} placeholder="5K Paris, 8 à 10K province, 3K online" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">📱 Téléphone</Label>
+                <Input value={manualForm.phone} onChange={e => setManualForm(p => ({ ...p, phone: e.target.value }))} placeholder="+32 479 234 4..." />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">📧 Email</Label>
+                <Input type="email" value={manualForm.email} onChange={e => setManualForm(p => ({ ...p, email: e.target.value }))} placeholder="contact@speaker.com" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Thématiques (séparées par virgules)</Label>
+              <Input value={manualForm.themes} onChange={e => setManualForm(p => ({ ...p, themes: e.target.value }))} placeholder="Leadership, Communication Non Violente" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Langues</Label>
+              <Input value={manualForm.languages} onChange={e => setManualForm(p => ({ ...p, languages: e.target.value }))} placeholder="Français, Anglais" />
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={manualForm.archived} onChange={e => setManualForm(p => ({ ...p, archived: e.target.checked }))} className="rounded border-input" />
+              <span className="text-sm flex items-center gap-1.5">
+                <EyeOff className="h-3.5 w-3.5" /> Ne pas afficher sur le site (base interne uniquement)
+              </span>
+            </label>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleManualCreate} disabled={creatingManual || !manualForm.name.trim()} className="gap-1.5">
+                {creatingManual ? <><Loader2 className="h-4 w-4 animate-spin" /> Création…</> : <><Plus className="h-4 w-4" /> Créer la fiche</>}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowManualCreate(false)}>Annuler</Button>
             </div>
           </div>
         )}
@@ -697,6 +841,24 @@ const AdminSpeakersCRM = () => {
             <option value="set">Tarif renseigné</option>
             <option value="unset">Tarif non renseigné</option>
           </select>
+          {/* Fee range filter */}
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              placeholder="Min €"
+              value={feeMinFilter}
+              onChange={e => setFeeMinFilter(e.target.value)}
+              className="w-20 h-9 text-sm"
+            />
+            <span className="text-xs text-muted-foreground">à</span>
+            <Input
+              type="number"
+              placeholder="Max €"
+              value={feeMaxFilter}
+              onChange={e => setFeeMaxFilter(e.target.value)}
+              className="w-20 h-9 text-sm"
+            />
+          </div>
           <select className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value={genderFilter} onChange={e => setGenderFilter(e.target.value as any)}>
             <option value="all">Sexe : tous</option>
             <option value="male">Homme</option>
@@ -814,12 +976,18 @@ const AdminSpeakersCRM = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Ville</Label>
-                  <Input value={editForm.city || ""} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))} placeholder="Paris" />
+                  <Input value={editForm.city || ""} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))} placeholder="Ville du conférencier" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
                   <Input type="number" value={editForm.base_fee ?? ""} onChange={e => setEditForm(p => ({ ...p, base_fee: e.target.value ? Number(e.target.value) : null }))} placeholder="3000" />
                 </div>
+              </div>
+
+              {/* Fee details */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">📋 Détails des tarifs (tous les tarifs : physique, distanciel, province…)</Label>
+                <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} placeholder="5K Paris, 8 à 10K province, 3K online" />
               </div>
 
               {/* Phone & Email (internal only) */}

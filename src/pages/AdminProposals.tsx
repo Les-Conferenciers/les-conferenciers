@@ -120,6 +120,10 @@ const AdminProposals = () => {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
+  const [eventCity, setEventCity] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [audienceSize, setAudienceSize] = useState("");
+  const [isEnglish, setIsEnglish] = useState(false);
   const defaultMessage = `Bonjour,
 
 Suite à notre échange, j'ai le plaisir de vous adresser une sélection de conférenciers correspondant à vos attentes.
@@ -263,7 +267,22 @@ Belle journée,`;
   const handleCreate = async () => {
     if (!clientName || !clientEmail || selectedSpeakers.length === 0) { toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier"); return; }
     setSubmitting(true);
-    const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: message || null, recipient_name: recipientName || null }).select().single();
+    // Build contextual message with event details
+    let contextLine = "";
+    if (eventCity || eventDate || audienceSize) {
+      const parts = [];
+      if (eventCity && eventDate) parts.push(`pour votre événement qui aura lieu à ${eventCity} le ${eventDate}`);
+      else if (eventCity) parts.push(`pour votre événement à ${eventCity}`);
+      else if (eventDate) parts.push(`pour votre événement le ${eventDate}`);
+      if (audienceSize) parts.push(`devant un auditoire de ${audienceSize} personnes`);
+      contextLine = parts.join(", ");
+    }
+    if (isEnglish) {
+      contextLine = contextLine ? `${contextLine} (intervention en anglais)` : "(intervention en anglais)";
+    }
+    const finalMessage = contextLine ? `${message}\n\n${contextLine}` : message;
+    
+    const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null }).select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     await supabase.from("proposal_speakers").insert(selectedSpeakers.map((s, i) => ({
       proposal_id: proposal.id, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee, travel_costs: s.travel_costs,
@@ -272,7 +291,7 @@ Belle journée,`;
     })));
     toast.success("Proposition créée !"); setDialogOpen(false); resetForm(); fetchAll(); setSubmitting(false);
   };
-  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setSelectedSpeakers([]); };
+  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setEventCity(""); setEventDate(""); setAudienceSize(""); setIsEnglish(false); setSelectedSpeakers([]); };
 
   const handleSend = async (proposal: Proposal) => {
     setSending(proposal.id);
@@ -523,6 +542,15 @@ Belle journée,`;
                 <p className="text-[11px] text-muted-foreground">Affiché en titre : « Votre proposition personnalisée — {recipientName || "Prénom Nom"} pour {clientName || "Société"} »</p>
               </div>
               <div className="space-y-2"><Label>Message personnalisé (optionnel)</Label><Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Bonjour, suite à notre échange..." rows={3} /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2"><Label>Ville de l'événement</Label><Input value={eventCity} onChange={e => setEventCity(e.target.value)} placeholder="Paris" /></div>
+                <div className="space-y-2"><Label>Date de l'événement</Label><Input value={eventDate} onChange={e => setEventDate(e.target.value)} placeholder="15 mars 2026" /></div>
+                <div className="space-y-2"><Label>Taille auditoire</Label><Input value={audienceSize} onChange={e => setAudienceSize(e.target.value)} placeholder="200" /></div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={isEnglish} onCheckedChange={(v) => setIsEnglish(!!v)} />
+                <span className="text-sm">Intervention en anglais</span>
+              </label>
               <div className="space-y-3">
                 <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
                 {selectedSpeakers.map(ps => {
@@ -555,10 +583,10 @@ Belle journée,`;
                         </div>
                       )}
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1"><Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label><Input type="number" placeholder="0" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} /></div>
-                        <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" placeholder="0" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} /></div>
+                        <div className="space-y-1"><Label className="text-xs text-muted-foreground">Cachet conférencier HT (€)</Label><Input type="number" placeholder="0" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} /></div>
                         <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="number" placeholder="1000" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} /></div>
-                        <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label><Input type="number" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} className="font-bold" /></div>
+                        <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" placeholder="0" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} /></div>
+                        <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total HT (€)</Label><Input type="number" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} className="font-bold" /></div>
                       </div>
                       <p className="text-[10px] text-muted-foreground">Tarif de base : {speakers.find(s => s.id === ps.speaker_id)?.base_fee?.toLocaleString("fr-FR") ?? "—"} € · Commission : +{COMMISSION.toLocaleString("fr-FR")} €</p>
                     </div>
