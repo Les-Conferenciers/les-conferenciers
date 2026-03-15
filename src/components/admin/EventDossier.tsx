@@ -141,6 +141,16 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [saving, setSaving] = useState(false);
+  // Client for contract creation
+  const [contractClientId, setContractClientId] = useState<string>("");
+  const [showCreateClientInContract, setShowCreateClientInContract] = useState(false);
+  const [newContractClientCompany, setNewContractClientCompany] = useState("");
+  const [newContractClientContact, setNewContractClientContact] = useState("");
+  const [newContractClientEmail, setNewContractClientEmail] = useState("");
+  const [newContractClientPhone, setNewContractClientPhone] = useState("");
+  const [newContractClientSiret, setNewContractClientSiret] = useState("");
+  const [newContractClientAddress, setNewContractClientAddress] = useState("");
+  const [newContractClientCity, setNewContractClientCity] = useState("");
 
   // Contract email
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
