@@ -690,21 +690,27 @@ Nelly Sabde — Les Conférenciers`);
     const liaisonContent = `
 
 📋 FEUILLE DE LIAISON
+${event?.event_title ? `\nÉvénement : ${event.event_title}` : ""}
+📅 Date de l'évènement : ${dateStr}
+📍 Lieu de l'intervention : ${contract?.event_location || ""}
+🕐 Horaires de l'intervention : ${contract?.event_time || ""}
+${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
+${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
+👥 Auditoire : ${event?.audience_size || ""}
+📋 Thématique : ${event?.theme || ""}
+${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
+🚗 Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
+${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
+${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
 
-Date de l'évènement : ${dateStr}
-Lieu de l'intervention : ${contract?.event_location || ""}
-Horaires de l'intervention : ${contract?.event_time || ""}
-Auditoire : ${event?.audience_size || ""}
-Thématique : ${event?.theme || ""}
-Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
-
-Besoins techniques :
+🔧 Besoins techniques :
 ${liaisonTechNeeds ? `- ${liaisonTechNeeds}` : ""}
 ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 
-Contact client : ${proposal.recipient_name || proposal.client_name} — ${proposal.client_email}
-Contact conférencier : ${speakerName}${speaker?.phone ? ` — ${speaker.phone}` : ""}
-${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
+👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` — ${event.contact_on_site_phone}` : ""} — ${event?.contact_on_site_email || proposal.client_email}
+🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` — ${speaker.phone}` : ""}
+${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
+${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
     const clientCcList = liaisonClientCc.split(",").map(e => e.trim()).filter(Boolean);
     const speakerCcList = liaisonSpeakerCc.split(",").map(e => e.trim()).filter(Boolean);
