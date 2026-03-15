@@ -759,21 +759,59 @@ Nelly Sabde — Les Conférenciers`);
       </div>
 
       <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-        {steps.map((step, i) => (
-          <div key={i} className={`text-center p-2 rounded-lg border text-[10px] leading-tight ${
+        {steps.map((step, i) => {
+          const stepClasses = `text-center p-2 rounded-lg border text-[10px] leading-tight ${
             step.done
               ? "bg-green-50 border-green-200 text-green-700"
               : "bg-muted/30 border-border text-muted-foreground"
-          }`}>
-            <div className="text-base mb-0.5">{step.done ? "✓" : "○"}</div>
-            <div className="font-medium">{step.label}</div>
-            {step.done && step.date && (
-              <div className="text-[8px] mt-0.5 opacity-70">
-                {new Date(step.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-              </div>
-            )}
-          </div>
-        ))}
+          }`;
+          const stepContent = (
+            <>
+              <div className="text-base mb-0.5">{step.done ? "✓" : "○"}</div>
+              <div className="font-medium">{step.label}</div>
+              {step.done && step.date && (
+                <div className="text-[8px] mt-0.5 opacity-70">
+                  {new Date(step.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
+                </div>
+              )}
+            </>
+          );
+
+          // Visio step gets a Calendar popover
+          if (i === 4) {
+            return (
+              <Popover key={i}>
+                <PopoverTrigger asChild>
+                  <button className={cn(stepClasses, "cursor-pointer hover:border-primary/50 transition-colors")}>
+                    {stepContent}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4 space-y-3" align="center">
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5" /> Visio préparatoire
+                  </Label>
+                  <Calendar
+                    mode="single"
+                    selected={visioQuickDate}
+                    onSelect={setVisioQuickDate}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Heure</Label>
+                    <Input value={visioQuickTime} onChange={e => setVisioQuickTime(e.target.value)} placeholder="10h00" className="h-8 text-sm" />
+                  </div>
+                  <Button size="sm" className="w-full" onClick={handleSaveVisioQuick}>Enregistrer</Button>
+                </PopoverContent>
+              </Popover>
+            );
+          }
+
+          return (
+            <div key={i} className={stepClasses}>
+              {stepContent}
+            </div>
+          );
+        })}
       </div>
 
       {/* Event details summary */}
