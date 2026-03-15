@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import {
   FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil,
-  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon,
+  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon, UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -89,6 +89,7 @@ type EventData = {
   liaison_sheet_sent_at: string | null;
   speaker_paid_at: string | null;
   notes: string | null;
+  selected_speaker_id: string | null;
 };
 
 type ContractLine = {
@@ -97,6 +98,17 @@ type ContractLine = {
   amount_ht: number;
   tva_rate: number;
   type: "speaker" | "travel" | "custom";
+};
+
+type ClientContact = {
+  id: string;
+  company_name: string;
+  contact_name: string | null;
+  email: string | null;
+  phone: string | null;
+  siret: string | null;
+  address: string | null;
+  city: string | null;
 };
 
 type Props = {
@@ -135,6 +147,18 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
   const [sendingContract, setSendingContract] = useState(false);
+
+  // Client contact for contract email
+  const [clients, setClients] = useState<ClientContact[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [contractRecipientEmail, setContractRecipientEmail] = useState("");
+  const [contractRecipientName, setContractRecipientName] = useState("");
+  const [showCreateClient, setShowCreateClient] = useState(false);
+  const [newClientCompany, setNewClientCompany] = useState("");
+  const [newClientContact, setNewClientContact] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [creatingClient, setCreatingClient] = useState(false);
 
   // Speaker info email
   const [speakerEmailOpen, setSpeakerEmailOpen] = useState(false);
@@ -193,6 +217,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
 
   useEffect(() => {
     fetchData();
+    fetchClients();
   }, [proposal.id]);
 
   const fetchData = async () => {
@@ -208,6 +233,11 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setLoading(false);
   };
 
+  const fetchClients = async () => {
+    const { data } = await supabase.from("clients").select("id, company_name, contact_name, email, phone, siret, address, city").order("company_name");
+    setClients((data as any) || []);
+  };
+
   // ─── Auto-create event if missing ───
   useEffect(() => {
     if (!loading && !event) {
@@ -215,12 +245,34 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     }
   }, [loading, event]);
 
+  // Auto-select speaker if only one
+  useEffect(() => {
+    if (event && !event.selected_speaker_id && proposal.proposal_speakers.length === 1 && proposal.proposal_speakers[0]?.speaker_id) {
+      supabase.from("events").update({ selected_speaker_id: proposal.proposal_speakers[0].speaker_id } as any).eq("id", event.id).then(() => fetchData());
+    }
+  }, [event?.id, event?.selected_speaker_id]);
+
   // Sync visio quick picker from event data
   useEffect(() => {
     if (event?.visio_date) setVisioQuickDate(new Date(event.visio_date + "T12:00:00"));
     else setVisioQuickDate(undefined);
     setVisioQuickTime(event?.visio_time || "");
   }, [event?.visio_date, event?.visio_time]);
+
+  // ─── Selected speaker helper ───
+  const getSelectedSpeaker = () => {
+    if (!event?.selected_speaker_id) return proposal.proposal_speakers[0] || null;
+    return proposal.proposal_speakers.find(ps => ps.speaker_id === event.selected_speaker_id) || proposal.proposal_speakers[0] || null;
+  };
+
+  const getSelectedSpeakerInfo = () => getSelectedSpeaker()?.speakers || null;
+
+  const handleSelectSpeaker = async (speakerId: string) => {
+    if (!event) return;
+    await supabase.from("events").update({ selected_speaker_id: speakerId } as any).eq("id", event.id);
+    toast.success("Conférencier sélectionné");
+    fetchData();
+  };
 
   // ─── Compute totals ───
   const computeTotals = (lines: ContractLine[], discount: number) => {
@@ -253,7 +305,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const effectiveLines = getEffectiveLines();
   const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount);
 
-  const speakerSummary = effectiveLines
+  const selectedSpeaker = getSelectedSpeaker();
+  const speakerInfo = getSelectedSpeakerInfo();
+  const speakerSummary = speakerInfo?.name || effectiveLines
     .filter(l => l.type === "speaker")
     .map(l => l.label)
     .join(", ") || proposal.proposal_speakers.map(s => s.speakers?.name || "—").join(", ");
@@ -324,6 +378,13 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     if (!contract) return;
     const dateStr = contract.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "à définir";
     const totals = computeTotals(getEffectiveLines(), contract.discount_percent || 0);
+
+    // Pre-fill recipient from proposal
+    setContractRecipientName(proposal.recipient_name || "");
+    setContractRecipientEmail(proposal.client_email);
+    setSelectedClientId("");
+    setShowCreateClient(false);
+
     setContractEmailSubject(`Bon de commande — ${proposal.client_name} — Les Conférenciers`);
     setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
@@ -344,12 +405,57 @@ Nelly Sabde — Les Conférenciers`);
     setContractEmailOpen(true);
   };
 
+  const handleSelectClient = (clientId: string) => {
+    setSelectedClientId(clientId);
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      setContractRecipientName(client.contact_name || "");
+      setContractRecipientEmail(client.email || "");
+      // Update email body greeting
+      const firstName = client.contact_name?.split(" ")[0] || "";
+      setContractEmailBody(prev => {
+        const lines = prev.split("\n");
+        if (lines[0]?.startsWith("Bonjour")) {
+          lines[0] = `Bonjour${firstName ? ` ${firstName}` : ""},`;
+        }
+        return lines.join("\n");
+      });
+    }
+  };
+
+  const handleCreateNewClient = async () => {
+    if (!newClientCompany) { toast.error("Nom de société requis"); return; }
+    setCreatingClient(true);
+    const { data, error } = await supabase.from("clients").insert({
+      company_name: newClientCompany,
+      contact_name: newClientContact || null,
+      email: newClientEmail || null,
+      phone: newClientPhone || null,
+    } as any).select().single();
+    if (error || !data) { toast.error("Erreur création client"); setCreatingClient(false); return; }
+    toast.success("Client créé !");
+    await fetchClients();
+    // Auto-select new client
+    setSelectedClientId((data as any).id);
+    setContractRecipientName(newClientContact || "");
+    setContractRecipientEmail(newClientEmail || "");
+    setShowCreateClient(false);
+    setNewClientCompany(""); setNewClientContact(""); setNewClientEmail(""); setNewClientPhone("");
+    setCreatingClient(false);
+  };
+
   const handleSendContractEmail = async () => {
     if (!contract) return;
+    if (!contractRecipientEmail) { toast.error("Email du destinataire requis"); return; }
     setSendingContract(true);
     try {
       const { error } = await supabase.functions.invoke("send-contract-email", {
-        body: { contract_id: contract.id, email_subject: contractEmailSubject, email_body: contractEmailBody },
+        body: {
+          contract_id: contract.id,
+          email_subject: contractEmailSubject,
+          email_body: contractEmailBody,
+          recipient_email: contractRecipientEmail,
+        },
       });
       if (error) throw error;
       await supabase.from("contracts").update({ status: "sent" } as any).eq("id", contract.id);
@@ -363,7 +469,7 @@ Nelly Sabde — Les Conférenciers`);
   // ─── Speaker email ───
   const openSpeakerEmail = (type: "info" | "contract") => {
     setSpeakerEmailType(type);
-    const speaker = proposal.proposal_speakers[0]?.speakers;
+    const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "le conférencier";
     const firstName = speakerName.split(" ")[0];
     const isFormal = speaker?.formal_address !== false;
@@ -371,7 +477,7 @@ Nelly Sabde — Les Conférenciers`);
     const vouvoi = isFormal;
 
     const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "à définir";
-    const ps = proposal.proposal_speakers[0];
+    const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
 
     if (type === "info") {
@@ -417,8 +523,8 @@ Nelly Sabde — Les Conférenciers`);
 
   const handleSendSpeakerEmail = async () => {
     setSendingSpeakerEmail(true);
-    const speaker = proposal.proposal_speakers[0]?.speakers;
-    const speakerEmail = (speaker as any)?.email;
+    const speaker = getSelectedSpeakerInfo();
+    const speakerEmail = speaker?.email;
     
     if (!speakerEmail) {
       toast.error("Pas d'email renseigné pour ce conférencier");
@@ -451,7 +557,7 @@ Nelly Sabde — Les Conférenciers`);
 
   // ─── Liaison Sheet ───
   const openLiaisonDialog = () => {
-    const speaker = proposal.proposal_speakers[0]?.speakers;
+    const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
     const speakerFirstName = speakerName.split(" ")[0];
     const isFormal = speaker?.formal_address !== false;
@@ -468,7 +574,7 @@ Nelly Sabde — Les Conférenciers`);
 
 Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
 
-Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}${(speaker as any)?.phone ? " laissant apparaître son numéro de téléphone portable" : ""}.
+Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}${speaker?.phone ? " laissant apparaître son numéro de téléphone portable" : ""}.
 
 Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
 
@@ -487,7 +593,7 @@ ${isFormal ? "À très bientôt !" : "A très vite !"}
 Nelly Sabde — Les Conférenciers`);
 
     // Pre-fill CC with speaker email if sending to client first
-    const speakerEmail = (speaker as any)?.email || "";
+    const speakerEmail = speaker?.email || "";
     setLiaisonCcEmails(speakerEmail ? speakerEmail : "");
 
     setLiaisonDialogOpen(true);
@@ -495,7 +601,7 @@ Nelly Sabde — Les Conférenciers`);
 
   const handleSendLiaisonSheet = async () => {
     setSendingLiaison(true);
-    const speaker = proposal.proposal_speakers[0]?.speakers;
+    const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
     const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
 
@@ -515,7 +621,7 @@ Besoins techniques :
 ${liaisonTechNeeds}
 
 Contact client : ${proposal.recipient_name || proposal.client_name} — ${proposal.client_email}
-Contact conférencier : ${speakerName}${(speaker as any)?.phone ? ` — ${(speaker as any).phone}` : ""}
+Contact conférencier : ${speakerName}${speaker?.phone ? ` — ${speaker.phone}` : ""}
 ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
 
     const ccList = liaisonCcEmails.split(",").map(e => e.trim()).filter(Boolean);
@@ -533,7 +639,7 @@ ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
       });
 
       // Send to speaker if has email
-      const speakerEmail = (speaker as any)?.email;
+      const speakerEmail = speaker?.email;
       if (speakerEmail) {
         await supabase.functions.invoke("send-contact-email", {
           body: {
@@ -747,6 +853,59 @@ Nelly Sabde — Les Conférenciers`);
 
   return (
     <div className="space-y-6 mt-4 border-t border-border pt-4">
+
+      {/* ─── Speaker Selector ─── */}
+      {proposal.proposal_speakers.length > 1 && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+          <Label className="text-xs font-semibold flex items-center gap-2 mb-2">
+            <User className="h-4 w-4" /> Conférencier retenu pour la prestation
+          </Label>
+          <div className="flex flex-wrap gap-2">
+            {proposal.proposal_speakers.map(ps => {
+              const isSelected = event?.selected_speaker_id === ps.speaker_id;
+              return (
+                <button
+                  key={ps.speaker_id}
+                  onClick={() => ps.speaker_id && handleSelectSpeaker(ps.speaker_id)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground font-medium shadow-sm"
+                      : "border-border bg-background hover:border-primary/50 text-foreground"
+                  )}
+                >
+                  <span>{ps.speakers?.name || "—"}</span>
+                  {ps.speakers?.email && (
+                    <span className={cn("text-[10px]", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                      ({ps.speakers.email})
+                    </span>
+                  )}
+                  {isSelected && <CheckCircle className="h-3.5 w-3.5" />}
+                </button>
+              );
+            })}
+          </div>
+          {event?.selected_speaker_id && speakerInfo && (
+            <p className="text-[10px] text-muted-foreground mt-2">
+              📧 Email : {speakerInfo.email || "non renseigné"} · 📞 Tél : {speakerInfo.phone || "non renseigné"}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Single speaker display */}
+      {proposal.proposal_speakers.length === 1 && speakerInfo && (
+        <div className="bg-muted/30 rounded-lg p-3 flex items-center gap-3">
+          <User className="h-4 w-4 text-muted-foreground" />
+          <div className="text-sm">
+            <span className="font-medium">{speakerInfo.name}</span>
+            <span className="text-muted-foreground text-xs ml-2">
+              📧 {speakerInfo.email || "—"} · 📞 {speakerInfo.phone || "—"}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ─── Tracking Dashboard ─── */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -872,6 +1031,7 @@ Nelly Sabde — Les Conférenciers`);
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Mail className="h-4 w-4" /> Communication conférencier
+          {speakerInfo && <span className="text-xs font-normal text-muted-foreground">— {speakerInfo.name}</span>}
         </h3>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => openSpeakerEmail("info")}>
@@ -1068,13 +1228,100 @@ Nelly Sabde — Les Conférenciers`);
         </DialogContent>
       </Dialog>
 
-      {/* Contract email dialog */}
+      {/* Contract email dialog with client selector */}
       <Dialog open={contractEmailOpen} onOpenChange={setContractEmailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat — {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
+
+            {/* Client contact selector */}
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+              <Label className="text-xs font-semibold flex items-center gap-2">
+                <User className="h-3.5 w-3.5" /> Destinataire du contrat
+              </Label>
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
+                  value={selectedClientId}
+                  onChange={e => {
+                    if (e.target.value === "__new__") {
+                      setShowCreateClient(true);
+                      setSelectedClientId("");
+                    } else if (e.target.value) {
+                      handleSelectClient(e.target.value);
+                    } else {
+                      setSelectedClientId("");
+                      setContractRecipientName(proposal.recipient_name || "");
+                      setContractRecipientEmail(proposal.client_email);
+                    }
+                  }}
+                >
+                  <option value="">— Utiliser les infos de la proposition —</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.company_name}{c.contact_name ? ` — ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
+                    </option>
+                  ))}
+                  <option value="__new__">➕ Créer un nouveau client…</option>
+                </select>
+              </div>
+
+              {/* Inline create client form */}
+              {showCreateClient && (
+                <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <UserPlus className="h-3.5 w-3.5" /> Nouveau client
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Société *</Label>
+                      <Input value={newClientCompany} onChange={e => setNewClientCompany(e.target.value)} placeholder="SNCF" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Nom du contact</Label>
+                      <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="Pascal Dupont" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Email</Label>
+                      <Input type="email" value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} placeholder="email@societe.com" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Téléphone</Label>
+                      <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="06 XX XX XX XX" className="h-8 text-sm" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleCreateNewClient} disabled={creatingClient} className="gap-1">
+                      <UserPlus className="h-3 w-3" /> {creatingClient ? "Création…" : "Créer et sélectionner"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowCreateClient(false)}>Annuler</Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Editable recipient fields */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Nom du destinataire</Label>
+                  <Input value={contractRecipientName} onChange={e => setContractRecipientName(e.target.value)} className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Email du destinataire</Label>
+                  <Input type="email" value={contractRecipientEmail} onChange={e => setContractRecipientEmail(e.target.value)} className="h-8 text-sm" />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={contractEmailSubject} onChange={e => setContractEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={contractEmailBody} onChange={e => setContractEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
+
+            {/* Recap */}
+            <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
+              <p>📧 <strong>Destinataire :</strong> {contractRecipientName || "—"} &lt;{contractRecipientEmail || "—"}&gt;</p>
+              <p>🎤 <strong>Conférencier :</strong> {speakerSummary}</p>
+              {getContractSignUrl() && <p>🔗 <strong>Lien signature :</strong> {getContractSignUrl()}</p>}
+            </div>
+
             <Button className="w-full" onClick={handleSendContractEmail} disabled={sendingContract}>
               <Send className="h-4 w-4 mr-2" />{sendingContract ? "Envoi…" : "Envoyer le contrat"}
             </Button>
@@ -1094,7 +1341,7 @@ Nelly Sabde — Les Conférenciers`);
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={speakerEmailSubject} onChange={e => setSpeakerEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={speakerEmailBody} onChange={e => setSpeakerEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
             <p className="text-[10px] text-muted-foreground">
-              📧 Sera envoyé à : {(proposal.proposal_speakers[0]?.speakers as any)?.email || "Pas d'email renseigné"}
+              📧 Sera envoyé à : {speakerInfo?.email || "Pas d'email renseigné"}
             </p>
             <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
               <Send className="h-4 w-4 mr-2" />{sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
@@ -1135,10 +1382,10 @@ Nelly Sabde — Les Conférenciers`);
                 <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-mono text-[11px]">
                   {liaisonTab === "client"
                     ? (proposal.recipient_name?.split(" ")[0] || "Prénom client")
-                    : (proposal.proposal_speakers[0]?.speakers?.name?.split(" ")[0] || "Prénom conf.")}
+                    : (speakerInfo?.name?.split(" ")[0] || "Prénom conf.")}
                 </span>
                 <span className="px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-mono text-[11px]">
-                  {proposal.proposal_speakers[0]?.speakers?.name || "Nom complet conférencier"}
+                  {speakerInfo?.name || "Nom complet conférencier"}
                 </span>
               </div>
             </div>
@@ -1164,7 +1411,7 @@ Nelly Sabde — Les Conférenciers`);
 
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
               <p>📧 <strong>Client :</strong> {proposal.client_email}</p>
-              <p>🎤 <strong>Conférencier :</strong> {(proposal.proposal_speakers[0]?.speakers as any)?.email || "Pas d'email renseigné"}</p>
+              <p>🎤 <strong>Conférencier :</strong> {speakerInfo?.email || "Pas d'email renseigné"}</p>
               {liaisonCcEmails && <p>📋 <strong>CC :</strong> {liaisonCcEmails}</p>}
             </div>
 
@@ -1233,10 +1480,19 @@ Nelly Sabde — Les Conférenciers`);
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label className="text-xs">Montant HT (€)</Label><Input type="number" value={editAmountHT} onChange={e => setEditAmountHT(Number(e.target.value))} /></div>
-              <div className="space-y-1"><Label className="text-xs">TVA (%)</Label><Input type="number" value={editTvaRate} onChange={e => setEditTvaRate(Number(e.target.value))} /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">TVA</Label>
+                <Select value={String(editTvaRate)} onValueChange={v => setEditTvaRate(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{TVA_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-1"><Label className="text-xs">Échéance</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
-            <Button className="w-full" onClick={handleSaveInvoice}>Enregistrer</Button>
+            <div className="space-y-1"><Label className="text-xs">Date d'échéance</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
+            <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
+              <span>Total TTC</span><span>{(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+            </div>
+            <Button className="w-full" onClick={handleSaveInvoice}>Mettre à jour</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1244,12 +1500,13 @@ Nelly Sabde — Les Conférenciers`);
       {/* Invoice email dialog */}
       <Dialog open={invoiceEmailOpen} onOpenChange={setInvoiceEmailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Envoyer {emailInvoice?.invoice_number}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">Envoyer {emailInvoice?.invoice_number} — {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={invoiceEmailSubject} onChange={e => setInvoiceEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={invoiceEmailBody} onChange={e => setInvoiceEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
+            <p className="text-[10px] text-muted-foreground">📧 Sera envoyé à : {proposal.client_email}</p>
             <Button className="w-full" onClick={handleSendInvoiceEmail} disabled={sendingInvoice}>
-              <Send className="h-4 w-4 mr-2" />{sendingInvoice ? "Envoi…" : "Envoyer la facture"}
+              <Send className="h-4 w-4 mr-2" />{sendingInvoice ? "Envoi…" : `Envoyer la facture`}
             </Button>
           </div>
         </DialogContent>
