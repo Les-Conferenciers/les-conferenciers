@@ -9,9 +9,18 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 
+type ContractLine = {
+  id: string;
+  label: string;
+  amount_ht: number;
+  tva_rate: number;
+  type: string;
+};
+
 type ContractData = {
   id: string;
   token: string;
+  proposal_id: string;
   event_date: string | null;
   event_location: string | null;
   event_time: string | null;
@@ -21,16 +30,17 @@ type ContractData = {
   signer_name: string | null;
   signed_at: string | null;
   created_at: string;
+  contract_lines: ContractLine[] | null;
+  discount_percent: number | null;
   proposal: {
     client_name: string;
     client_email: string;
     recipient_name: string | null;
+    client_id: string | null;
     proposal_speakers: {
       speaker_fee: number | null;
-      travel_costs: number | null;
-      agency_commission: number | null;
       total_price: number | null;
-      speakers: { name: string } | null;
+      speakers: { name: string; gender: string | null } | null;
     }[];
   };
 };
@@ -38,6 +48,8 @@ type ContractData = {
 const ContractSign = () => {
   const { token } = useParams();
   const [contract, setContract] = useState<ContractData | null>(null);
+  const [client, setClient] = useState<any>(null);
+  const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [signerName, setSignerName] = useState("");
   const [accepted, setAccepted] = useState(false);
@@ -45,47 +57,35 @@ const ContractSign = () => {
   const [signed, setSigned] = useState(false);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchAll = async () => {
       const { data } = await supabase
         .from("contracts")
-        .select(`
-          *,
-          proposal:proposals(
-            client_name, client_email, recipient_name,
-            proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(name))
-          )
-        `)
+        .select(`*, proposal:proposals(client_name, client_email, recipient_name, client_id, proposal_speakers(speaker_fee, total_price, speakers(name, gender)))`)
         .eq("token", token!)
         .single();
       const c = data as any;
       setContract(c);
       if (c?.status === "signed") setSigned(true);
+
+      if (c?.proposal?.client_id) {
+        const { data: cl } = await supabase.from("clients").select("company_name, contact_name, address, city, siret").eq("id", c.proposal.client_id).single();
+        setClient(cl);
+      }
+      const { data: ev } = await supabase.from("events").select("bdc_number, audience_size, theme").eq("proposal_id", c?.proposal_id).maybeSingle();
+      setEvent(ev);
+
       setLoading(false);
     };
-    fetch();
+    fetchAll();
   }, [token]);
 
   const handleSign = async () => {
     if (!contract || !signerName.trim() || !accepted) return;
     setSigning(true);
-
-    const { error } = await supabase
-      .from("contracts")
-      .update({
-        status: "signed",
-        signer_name: signerName.trim(),
-        signer_ip: "client", // actual IP would need server-side
-        signed_at: new Date().toISOString(),
-      } as any)
-      .eq("token", token!);
-
-    if (error) {
-      toast.error("Erreur lors de la signature");
-      console.error(error);
-    } else {
-      setSigned(true);
-      toast.success("Contrat signé avec succès !");
-    }
+    const { error } = await supabase.from("contracts").update({
+      status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: new Date().toISOString(),
+    } as any).eq("token", token!);
+    if (error) { toast.error("Erreur lors de la signature"); } else { setSigned(true); toast.success("Contrat signé avec succès !"); }
     setSigning(false);
   };
 
@@ -94,97 +94,121 @@ const ContractSign = () => {
 
   const proposal = contract.proposal as any;
   const speakers = proposal?.proposal_speakers || [];
-  const totalHT = speakers.reduce((sum: number, s: any) => sum + (s.total_price || 0), 0);
-  const tva = totalHT * 0.2;
-  const totalTTC = totalHT + tva;
-  const acompte = totalTTC * (COMPANY.paymentTerms.deposit / 100);
+  const firstSpeaker = speakers[0]?.speakers;
+  const speakerGender = firstSpeaker?.gender === "female" ? "Madame" : "Monsieur";
 
-  const formatDate = (d: string | null) =>
-    d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "À définir";
+  const lines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
+    ? contract.contract_lines
+    : speakers.map((s: any, i: number) => ({ id: String(i), label: s.speakers?.name || `Conférencier ${i + 1}`, amount_ht: s.total_price || 0, tva_rate: 20, type: "speaker" }));
+
+  const discount = contract.discount_percent || 0;
+  const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
+  const discountAmount = subtotalHT * (discount / 100);
+  const totalHT = subtotalHT - discountAmount;
+  const totalTVA = lines.reduce((sum, l) => {
+    const share = subtotalHT > 0 ? l.amount_ht / subtotalHT : 0;
+    return sum + (l.amount_ht - discountAmount * share) * (l.tva_rate / 100);
+  }, 0);
+  const totalTTC = totalHT + totalTVA;
+
+  const formatDateLong = (d: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "À définir";
+  const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+  const bdcNumber = event?.bdc_number || contract.id.slice(0, 4).toUpperCase();
+  const clientName = client?.company_name || proposal?.client_name || "";
 
   return (
     <div className="min-h-screen bg-[#f8f6f1]">
       <div className="max-w-[800px] mx-auto p-6 md:p-10">
-        {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-2xl font-serif font-bold text-[#1a2332]">Les Conférenciers</h1>
-          <p className="text-sm text-[#1a2332]/60 mt-1">Contrat de prestation</p>
+          <p className="text-sm text-[#1a2332]/60 mt-1">Bon de commande</p>
         </div>
 
-        {/* Contract content */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Header bar */}
           <div className="bg-[#1a2332] px-6 py-4">
             <div className="flex items-center gap-2 text-white">
               <FileText className="h-5 w-5" />
-              <h2 className="font-semibold">Contrat de prestation</h2>
+              <h2 className="font-semibold">BON DE COMMANDE — CONDITIONS PARTICULIÈRES</h2>
             </div>
-            <p className="text-white/60 text-sm mt-1">Réf. CTR-{contract.id.slice(0, 8).toUpperCase()}</p>
+            <p className="text-white/60 text-sm mt-1">N° {bdcNumber} — Émis le {formatDate(contract.created_at)}</p>
           </div>
 
           <div className="p-6 space-y-6 text-[13px] text-gray-700">
-            {/* Parties */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="font-semibold text-gray-900 mb-1">Le prestataire</p>
-                <p>{COMPANY.tradeName}</p>
-                <p>{COMPANY.fullAddress}</p>
-                <p>SIRET : {COMPANY.siret}</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="font-semibold text-gray-900 mb-1">Le client</p>
-                <p className="font-medium">{proposal?.client_name}</p>
-                {proposal?.recipient_name && <p>Att. : {proposal.recipient_name}</p>}
-              </div>
-            </div>
-
-            {/* Event */}
+            {/* ENTRE */}
             <div>
-              <h3 className="font-bold text-gray-900 mb-2">Objet de la prestation</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex gap-2"><span className="text-gray-500">Date :</span><span>{formatDate(contract.event_date)}</span></div>
-                <div className="flex gap-2"><span className="text-gray-500">Lieu :</span><span>{contract.event_location || "À définir"}</span></div>
-                <div className="flex gap-2"><span className="text-gray-500">Horaires :</span><span>{contract.event_time || "À définir"}</span></div>
-                <div className="flex gap-2"><span className="text-gray-500">Format :</span><span>{contract.event_format || "Conférence"}</span></div>
+              <h3 className="font-bold text-gray-900 mb-3">ENTRE</h3>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                  <p className="font-bold">{clientName}</p>
+                  {client?.address && <p>{client.address} {client.city}</p>}
+                  {client?.siret && <p>{client.siret}</p>}
+                  <p className="text-sm italic text-gray-500 mt-2">(ci-après le « Client »)</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                  <p className="font-bold">Les Conférenciers</p>
+                  <p>Société Eve</p>
+                  <p className="text-sm">N° SIREN : {COMPANY.siret}</p>
+                  <p className="text-sm">{COMPANY.fullAddress}</p>
+                  <p className="text-sm italic text-gray-500 mt-2">(ci-après « Les conférenciers »)</p>
+                </div>
               </div>
             </div>
 
-            {/* Speakers */}
+            {/* Intervenant */}
             <div>
-              <h3 className="font-bold text-gray-900 mb-2">Conférencier(s) et tarification</h3>
-              <table className="w-full text-sm">
-                <thead><tr className="bg-gray-100 text-left"><th className="py-2 px-3">Conférencier</th><th className="py-2 px-3 text-right">Total HT</th></tr></thead>
-                <tbody>
-                  {speakers.map((s: any, i: number) => (
-                    <tr key={i} className="border-b"><td className="py-2 px-3">{s.speakers?.name || "—"}</td><td className="py-2 px-3 text-right">{(s.total_price || 0).toLocaleString("fr-FR")} €</td></tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-gray-50"><td className="py-2 px-3 text-right font-semibold">Total HT</td><td className="py-2 px-3 text-right font-bold">{totalHT.toLocaleString("fr-FR")} €</td></tr>
-                  <tr><td className="py-1 px-3 text-right text-gray-500">TVA 20%</td><td className="py-1 px-3 text-right text-gray-500">{tva.toLocaleString("fr-FR")} €</td></tr>
-                  <tr className="bg-[#1a2332] text-white"><td className="py-2 px-3 text-right font-bold">Total TTC</td><td className="py-2 px-3 text-right font-bold">{totalTTC.toLocaleString("fr-FR")} €</td></tr>
-                </tfoot>
-              </table>
+              <h3 className="font-bold text-gray-900 mb-1">Intervenant</h3>
+              <p>{speakerGender} {firstSpeaker?.name || "—"}</p>
+              <p className="text-sm italic text-gray-500">ci-après l'« Intervenant »</p>
             </div>
 
-            {/* Payment */}
+            {/* Événement */}
             <div>
-              <h3 className="font-bold text-gray-900 mb-2">Conditions de paiement</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Acompte de {COMPANY.paymentTerms.deposit}% ({acompte.toLocaleString("fr-FR")} € TTC) à la signature.</li>
-                <li>Solde de {100 - COMPANY.paymentTerms.deposit}% ({(totalTTC - acompte).toLocaleString("fr-FR")} € TTC) {COMPANY.paymentTerms.balanceDaysBefore} jours avant l'événement.</li>
-              </ul>
+              <h3 className="font-bold text-gray-900 mb-2">Détails de l'événement</h3>
+              <div className="space-y-1">
+                <p><span className="text-gray-500">Date :</span> {formatDateLong(contract.event_date)}</p>
+                <p><span className="text-gray-500">Lieu :</span> {contract.event_location || "À définir"}</p>
+                <p><span className="text-gray-500">Horaires :</span> {contract.event_time || "À définir"}</p>
+                {event?.audience_size && <p><span className="text-gray-500">Auditoire :</span> {event.audience_size}</p>}
+                {event?.theme && <p><span className="text-gray-500">Thématique :</span> {event.theme}</p>}
+              </div>
             </div>
 
-            {/* CGV */}
+            {/* Montant */}
             <div>
-              <h3 className="font-bold text-gray-900 mb-2">Conditions générales</h3>
-              <ol className="list-decimal pl-5 space-y-1 text-xs text-gray-600">
-                {COMPANY.cgv.map((clause, i) => (
-                  <li key={i}>{clause}</li>
-                ))}
-              </ol>
+              <h3 className="font-bold text-gray-900 mb-2">Montant de la prestation</h3>
+              {lines.map((line, i) => (
+                <p key={i}>
+                  {line.type === "speaker" ? "Montant de la prestation de l'intervenant" : line.label} : {(line.amount_ht * (1 + line.tva_rate / 100)).toLocaleString("fr-FR")} €TTC, soit {line.amount_ht.toLocaleString("fr-FR")} €HT{line.type === "speaker" ? ", hors frais de déplacements" : ""}
+                </p>
+              ))}
+              {discount > 0 && <p className="text-sm text-gray-500">Remise de {discount}% appliquée</p>}
+              <p className="mt-1">TVA Les conférenciers : FR - TVA applicable : 20%</p>
             </div>
+
+            <p className="text-sm text-gray-500">
+              Les conditions générales applicables au Bon de commande sont transmises au Client et à l'Intervenant simultanément à la remise du Bon de commande.
+            </p>
+
+            {/* CGV condensées */}
+            <details className="text-xs text-gray-600">
+              <summary className="font-bold text-gray-900 cursor-pointer hover:text-gray-700 py-2">
+                📄 Voir les conditions générales (Articles 1-11)
+              </summary>
+              <div className="space-y-4 mt-3 pl-2 border-l-2 border-gray-200">
+                <div><h4 className="font-semibold">Article 1. Définitions</h4><p>Bon de commande, Client, Conditions générales, Contrat, Informations confidentielles, Intervenant, Événement, Image de l'Intervenant, Parties, Prestation : termes définis au contrat.</p></div>
+                <div><h4 className="font-semibold">Article 2. Objet et composition du Contrat</h4><p>Définit les Prestations et les modalités d'utilisation de l'image de l'Intervenant.</p></div>
+                <div><h4 className="font-semibold">Article 3. Réalisation des Prestations</h4><p>Accompagnement, participation de l'Intervenant, engagements du Client, relations entre les Parties (rendez-vous tripartite, loyauté, confidentialité, exclusivité 3 ans).</p></div>
+                <div><h4 className="font-semibold">Article 4. Droit à l'image et droit d'auteur</h4><p>Règles avant, pendant et après l'événement. Captation soumise à accord écrit.</p></div>
+                <div><h4 className="font-semibold">Article 5. Modalités financières</h4><p>50% à la signature, 100% reçu 7 jours avant l'événement. Frais de déplacement facturés sur justificatif.</p></div>
+                <div><h4 className="font-semibold">Article 6. Durée du Contrat</h4><p>Entrée en vigueur à la signature, valable jusqu'à extinction des obligations.</p></div>
+                <div><h4 className="font-semibold">Article 7. Modification des Prestations</h4><p>Annulation par le Client : 50% à +30j, 100% à -30j. Résiliation après mise en demeure de 30 jours.</p></div>
+                <div><h4 className="font-semibold">Article 8. Force majeure</h4><p>Exonération en cas d'événement imprévisible et irrésistible.</p></div>
+                <div><h4 className="font-semibold">Article 9. Imprévision</h4><p>Renégociation possible si variation de +30% du prix.</p></div>
+                <div><h4 className="font-semibold">Article 10. Obligations légales</h4><p>Responsabilités administratives, données personnelles, recours à un tiers.</p></div>
+                <div><h4 className="font-semibold">Article 11. Divers</h4><p>Signature électronique reconnue. Loi française applicable. Tribunal de Paris compétent.</p></div>
+              </div>
+            </details>
           </div>
 
           {/* Signature section */}
@@ -194,44 +218,31 @@ const ContractSign = () => {
                 <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-3 rounded-full text-sm font-medium">
                   <CheckCircle className="h-5 w-5" />
                   Contrat signé{contract.signer_name ? ` par ${contract.signer_name}` : ""}
-                  {contract.signed_at ? ` le ${formatDate(contract.signed_at)}` : ""}
+                  {contract.signed_at ? ` le ${formatDateLong(contract.signed_at)}` : ""}
                 </div>
                 <p className="text-xs text-gray-500">Vous recevrez une confirmation par email.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                <h3 className="font-bold text-gray-900 text-center text-lg">Signer le contrat</h3>
+                <h3 className="font-bold text-gray-900 text-center text-lg">Signer le bon de commande</h3>
                 <p className="text-sm text-gray-500 text-center">
-                  En signant ce contrat, vous acceptez l'ensemble des conditions décrites ci-dessus.
+                  En signant ce bon de commande, vous acceptez l'ensemble des conditions décrites ci-dessus.
                 </p>
                 <div className="max-w-md mx-auto space-y-4">
                   <div className="space-y-2">
                     <Label>Votre nom complet (signature)</Label>
-                    <Input
-                      value={signerName}
-                      onChange={e => setSignerName(e.target.value)}
-                      placeholder="Prénom NOM"
-                      className="text-center text-lg font-serif"
-                    />
+                    <Input value={signerName} onChange={e => setSignerName(e.target.value)} placeholder="Prénom NOM" className="text-center text-lg font-serif" />
                   </div>
                   <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg">
-                    <Checkbox
-                      id="accept"
-                      checked={accepted}
-                      onCheckedChange={(v) => setAccepted(v === true)}
-                    />
+                    <Checkbox id="accept" checked={accepted} onCheckedChange={(v) => setAccepted(v === true)} />
                     <label htmlFor="accept" className="text-sm leading-relaxed cursor-pointer">
-                      Je soussigné(e) <strong>{signerName || "___"}</strong>, représentant la société <strong>{proposal?.client_name}</strong>,
+                      Je soussigné(e) <strong>{signerName || "___"}</strong>, représentant la société <strong>{clientName}</strong>,
                       déclare avoir pris connaissance des conditions ci-dessus et les accepte sans réserve.
                       <br /><span className="text-xs text-gray-500">Mention « Bon pour accord »</span>
                     </label>
                   </div>
-                  <Button
-                    className="w-full py-6 text-base"
-                    onClick={handleSign}
-                    disabled={signing || !signerName.trim() || !accepted}
-                  >
-                    {signing ? "Signature en cours…" : "✍️ Je signe le contrat"}
+                  <Button className="w-full py-6 text-base" onClick={handleSign} disabled={signing || !signerName.trim() || !accepted}>
+                    {signing ? "Signature en cours…" : "✍️ Je signe le bon de commande"}
                   </Button>
                   <p className="text-[10px] text-gray-400 text-center">
                     La date et l'heure de signature seront enregistrées. Ce document a valeur d'engagement contractuel.
@@ -242,7 +253,6 @@ const ContractSign = () => {
           </div>
         </div>
 
-        {/* Footer */}
         <footer className="mt-6 text-center text-[10px] text-gray-400">
           {COMPANY.name} — {COMPANY.legalForm} — {COMPANY.fullAddress} — SIRET : {COMPANY.siret}
         </footer>
