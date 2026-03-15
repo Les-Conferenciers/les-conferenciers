@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_name: string
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          siret: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_name: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_name?: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           contract_lines: Json | null
@@ -69,6 +111,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "contracts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          audience_size: string | null
+          bdc_number: string | null
+          contract_sent_speaker_at: string | null
+          created_at: string
+          id: string
+          info_sent_speaker_at: string | null
+          liaison_sheet_sent_at: string | null
+          notes: string | null
+          proposal_id: string
+          speaker_budget: number | null
+          speaker_paid_at: string | null
+          theme: string | null
+          updated_at: string
+          visio_date: string | null
+          visio_notes: string | null
+          visio_time: string | null
+        }
+        Insert: {
+          audience_size?: string | null
+          bdc_number?: string | null
+          contract_sent_speaker_at?: string | null
+          created_at?: string
+          id?: string
+          info_sent_speaker_at?: string | null
+          liaison_sheet_sent_at?: string | null
+          notes?: string | null
+          proposal_id: string
+          speaker_budget?: number | null
+          speaker_paid_at?: string | null
+          theme?: string | null
+          updated_at?: string
+          visio_date?: string | null
+          visio_notes?: string | null
+          visio_time?: string | null
+        }
+        Update: {
+          audience_size?: string | null
+          bdc_number?: string | null
+          contract_sent_speaker_at?: string | null
+          created_at?: string
+          id?: string
+          info_sent_speaker_at?: string | null
+          liaison_sheet_sent_at?: string | null
+          notes?: string | null
+          proposal_id?: string
+          speaker_budget?: number | null
+          speaker_paid_at?: string | null
+          theme?: string | null
+          updated_at?: string
+          visio_date?: string | null
+          visio_notes?: string | null
+          visio_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_proposal_id_fkey"
             columns: ["proposal_id"]
             isOneToOne: true
             referencedRelation: "proposals"
@@ -235,6 +342,7 @@ export type Database = {
       proposals: {
         Row: {
           client_email: string
+          client_id: string | null
           client_name: string
           created_at: string
           email_body: string | null
@@ -243,12 +351,15 @@ export type Database = {
           id: string
           message: string | null
           recipient_name: string | null
+          reminder1_sent_at: string | null
+          reminder2_sent_at: string | null
           sent_at: string | null
           status: string
           token: string
         }
         Insert: {
           client_email: string
+          client_id?: string | null
           client_name: string
           created_at?: string
           email_body?: string | null
@@ -257,12 +368,15 @@ export type Database = {
           id?: string
           message?: string | null
           recipient_name?: string | null
+          reminder1_sent_at?: string | null
+          reminder2_sent_at?: string | null
           sent_at?: string | null
           status?: string
           token?: string
         }
         Update: {
           client_email?: string
+          client_id?: string | null
           client_name?: string
           created_at?: string
           email_body?: string | null
@@ -271,11 +385,21 @@ export type Database = {
           id?: string
           message?: string | null
           recipient_name?: string | null
+          reminder1_sent_at?: string | null
+          reminder2_sent_at?: string | null
           sent_at?: string | null
           status?: string
           token?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -413,6 +537,7 @@ export type Database = {
           created_at: string
           email: string | null
           featured: boolean | null
+          formal_address: boolean | null
           gender: string | null
           id: string
           image_url: string | null
@@ -439,6 +564,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           featured?: boolean | null
+          formal_address?: boolean | null
           gender?: string | null
           id?: string
           image_url?: string | null
@@ -465,6 +591,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           featured?: boolean | null
+          formal_address?: boolean | null
           gender?: string | null
           id?: string
           image_url?: string | null
