@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
+type ProposalTemplate = { id: string; name: string; speaker_ids: string[]; is_preset: boolean };
 type ProposalSpeaker = {
   speaker_id: string;
   speaker_fee: number | null;
