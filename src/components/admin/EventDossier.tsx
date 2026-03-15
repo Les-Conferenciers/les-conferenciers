@@ -29,6 +29,7 @@ type Proposal = {
   client_name: string;
   client_email: string;
   recipient_name: string | null;
+  client_id: string | null;
   status: string;
   proposal_speakers: {
     id?: string;
