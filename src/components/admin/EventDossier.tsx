@@ -172,12 +172,14 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonNotes, setLiaisonNotes] = useState("");
   const [liaisonTechNeeds, setLiaisonTechNeeds] = useState("");
   const [liaisonArrival, setLiaisonArrival] = useState("");
+  const [liaisonSalleSetup, setLiaisonSalleSetup] = useState("");
   const [sendingLiaison, setSendingLiaison] = useState(false);
   const [liaisonClientSubject, setLiaisonClientSubject] = useState("");
   const [liaisonClientBody, setLiaisonClientBody] = useState("");
   const [liaisonSpeakerSubject, setLiaisonSpeakerSubject] = useState("");
   const [liaisonSpeakerBody, setLiaisonSpeakerBody] = useState("");
-  const [liaisonCcEmails, setLiaisonCcEmails] = useState("");
+  const [liaisonClientCc, setLiaisonClientCc] = useState("");
+  const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
 
   // Visio quick picker
