@@ -119,7 +119,16 @@ const AdminProposals = () => {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
-  const [message, setMessage] = useState("");
+  const defaultMessage = `Bonjour,
+
+Suite à notre échange, j'ai le plaisir de vous adresser une sélection de conférenciers correspondant à vos attentes.
+
+Vous trouverez ci-dessous leurs profils détaillés ainsi que les thématiques de conférences qu'ils proposent.
+
+N'hésitez pas à revenir vers moi pour toute question ou pour organiser un échange.
+
+Belle journée,`;
+  const [message, setMessage] = useState(defaultMessage);
   const [selectedSpeakers, setSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -262,7 +271,7 @@ const AdminProposals = () => {
     })));
     toast.success("Proposition créée !"); setDialogOpen(false); resetForm(); fetchAll(); setSubmitting(false);
   };
-  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(""); setRecipientName(""); setSelectedSpeakers([]); };
+  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setSelectedSpeakers([]); };
 
   const handleSend = async (proposal: Proposal) => {
     setSending(proposal.id);
