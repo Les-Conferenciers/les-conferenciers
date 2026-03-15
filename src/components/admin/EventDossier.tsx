@@ -1060,6 +1060,11 @@ Nelly Sabde — Les Conférenciers`);
           <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => openSpeakerEmail("contract")}>
             <FileText className="h-3 w-3" /> Envoyer contrat
           </Button>
+          <Button size="sm" variant="ghost" asChild>
+            <a href={`/admin/contrat-conferencier/${proposal.id}`} target="_blank" rel="noopener noreferrer" className="gap-1">
+              <Eye className="h-3 w-3" /> Voir BDC
+            </a>
+          </Button>
         </div>
       </div>
 
@@ -1075,9 +1080,16 @@ Nelly Sabde — Les Conférenciers`);
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <ClipboardList className="h-4 w-4" /> Feuille de liaison
         </h3>
-        <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openLiaisonDialog}>
-          <Send className="h-3 w-3" /> {event?.liaison_sheet_sent_at ? "Renvoyer" : "Envoyer"}
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openLiaisonDialog}>
+            <Send className="h-3 w-3" /> {event?.liaison_sheet_sent_at ? "Renvoyer" : "Envoyer"}
+          </Button>
+          <Button size="sm" variant="ghost" asChild>
+            <a href={`/admin/feuille-liaison/${proposal.id}`} target="_blank" rel="noopener noreferrer" className="gap-1">
+              <Eye className="h-3 w-3" /> Voir
+            </a>
+          </Button>
+        </div>
       </div>
 
       {event?.liaison_sheet_sent_at && (
