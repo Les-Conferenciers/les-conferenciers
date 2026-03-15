@@ -1669,23 +1669,78 @@ Nelly Sabde — Les Conférenciers`);
 
       {/* Event edit dialog */}
       <Dialog open={eventEditOpen} onOpenChange={setEventEditOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle className="font-serif">Détails du dossier</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="971" /></div>
-              <div className="space-y-1"><Label className="text-xs">Auditoire</Label><Input value={editAudienceSize} onChange={e => setEditAudienceSize(e.target.value)} placeholder="100 personnes" /></div>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-serif">Suivi du dossier — {proposal.client_name}</DialogTitle></DialogHeader>
+          <div className="space-y-5 mt-2">
+
+            {/* Section: Événement */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📋 Événement</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Titre de l'événement</Label><Input value={editEventTitle} onChange={e => setEditEventTitle(e.target.value)} placeholder="Séminaire annuel, Congrès RH…" /></div>
+                <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="971" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input value={editTheme} onChange={e => setEditTheme(e.target.value)} placeholder="Le management" /></div>
+                <div className="space-y-1"><Label className="text-xs">Auditoire</Label><Input value={editAudienceSize} onChange={e => setEditAudienceSize(e.target.value)} placeholder="100 personnes" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Dress code</Label><Input value={editDressCode} onChange={e => setEditDressCode(e.target.value)} placeholder="Tenue de ville, casual…" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input value={editTheme} onChange={e => setEditTheme(e.target.value)} placeholder="Le management" /></div>
+
+            {/* Section: Conférence */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">🎤 Conférence</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Titre de la conférence</Label><Input value={editConferenceTitle} onChange={e => setEditConferenceTitle(e.target.value)} placeholder="L'Art du Leadership" /></div>
+                <div className="space-y-1"><Label className="text-xs">Durée</Label><Input value={editConferenceDuration} onChange={e => setEditConferenceDuration(e.target.value)} placeholder="1h00, 1h30…" /></div>
+              </div>
               <div className="space-y-1"><Label className="text-xs">Budget conférencier (€ HT)</Label><Input type="number" value={editSpeakerBudget} onChange={e => setEditSpeakerBudget(e.target.value ? Number(e.target.value) : "")} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Date visio prépa</Label><Input type="date" value={editVisioDate} onChange={e => setEditVisioDate(e.target.value)} /></div>
-              <div className="space-y-1"><Label className="text-xs">Heure visio</Label><Input value={editVisioTime} onChange={e => setEditVisioTime(e.target.value)} placeholder="10h00" /></div>
+
+            {/* Section: Contact sur place */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">👤 Contact sur place (client)</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Nom</Label><Input value={editContactOnSiteName} onChange={e => setEditContactOnSiteName(e.target.value)} placeholder="Marie Dupont" /></div>
+                <div className="space-y-1"><Label className="text-xs">Téléphone</Label><Input value={editContactOnSitePhone} onChange={e => setEditContactOnSitePhone(e.target.value)} placeholder="06 XX XX XX XX" /></div>
+                <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={editContactOnSiteEmail} onChange={e => setEditContactOnSiteEmail(e.target.value)} placeholder="marie@societe.com" /></div>
+              </div>
             </div>
-            <div className="space-y-1"><Label className="text-xs">Notes visio</Label><Textarea value={editVisioNotes} onChange={e => setEditVisioNotes(e.target.value)} rows={2} /></div>
-            <div className="space-y-1"><Label className="text-xs">Notes dossier</Label><Textarea value={editEventNotes} onChange={e => setEditEventNotes(e.target.value)} rows={3} /></div>
+
+            {/* Section: Logistique */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">🚗 Logistique</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Arrivée / accueil</Label><Input value={editArrivalInfo} onChange={e => setEditArrivalInfo(e.target.value)} placeholder="Accueil à 9h00 hall A" /></div>
+                <div className="space-y-1"><Label className="text-xs">Parking</Label><Input value={editParkingInfo} onChange={e => setEditParkingInfo(e.target.value)} placeholder="Parking souterrain, badge à l'accueil" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Hôtel</Label><Input value={editHotelInfo} onChange={e => setEditHotelInfo(e.target.value)} placeholder="Hôtel Marriott — réservation confirmée" /></div>
+            </div>
+
+            {/* Section: Technique */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">🔧 Technique & salle</Label>
+              <div className="space-y-1"><Label className="text-xs">Besoins techniques</Label><Textarea value={editTechNeeds} onChange={e => setEditTechNeeds(e.target.value)} rows={2} placeholder="Micro HF, écran, clicker…" /></div>
+              <div className="space-y-1"><Label className="text-xs">Configuration de salle</Label><Textarea value={editRoomSetup} onChange={e => setEditRoomSetup(e.target.value)} rows={2} placeholder="En théâtre, 200 places, scène…" /></div>
+            </div>
+
+            {/* Section: Visio prépa */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📹 Visio préparatoire</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Date visio</Label><Input type="date" value={editVisioDate} onChange={e => setEditVisioDate(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Heure</Label><Input value={editVisioTime} onChange={e => setEditVisioTime(e.target.value)} placeholder="10h00" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Notes visio</Label><Textarea value={editVisioNotes} onChange={e => setEditVisioNotes(e.target.value)} rows={2} /></div>
+            </div>
+
+            {/* Section: Demandes spéciales */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📝 Notes & demandes</Label>
+              <div className="space-y-1"><Label className="text-xs">Demandes spéciales</Label><Textarea value={editSpecialRequests} onChange={e => setEditSpecialRequests(e.target.value)} rows={2} placeholder="Régime alimentaire, accessibilité…" /></div>
+              <div className="space-y-1"><Label className="text-xs">Notes internes</Label><Textarea value={editEventNotes} onChange={e => setEditEventNotes(e.target.value)} rows={3} /></div>
+            </div>
+
             <Button className="w-full" onClick={handleSaveEvent}>Enregistrer</Button>
           </div>
         </DialogContent>
