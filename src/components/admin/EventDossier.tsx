@@ -556,24 +556,28 @@ Nelly Sabde — Les Conférenciers`);
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
 
     if (type === "info") {
-      setSpeakerEmailSubject(`Intervention — ${proposal.client_name}`);
+      setSpeakerEmailSubject(`Intervention — ${proposal.client_name}${event?.event_title ? ` — ${event.event_title}` : ""}`);
       setSpeakerEmailBody(`${greeting}
 
 ${vouvoi ? "Voici comme convenu les informations concernant votre intervention :" : "Voici comme convenu les infos concernant ton intervention :"}
 
-Date de l'évènement : ${dateStr}
-
-Lieu de l'intervention : ${contract?.event_location || "à définir"}
-
-Horaires de l'intervention : ${contract?.event_time || "à définir"}
-
-Auditoire : ${event?.audience_size || "à définir"}
-
-Thématique : ${event?.theme || "à définir"}
-
-Client : ${proposal.client_name}
-
-Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
+📅 Date de l'évènement : ${dateStr}
+📍 Lieu de l'intervention : ${contract?.event_location || "à définir"}
+🕐 Horaires de l'intervention : ${contract?.event_time || "à définir"}
+${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
+${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
+👥 Auditoire : ${event?.audience_size || "à définir"}
+📋 Thématique : ${event?.theme || "à définir"}
+🏢 Client : ${proposal.client_name}
+💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
+${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
+${event?.contact_on_site_name ? `\n👤 Contact sur place : ${event.contact_on_site_name}${event?.contact_on_site_phone ? ` — ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` — ${event.contact_on_site_email}` : ""}` : ""}
+${event?.arrival_info ? `🚗 Arrivée : ${event.arrival_info}` : ""}
+${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
+${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
+${event?.tech_needs ? `🔧 Technique : ${event.tech_needs}` : ""}
+${event?.room_setup ? `🪑 Configuration salle : ${event.room_setup}` : ""}
+${event?.special_requests ? `\n📝 Remarques : ${event.special_requests}` : ""}
 
 ${vouvoi ? "À très bientôt et bonne journée !" : "A très vite et bonne journée !"}
 
@@ -584,10 +588,10 @@ Nelly Sabde — Les Conférenciers`);
 
 ${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :" : "Voici le bon de commande pour ton intervention :"}
 
-Date de l'évènement : ${dateStr}
-Lieu : ${contract?.event_location || "à définir"}
-Client : ${proposal.client_name}
-Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
+📅 Date de l'évènement : ${dateStr}
+📍 Lieu : ${contract?.event_location || "à définir"}
+🏢 Client : ${proposal.client_name}
+💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
 
 ${vouvoi ? "Restant à votre disposition." : "A très vite !"}
 
