@@ -5,17 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil,
-  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User,
+  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // ── Types ──
 
