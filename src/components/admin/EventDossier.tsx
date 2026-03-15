@@ -91,6 +91,19 @@ type EventData = {
   speaker_paid_at: string | null;
   notes: string | null;
   selected_speaker_id: string | null;
+  event_title: string | null;
+  contact_on_site_name: string | null;
+  contact_on_site_phone: string | null;
+  contact_on_site_email: string | null;
+  tech_needs: string | null;
+  room_setup: string | null;
+  arrival_info: string | null;
+  dress_code: string | null;
+  special_requests: string | null;
+  conference_title: string | null;
+  conference_duration: string | null;
+  parking_info: string | null;
+  hotel_info: string | null;
 };
 
 type ContractLine = {
