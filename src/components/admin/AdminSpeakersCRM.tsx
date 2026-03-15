@@ -80,6 +80,7 @@ const AdminSpeakersCRM = () => {
   const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female">("all");
   const [profileFilter, setProfileFilter] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [visibilityFilter, setVisibilityFilter] = useState<"all" | "online" | "offline">("all");
   const [sortBy, setSortBy] = useState<"name" | "created_at" | "base_fee">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
