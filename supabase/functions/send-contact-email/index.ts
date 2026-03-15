@@ -26,7 +26,7 @@ serve(async (req) => {
         });
       }
 
-      const fromAddress = `${from_name || "Les Conférenciers"} <contact@lesconferenciers.com>`;
+      const fromAddress = `${from_name || "Les Conférenciers"} <onboarding@resend.dev>`;
 
       // Convert plain text to simple HTML
       const htmlBody = `
