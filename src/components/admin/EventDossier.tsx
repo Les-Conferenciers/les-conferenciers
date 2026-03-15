@@ -91,6 +91,19 @@ type EventData = {
   speaker_paid_at: string | null;
   notes: string | null;
   selected_speaker_id: string | null;
+  event_title: string | null;
+  contact_on_site_name: string | null;
+  contact_on_site_phone: string | null;
+  contact_on_site_email: string | null;
+  tech_needs: string | null;
+  room_setup: string | null;
+  arrival_info: string | null;
+  dress_code: string | null;
+  special_requests: string | null;
+  conference_title: string | null;
+  conference_duration: string | null;
+  parking_info: string | null;
+  hotel_info: string | null;
 };
 
 type ContractLine = {
@@ -227,6 +240,19 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editVisioTime, setEditVisioTime] = useState("");
   const [editVisioNotes, setEditVisioNotes] = useState("");
   const [editEventNotes, setEditEventNotes] = useState("");
+  const [editEventTitle, setEditEventTitle] = useState("");
+  const [editContactOnSiteName, setEditContactOnSiteName] = useState("");
+  const [editContactOnSitePhone, setEditContactOnSitePhone] = useState("");
+  const [editContactOnSiteEmail, setEditContactOnSiteEmail] = useState("");
+  const [editTechNeeds, setEditTechNeeds] = useState("");
+  const [editRoomSetup, setEditRoomSetup] = useState("");
+  const [editArrivalInfo, setEditArrivalInfo] = useState("");
+  const [editDressCode, setEditDressCode] = useState("");
+  const [editSpecialRequests, setEditSpecialRequests] = useState("");
+  const [editConferenceTitle, setEditConferenceTitle] = useState("");
+  const [editConferenceDuration, setEditConferenceDuration] = useState("");
+  const [editParkingInfo, setEditParkingInfo] = useState("");
+  const [editHotelInfo, setEditHotelInfo] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -530,24 +556,28 @@ Nelly Sabde — Les Conférenciers`);
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
 
     if (type === "info") {
-      setSpeakerEmailSubject(`Intervention — ${proposal.client_name}`);
+      setSpeakerEmailSubject(`Intervention — ${proposal.client_name}${event?.event_title ? ` — ${event.event_title}` : ""}`);
       setSpeakerEmailBody(`${greeting}
 
 ${vouvoi ? "Voici comme convenu les informations concernant votre intervention :" : "Voici comme convenu les infos concernant ton intervention :"}
 
-Date de l'évènement : ${dateStr}
-
-Lieu de l'intervention : ${contract?.event_location || "à définir"}
-
-Horaires de l'intervention : ${contract?.event_time || "à définir"}
-
-Auditoire : ${event?.audience_size || "à définir"}
-
-Thématique : ${event?.theme || "à définir"}
-
-Client : ${proposal.client_name}
-
-Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
+📅 Date de l'évènement : ${dateStr}
+📍 Lieu de l'intervention : ${contract?.event_location || "à définir"}
+🕐 Horaires de l'intervention : ${contract?.event_time || "à définir"}
+${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
+${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
+👥 Auditoire : ${event?.audience_size || "à définir"}
+📋 Thématique : ${event?.theme || "à définir"}
+🏢 Client : ${proposal.client_name}
+💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
+${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
+${event?.contact_on_site_name ? `\n👤 Contact sur place : ${event.contact_on_site_name}${event?.contact_on_site_phone ? ` — ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` — ${event.contact_on_site_email}` : ""}` : ""}
+${event?.arrival_info ? `🚗 Arrivée : ${event.arrival_info}` : ""}
+${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
+${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
+${event?.tech_needs ? `🔧 Technique : ${event.tech_needs}` : ""}
+${event?.room_setup ? `🪑 Configuration salle : ${event.room_setup}` : ""}
+${event?.special_requests ? `\n📝 Remarques : ${event.special_requests}` : ""}
 
 ${vouvoi ? "À très bientôt et bonne journée !" : "A très vite et bonne journée !"}
 
@@ -558,10 +588,10 @@ Nelly Sabde — Les Conférenciers`);
 
 ${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :" : "Voici le bon de commande pour ton intervention :"}
 
-Date de l'évènement : ${dateStr}
-Lieu : ${contract?.event_location || "à définir"}
-Client : ${proposal.client_name}
-Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
+📅 Date de l'évènement : ${dateStr}
+📍 Lieu : ${contract?.event_location || "à définir"}
+🏢 Client : ${proposal.client_name}
+💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
 
 ${vouvoi ? "Restant à votre disposition." : "A très vite !"}
 
@@ -613,9 +643,9 @@ Nelly Sabde — Les Conférenciers`);
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
     setLiaisonNotes(event?.visio_notes || "");
-    setLiaisonTechNeeds("Vidéoprojecteur");
-    setLiaisonSalleSetup("Salle installée en largeur avec une allée centrale si possible");
-    setLiaisonArrival("");
+    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur");
+    setLiaisonSalleSetup(event?.room_setup || "Salle installée en largeur avec une allée centrale si possible");
+    setLiaisonArrival(event?.arrival_info || "");
     setLiaisonTab("client");
 
     // Client email template
@@ -660,21 +690,27 @@ Nelly Sabde — Les Conférenciers`);
     const liaisonContent = `
 
 📋 FEUILLE DE LIAISON
+${event?.event_title ? `\nÉvénement : ${event.event_title}` : ""}
+📅 Date de l'évènement : ${dateStr}
+📍 Lieu de l'intervention : ${contract?.event_location || ""}
+🕐 Horaires de l'intervention : ${contract?.event_time || ""}
+${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
+${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
+👥 Auditoire : ${event?.audience_size || ""}
+📋 Thématique : ${event?.theme || ""}
+${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
+🚗 Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
+${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
+${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
 
-Date de l'évènement : ${dateStr}
-Lieu de l'intervention : ${contract?.event_location || ""}
-Horaires de l'intervention : ${contract?.event_time || ""}
-Auditoire : ${event?.audience_size || ""}
-Thématique : ${event?.theme || ""}
-Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
-
-Besoins techniques :
+🔧 Besoins techniques :
 ${liaisonTechNeeds ? `- ${liaisonTechNeeds}` : ""}
 ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 
-Contact client : ${proposal.recipient_name || proposal.client_name} — ${proposal.client_email}
-Contact conférencier : ${speakerName}${speaker?.phone ? ` — ${speaker.phone}` : ""}
-${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
+👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` — ${event.contact_on_site_phone}` : ""} — ${event?.contact_on_site_email || proposal.client_email}
+🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` — ${speaker.phone}` : ""}
+${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
+${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
     const clientCcList = liaisonClientCc.split(",").map(e => e.trim()).filter(Boolean);
     const speakerCcList = liaisonSpeakerCc.split(",").map(e => e.trim()).filter(Boolean);
@@ -726,6 +762,19 @@ ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
     setEditVisioTime(event?.visio_time || "");
     setEditVisioNotes(event?.visio_notes || "");
     setEditEventNotes(event?.notes || "");
+    setEditEventTitle(event?.event_title || "");
+    setEditContactOnSiteName(event?.contact_on_site_name || "");
+    setEditContactOnSitePhone(event?.contact_on_site_phone || "");
+    setEditContactOnSiteEmail(event?.contact_on_site_email || "");
+    setEditTechNeeds(event?.tech_needs || "");
+    setEditRoomSetup(event?.room_setup || "");
+    setEditArrivalInfo(event?.arrival_info || "");
+    setEditDressCode(event?.dress_code || "");
+    setEditSpecialRequests(event?.special_requests || "");
+    setEditConferenceTitle(event?.conference_title || "");
+    setEditConferenceDuration(event?.conference_duration || "");
+    setEditParkingInfo(event?.parking_info || "");
+    setEditHotelInfo(event?.hotel_info || "");
     setEventEditOpen(true);
   };
 
@@ -740,6 +789,19 @@ ${liaisonNotes ? `\nCommentaires :\n${liaisonNotes}` : ""}`;
       visio_time: editVisioTime || null,
       visio_notes: editVisioNotes || null,
       notes: editEventNotes || null,
+      event_title: editEventTitle || null,
+      contact_on_site_name: editContactOnSiteName || null,
+      contact_on_site_phone: editContactOnSitePhone || null,
+      contact_on_site_email: editContactOnSiteEmail || null,
+      tech_needs: editTechNeeds || null,
+      room_setup: editRoomSetup || null,
+      arrival_info: editArrivalInfo || null,
+      dress_code: editDressCode || null,
+      special_requests: editSpecialRequests || null,
+      conference_title: editConferenceTitle || null,
+      conference_duration: editConferenceDuration || null,
+      parking_info: editParkingInfo || null,
+      hotel_info: editHotelInfo || null,
     } as any).eq("id", event.id);
     if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
     setEventEditOpen(false);
@@ -1048,12 +1110,27 @@ Nelly Sabde — Les Conférenciers`);
       </div>
 
       {/* Event details summary */}
-      {event && (event.audience_size || event.theme || event.visio_date) && (
-        <div className="bg-muted/20 rounded-lg p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          {event.audience_size && <div><span className="text-muted-foreground">Auditoire :</span> {event.audience_size}</div>}
-          {event.theme && <div><span className="text-muted-foreground">Thématique :</span> {event.theme}</div>}
-          {event.speaker_budget && <div><span className="text-muted-foreground">Budget speaker :</span> {event.speaker_budget.toLocaleString("fr-FR")} €</div>}
-          {event.visio_date && <div><span className="text-muted-foreground">Visio :</span> {formatDate(event.visio_date)} {event.visio_time || ""}</div>}
+      {event && (event.audience_size || event.theme || event.visio_date || event.event_title || event.contact_on_site_name || event.conference_title) && (
+        <div className="bg-muted/20 rounded-lg p-3 space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            {event.event_title && <div><span className="text-muted-foreground">Événement :</span> {event.event_title}</div>}
+            {event.conference_title && <div><span className="text-muted-foreground">Conférence :</span> {event.conference_title}</div>}
+            {event.conference_duration && <div><span className="text-muted-foreground">Durée :</span> {event.conference_duration}</div>}
+            {event.audience_size && <div><span className="text-muted-foreground">Auditoire :</span> {event.audience_size}</div>}
+            {event.theme && <div><span className="text-muted-foreground">Thématique :</span> {event.theme}</div>}
+            {event.speaker_budget && <div><span className="text-muted-foreground">Budget speaker :</span> {event.speaker_budget.toLocaleString("fr-FR")} €</div>}
+            {event.visio_date && <div><span className="text-muted-foreground">Visio :</span> {formatDate(event.visio_date)} {event.visio_time || ""}</div>}
+            {event.dress_code && <div><span className="text-muted-foreground">Dress code :</span> {event.dress_code}</div>}
+          </div>
+          {(event.contact_on_site_name || event.tech_needs || event.arrival_info) && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs border-t border-border/50 pt-2">
+              {event.contact_on_site_name && <div><span className="text-muted-foreground">Contact sur place :</span> {event.contact_on_site_name} {event.contact_on_site_phone ? `(${event.contact_on_site_phone})` : ""}</div>}
+              {event.tech_needs && <div><span className="text-muted-foreground">Technique :</span> {event.tech_needs}</div>}
+              {event.arrival_info && <div><span className="text-muted-foreground">Arrivée :</span> {event.arrival_info}</div>}
+              {event.parking_info && <div><span className="text-muted-foreground">Parking :</span> {event.parking_info}</div>}
+              {event.hotel_info && <div><span className="text-muted-foreground">Hôtel :</span> {event.hotel_info}</div>}
+            </div>
+          )}
         </div>
       )}
 
@@ -1602,23 +1679,78 @@ Nelly Sabde — Les Conférenciers`);
 
       {/* Event edit dialog */}
       <Dialog open={eventEditOpen} onOpenChange={setEventEditOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle className="font-serif">Détails du dossier</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="971" /></div>
-              <div className="space-y-1"><Label className="text-xs">Auditoire</Label><Input value={editAudienceSize} onChange={e => setEditAudienceSize(e.target.value)} placeholder="100 personnes" /></div>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-serif">Suivi du dossier — {proposal.client_name}</DialogTitle></DialogHeader>
+          <div className="space-y-5 mt-2">
+
+            {/* Section: Événement */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📋 Événement</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Titre de l'événement</Label><Input value={editEventTitle} onChange={e => setEditEventTitle(e.target.value)} placeholder="Séminaire annuel, Congrès RH…" /></div>
+                <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="971" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input value={editTheme} onChange={e => setEditTheme(e.target.value)} placeholder="Le management" /></div>
+                <div className="space-y-1"><Label className="text-xs">Auditoire</Label><Input value={editAudienceSize} onChange={e => setEditAudienceSize(e.target.value)} placeholder="100 personnes" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Dress code</Label><Input value={editDressCode} onChange={e => setEditDressCode(e.target.value)} placeholder="Tenue de ville, casual…" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input value={editTheme} onChange={e => setEditTheme(e.target.value)} placeholder="Le management" /></div>
+
+            {/* Section: Conférence */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">🎤 Conférence</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Titre de la conférence</Label><Input value={editConferenceTitle} onChange={e => setEditConferenceTitle(e.target.value)} placeholder="L'Art du Leadership" /></div>
+                <div className="space-y-1"><Label className="text-xs">Durée</Label><Input value={editConferenceDuration} onChange={e => setEditConferenceDuration(e.target.value)} placeholder="1h00, 1h30…" /></div>
+              </div>
               <div className="space-y-1"><Label className="text-xs">Budget conférencier (€ HT)</Label><Input type="number" value={editSpeakerBudget} onChange={e => setEditSpeakerBudget(e.target.value ? Number(e.target.value) : "")} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Date visio prépa</Label><Input type="date" value={editVisioDate} onChange={e => setEditVisioDate(e.target.value)} /></div>
-              <div className="space-y-1"><Label className="text-xs">Heure visio</Label><Input value={editVisioTime} onChange={e => setEditVisioTime(e.target.value)} placeholder="10h00" /></div>
+
+            {/* Section: Contact sur place */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">👤 Contact sur place (client)</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Nom</Label><Input value={editContactOnSiteName} onChange={e => setEditContactOnSiteName(e.target.value)} placeholder="Marie Dupont" /></div>
+                <div className="space-y-1"><Label className="text-xs">Téléphone</Label><Input value={editContactOnSitePhone} onChange={e => setEditContactOnSitePhone(e.target.value)} placeholder="06 XX XX XX XX" /></div>
+                <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={editContactOnSiteEmail} onChange={e => setEditContactOnSiteEmail(e.target.value)} placeholder="marie@societe.com" /></div>
+              </div>
             </div>
-            <div className="space-y-1"><Label className="text-xs">Notes visio</Label><Textarea value={editVisioNotes} onChange={e => setEditVisioNotes(e.target.value)} rows={2} /></div>
-            <div className="space-y-1"><Label className="text-xs">Notes dossier</Label><Textarea value={editEventNotes} onChange={e => setEditEventNotes(e.target.value)} rows={3} /></div>
+
+            {/* Section: Logistique */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">🚗 Logistique</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Arrivée / accueil</Label><Input value={editArrivalInfo} onChange={e => setEditArrivalInfo(e.target.value)} placeholder="Accueil à 9h00 hall A" /></div>
+                <div className="space-y-1"><Label className="text-xs">Parking</Label><Input value={editParkingInfo} onChange={e => setEditParkingInfo(e.target.value)} placeholder="Parking souterrain, badge à l'accueil" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Hôtel</Label><Input value={editHotelInfo} onChange={e => setEditHotelInfo(e.target.value)} placeholder="Hôtel Marriott — réservation confirmée" /></div>
+            </div>
+
+            {/* Section: Technique */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">🔧 Technique & salle</Label>
+              <div className="space-y-1"><Label className="text-xs">Besoins techniques</Label><Textarea value={editTechNeeds} onChange={e => setEditTechNeeds(e.target.value)} rows={2} placeholder="Micro HF, écran, clicker…" /></div>
+              <div className="space-y-1"><Label className="text-xs">Configuration de salle</Label><Textarea value={editRoomSetup} onChange={e => setEditRoomSetup(e.target.value)} rows={2} placeholder="En théâtre, 200 places, scène…" /></div>
+            </div>
+
+            {/* Section: Visio prépa */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📹 Visio préparatoire</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Date visio</Label><Input type="date" value={editVisioDate} onChange={e => setEditVisioDate(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Heure</Label><Input value={editVisioTime} onChange={e => setEditVisioTime(e.target.value)} placeholder="10h00" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Notes visio</Label><Textarea value={editVisioNotes} onChange={e => setEditVisioNotes(e.target.value)} rows={2} /></div>
+            </div>
+
+            {/* Section: Demandes spéciales */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📝 Notes & demandes</Label>
+              <div className="space-y-1"><Label className="text-xs">Demandes spéciales</Label><Textarea value={editSpecialRequests} onChange={e => setEditSpecialRequests(e.target.value)} rows={2} placeholder="Régime alimentaire, accessibilité…" /></div>
+              <div className="space-y-1"><Label className="text-xs">Notes internes</Label><Textarea value={editEventNotes} onChange={e => setEditEventNotes(e.target.value)} rows={3} /></div>
+            </div>
+
             <Button className="w-full" onClick={handleSaveEvent}>Enregistrer</Button>
           </div>
         </DialogContent>
