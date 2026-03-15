@@ -702,29 +702,57 @@ const AdminSpeakersCRM = () => {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       };
       
-      // Use the resync function with a custom URL
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resync-speaker-from-site`, {
+      // Use the import search flow with the speaker's name
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-competitor-speakers`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ speaker_id: editSpeaker.id, url: enrichUrl.trim() }),
+        body: JSON.stringify({ name: editSpeaker.name, url: enrichUrl.trim() }),
       });
       const data = await resp.json();
-      if (!data.success) throw new Error(data.error || "Enrichissement échoué");
+      if (!data.success) throw new Error(data.error || "Conférencier non trouvé sur ce site");
       
-      toast.success(`Fiche enrichie avec succès ! ${data.updates?.join(", ") || ""}`);
+      const profile = data.profile;
+      const updateData: any = {};
+      if (profile.biography) updateData.biography = profile.biography;
+      if (profile.photo_url && (!editSpeaker.image_url || editSpeaker.image_url === "/placeholder.svg")) updateData.image_url = profile.photo_url;
+      if (profile.role && !editSpeaker.role) { updateData.role = profile.role; updateData.specialty = profile.role; }
+      if (profile.themes?.length && (!editSpeaker.themes || editSpeaker.themes.length === 0)) updateData.themes = profile.themes;
+      if (profile.languages?.length && (!editSpeaker.languages || editSpeaker.languages.length === 0)) updateData.languages = profile.languages;
+      if (profile.video_url && !editSpeaker.video_url) updateData.video_url = profile.video_url;
+      if (profile.city && !editSpeaker.city) updateData.city = profile.city;
+      if (profile.why_expertise && !editSpeaker.why_expertise) updateData.why_expertise = profile.why_expertise;
+      if (profile.why_impact && !editSpeaker.why_impact) updateData.why_impact = profile.why_impact;
+      if (profile.key_points?.length) updateData.key_points = profile.key_points;
+
+      if (Object.keys(updateData).length > 0) {
+        await supabase.from("speakers").update(updateData).eq("id", editSpeaker.id);
+      }
+
+      // Import conferences if none exist yet
+      if (profile.conferences?.length) {
+        const existingConfs = await supabase.from("speaker_conferences").select("id").eq("speaker_id", editSpeaker.id);
+        if (!existingConfs.data?.length) {
+          for (let i = 0; i < profile.conferences.length; i++) {
+            const conf = profile.conferences[i];
+            await supabase.from("speaker_conferences").insert({
+              speaker_id: editSpeaker.id,
+              title: conf.title,
+              description: conf.description || null,
+              display_order: i,
+            } as any);
+          }
+        }
+      }
+      
+      const updatedFields = Object.keys(updateData);
+      toast.success(`Fiche enrichie ! ${updatedFields.length > 0 ? "Champs : " + updatedFields.join(", ") : "Aucun nouveau champ"}`);
       setShowEnrichSingle(false);
       setEnrichUrl("");
-      // Refresh speaker data
       await fetchSpeakers();
-      // Reload the edit form with fresh data
       const { data: refreshed } = await supabase.from("speakers")
         .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email")
         .eq("id", editSpeaker.id).single();
-      if (refreshed) {
-        setEditSpeaker(refreshed as Speaker);
-        openEdit(refreshed as Speaker);
-      }
-      // Reload conferences
+      if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
     } catch (err: any) {
       toast.error(`Erreur : ${err.message}`);
