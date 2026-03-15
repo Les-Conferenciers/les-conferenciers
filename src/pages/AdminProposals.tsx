@@ -120,6 +120,10 @@ const AdminProposals = () => {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
+  const [eventCity, setEventCity] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [audienceSize, setAudienceSize] = useState("");
+  const [isEnglish, setIsEnglish] = useState(false);
   const defaultMessage = `Bonjour,
 
 Suite à notre échange, j'ai le plaisir de vous adresser une sélection de conférenciers correspondant à vos attentes.
