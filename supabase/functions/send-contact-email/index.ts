@@ -26,7 +26,7 @@ serve(async (req) => {
         });
       }
 
-      const fromAddress = `${from_name || "Les Conférenciers"} <contact@lesconferenciers.com>`;
+      const fromAddress = `${from_name || "Les Conférenciers"} <onboarding@resend.dev>`;
 
       // Convert plain text to simple HTML
       const htmlBody = `
@@ -105,7 +105,7 @@ ${message}
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Les Conférenciers <contact@lesconferenciers.com>",
+        from: "Les Conférenciers <onboarding@resend.dev>",
         to: ["nellysabde@lesconferenciers.com"],
         subject: `Nouvelle demande de devis - ${name}${company ? ` (${company})` : ""}`,
         text: emailBody,

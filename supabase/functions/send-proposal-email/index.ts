@@ -114,7 +114,7 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
-        from: "Les Conférenciers <contact@lesconferenciers.com>",
+        from: "Les Conférenciers <onboarding@resend.dev>",
         to: [proposal.client_email],
         subject: emailSubject,
         html: emailHtml,
