@@ -103,7 +103,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 
@@ -181,6 +181,119 @@ type Proposal = {
 };
 
 const COMMISSION = 1300;
+
+/** Speaker selector with search and alphabetical sort by last name */
+const SpeakerSelector = ({ speakers, selectedSpeakers, onSelect }: {
+  speakers: Speaker[];
+  selectedSpeakers: ProposalSpeaker[];
+  onSelect: (s: Speaker) => void;
+}) => {
+  const [search, setSearch] = useState("");
+  
+  const getLastName = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    return parts[parts.length - 1].toLowerCase();
+  };
+  
+  const available = speakers
+    .filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id))
+    .filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => getLastName(a.name).localeCompare(getLastName(b.name), "fr"));
+
+  return (
+    <div className="border border-dashed border-border rounded-lg p-3 space-y-2">
+      <Label className="text-xs text-muted-foreground block">Ajouter un conférencier</Label>
+      <div className="relative">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher par nom…"
+          className="pl-8 text-sm"
+        />
+      </div>
+      <div className="max-h-48 overflow-y-auto border border-input rounded-md">
+        {available.map(s => (
+          <button
+            key={s.id}
+            type="button"
+            className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between gap-2 border-b border-border last:border-0"
+            onClick={() => { onSelect(s); setSearch(""); }}
+          >
+            <span className="font-medium">{s.name}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {s.base_fee ? `${s.base_fee.toLocaleString("fr-FR")} €` : ""}
+              {s.city ? ` · ${s.city}` : ""}
+            </span>
+          </button>
+        ))}
+        {available.length === 0 && (
+          <div className="px-3 py-4 text-sm text-muted-foreground text-center">Aucun résultat</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+/** Parse monetary values from fee_details text and return alternative rates with labels */
+const parseAlternativeRates = (feeDetails: string | null | undefined, baseFee: number | null): { label: string; value: number }[] => {
+  if (!feeDetails) return [];
+  const rates: { label: string; value: number }[] = [];
+  
+  // Match patterns like: 6500, 3.5K, 3,5K, 10K, 2500 euros, etc.
+  const regex = /(\d[\d\s]*(?:[.,]\d+)?)\s*(?:k|K|€|euros?)?/g;
+  let match: RegExpExecArray | null;
+  const fullText = feeDetails;
+  
+  while ((match = regex.exec(fullText)) !== null) {
+    let rawNum = match[1].replace(/\s/g, "");
+    let num: number;
+    
+    // Handle comma as decimal separator
+    rawNum = rawNum.replace(",", ".");
+    num = parseFloat(rawNum);
+    if (isNaN(num)) continue;
+    
+    // Check if followed by K/k (thousands)
+    const afterMatch = fullText.substring(match.index + match[0].length - 1, match.index + match[0].length + 1);
+    const kCheck = fullText.substring(match.index, match.index + match[0].length + 2);
+    if (/k/i.test(kCheck.charAt(kCheck.length - 1)) || /k/i.test(fullText.charAt(match.index + match[0].length))) {
+      num = num * 1000;
+    }
+    
+    // Skip tiny numbers (not fees)
+    if (num < 500) continue;
+    // Skip if it matches the base fee
+    if (baseFee && Math.abs(num - baseFee) < 1) continue;
+    
+    // Extract context label: grab surrounding text as description
+    const before = fullText.substring(Math.max(0, match.index - 60), match.index);
+    const after = fullText.substring(match.index + match[0].length, Math.min(fullText.length, match.index + match[0].length + 80));
+    
+    // Build label from context
+    let label = "";
+    // Look for context after the number (e.g., "en anglais", "hors période...", "en province")
+    const afterContext = after.replace(/^[\s€euroskK.,]+/, "").split(/[.;]|\bet\b|\d/)[0].trim();
+    // Look for context before (e.g., "Visio")
+    const beforeContext = before.split(/[.;,]/).pop()?.trim().replace(/^(et|ou)\s+/i, "") || "";
+    
+    if (beforeContext && !beforeContext.match(/^\d/) && beforeContext.length > 1 && beforeContext.length < 40) {
+      label = `${num.toLocaleString("fr-FR")} € — ${beforeContext}${afterContext ? " " + afterContext : ""}`;
+    } else if (afterContext && afterContext.length > 1 && afterContext.length < 60) {
+      label = `${num.toLocaleString("fr-FR")} € — ${afterContext}`;
+    } else {
+      label = `${num.toLocaleString("fr-FR")} €`;
+    }
+    
+    // Avoid duplicates
+    if (!rates.find(r => Math.abs(r.value - num) < 1)) {
+      rates.push({ label: label.trim(), value: num });
+    }
+  }
+  
+  return rates;
+};
 
 type ContractData = { id: string; proposal_id: string; status: string };
 type InvoiceData = { id: string; proposal_id: string; invoice_type: string; status: string; paid_at: string | null };
@@ -498,20 +611,8 @@ const AdminProposalsContent = () => {
                   <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
                   {(() => {
                     const sp = speakers.find(s => s.id === ps.speaker_id);
-                    const feeDetails = (sp as any)?.fee_details as string | null;
-                    // Parse alternative rates from fee_details
-                    const altRates: { label: string; value: number }[] = [];
-                    if (feeDetails) {
-                      const matches = feeDetails.match(/(\d[\d\s,.]*\d*)\s*€?/g);
-                      if (matches) {
-                        matches.forEach(m => {
-                          const num = parseFloat(m.replace(/\s/g, "").replace(",", ".").replace("€", ""));
-                          if (!isNaN(num) && num > 100 && num !== sp?.base_fee) {
-                            altRates.push({ label: `${num.toLocaleString("fr-FR")} €`, value: num });
-                          }
-                        });
-                      }
-                    }
+                    const feeDetails = sp?.fee_details;
+                    const altRates = parseAlternativeRates(feeDetails, sp?.base_fee ?? null);
                     return (
                       <div className="space-y-1">
                         {sp?.base_fee && (
@@ -522,13 +623,13 @@ const AdminProposalsContent = () => {
                         <Input type="number" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
                         {altRates.length > 0 && (
                           <select
-                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
-                            value=""
+                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                            value={ps.speaker_fee?.toString() || ""}
                             onChange={e => {
                               if (e.target.value) updateSpeakerField(ps.speaker_id, "speaker_fee", Number(e.target.value));
                             }}
                           >
-                            <option value="">Tarifs alternatifs…</option>
+                            {sp?.base_fee && <option value={sp.base_fee.toString()}>Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €</option>}
                             {altRates.map((r, i) => (
                               <option key={i} value={r.value}>{r.label}</option>
                             ))}
@@ -548,15 +649,11 @@ const AdminProposalsContent = () => {
             </div>
           );
         })}
-        <div className="border border-dashed border-border rounded-lg p-3">
-          <Label className="text-xs text-muted-foreground mb-2 block">Ajouter un conférencier</Label>
-          <select className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value="" onChange={e => { const sp = speakers.find(s => s.id === e.target.value); if (sp) addSpeaker(sp); }}>
-            <option value="">Sélectionner…</option>
-            {speakers.filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id)).map(s => (
-              <option key={s.id} value={s.id}>{s.name}{s.base_fee ? ` — ${s.base_fee.toLocaleString("fr-FR")} €` : ""}{s.city ? ` (${s.city})` : ""}</option>
-            ))}
-          </select>
-        </div>
+        <SpeakerSelector
+          speakers={speakers}
+          selectedSpeakers={selectedSpeakers}
+          onSelect={addSpeaker}
+        />
       </div>
       <Button className="w-full" onClick={handleCreate} disabled={submitting}>
         {submitting ? "Création…" : "Créer la proposition"}
