@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     const siteOrigin = "https://les-conferenciers.netlify.app";
     const proposalUrl = `${siteOrigin}/proposition/${proposal.token}`;
-    const bannerUrl = `${siteOrigin}/images/les-conferenciers-banniere.png`;
+    const nuggetUrl = `${siteOrigin}/favicon.png`;
     const signatureUrl = `${siteOrigin}/images/les-conferenciers-signature.png`;
 
     // No more speaker price table in email - users must click to view the full proposal
