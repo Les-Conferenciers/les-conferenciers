@@ -991,7 +991,7 @@ const AdminSpeakersCRM = () => {
         <div className="divide-y divide-border">
         {filteredSpeakers.map(speaker => {
           const themes = parseThemes(speaker.themes);
-          const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg" ? speaker.image_url : DEFAULT_IMAGE;
+          const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg" ? speaker.image_url : null;
           return (
             <div
               key={speaker.id}
