@@ -1085,7 +1085,7 @@ const AdminSpeakersCRM = () => {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Titre / Rôle (affiché sur la carte et le profil)</Label>
-                  <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Ex: Double Champion Olympique de Judo" />
+                  <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} />
                 </div>
               </div>
 
