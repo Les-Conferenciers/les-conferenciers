@@ -336,7 +336,7 @@ const AdminProposalsContent = () => {
 
   const resetForm = () => {
     setClientName(""); setClientEmail(""); setRecipientName(""); setSelectedSpeakers([]);
-    setEmailSubject(""); setEmailBody(""); setMessage("");
+    setEmailSubject(""); setEmailBody(""); setMessage(getDefaultMessage("", ""));
   };
 
   const openEditDialog = (p: Proposal) => {
