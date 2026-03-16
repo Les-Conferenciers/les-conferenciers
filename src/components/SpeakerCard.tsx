@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Link, useNavigate } from "react-router-dom";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 
-const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
+const DEFAULT_IMAGE = null;
 
 export interface Speaker {
   id: string;

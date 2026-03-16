@@ -60,7 +60,7 @@ type Conference = {
   display_order: number | null;
 };
 
-const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
+const DEFAULT_IMAGE = null;
 
 // Helper: extract last name for sorting
 const getLastName = (name: string) => {

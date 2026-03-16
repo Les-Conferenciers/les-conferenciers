@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/accordion";
 import SpeakerReviews from "@/components/SpeakerReviews";
 
-const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
+const DEFAULT_IMAGE = null;
 
 // Gender helpers
 const isFemale = (speaker: any) => speaker.gender === "female";
