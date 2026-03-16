@@ -1121,7 +1121,7 @@ const AdminSpeakersCRM = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
-                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} placeholder="Français, Anglais" />
+                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo</Label>
