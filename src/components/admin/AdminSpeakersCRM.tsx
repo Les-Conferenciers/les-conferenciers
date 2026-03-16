@@ -1131,7 +1131,7 @@ const AdminSpeakersCRM = () => {
 
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Thématiques (séparées par des virgules)</Label>
-                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} placeholder="Intelligence artificielle, Innovation, Leadership" />
+                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} />
               </div>
 
               {/* Biography with AI regeneration */}
