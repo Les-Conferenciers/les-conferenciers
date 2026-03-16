@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     const siteOrigin = "https://les-conferenciers.netlify.app";
     const proposalUrl = `${siteOrigin}/proposition/${proposal.token}`;
-    const bannerUrl = `${siteOrigin}/images/les-conferenciers-banniere.png`;
+    const nuggetUrl = `${siteOrigin}/favicon.png`;
     const signatureUrl = `${siteOrigin}/images/les-conferenciers-signature.png`;
 
     // No more speaker price table in email - users must click to view the full proposal
@@ -80,9 +80,10 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
-    <!-- Banner Header - reduced size -->
-    <div style="text-align:center;background:#1a2332;">
-      <img src="${bannerUrl}" alt="Les Conférenciers" style="width:100%;max-width:600px;max-height:80px;object-fit:cover;display:block;" />
+    <!-- Header -->
+    <div style="background:#1a2332;padding:20px 30px;text-align:center;">
+      <img src="${nuggetUrl}" alt="" style="width:36px;height:36px;display:inline-block;vertical-align:middle;margin-right:12px;" />
+      <span style="color:#f5f0e8;font-size:20px;font-weight:bold;vertical-align:middle;font-family:Georgia,serif;">Agence Les Conférenciers</span>
     </div>
     
     <div style="padding:30px 30px 20px;">
