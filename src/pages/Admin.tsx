@@ -271,7 +271,6 @@ const AdminProposalsContent = () => {
   const addSpeaker = (speaker: Speaker) => {
     if (selectedSpeakers.find(s => s.speaker_id === speaker.id)) { toast.error("Déjà ajouté"); return; }
     const baseFee = speaker.base_fee ?? 0;
-    const baseFee = speaker.base_fee ?? 0;
     setSelectedSpeakers(prev => [...prev, {
       speaker_id: speaker.id, speaker_fee: baseFee || null, travel_costs: 0,
       agency_commission: COMMISSION, total_price: (baseFee + COMMISSION) || null,
