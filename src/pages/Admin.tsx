@@ -448,7 +448,7 @@ const AdminProposalsContent = () => {
         <Textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} className="text-sm" />
       </div>
       <div className="space-y-3">
-        <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
+        <Label>Conférenciers ({selectedSpeakers.length})</Label>
         {selectedSpeakers.map(ps => {
           const city = getSpeakerCity(ps.speaker_id);
           const imageUrl = getSpeakerImage(ps.speaker_id);
