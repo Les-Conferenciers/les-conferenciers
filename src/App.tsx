@@ -9,7 +9,11 @@ import SpeakerDetail from "./pages/SpeakerDetail";
 import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
 import BlogArticle from "./pages/BlogArticle";
+import Legal from "./pages/Legal";
+import RGPD from "./pages/RGPD";
+import Cookies from "./pages/Cookies";
 import NotFound from "./pages/NotFound";
+import ScrollToTop from "./components/ScrollToTop";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import ProposalView from "./pages/ProposalView";
@@ -27,6 +31,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/conferenciers" element={<Speakers />} />
@@ -35,6 +40,9 @@ const App = () => (
           <Route path="/speakers/:slug" element={<SpeakerDetail />} />
           <Route path="/speaker/:slug" element={<SpeakerDetail />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/mentions-legales" element={<Legal />} />
+          <Route path="/rgpd" element={<RGPD />} />
+          <Route path="/cookies" element={<Cookies />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogArticle />} />
           <Route path="/admin" element={<Admin />} />

@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
-        from: "Les Conférenciers <onboarding@resend.dev>",
+        from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
         to: [recipient_email || proposal.client_email],
         subject,
         html: emailHtml,

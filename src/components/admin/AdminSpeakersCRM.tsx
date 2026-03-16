@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic, Eye, EyeOff } from "lucide-react";
+import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic, Eye, EyeOff, User } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -60,7 +60,7 @@ type Conference = {
   display_order: number | null;
 };
 
-const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
+
 
 // Helper: extract last name for sorting
 const getLastName = (name: string) => {
@@ -421,6 +421,9 @@ const AdminSpeakersCRM = () => {
       const data = await resp.json();
       if (!data.success) { toast.error(data.error || "Conférencier non trouvé"); return; }
 
+      // If profile is flagged as offline (fallback sources), set archived=true
+      const isOffline = data.profile.offline === true;
+
       // Publish directly via publish-speaker
       const pubResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-speaker`, {
         method: "POST",
@@ -445,6 +448,7 @@ const AdminSpeakersCRM = () => {
             photo_url: data.profile.photo_url,
             video_url: data.profile.video_url,
             city: data.profile.city,
+            archived: isOffline,
           },
           conferences: data.profile.conferences,
         }),
@@ -452,7 +456,9 @@ const AdminSpeakersCRM = () => {
       const pubData = await pubResp.json();
       if (!pubData.success) throw new Error(pubData.error);
 
-      toast.success(`${data.profile.name} importé avec succès !`);
+      toast.success(isOffline 
+        ? `${data.profile.name} créé HORS LIGNE (sources : Wikipedia/Evene/Gala). Enrichissez la fiche manuellement.`
+        : `${data.profile.name} importé avec succès !`);
       setImportName("");
       setShowImport(false);
       fetchSpeakers();
@@ -985,14 +991,20 @@ const AdminSpeakersCRM = () => {
         <div className="divide-y divide-border">
         {filteredSpeakers.map(speaker => {
           const themes = parseThemes(speaker.themes);
-          const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg" ? speaker.image_url : DEFAULT_IMAGE;
+          const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg" ? speaker.image_url : null;
           return (
             <div
               key={speaker.id}
               className={`flex items-center gap-4 p-3 hover:bg-muted/30 transition-colors cursor-pointer group ${speaker.archived ? "opacity-60" : ""}`}
               onClick={() => openEdit(speaker)}
             >
-              <img src={imageUrl} alt={speaker.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+              {imageUrl ? (
+                <img src={imageUrl} alt={speaker.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  <User className="w-5 h-5 text-muted-foreground/50" />
+                </div>
+              )}
               <div className="flex-grow min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm text-foreground truncate">{speaker.name}</span>
@@ -1071,10 +1083,16 @@ const AdminSpeakersCRM = () => {
                 </div>
               )}
               <div className="flex items-center gap-4">
-                <img src={editForm.image_url || DEFAULT_IMAGE} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                {editForm.image_url ? (
+                  <img src={editForm.image_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
+                    <User className="w-8 h-8 text-muted-foreground/50" />
+                  </div>
+                )}
                 <div className="flex-grow space-y-1">
                   <Label className="text-xs text-muted-foreground">URL de la photo</Label>
-                  <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} placeholder="https://…" />
+                  <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />
                 </div>
               </div>
 
@@ -1085,53 +1103,53 @@ const AdminSpeakersCRM = () => {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Titre / Rôle (affiché sur la carte et le profil)</Label>
-                  <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Ex: Double Champion Olympique de Judo" />
+                  <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Ville</Label>
-                  <Input value={editForm.city || ""} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))} placeholder="Ville du conférencier" />
+                  <Input value={editForm.city || ""} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
-                  <Input type="number" value={editForm.base_fee ?? ""} onChange={e => setEditForm(p => ({ ...p, base_fee: e.target.value ? Number(e.target.value) : null }))} placeholder="3000" />
+                  <Input type="number" value={editForm.base_fee ?? ""} onChange={e => setEditForm(p => ({ ...p, base_fee: e.target.value ? Number(e.target.value) : null }))} />
                 </div>
               </div>
 
               {/* Fee details */}
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📋 Détails des tarifs (tous les tarifs : physique, distanciel, province…)</Label>
-                <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} placeholder="5K Paris, 8 à 10K province, 3K online" />
+                <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} />
               </div>
 
               {/* Phone & Email (internal only) */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">📱 Téléphone (interne)</Label>
-                  <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} placeholder="06 12 34 56 78" />
+                  <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">📧 Email (interne)</Label>
-                  <Input type="email" value={editForm.email || ""} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} placeholder="contact@speaker.com" />
+                  <Input type="email" value={editForm.email || ""} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
-                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} placeholder="Français, Anglais" />
+                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo</Label>
-                  <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} placeholder="https://youtube.com/…" />
+                  <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Thématiques (séparées par des virgules)</Label>
-                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} placeholder="Intelligence artificielle, Innovation, Leadership" />
+                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} />
               </div>
 
               {/* Biography with AI regeneration */}

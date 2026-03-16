@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
-import { Check, Mail, ChevronRight, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles, Play, Users } from "lucide-react";
+import { Check, Mail, ChevronRight, ChevronDown, Target, Lightbulb, TrendingUp, Handshake, Globe, Mic, Sparkles, Play, Users, User } from "lucide-react";
 import nuggetIcon from "@/assets/nugget.png";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/accordion";
 import SpeakerReviews from "@/components/SpeakerReviews";
 
-const DEFAULT_IMAGE = "https://www.lesconferenciers.com/wp-content/uploads/2022/05/thierry-marx-portrait.png";
+const DEFAULT_IMAGE = null;
 
 // Gender helpers
 const isFemale = (speaker: any) => speaker.gender === "female";
@@ -265,7 +265,7 @@ const SpeakerDetail = () => {
 
       const themes = parseThemes(speaker.themes);
       const pageUrl = window.location.origin + `/conferencier/${speaker.slug}`;
-      const imageUrl = speaker.image_url || DEFAULT_IMAGE;
+      const imageUrl = speaker.image_url || "";
 
       const personJsonLd = {
         "@context": "https://schema.org",
@@ -464,13 +464,19 @@ const SpeakerDetail = () => {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             {/* Medallion */}
             <div className="flex-shrink-0">
-              <div className="w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-accent/30 shadow-2xl">
-                <img
-                  src={speaker.image_url || DEFAULT_IMAGE}
-                  alt={`${speaker.name} - conférencier professionnel`}
-                  className="w-full h-full object-cover"
-                  width={176} height={176}
-                />
+              <div className="w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-accent/30 shadow-2xl bg-muted">
+                {speaker.image_url ? (
+                  <img
+                    src={speaker.image_url}
+                    alt={`${speaker.name} - conférencier professionnel`}
+                    className="w-full h-full object-cover"
+                    width={176} height={176}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className="w-16 h-16 md:w-20 md:h-20 text-muted-foreground/50" />
+                  </div>
+                )}
               </div>
             </div>
 
