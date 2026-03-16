@@ -126,6 +126,7 @@ Deno.serve(async (req) => {
         image_url: imageUrl,
         video_url: profile.video_url || null,
         city: profile.city || null,
+        archived: profile.archived === true,
         featured: false,
       })
       .select()
