@@ -736,9 +736,8 @@ Belle journée,`;
           )}
 
           <TabsContent value="drafts"><ProposalTable items={drafts} tab="drafts" /></TabsContent>
-          <TabsContent value="sent"><ProposalTable items={filteredSent} tab="sent" /></TabsContent>
+          {/* Envoyées et Terminées masquées temporairement */}
           <TabsContent value="refused"><ProposalTable items={refusedProposals} tab="refused" /></TabsContent>
-          <TabsContent value="completed"><ProposalTable items={completedProposals} tab="completed" /></TabsContent>
         </Tabs>
       </main>
     </div>
