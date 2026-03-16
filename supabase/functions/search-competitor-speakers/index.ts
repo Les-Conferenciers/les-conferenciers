@@ -381,7 +381,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { name, enrich } = await req.json();
+    let { name, enrich } = await req.json();
     if (!name || name.trim().length < 2) {
       return new Response(JSON.stringify({ success: false, error: "Nom requis (min 2 caractères)" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
