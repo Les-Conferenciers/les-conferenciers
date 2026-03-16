@@ -80,25 +80,13 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
-    <!-- Banner Header -->
+    <!-- Banner Header - reduced size -->
     <div style="text-align:center;background:#1a2332;">
-      <img src="${bannerUrl}" alt="Les Conférenciers" style="width:100%;max-width:600px;display:block;" />
+      <img src="${bannerUrl}" alt="Les Conférenciers" style="width:100%;max-width:600px;max-height:80px;object-fit:cover;display:block;" />
     </div>
     
     <div style="padding:30px 30px 20px;">
       <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
-      
-      <table style="width:100%;border-collapse:collapse;margin:24px 0;border:1px solid #eee;border-radius:8px;overflow:hidden;">
-        <thead>
-          <tr style="background:#f8f6f1;">
-            <th style="padding:10px 16px;text-align:left;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Conférencier</th>
-            <th style="padding:10px 16px;text-align:right;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Tarif HT</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${speakerLines}
-        </tbody>
-      </table>
 
       <div style="text-align:center;margin:30px 0;">
         <a href="${proposalUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
