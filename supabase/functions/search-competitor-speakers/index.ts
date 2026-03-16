@@ -381,7 +381,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { name, enrich } = await req.json();
+    let { name, enrich } = await req.json();
     if (!name || name.trim().length < 2) {
       return new Response(JSON.stringify({ success: false, error: "Nom requis (min 2 caractères)" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -392,9 +392,15 @@ Deno.serve(async (req) => {
     // Check if speaker already exists (skip in enrich mode)
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     if (!enrich) {
-      const { data: existing } = await supabase.from("speakers").select("id, name, slug").or(`slug.eq.${slug},name.ilike.%${name.trim()}%`).limit(1);
+      const { data: existing } = await supabase.from("speakers").select("id, name, slug, archived").or(`slug.eq.${slug},name.ilike.${name.trim()}`).limit(1);
       if (existing && existing.length > 0) {
-        return new Response(JSON.stringify({ success: false, error: `Ce conférencier existe déjà : ${existing[0].name}`, existing: existing[0] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        // If the existing speaker is online (not archived), block import
+        if (!existing[0].archived) {
+          return new Response(JSON.stringify({ success: false, error: `Ce conférencier existe déjà (en ligne) : ${existing[0].name}`, existing: existing[0] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        // If archived, allow re-import by switching to enrich mode
+        console.log(`Speaker "${existing[0].name}" exists but is archived — will update instead of blocking`);
+        enrich = true;
       }
     }
 
