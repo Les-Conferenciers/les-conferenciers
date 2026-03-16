@@ -60,7 +60,7 @@ type Conference = {
   display_order: number | null;
 };
 
-const DEFAULT_IMAGE = null;
+
 
 // Helper: extract last name for sorting
 const getLastName = (name: string) => {
