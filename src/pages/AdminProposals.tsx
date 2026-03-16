@@ -327,7 +327,22 @@ Belle journée,`;
     }
     const finalMessage = contextLine ? `${message}\n\n${contextLine}` : message;
     
-    const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null }).select().single();
+    // Auto-create or find client
+    let clientId: string | null = null;
+    const { data: existingClients } = await supabase.from("clients").select("id").eq("email", clientEmail).limit(1);
+    if (existingClients && existingClients.length > 0) {
+      clientId = existingClients[0].id;
+    } else {
+      const { data: newClient } = await supabase.from("clients").insert({
+        company_name: clientName,
+        contact_name: recipientName || null,
+        email: clientEmail,
+        status: "prospect",
+      }).select("id").single();
+      if (newClient) clientId = newClient.id;
+    }
+
+    const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null, client_id: clientId }).select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     await supabase.from("proposal_speakers").insert(selectedSpeakers.map((s, i) => ({
       proposal_id: proposal.id, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee, travel_costs: s.travel_costs,
