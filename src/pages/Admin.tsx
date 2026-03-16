@@ -269,8 +269,8 @@ const AdminProposalsContent = () => {
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter(c => c.speaker_id === speakerId);
 
   const addSpeaker = (speaker: Speaker) => {
-    if (selectedSpeakers.length >= 3) { toast.error("Maximum 3 conférenciers"); return; }
     if (selectedSpeakers.find(s => s.speaker_id === speaker.id)) { toast.error("Déjà ajouté"); return; }
+    const baseFee = speaker.base_fee ?? 0;
     const baseFee = speaker.base_fee ?? 0;
     setSelectedSpeakers(prev => [...prev, {
       speaker_id: speaker.id, speaker_fee: baseFee || null, travel_costs: 0,
