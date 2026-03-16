@@ -1125,7 +1125,7 @@ const AdminSpeakersCRM = () => {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo</Label>
-                  <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} placeholder="https://youtube.com/…" />
+                  <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} />
                 </div>
               </div>
 
