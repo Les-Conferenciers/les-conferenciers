@@ -182,6 +182,65 @@ type Proposal = {
 
 const COMMISSION = 1300;
 
+/** Parse monetary values from fee_details text and return alternative rates with labels */
+const parseAlternativeRates = (feeDetails: string | null | undefined, baseFee: number | null): { label: string; value: number }[] => {
+  if (!feeDetails) return [];
+  const rates: { label: string; value: number }[] = [];
+  
+  // Match patterns like: 6500, 3.5K, 3,5K, 10K, 2500 euros, etc.
+  const regex = /(\d[\d\s]*(?:[.,]\d+)?)\s*(?:k|K|€|euros?)?/g;
+  let match: RegExpExecArray | null;
+  const fullText = feeDetails;
+  
+  while ((match = regex.exec(fullText)) !== null) {
+    let rawNum = match[1].replace(/\s/g, "");
+    let num: number;
+    
+    // Handle comma as decimal separator
+    rawNum = rawNum.replace(",", ".");
+    num = parseFloat(rawNum);
+    if (isNaN(num)) continue;
+    
+    // Check if followed by K/k (thousands)
+    const afterMatch = fullText.substring(match.index + match[0].length - 1, match.index + match[0].length + 1);
+    const kCheck = fullText.substring(match.index, match.index + match[0].length + 2);
+    if (/k/i.test(kCheck.charAt(kCheck.length - 1)) || /k/i.test(fullText.charAt(match.index + match[0].length))) {
+      num = num * 1000;
+    }
+    
+    // Skip tiny numbers (not fees)
+    if (num < 500) continue;
+    // Skip if it matches the base fee
+    if (baseFee && Math.abs(num - baseFee) < 1) continue;
+    
+    // Extract context label: grab surrounding text as description
+    const before = fullText.substring(Math.max(0, match.index - 60), match.index);
+    const after = fullText.substring(match.index + match[0].length, Math.min(fullText.length, match.index + match[0].length + 80));
+    
+    // Build label from context
+    let label = "";
+    // Look for context after the number (e.g., "en anglais", "hors période...", "en province")
+    const afterContext = after.replace(/^[\s€euroskK.,]+/, "").split(/[.;]|\bet\b|\d/)[0].trim();
+    // Look for context before (e.g., "Visio")
+    const beforeContext = before.split(/[.;,]/).pop()?.trim().replace(/^(et|ou)\s+/i, "") || "";
+    
+    if (beforeContext && !beforeContext.match(/^\d/) && beforeContext.length > 1 && beforeContext.length < 40) {
+      label = `${num.toLocaleString("fr-FR")} € — ${beforeContext}${afterContext ? " " + afterContext : ""}`;
+    } else if (afterContext && afterContext.length > 1 && afterContext.length < 60) {
+      label = `${num.toLocaleString("fr-FR")} € — ${afterContext}`;
+    } else {
+      label = `${num.toLocaleString("fr-FR")} €`;
+    }
+    
+    // Avoid duplicates
+    if (!rates.find(r => Math.abs(r.value - num) < 1)) {
+      rates.push({ label: label.trim(), value: num });
+    }
+  }
+  
+  return rates;
+};
+
 type ContractData = { id: string; proposal_id: string; status: string };
 type InvoiceData = { id: string; proposal_id: string; invoice_type: string; status: string; paid_at: string | null };
 
