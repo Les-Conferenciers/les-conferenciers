@@ -265,7 +265,7 @@ const SpeakerDetail = () => {
 
       const themes = parseThemes(speaker.themes);
       const pageUrl = window.location.origin + `/conferencier/${speaker.slug}`;
-      const imageUrl = speaker.image_url || DEFAULT_IMAGE;
+      const imageUrl = speaker.image_url || "";
 
       const personJsonLd = {
         "@context": "https://schema.org",
