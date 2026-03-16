@@ -557,20 +557,8 @@ const AdminProposalsContent = () => {
                   <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
                   {(() => {
                     const sp = speakers.find(s => s.id === ps.speaker_id);
-                    const feeDetails = (sp as any)?.fee_details as string | null;
-                    // Parse alternative rates from fee_details
-                    const altRates: { label: string; value: number }[] = [];
-                    if (feeDetails) {
-                      const matches = feeDetails.match(/(\d[\d\s,.]*\d*)\s*€?/g);
-                      if (matches) {
-                        matches.forEach(m => {
-                          const num = parseFloat(m.replace(/\s/g, "").replace(",", ".").replace("€", ""));
-                          if (!isNaN(num) && num > 100 && num !== sp?.base_fee) {
-                            altRates.push({ label: `${num.toLocaleString("fr-FR")} €`, value: num });
-                          }
-                        });
-                      }
-                    }
+                    const feeDetails = sp?.fee_details;
+                    const altRates = parseAlternativeRates(feeDetails, sp?.base_fee ?? null);
                     return (
                       <div className="space-y-1">
                         {sp?.base_fee && (
@@ -581,13 +569,13 @@ const AdminProposalsContent = () => {
                         <Input type="number" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
                         {altRates.length > 0 && (
                           <select
-                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
-                            value=""
+                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                            value={ps.speaker_fee?.toString() || ""}
                             onChange={e => {
                               if (e.target.value) updateSpeakerField(ps.speaker_id, "speaker_fee", Number(e.target.value));
                             }}
                           >
-                            <option value="">Tarifs alternatifs…</option>
+                            {sp?.base_fee && <option value={sp.base_fee.toString()}>Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €</option>}
                             {altRates.map((r, i) => (
                               <option key={i} value={r.value}>{r.label}</option>
                             ))}
