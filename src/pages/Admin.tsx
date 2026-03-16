@@ -235,7 +235,7 @@ const AdminProposalsContent = () => {
   };
 
   const fetchSpeakers = async () => {
-    const { data } = await supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, city, formal_address, email, phone").order("name");
+    const { data } = await supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, fee_details, city, formal_address, email, phone").order("name");
     setSpeakers(data || []);
   };
 
