@@ -48,10 +48,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Proposal not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const origin = req.headers.get("origin") || "https://lesconferenciers.com";
-    const proposalUrl = `${origin}/proposition/${proposal.token}`;
-    const bannerUrl = `${origin}/images/les-conferenciers-banniere.png`;
-    const signatureUrl = `${origin}/images/les-conferenciers-signature.png`;
+    const siteOrigin = "https://lesconferenciers.com";
+    const proposalUrl = `${siteOrigin}/proposition/${proposal.token}`;
+    const bannerUrl = `${siteOrigin}/images/les-conferenciers-banniere.png`;
+    const signatureUrl = `${siteOrigin}/images/les-conferenciers-signature.png`;
 
     // No more speaker price table in email - users must click to view the full proposal
 
