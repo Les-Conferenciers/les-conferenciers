@@ -702,17 +702,10 @@ Belle journée,`;
                 Brouillons
                 {drafts.length > 0 && <Badge variant="secondary" className="text-[10px] h-5 min-w-5 px-1">{drafts.length}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="sent" className="gap-1.5">
-                Envoyées
-                {sentProposals.length > 0 && <Badge variant="secondary" className="text-[10px] h-5 min-w-5 px-1">{sentProposals.length}</Badge>}
-              </TabsTrigger>
+              {/* Envoyées et Terminées masquées temporairement */}
               <TabsTrigger value="refused" className="gap-1.5">
                 Refusées
                 {refusedProposals.length > 0 && <Badge variant="destructive" className="text-[10px] h-5 min-w-5 px-1">{refusedProposals.length}</Badge>}
-              </TabsTrigger>
-              <TabsTrigger value="completed" className="gap-1.5">
-                Terminées
-                {completedProposals.length > 0 && <Badge className="text-[10px] h-5 min-w-5 px-1 bg-green-600">{completedProposals.length}</Badge>}
               </TabsTrigger>
             </TabsList>
           </div>
