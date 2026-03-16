@@ -26,7 +26,7 @@ const SpeakerCard = ({ speaker, onThemeClick, onNavigate }: SpeakerCardProps) =>
   const navigate = useNavigate();
   const imageUrl = speaker.image_url && speaker.image_url !== "/placeholder.svg"
     ? speaker.image_url
-    : DEFAULT_IMAGE;
+    : null;
   const themes = parseThemes(speaker.themes);
 
   const handleThemeClick = (e: React.MouseEvent, theme: string) => {

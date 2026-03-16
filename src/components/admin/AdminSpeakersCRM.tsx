@@ -1083,7 +1083,13 @@ const AdminSpeakersCRM = () => {
                 </div>
               )}
               <div className="flex items-center gap-4">
-                <img src={editForm.image_url || DEFAULT_IMAGE} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                {editForm.image_url ? (
+                  <img src={editForm.image_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
+                    <User className="w-8 h-8 text-muted-foreground/50" />
+                  </div>
+                )}
                 <div className="flex-grow space-y-1">
                   <Label className="text-xs text-muted-foreground">URL de la photo</Label>
                   <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />

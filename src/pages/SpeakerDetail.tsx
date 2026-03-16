@@ -464,13 +464,19 @@ const SpeakerDetail = () => {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             {/* Medallion */}
             <div className="flex-shrink-0">
-              <div className="w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-accent/30 shadow-2xl">
-                <img
-                  src={speaker.image_url || DEFAULT_IMAGE}
-                  alt={`${speaker.name} - conférencier professionnel`}
-                  className="w-full h-full object-cover"
-                  width={176} height={176}
-                />
+              <div className="w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-accent/30 shadow-2xl bg-muted">
+                {speaker.image_url ? (
+                  <img
+                    src={speaker.image_url}
+                    alt={`${speaker.name} - conférencier professionnel`}
+                    className="w-full h-full object-cover"
+                    width={176} height={176}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className="w-16 h-16 md:w-20 md:h-20 text-muted-foreground/50" />
+                  </div>
+                )}
               </div>
             </div>
 
