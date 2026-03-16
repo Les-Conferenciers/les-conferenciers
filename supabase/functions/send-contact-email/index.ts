@@ -105,7 +105,7 @@ ${message}
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Les Conférenciers <onboarding@resend.dev>",
+        from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
         to: ["nellysabde@lesconferenciers.com"],
         subject: `Nouvelle demande de devis - ${name}${company ? ` (${company})` : ""}`,
         text: emailBody,

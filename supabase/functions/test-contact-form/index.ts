@@ -52,7 +52,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Les Conférenciers <onboarding@resend.dev>",
+            from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
             to: ["nellysabde@lesconferenciers.com"],
             subject: "⚠️ ALERTE - Le formulaire de contact ne fonctionne plus !",
             text: `Le test automatique quotidien du formulaire de contact a échoué.\n\nDate: ${new Date().toISOString()}\nErreur: ${JSON.stringify(result)}\nStatut HTTP: ${res.status}\n\nVeuillez vérifier le fonctionnement du site.`,
