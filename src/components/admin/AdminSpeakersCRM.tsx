@@ -1110,7 +1110,7 @@ const AdminSpeakersCRM = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">📱 Téléphone (interne)</Label>
-                  <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} placeholder="06 12 34 56 78" />
+                  <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">📧 Email (interne)</Label>
