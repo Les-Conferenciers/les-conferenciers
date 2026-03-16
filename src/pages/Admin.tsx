@@ -448,7 +448,7 @@ const AdminProposalsContent = () => {
       </div>
       <div className="space-y-3">
         <Label>Conférenciers ({selectedSpeakers.length})</Label>
-        {selectedSpeakers.map(ps => {
+        {selectedSpeakers.map((ps, idx) => {
           const city = getSpeakerCity(ps.speaker_id);
           const imageUrl = getSpeakerImage(ps.speaker_id);
           const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
