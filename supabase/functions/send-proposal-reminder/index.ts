@@ -5,6 +5,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const SITE = "https://les-conferenciers.netlify.app";
+const NUGGET = `${SITE}/favicon.png`;
+const SIGNATURE = `${SITE}/images/les-conferenciers-signature.png`;
+
+const emailHeader = `
+<div style="background:#1a2332;padding:20px 30px;text-align:center;">
+  <img src="${NUGGET}" alt="" style="width:36px;height:36px;display:inline-block;vertical-align:middle;margin-right:12px;" />
+  <span style="color:#f5f0e8;font-size:20px;font-weight:bold;vertical-align:middle;font-family:Georgia,serif;">Agence Les Conférenciers</span>
+</div>`;
+
+const emailSignature = `
+<div style="padding:20px 30px 10px;">
+  <img src="${SIGNATURE}" alt="Nelly SABDE | Agence Les Conférenciers" style="width:100%;max-width:500px;display:block;" />
+</div>`;
+
+const emailFooter = `
+<div style="background:#1a2332;padding:14px;text-align:center;">
+  <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Proposition confidentielle — Les Conférenciers</p>
+</div>`;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,11 +68,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Proposal not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const proposalUrl = `https://les-conferenciers.netlify.app/proposition/${proposal.token}`;
+    const proposalUrl = `${SITE}/proposition/${proposal.token}`;
     const recipientFirstName = proposal.recipient_name?.split(" ")[0] || "";
     const reminderNum = reminder_number || 1;
 
-    // Calculate remaining days
     const expiresAt = new Date(proposal.expires_at);
     const now = new Date();
     const remainingDays = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
@@ -67,7 +86,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
-    // Different templates for reminder 1 and 2
     let emailSubject: string;
     let messageText: string;
 
@@ -85,9 +103,7 @@ Je reste bien évidemment à votre disposition si besoin est.
 
 Dans l'attente de votre retour.
 
-Très belle fin de journée à vous.
-
-Nelly Sabde — Les Conférenciers`;
+Très belle fin de journée à vous.`;
     } else {
       emailSubject = `Rappel : votre recherche d'intervenants — ${proposal.client_name}`;
       messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
@@ -98,10 +114,7 @@ Je souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au cho
 
 Je reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.
 
-Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.
-
-Bien à vous,
-Nelly Sabde — Les Conférenciers`;
+Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.`;
     }
 
     const urgencyColor = remainingDays <= 7 ? "#dc2626" : "#f59e0b";
@@ -111,13 +124,11 @@ Nelly Sabde — Les Conférenciers`;
 
     const emailHtml = `
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#ffffff;">
-  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
-    <div style="text-align:center;padding:30px;background:#1a2332;border-radius:12px 12px 0 0;">
-      <h1 style="color:#f5f0e8;font-size:24px;margin:0;">Les Conférenciers</h1>
-    </div>
-    <div style="padding:30px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px;">
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+    ${emailHeader}
+    <div style="padding:30px;">
       <div style="color:#333;font-size:14px;line-height:1.7;white-space:pre-wrap;">${messageText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
       <div style="background:#f8f6f1;padding:20px;border-radius:8px;margin:20px 0;">
         <p style="font-size:13px;color:#666;margin:0 0 8px 0;font-weight:bold;">Votre sélection :</p>
@@ -132,6 +143,8 @@ Nelly Sabde — Les Conférenciers`;
         </a>
       </div>
     </div>
+    ${emailSignature}
+    ${emailFooter}
   </div>
 </body></html>`;
 
