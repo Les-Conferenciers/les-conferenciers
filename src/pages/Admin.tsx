@@ -182,6 +182,60 @@ type Proposal = {
 
 const COMMISSION = 1300;
 
+/** Speaker selector with search and alphabetical sort by last name */
+const SpeakerSelector = ({ speakers, selectedSpeakers, onSelect }: {
+  speakers: Speaker[];
+  selectedSpeakers: ProposalSpeaker[];
+  onSelect: (s: Speaker) => void;
+}) => {
+  const [search, setSearch] = useState("");
+  
+  const getLastName = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    return parts[parts.length - 1].toLowerCase();
+  };
+  
+  const available = speakers
+    .filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id))
+    .filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => getLastName(a.name).localeCompare(getLastName(b.name), "fr"));
+
+  return (
+    <div className="border border-dashed border-border rounded-lg p-3 space-y-2">
+      <Label className="text-xs text-muted-foreground block">Ajouter un conférencier</Label>
+      <div className="relative">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher par nom…"
+          className="pl-8 text-sm"
+        />
+      </div>
+      <div className="max-h-48 overflow-y-auto border border-input rounded-md">
+        {available.map(s => (
+          <button
+            key={s.id}
+            type="button"
+            className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between gap-2 border-b border-border last:border-0"
+            onClick={() => { onSelect(s); setSearch(""); }}
+          >
+            <span className="font-medium">{s.name}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {s.base_fee ? `${s.base_fee.toLocaleString("fr-FR")} €` : ""}
+              {s.city ? ` · ${s.city}` : ""}
+            </span>
+          </button>
+        ))}
+        {available.length === 0 && (
+          <div className="px-3 py-4 text-sm text-muted-foreground text-center">Aucun résultat</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
 /** Parse monetary values from fee_details text and return alternative rates with labels */
 const parseAlternativeRates = (feeDetails: string | null | undefined, baseFee: number | null): { label: string; value: number }[] => {
   if (!feeDetails) return [];
