@@ -421,6 +421,9 @@ const AdminSpeakersCRM = () => {
       const data = await resp.json();
       if (!data.success) { toast.error(data.error || "Conférencier non trouvé"); return; }
 
+      // If profile is flagged as offline (fallback sources), set archived=true
+      const isOffline = data.profile.offline === true;
+
       // Publish directly via publish-speaker
       const pubResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-speaker`, {
         method: "POST",
@@ -445,6 +448,7 @@ const AdminSpeakersCRM = () => {
             photo_url: data.profile.photo_url,
             video_url: data.profile.video_url,
             city: data.profile.city,
+            archived: isOffline,
           },
           conferences: data.profile.conferences,
         }),
@@ -452,7 +456,9 @@ const AdminSpeakersCRM = () => {
       const pubData = await pubResp.json();
       if (!pubData.success) throw new Error(pubData.error);
 
-      toast.success(`${data.profile.name} importé avec succès !`);
+      toast.success(isOffline 
+        ? `${data.profile.name} créé HORS LIGNE (sources : Wikipedia/Evene/Gala). Enrichissez la fiche manuellement.`
+        : `${data.profile.name} importé avec succès !`);
       setImportName("");
       setShowImport(false);
       fetchSpeakers();
