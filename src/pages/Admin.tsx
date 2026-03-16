@@ -682,23 +682,10 @@ const AdminProposalsContent = () => {
           <TabsTrigger value="drafts" className="gap-1.5 text-xs">
             📝 Brouillons {drafts.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{drafts.length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="sent" className="gap-1.5 text-xs">
-            📤 Envoyées {sent.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{sent.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="gap-1.5 text-xs">
-            ✅ Missions terminées {completed.length > 0 && <span className="ml-1 bg-green-100 text-green-700 rounded-full px-1.5 text-[10px]">{completed.length}</span>}
-          </TabsTrigger>
-          {archived.length > 0 && (
-            <TabsTrigger value="archived" className="gap-1.5 text-xs">
-              📦 Archivées <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{archived.length}</span>
-            </TabsTrigger>
-          )}
+          {/* Envoyées, Terminées et Archivées masquées temporairement */}
         </TabsList>
 
         <TabsContent value="drafts">{renderTable(drafts, "draft")}</TabsContent>
-        <TabsContent value="sent">{renderTable(sent, "sent")}</TabsContent>
-        <TabsContent value="completed">{renderTable(completed, "completed")}</TabsContent>
-        {archived.length > 0 && <TabsContent value="archived">{renderTable(archived, "draft")}</TabsContent>}
       </Tabs>
 
       {/* Edit dialog */}
