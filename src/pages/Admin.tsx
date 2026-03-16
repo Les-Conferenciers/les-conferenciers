@@ -141,7 +141,7 @@ Je reste bien entendu à votre disposition pour tout complément d'information.
 Dans l'attente de votre retour, je vous souhaite une très belle journée.
 
 Nelly Sabde — Les Conférenciers
-📞 06 XX XX XX XX`;
+📞 06 95 93 97 91`;
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null; formal_address?: boolean; email?: string | null; phone?: string | null };
