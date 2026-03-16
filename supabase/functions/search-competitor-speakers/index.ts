@@ -428,11 +428,94 @@ Deno.serve(async (req) => {
     });
 
     if (found.length === 0) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: "Ce profil n'existe pas chez les concurrents.",
-        sources: sources.map((s) => ({ source: s.source, found: false })),
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Fallback: try Wikipedia, Gala.fr, Evene
+      console.log("No competitor sources found. Trying fallback sources (Wikipedia, Gala, Evene)...");
+
+      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+      if (!firecrawlKey) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Ce profil n'existe pas chez les concurrents et Firecrawl n'est pas configuré pour les sources alternatives.",
+          sources: sources.map((s) => ({ source: s.source, found: false })),
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const searchQuery = `${name.trim()} conférencier biographie`;
+      const fallbackUrls = [
+        `https://fr.wikipedia.org/wiki/${encodeURIComponent(name.trim().replace(/ /g, "_"))}`,
+        `https://evene.lefigaro.fr/celebre/biographie/${slug}.php`,
+        `https://www.gala.fr/stars_et_gotha/${slug}`,
+      ];
+
+      const fallbackResults: any[] = [];
+
+      for (const fbUrl of fallbackUrls) {
+        try {
+          const fbResp = await fetch("https://api.firecrawl.dev/v1/scrape", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${firecrawlKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ url: fbUrl, formats: ["markdown"], onlyMainContent: true, waitFor: 3000 }),
+          });
+          const fbData = await fbResp.json();
+          const md = fbData?.data?.markdown || fbData?.markdown || "";
+          const sourceName = fbUrl.includes("wikipedia") ? "Wikipedia" : fbUrl.includes("evene") ? "Evene/Le Figaro" : "Gala.fr";
+          
+          if (md.length > 200 && !md.includes("page n'existe pas") && !md.includes("404") && !md.includes("Aucun résultat")) {
+            fallbackResults.push({ source: sourceName, found: true, biography: md.substring(0, 8000) });
+            console.log(`  ✓ ${sourceName}: ${md.length} chars`);
+          } else {
+            fallbackResults.push({ source: sourceName, found: false });
+            console.log(`  ✗ ${sourceName}: not found or too short`);
+          }
+        } catch (fbErr) {
+          const sourceName = fbUrl.includes("wikipedia") ? "Wikipedia" : fbUrl.includes("evene") ? "Evene/Le Figaro" : "Gala.fr";
+          fallbackResults.push({ source: sourceName, found: false });
+          console.log(`  ✗ ${sourceName}: error`);
+        }
+      }
+
+      const fallbackFound = fallbackResults.filter(f => f.found);
+      if (fallbackFound.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Ce profil n'existe ni chez les concurrents, ni sur Wikipedia, Gala ou Evene.",
+          sources: [
+            ...sources.map((s) => ({ source: s.source, found: false, photo_url: null })),
+            ...fallbackResults.map(f => ({ source: f.source, found: false, photo_url: null })),
+          ],
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Synthesize from fallback sources
+      console.log(`Found ${fallbackFound.length} fallback source(s). Synthesizing...`);
+      const fallbackAI = await synthesizeWithAI(name, fallbackFound);
+
+      const fallbackProfile = {
+        name: fallbackAI?.name || name.trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "),
+        slug,
+        role: fallbackAI?.role || null,
+        specialty: fallbackAI?.specialty || null,
+        biography: fallbackAI?.biography || null,
+        themes: fallbackAI?.themes || [],
+        conferences: fallbackAI?.conferences || [],
+        languages: fallbackAI?.languages || ["Français"],
+        gender: fallbackAI?.gender || "male",
+        key_points: fallbackAI?.key_points || [],
+        why_expertise: fallbackAI?.why_expertise || null,
+        why_impact: fallbackAI?.why_impact || null,
+        seo_title: fallbackAI?.seo_title || null,
+        meta_description: fallbackAI?.meta_description || null,
+        photo_url: null,
+        video_url: null,
+        city: null,
+        offline: true, // Flag to create as archived/offline
+        sources: [
+          ...sources.map((s) => ({ source: s.source, found: false, photo_url: null })),
+          ...fallbackResults.map(f => ({ source: f.source, found: f.found, photo_url: null })),
+        ],
+      };
+
+      return new Response(JSON.stringify({ success: true, profile: fallbackProfile }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Get the best photo URL

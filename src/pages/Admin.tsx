@@ -144,7 +144,7 @@ Nelly Sabde — Les Conférenciers
 📞 06 95 93 97 91`;
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
-type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null; formal_address?: boolean; email?: string | null; phone?: string | null };
+type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; fee_details: string | null; city: string | null; formal_address?: boolean; email?: string | null; phone?: string | null };
 type ProposalSpeaker = {
   speaker_id: string;
   speaker_fee: number | null;
@@ -235,7 +235,7 @@ const AdminProposalsContent = () => {
   };
 
   const fetchSpeakers = async () => {
-    const { data } = await supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, city, formal_address, email, phone").order("name");
+    const { data } = await supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, fee_details, city, formal_address, email, phone").order("name");
     setSpeakers(data || []);
   };
 
@@ -494,14 +494,57 @@ const AdminProposalsContent = () => {
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label><Input type="number" placeholder="0" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" placeholder="0" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="number" placeholder="1000" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
+                  {(() => {
+                    const sp = speakers.find(s => s.id === ps.speaker_id);
+                    const feeDetails = (sp as any)?.fee_details as string | null;
+                    // Parse alternative rates from fee_details
+                    const altRates: { label: string; value: number }[] = [];
+                    if (feeDetails) {
+                      const matches = feeDetails.match(/(\d[\d\s,.]*\d*)\s*€?/g);
+                      if (matches) {
+                        matches.forEach(m => {
+                          const num = parseFloat(m.replace(/\s/g, "").replace(",", ".").replace("€", ""));
+                          if (!isNaN(num) && num > 100 && num !== sp?.base_fee) {
+                            altRates.push({ label: `${num.toLocaleString("fr-FR")} €`, value: num });
+                          }
+                        });
+                      }
+                    }
+                    return (
+                      <div className="space-y-1">
+                        {sp?.base_fee && (
+                          <div className="text-xs font-medium text-accent mb-1">
+                            Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €
+                          </div>
+                        )}
+                        <Input type="number" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
+                        {altRates.length > 0 && (
+                          <select
+                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
+                            value=""
+                            onChange={e => {
+                              if (e.target.value) updateSpeakerField(ps.speaker_id, "speaker_fee", Number(e.target.value));
+                            }}
+                          >
+                            <option value="">Tarifs alternatifs…</option>
+                            {altRates.map((r, i) => (
+                              <option key={i} value={r.value}>{r.label}</option>
+                            ))}
+                          </select>
+                        )}
+                        {feeDetails && (
+                          <p className="text-[10px] text-muted-foreground/70 italic leading-tight">{feeDetails}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} /></div>
+                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="number" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} /></div>
                 <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label><Input type="number" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} className="font-bold" /></div>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                Base BDD : {speakers.find(s => s.id === ps.speaker_id)?.base_fee?.toLocaleString("fr-FR") ?? "—"} € · Commission auto : +{COMMISSION.toLocaleString("fr-FR")} €
-              </p>
             </div>
           );
         })}
