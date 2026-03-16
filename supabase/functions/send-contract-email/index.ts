@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
-    const signUrl = `${req.headers.get("origin") || "https://lesconferenciers.com"}/signer-contrat/${contract.token}`;
+    const signUrl = `https://lesconferenciers.com/signer-contrat/${contract.token}`;
     const bodyHtml = (email_body || "").replace(/\n/g, "<br>");
 
     const subject = email_subject || `Contrat de prestation — ${proposal.client_name} — Les Conférenciers`;

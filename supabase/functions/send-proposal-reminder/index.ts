@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Proposal not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const proposalUrl = `${req.headers.get("origin") || "https://lesconferenciers.com"}/proposition/${proposal.token}`;
+    const proposalUrl = `https://lesconferenciers.com/proposition/${proposal.token}`;
     const recipientFirstName = proposal.recipient_name?.split(" ")[0] || "";
     const reminderNum = reminder_number || 1;
 
