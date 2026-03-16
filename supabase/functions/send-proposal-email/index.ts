@@ -53,24 +53,7 @@ Deno.serve(async (req) => {
     const bannerUrl = `${origin}/images/les-conferenciers-banniere.png`;
     const signatureUrl = `${origin}/images/les-conferenciers-signature.png`;
 
-    // Build speaker list for email - show HT, no commission mention
-    const speakerLines = (proposal.proposal_speakers || [])
-      .sort((a: any, b: any) => a.display_order - b.display_order)
-      .map((ps: any) => {
-        const name = ps.speakers?.name || "Conférencier";
-        const role = ps.speakers?.role || "";
-        // Show HT price (total_price minus any TVA would be HT, but since we store HT already, just show it)
-        const priceHT = ps.total_price ? `${Number(ps.total_price).toLocaleString("fr-FR")} € HT` : "";
-        return `<tr>
-          <td style="padding:12px 16px;border-bottom:1px solid #eee;font-size:14px;color:#333;">
-            <strong>${name}</strong>${role ? `<br><span style="color:#888;font-size:12px;">${role}</span>` : ""}
-          </td>
-          <td style="padding:12px 16px;border-bottom:1px solid #eee;font-size:14px;color:#333;text-align:right;white-space:nowrap;">
-            ${priceHT}
-          </td>
-        </tr>`;
-      })
-      .join("");
+    // No more speaker price table in email - users must click to view the full proposal
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
