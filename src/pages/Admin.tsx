@@ -464,7 +464,23 @@ const AdminProposalsContent = () => {
                     {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" disabled={idx === 0} onClick={() => {
+                    setSelectedSpeakers(prev => {
+                      const arr = [...prev];
+                      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+                      return arr;
+                    });
+                  }}><ChevronUp className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="sm" disabled={idx === selectedSpeakers.length - 1} onClick={() => {
+                    setSelectedSpeakers(prev => {
+                      const arr = [...prev];
+                      [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+                      return arr;
+                    });
+                  }}><ChevronDown className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
               </div>
               {speakerConfs.length > 0 && (
                 <div className="space-y-2 bg-muted/50 rounded-md p-3">
