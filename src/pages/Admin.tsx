@@ -595,15 +595,11 @@ const AdminProposalsContent = () => {
             </div>
           );
         })}
-        <div className="border border-dashed border-border rounded-lg p-3">
-          <Label className="text-xs text-muted-foreground mb-2 block">Ajouter un conférencier</Label>
-          <select className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value="" onChange={e => { const sp = speakers.find(s => s.id === e.target.value); if (sp) addSpeaker(sp); }}>
-            <option value="">Sélectionner…</option>
-            {speakers.filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id)).map(s => (
-              <option key={s.id} value={s.id}>{s.name}{s.base_fee ? ` — ${s.base_fee.toLocaleString("fr-FR")} €` : ""}{s.city ? ` (${s.city})` : ""}</option>
-            ))}
-          </select>
-        </div>
+        <SpeakerSelector
+          speakers={speakers}
+          selectedSpeakers={selectedSpeakers}
+          onSelect={addSpeaker}
+        />
       </div>
       <Button className="w-full" onClick={handleCreate} disabled={submitting}>
         {submitting ? "Création…" : "Créer la proposition"}
