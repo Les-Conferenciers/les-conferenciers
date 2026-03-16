@@ -141,7 +141,7 @@ Je reste bien entendu à votre disposition pour tout complément d'information.
 Dans l'attente de votre retour, je vous souhaite une très belle journée.
 
 Nelly Sabde — Les Conférenciers
-📞 06 XX XX XX XX`;
+📞 06 95 93 97 91`;
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null; formal_address?: boolean; email?: string | null; phone?: string | null };
@@ -269,7 +269,6 @@ const AdminProposalsContent = () => {
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter(c => c.speaker_id === speakerId);
 
   const addSpeaker = (speaker: Speaker) => {
-    if (selectedSpeakers.length >= 3) { toast.error("Maximum 3 conférenciers"); return; }
     if (selectedSpeakers.find(s => s.speaker_id === speaker.id)) { toast.error("Déjà ajouté"); return; }
     const baseFee = speaker.base_fee ?? 0;
     setSelectedSpeakers(prev => [...prev, {
@@ -448,8 +447,8 @@ const AdminProposalsContent = () => {
         <Textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} className="text-sm" />
       </div>
       <div className="space-y-3">
-        <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
-        {selectedSpeakers.map(ps => {
+        <Label>Conférenciers ({selectedSpeakers.length})</Label>
+        {selectedSpeakers.map((ps, idx) => {
           const city = getSpeakerCity(ps.speaker_id);
           const imageUrl = getSpeakerImage(ps.speaker_id);
           const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
@@ -465,7 +464,23 @@ const AdminProposalsContent = () => {
                     {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" disabled={idx === 0} onClick={() => {
+                    setSelectedSpeakers(prev => {
+                      const arr = [...prev];
+                      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+                      return arr;
+                    });
+                  }}><ChevronUp className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="sm" disabled={idx === selectedSpeakers.length - 1} onClick={() => {
+                    setSelectedSpeakers(prev => {
+                      const arr = [...prev];
+                      [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+                      return arr;
+                    });
+                  }}><ChevronDown className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
               </div>
               {speakerConfs.length > 0 && (
                 <div className="space-y-2 bg-muted/50 rounded-md p-3">
@@ -490,17 +505,15 @@ const AdminProposalsContent = () => {
             </div>
           );
         })}
-        {selectedSpeakers.length < 3 && (
-          <div className="border border-dashed border-border rounded-lg p-3">
-            <Label className="text-xs text-muted-foreground mb-2 block">Ajouter un conférencier</Label>
-            <select className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value="" onChange={e => { const sp = speakers.find(s => s.id === e.target.value); if (sp) addSpeaker(sp); }}>
-              <option value="">Sélectionner…</option>
-              {speakers.filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id)).map(s => (
-                <option key={s.id} value={s.id}>{s.name}{s.base_fee ? ` — ${s.base_fee.toLocaleString("fr-FR")} €` : ""}{s.city ? ` (${s.city})` : ""}</option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className="border border-dashed border-border rounded-lg p-3">
+          <Label className="text-xs text-muted-foreground mb-2 block">Ajouter un conférencier</Label>
+          <select className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm" value="" onChange={e => { const sp = speakers.find(s => s.id === e.target.value); if (sp) addSpeaker(sp); }}>
+            <option value="">Sélectionner…</option>
+            {speakers.filter(s => !selectedSpeakers.find(ps => ps.speaker_id === s.id)).map(s => (
+              <option key={s.id} value={s.id}>{s.name}{s.base_fee ? ` — ${s.base_fee.toLocaleString("fr-FR")} €` : ""}{s.city ? ` (${s.city})` : ""}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <Button className="w-full" onClick={handleCreate} disabled={submitting}>
         {submitting ? "Création…" : "Créer la proposition"}

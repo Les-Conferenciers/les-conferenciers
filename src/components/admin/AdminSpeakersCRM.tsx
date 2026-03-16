@@ -1074,7 +1074,7 @@ const AdminSpeakersCRM = () => {
                 <img src={editForm.image_url || DEFAULT_IMAGE} alt="" className="w-16 h-16 rounded-xl object-cover" />
                 <div className="flex-grow space-y-1">
                   <Label className="text-xs text-muted-foreground">URL de la photo</Label>
-                  <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} placeholder="https://…" />
+                  <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />
                 </div>
               </div>
 
@@ -1085,53 +1085,53 @@ const AdminSpeakersCRM = () => {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Titre / Rôle (affiché sur la carte et le profil)</Label>
-                  <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Ex: Double Champion Olympique de Judo" />
+                  <Input value={editForm.specialty || ""} onChange={e => setEditForm(p => ({ ...p, specialty: e.target.value }))} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Ville</Label>
-                  <Input value={editForm.city || ""} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))} placeholder="Ville du conférencier" />
+                  <Input value={editForm.city || ""} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
-                  <Input type="number" value={editForm.base_fee ?? ""} onChange={e => setEditForm(p => ({ ...p, base_fee: e.target.value ? Number(e.target.value) : null }))} placeholder="3000" />
+                  <Input type="number" value={editForm.base_fee ?? ""} onChange={e => setEditForm(p => ({ ...p, base_fee: e.target.value ? Number(e.target.value) : null }))} />
                 </div>
               </div>
 
               {/* Fee details */}
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📋 Détails des tarifs (tous les tarifs : physique, distanciel, province…)</Label>
-                <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} placeholder="5K Paris, 8 à 10K province, 3K online" />
+                <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} />
               </div>
 
               {/* Phone & Email (internal only) */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">📱 Téléphone (interne)</Label>
-                  <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} placeholder="06 12 34 56 78" />
+                  <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">📧 Email (interne)</Label>
-                  <Input type="email" value={editForm.email || ""} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} placeholder="contact@speaker.com" />
+                  <Input type="email" value={editForm.email || ""} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
-                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} placeholder="Français, Anglais" />
+                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo</Label>
-                  <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} placeholder="https://youtube.com/…" />
+                  <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Thématiques (séparées par des virgules)</Label>
-                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} placeholder="Intelligence artificielle, Innovation, Leadership" />
+                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} />
               </div>
 
               {/* Biography with AI regeneration */}

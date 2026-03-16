@@ -48,9 +48,9 @@ const Footer = () => {
         <div className="border-t border-primary-foreground/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-primary-foreground/50">
           <p>© {new Date().getFullYear()} Agence - Les Conférenciers. Tous droits réservés.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-accent transition-colors">Mentions légales</a>
-            <a href="#" className="hover:text-accent transition-colors">RGPD</a>
-            <a href="#" className="hover:text-accent transition-colors">Cookies</a>
+            <Link to="/mentions-legales" className="hover:text-accent transition-colors">Mentions légales</Link>
+            <Link to="/rgpd" className="hover:text-accent transition-colors">RGPD</Link>
+            <Link to="/cookies" className="hover:text-accent transition-colors">Cookies</Link>
           </div>
         </div>
       </div>
