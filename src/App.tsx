@@ -40,6 +40,9 @@ const App = () => (
           <Route path="/speakers/:slug" element={<SpeakerDetail />} />
           <Route path="/speaker/:slug" element={<SpeakerDetail />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/mentions-legales" element={<Legal />} />
+          <Route path="/rgpd" element={<RGPD />} />
+          <Route path="/cookies" element={<Cookies />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogArticle />} />
           <Route path="/admin" element={<Admin />} />
