@@ -5,10 +5,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const SITE = "https://les-conferenciers.netlify.app";
+const NUGGET = `${SITE}/favicon.png`;
+const SIGNATURE = `${SITE}/images/les-conferenciers-signature.png`;
+
 const COMPANY_BANK = {
   iban: "FR76 XXXX XXXX XXXX XXXX XXXX XXX",
   bic: "XXXXXXXX",
 };
+
+const emailHeader = `
+<div style="background:#1a2332;padding:20px 30px;text-align:center;">
+  <img src="${NUGGET}" alt="" style="width:36px;height:36px;display:inline-block;vertical-align:middle;margin-right:12px;" />
+  <span style="color:#f5f0e8;font-size:20px;font-weight:bold;vertical-align:middle;font-family:Georgia,serif;">Agence Les Conférenciers</span>
+</div>`;
+
+const emailSignature = `
+<div style="padding:20px 30px 10px;">
+  <img src="${SIGNATURE}" alt="Nelly SABDE | Agence Les Conférenciers" style="width:100%;max-width:500px;display:block;" />
+</div>`;
+
+const emailFooter = `
+<div style="background:#1a2332;padding:14px;text-align:center;">
+  <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Document confidentiel — Les Conférenciers</p>
+</div>`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -59,20 +79,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
-    const invoiceUrl = `${req.headers.get("origin") || "https://lesconferenciers.com"}/admin/facture/${invoice.id}`;
+    const invoiceUrl = `${SITE}/admin/facture/${invoice.id}`;
     const bodyHtml = (email_body || `Bonjour,\n\nVeuillez trouver votre facture ${invoice.invoice_number}.\n\nCordialement,\nLes Conférenciers`).replace(/\n/g, "<br>");
     const subject = email_subject || `Facture ${invoice.invoice_number} — ${proposal.client_name}`;
 
     const emailHtml = `
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#ffffff;">
-  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
-    <div style="text-align:center;padding:30px;background:#1a2332;border-radius:12px 12px 0 0;">
-      <h1 style="color:#f5f0e8;font-size:24px;margin:0;">Les Conférenciers</h1>
-      <p style="color:#f5f0e8;opacity:0.7;font-size:14px;margin-top:8px;">Facture ${invoice.invoice_number}</p>
-    </div>
-    <div style="padding:30px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px;">
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+    ${emailHeader}
+    <div style="padding:30px;">
       <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
       <div style="text-align:center;margin:30px 0;">
         <a href="${invoiceUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
@@ -84,8 +101,9 @@ Deno.serve(async (req) => {
         <p style="color:#555;font-size:13px;margin:0;">IBAN : ${COMPANY_BANK.iban}</p>
         <p style="color:#555;font-size:13px;margin:0;">BIC : ${COMPANY_BANK.bic}</p>
       </div>
-      <p style="color:#999;font-size:11px;text-align:center;margin-top:20px;">Document confidentiel — Les Conférenciers</p>
     </div>
+    ${emailSignature}
+    ${emailFooter}
   </div>
 </body></html>`;
 
