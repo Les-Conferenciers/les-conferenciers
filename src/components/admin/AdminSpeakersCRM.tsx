@@ -1357,17 +1357,30 @@ const AdminSpeakersCRM = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={editForm.featured ?? false} onChange={e => setEditForm(p => ({ ...p, featured: e.target.checked }))} className="rounded border-input" />
-                  <span className="text-sm">Mis en avant (featured)</span>
-                </label>
+              <div className="space-y-3 border-t border-border pt-4">
+                <div className="flex items-center gap-6 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={editForm.featured ?? false} onChange={e => setEditForm(p => ({ ...p, featured: e.target.checked }))} className="rounded border-input" />
+                    <span className="text-sm">Mis en avant (featured)</span>
+                  </label>
+                  {editForm.featured && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground">Position carrousel (1-5)</Label>
+                      <Input type="number" min={1} max={5} value={(editForm as any).featured_order ?? ""} onChange={e => setEditForm(p => ({ ...p, featured_order: e.target.value ? Number(e.target.value) : null }))} className="w-20 h-8 text-sm" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">Genre</Label>
+                    <select className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm" value={editForm.gender || "male"} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}>
+                      <option value="male">Masculin</option>
+                      <option value="female">Féminin</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Genre</Label>
-                  <select className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm" value={editForm.gender || "male"} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}>
-                    <option value="male">Masculin</option>
-                    <option value="female">Féminin</option>
-                  </select>
+                  <Label className="text-xs text-muted-foreground">Position sur /conferenciers</Label>
+                  <Input type="number" min={1} value={(editForm as any).display_order ?? ""} onChange={e => setEditForm(p => ({ ...p, display_order: e.target.value ? Number(e.target.value) : 999 }))} className="w-24 h-8 text-sm" />
+                  <span className="text-xs text-muted-foreground">(plus petit = plus haut)</span>
                 </div>
               </div>
 
