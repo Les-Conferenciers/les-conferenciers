@@ -36,49 +36,36 @@ const CLIENT_LOGOS = [
   { name: "Hermès", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/hermes66bc7f8eaac82_150_150.png" },
 ];
 
-const GoogleReviewsSidebar = () => {
-  const [reviews, setReviews] = useState<any[]>([]);
+const SocialProofCard = () => {
+  const [review, setReview] = useState<any>(null);
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any).from("google_reviews").select("*").order("created_at", { ascending: false }).limit(4);
-      if (data?.length) setReviews(data);
+      const { data } = await (supabase as any).from("google_reviews").select("*").order("created_at", { ascending: false }).limit(1);
+      if (data?.[0]) setReview(data[0]);
     };
     load();
   }, []);
 
-  const fallback = [
-    { id: "1", author_name: "Rossel Axele", comment: "Excellente collaboration avec l'agence : Nelly est une vraie professionnelle, réactive et à l'écoute." },
-    { id: "2", author_name: "Pascale L", comment: "Accompagnement professionnel du début à la fin. Pleinement satisfaits." },
-    { id: "3", author_name: "Anne-Laure Astier", comment: "Professionnalisme et suivi de Nelly tout au long de l'organisation." },
-    { id: "4", author_name: "SERVICE RH SEMARDEL", comment: "Un accompagnement de qualité et réactif. Merci pour leur professionnalisme." },
-  ];
-  const items = reviews.length > 0 ? reviews : fallback;
+  const item = review || {
+    author_name: "SERVICE RH SEMARDEL",
+    comment: "Un accompagnement de qualité et réactif. Merci à toute l'équipe pour leur professionnalisme et leur disponibilité.",
+  };
 
   return (
-    <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
-      <div className="flex items-center gap-2 mb-3">
-        <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-        <span className="font-semibold text-xs text-foreground">Avis Google</span>
-        <div className="flex gap-0.5 ml-auto">
+    <div className="bg-accent/5 border border-accent/20 rounded-2xl p-5">
+      <Quote className="h-5 w-5 text-accent mb-2" />
+      <p className="text-sm text-foreground italic leading-relaxed">
+        "{item.comment}"
+      </p>
+      <div className="flex items-center gap-2 mt-3">
+        <div className="flex gap-0.5">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
           ))}
         </div>
+        <span className="text-xs font-semibold text-foreground">— {item.author_name}</span>
       </div>
-      <div className="space-y-2.5">
-        {items.map((r: any) => (
-          <div key={r.id} className="border-l-2 border-accent/30 pl-3">
-            <p className="text-xs text-muted-foreground italic line-clamp-2">"{r.comment}"</p>
-            <p className="text-xs font-medium text-foreground mt-0.5">— {r.author_name}</p>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => window.open("https://www.google.com/search?q=lesconferenciers.com+avis", "_blank")}
-        className="mt-3 text-xs text-accent font-semibold hover:underline inline-flex items-center gap-1"
-      >
-        <ExternalLink className="h-3 w-3" /> Voir tous les avis
-      </button>
+      <p className="text-[10px] text-muted-foreground mt-2">+ de 50 entreprises accompagnées · Note 5/5 sur Google</p>
     </div>
   );
 };
