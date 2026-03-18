@@ -1163,9 +1163,48 @@ const AdminSpeakersCRM = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
-                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} />
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues d'intervention</Label>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {(editForm.languages || []).map((lang, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 bg-accent/10 text-accent-foreground text-xs font-medium px-2.5 py-1 rounded-full border border-accent/20">
+                        {lang}
+                        <button type="button" onClick={() => {
+                          const newLangs = [...(editForm.languages || [])];
+                          newLangs.splice(idx, 1);
+                          setEditForm(p => ({ ...p, languages: newLangs }));
+                        }} className="hover:text-destructive transition-colors">
+                          <X className="h-3 w-3" />
+                        </button>
+                        {idx > 0 && (
+                          <button type="button" onClick={() => {
+                            const newLangs = [...(editForm.languages || [])];
+                            [newLangs[idx - 1], newLangs[idx]] = [newLangs[idx], newLangs[idx - 1]];
+                            setEditForm(p => ({ ...p, languages: newLangs }));
+                          }} className="hover:text-accent transition-colors" title="Monter">
+                            <ArrowUp className="h-3 w-3" />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm flex-grow"
+                      value=""
+                      onChange={e => {
+                        if (e.target.value && !(editForm.languages || []).includes(e.target.value)) {
+                          setEditForm(p => ({ ...p, languages: [...(p.languages || []), e.target.value] }));
+                        }
+                        e.target.value = "";
+                      }}
+                    >
+                      <option value="">Ajouter une langue…</option>
+                      {["Français", "Anglais", "Espagnol", "Allemand", "Italien", "Portugais", "Néerlandais", "Arabe", "Chinois", "Japonais", "Russe", "Coréen", "Hindi"].filter(l => !(editForm.languages || []).includes(l)).map(l => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
