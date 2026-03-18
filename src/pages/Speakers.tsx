@@ -159,9 +159,9 @@ const Speakers = () => {
         <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
           Conférenciers professionnels pour vos événements
         </h1>
-        <h2 className="text-primary-foreground/80 max-w-2xl mx-auto text-lg font-normal">
+        <p className="text-primary-foreground/80 max-w-2xl mx-auto text-lg font-normal">
           Parmi nos 300 conférenciers et intervenants d'exception, trouvez celui qui marquera votre événement.
-        </h2>
+        </p>
       </div>
 
       <div className="container mx-auto px-4 py-8 flex-grow">

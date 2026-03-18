@@ -1,3 +1,6 @@
+# Sitemap — proxy vers edge function
+/sitemap.xml   https://ibvjijamybwagxrniyjv.supabase.co/functions/v1/generate-sitemap   200
+
 # Redirections 301 — anciennes URLs du site lesconferenciers.com
 
 # Pages principales

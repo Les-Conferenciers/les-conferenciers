@@ -74,7 +74,7 @@ const FALLBACK_REVIEWS: Omit<GoogleReview, "id">[] = [
 
 const GoogleReviews = () => {
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
-  const [totalReviews, setTotalReviews] = useState(63);
+  const [totalReviews, setTotalReviews] = useState(105);
   const [averageRating, setAverageRating] = useState(5.0);
 
   useEffect(() => {

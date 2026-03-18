@@ -237,7 +237,7 @@ const Index = () => {
               ))}
             </div>
             <span className="text-primary-foreground font-semibold text-lg">5/5</span>
-            <span className="text-primary-foreground/60 text-sm">— 54 avis Google</span>
+            <span className="text-primary-foreground/60 text-sm">— 105 avis Google</span>
           </div>
 
           {/* Category search (rubriques only, no name search) */}
