@@ -41,7 +41,7 @@ const Index = () => {
     
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute("content", "Agence de conférenciers et de célébrités pour vos événements professionnels. Trouvez le conférencier idéal, devis gratuit sous 24h. 300+ profils vérifiés. Note 5/5 sur 105 avis Google.");
+      metaDesc.setAttribute("content", "Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme");
     }
 
     let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
