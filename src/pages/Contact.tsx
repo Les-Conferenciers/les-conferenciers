@@ -252,8 +252,8 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* Avis Google */}
-            <GoogleReviewsSidebar />
+            {/* Preuve sociale */}
+            <SocialProofCard />
 
 
             {/* Logos clients — en couleur */}
