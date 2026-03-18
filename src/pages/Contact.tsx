@@ -216,29 +216,8 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* Avis */}
-            <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                <span className="font-semibold text-sm text-foreground">Avis Google</span>
-                <div className="flex gap-0.5 ml-auto">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "Marie L.", text: "Accompagnement exceptionnel !" },
-                  { name: "Thomas B.", text: "Réactivité et professionnalisme." },
-                ].map((r) => (
-                  <div key={r.name} className="border-l-2 border-accent/30 pl-3">
-                    <p className="text-sm text-muted-foreground italic">"{r.text}"</p>
-                    <p className="text-sm font-medium text-foreground mt-0.5">— {r.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Avis Google — dynamiques */}
+            <GoogleReviewsSidebar />
 
             {/* Logos clients — en couleur */}
             <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
