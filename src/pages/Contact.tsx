@@ -35,49 +35,6 @@ const CLIENT_LOGOS = [
   { name: "Hermès", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/hermes66bc7f8eaac82_150_150.png" },
 ];
 
-const GoogleReviewsSidebar = () => {
-  const [reviews, setReviews] = useState<any[]>([]);
-  useEffect(() => {
-    const fetch = async () => {
-      const { data } = await (supabase as any).from("google_reviews").select("*").order("created_at", { ascending: false }).limit(4);
-      if (data?.length) setReviews(data);
-    };
-    fetch();
-  }, []);
-
-  return (
-    <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-4">
-        <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-        <span className="font-semibold text-sm text-foreground">Avis Google</span>
-        <div className="flex gap-0.5 ml-auto">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-          ))}
-        </div>
-      </div>
-      <div className="space-y-3">
-        {(reviews.length > 0 ? reviews : [
-          { id: "1", author_name: "Rossel Axele", comment: "Excellente collaboration avec l'agence : Nelly est une vraie professionnelle, réactive et à l'écoute." },
-          { id: "2", author_name: "Pascale L", comment: "Accompagnement professionnel du début à la fin. Pleinement satisfaits." },
-          { id: "3", author_name: "Anne-Laure Astier", comment: "Professionnalisme et suivi de Nelly tout au long de l'organisation." },
-          { id: "4", author_name: "SERVICE RH SEMARDEL", comment: "Un accompagnement de qualité et réactif. Merci pour leur professionnalisme." },
-        ]).map((r: any) => (
-          <div key={r.id} className="border-l-2 border-accent/30 pl-3">
-            <p className="text-sm text-muted-foreground italic">"{r.comment}"</p>
-            <p className="text-sm font-medium text-foreground mt-0.5">— {r.author_name}</p>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => window.open("https://www.google.com/search?q=lesconferenciers.com+avis", "_blank")}
-        className="mt-4 text-xs text-accent font-semibold hover:underline inline-flex items-center gap-1"
-      >
-        <ExternalLink className="h-3 w-3" /> Voir tous les avis Google
-      </button>
-    </div>
-  );
-};
 
 const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
