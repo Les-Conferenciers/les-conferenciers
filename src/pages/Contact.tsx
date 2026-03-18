@@ -200,11 +200,13 @@ const Contact = () => {
 
             {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
-              <img
-                src={nellyBuste}
-                alt="Nelly, fondatrice de l'agence"
-                className="w-full object-cover object-top aspect-[4/5] scale-[0.5]"
-              />
+              <div className="h-52 overflow-hidden">
+                <img
+                  src={nellyBuste}
+                  alt="Nelly, fondatrice de l'agence"
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
               <div className="px-5 pb-5 pt-4">
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mt-1.5">
