@@ -642,29 +642,54 @@ const SpeakerDetail = () => {
             {/* Video */}
             {(speaker as any).video_url && (() => {
               const videoUrl = (speaker as any).video_url as string;
-              // Handle both regular youtube URLs and embed URLs
+              // Handle YouTube URLs
               const videoId = videoUrl.match(/(?:youtu\.be\/|v=|embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
-              return videoId ? (
-                <section>
-                  <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
-                    <span className="w-1 h-7 bg-accent rounded-full block"></span>
-                    <Play className="h-5 w-5 text-accent" />
-                    Vidéo de conférence
-                  </h2>
-                  <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm">
-                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                      <iframe
-                        className="absolute inset-0 w-full h-full"
-                        src={`https://www.youtube.com/embed/${videoId}`}
-                        title={`Conférence de ${speaker.name}`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        loading="lazy"
-                      />
+              // Handle MP4 files
+              const isMp4 = videoUrl.toLowerCase().endsWith('.mp4');
+              
+              if (videoId) {
+                return (
+                  <section>
+                    <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                      <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                      <Play className="h-5 w-5 text-accent" />
+                      Vidéo de conférence
+                    </h2>
+                    <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm">
+                      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                        <iframe
+                          className="absolute inset-0 w-full h-full"
+                          src={`https://www.youtube.com/embed/${videoId}`}
+                          title={`Conférence de ${speaker.name}`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          loading="lazy"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </section>
-              ) : null;
+                  </section>
+                );
+              }
+              
+              if (isMp4) {
+                return (
+                  <section>
+                    <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+                      <span className="w-1 h-7 bg-accent rounded-full block"></span>
+                      <Play className="h-5 w-5 text-accent" />
+                      Vidéo de conférence
+                    </h2>
+                    <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm">
+                      <video controls className="w-full" preload="metadata">
+                        <source src={videoUrl} type="video/mp4" />
+                        Votre navigateur ne supporte pas la lecture vidéo.
+                      </video>
+                    </div>
+                  </section>
+                );
+              }
+              
+              return null;
             })()}
 
             {/* Why choose this speaker */}
