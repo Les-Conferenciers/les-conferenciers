@@ -219,6 +219,9 @@ const Contact = () => {
               </div>
             </div>
 
+            {/* Avis Google */}
+            <GoogleReviewsSidebar />
+
 
             {/* Logos clients — en couleur */}
             <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
