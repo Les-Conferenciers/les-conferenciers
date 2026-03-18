@@ -801,7 +801,7 @@ const SpeakerDetail = () => {
               <div className="bg-card border border-border/40 rounded-2xl p-6">
                 <h3 className="font-serif font-bold text-foreground mb-3 flex items-center gap-2">
                   <Globe className="h-4 w-4 text-accent" />
-                  {speaker.languages.length === 1 ? "Langue parlée" : "Langues parlées"}
+                  {speaker.languages.length === 1 ? "Langue d'intervention" : "Langues d'intervention"}
                 </h3>
                 <div className="space-y-2">
                   {speaker.languages.map((lang: string) => (

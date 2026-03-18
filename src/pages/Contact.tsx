@@ -243,8 +243,8 @@ const Contact = () => {
             <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
               <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mb-3">Ils nous font confiance</p>
               <div className="grid grid-cols-3 gap-3">
-                {CLIENT_LOGOS.map((l) => (
-                  <div key={l.name} className="flex items-center justify-center h-10 hover:scale-105 transition-transform">
+                  {CLIENT_LOGOS.map((l) => (
+                    <div key={l.name} className="flex items-center justify-center h-14 hover:scale-105 transition-transform">
                     <img src={l.src} alt={l.name} className="max-h-full max-w-full object-contain" loading="lazy" />
                   </div>
                 ))}
