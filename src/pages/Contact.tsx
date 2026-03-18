@@ -72,6 +72,20 @@ const SocialProofCard = () => {
 
 const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    document.title = "Contact - Demandez un devis gratuit | Les Conférenciers";
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute("content", "Contactez notre agence de conférenciers. Recevez une proposition personnalisée sous 24h. Devis gratuit, accompagnement sur mesure pour votre événement.");
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.href = "https://www.lesconferenciers.com/contact";
+    return () => { document.querySelector('link[rel="canonical"]')?.remove(); };
+  }, []);
   const [searchParams] = useSearchParams();
   const speakerName = searchParams.get("speaker") || "";
   const conferenceName = searchParams.get("conference") || "";
