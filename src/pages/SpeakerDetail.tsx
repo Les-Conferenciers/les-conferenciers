@@ -506,8 +506,8 @@ const SpeakerDetail = () => {
               {speaker.key_points && speaker.key_points.length > 0 && (
                 <div className="flex flex-col gap-2 items-center md:items-start">
                   {speaker.key_points.slice(0, 4).map((point: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2.5 text-sm text-primary-foreground/80">
-                      <img src={nuggetIcon} alt="" className="h-4 w-4 flex-shrink-0 object-contain" />
+                    <div key={idx} className="flex items-start gap-2.5 text-sm text-primary-foreground/80">
+                      <img src={nuggetIcon} alt="" className="h-4 w-4 flex-shrink-0 object-contain mt-0.5" />
                       <span>{point}</span>
                     </div>
                   ))}
@@ -659,7 +659,7 @@ const SpeakerDetail = () => {
                       <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                         <iframe
                           className="absolute inset-0 w-full h-full"
-                          src={`https://www.youtube.com/embed/${videoId}`}
+                          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
                           title={`Conférence de ${speaker.name}`}
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
