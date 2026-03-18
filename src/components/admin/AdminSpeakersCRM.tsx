@@ -278,12 +278,14 @@ const AdminSpeakersCRM = () => {
       themes: speaker.themes,
       languages: speaker.languages,
       featured: speaker.featured,
+      featured_order: (speaker as any).featured_order,
+      display_order: (speaker as any).display_order,
       gender: speaker.gender,
       why_expertise: speaker.why_expertise,
       why_impact: speaker.why_impact,
       phone: speaker.phone,
       email: speaker.email,
-    });
+    } as any);
   };
 
   const handleSave = async () => {
