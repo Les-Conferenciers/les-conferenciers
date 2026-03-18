@@ -172,10 +172,12 @@ const THEME_ALIASES: Record<string, string> = {
 const normalizeTheme = (theme: string): string => {
   const trimmed = theme.trim();
   if (!trimmed) return "";
-  const lower = trimmed.toLowerCase();
+  // Replace curly apostrophes with straight ones
+  const normalized = trimmed.replace(/\u2019/g, "'");
+  const lower = normalized.toLowerCase();
   if (THEME_ALIASES[lower]) return THEME_ALIASES[lower];
   // Default: capitalize first letter of the string, keep rest as-is
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 };
 
 /**
