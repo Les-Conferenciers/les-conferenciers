@@ -61,7 +61,7 @@ const ValueProposition = () => {
               key={step.title}
               className="group text-center rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 overflow-hidden"
             >
-              <div className="aspect-[16/9] overflow-hidden">
+              <div className="aspect-[16/10] overflow-hidden max-h-[180px]">
                 <img
                   src={step.image}
                   alt={step.title}

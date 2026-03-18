@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Send, CheckCircle2, Clock, Star } from "lucide-react";
+import { Send, CheckCircle2, Clock, Star, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import nellyBuste from "@/assets/nelly-buste.jpg";
 
 const contactSchema = z.object({
@@ -34,6 +35,50 @@ const CLIENT_LOGOS = [
   { name: "Orange", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/orange66bc7f90f39cc_150_150.jpg" },
   { name: "Hermès", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/hermes66bc7f8eaac82_150_150.png" },
 ];
+
+const GoogleReviewsSidebar = () => {
+  const [reviews, setReviews] = useState<any[]>([]);
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await (supabase as any).from("google_reviews").select("*").order("created_at", { ascending: false }).limit(4);
+      if (data?.length) setReviews(data);
+    };
+    fetch();
+  }, []);
+
+  return (
+    <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
+      <div className="flex items-center gap-3 mb-4">
+        <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+        <span className="font-semibold text-sm text-foreground">Avis Google</span>
+        <div className="flex gap-0.5 ml-auto">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {(reviews.length > 0 ? reviews : [
+          { id: "1", author_name: "Rossel Axele", comment: "Excellente collaboration avec l'agence : Nelly est une vraie professionnelle, réactive et à l'écoute." },
+          { id: "2", author_name: "Pascale L", comment: "Accompagnement professionnel du début à la fin. Pleinement satisfaits." },
+          { id: "3", author_name: "Anne-Laure Astier", comment: "Professionnalisme et suivi de Nelly tout au long de l'organisation." },
+          { id: "4", author_name: "SERVICE RH SEMARDEL", comment: "Un accompagnement de qualité et réactif. Merci pour leur professionnalisme." },
+        ]).map((r: any) => (
+          <div key={r.id} className="border-l-2 border-accent/30 pl-3">
+            <p className="text-sm text-muted-foreground italic">"{r.comment}"</p>
+            <p className="text-sm font-medium text-foreground mt-0.5">— {r.author_name}</p>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => window.open("https://www.google.com/search?q=lesconferenciers.com+avis", "_blank")}
+        className="mt-4 text-xs text-accent font-semibold hover:underline inline-flex items-center gap-1"
+      >
+        <ExternalLink className="h-3 w-3" /> Voir tous les avis Google
+      </button>
+    </div>
+  );
+};
 
 const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -202,7 +247,7 @@ const Contact = () => {
               <img
                 src={nellyBuste}
                 alt="Nelly, fondatrice de l'agence"
-                className="w-full object-cover object-center aspect-[3/4] scale-[0.85]"
+                className="w-full object-cover object-center aspect-[3/4] scale-[0.7]"
               />
               <div className="px-5 pb-5 pt-4">
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
@@ -215,36 +260,15 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* Avis */}
-            <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                <span className="font-semibold text-sm text-foreground">Avis Google</span>
-                <div className="flex gap-0.5 ml-auto">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "Marie L.", text: "Accompagnement exceptionnel !" },
-                  { name: "Thomas B.", text: "Réactivité et professionnalisme." },
-                ].map((r) => (
-                  <div key={r.name} className="border-l-2 border-accent/30 pl-3">
-                    <p className="text-sm text-muted-foreground italic">"{r.text}"</p>
-                    <p className="text-sm font-medium text-foreground mt-0.5">— {r.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Avis Google — dynamiques */}
+            <GoogleReviewsSidebar />
 
             {/* Logos clients — en couleur */}
             <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
               <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mb-3">Ils nous font confiance</p>
               <div className="grid grid-cols-3 gap-3">
-                {CLIENT_LOGOS.map((l) => (
-                  <div key={l.name} className="flex items-center justify-center h-10 hover:scale-105 transition-transform">
+                  {CLIENT_LOGOS.map((l) => (
+                    <div key={l.name} className="flex items-center justify-center h-14 hover:scale-105 transition-transform">
                     <img src={l.src} alt={l.name} className="max-h-full max-w-full object-contain" loading="lazy" />
                   </div>
                 ))}

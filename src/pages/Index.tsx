@@ -229,7 +229,7 @@ const Index = () => {
               <div className="mt-10 flex items-center gap-3">
                 <div className="h-px flex-grow bg-primary-foreground/10" />
                 <span className="text-primary-foreground/40 text-sm font-medium italic">
-                  C'est pour cela que nous vous accompagnons.
+                  C'est la raison pour laquelle nous vous accompagnons.
                 </span>
                 <div className="h-px flex-grow bg-primary-foreground/10" />
               </div>
