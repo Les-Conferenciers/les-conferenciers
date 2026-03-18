@@ -560,6 +560,53 @@ const AdminSpeakersCRM = () => {
     setRegeneratingConf(null);
   };
 
+  // AI: Generate a new conference from speaker profile
+  const handleAiGenerateConference = async () => {
+    if (!editSpeaker) return;
+    setGeneratingAiConf(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-conferences", {
+        body: { speaker_ids: [editSpeaker.id], mode: "generate_single" },
+      });
+      if (error) throw error;
+      if (data?.results?.[0]?.error) throw new Error(data.results[0].error);
+      toast.success("Conférence générée par l'IA !");
+      fetchConferences(editSpeaker.id);
+    } catch (err: any) {
+      toast.error(`Erreur IA : ${err.message}`);
+    }
+    setGeneratingAiConf(false);
+  };
+
+  // AI: Regenerate conference title based on its content
+  const handleRegenerateConfTitle = async (confId: string) => {
+    const conf = conferences.find(c => c.id === confId);
+    if (!conf || !editSpeaker) return;
+    setRegeneratingConfTitle(confId);
+    try {
+      const { data, error } = await supabase.functions.invoke("format-conference-descriptions", {
+        body: {
+          speaker_id: editSpeaker.id,
+          conference_id: confId,
+          title: conf.title,
+          description: conf.description || "",
+          speaker_name: editSpeaker.name,
+          speaker_role: editSpeaker.specialty || editSpeaker.role || "",
+          mode: "title_only",
+        },
+      });
+      if (error) throw error;
+      if (data?.title) {
+        await supabase.from("speaker_conferences").update({ title: data.title } as any).eq("id", confId);
+        toast.success("Titre régénéré par l'IA !");
+        fetchConferences(editSpeaker.id);
+      }
+    } catch (err: any) {
+      toast.error(`Erreur IA : ${err.message}`);
+    }
+    setRegeneratingConfTitle(null);
+  };
+
   // Enrichment handler
   const handleEnrichAll = async () => {
     if (enriching) return;
