@@ -200,14 +200,14 @@ const Contact = () => {
 
             {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
-              <div className="h-52 overflow-hidden">
+              <div className="flex justify-center bg-muted/30 p-4">
                 <img
                   src={nellyBuste}
                   alt="Nelly, fondatrice de l'agence"
-                  className="w-full h-full object-cover object-top"
+                  className="w-32 h-32 rounded-full object-cover object-top shadow-md"
                 />
               </div>
-              <div className="px-5 pb-5 pt-4">
+              <div className="px-5 pb-5 pt-3 text-center">
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mt-1.5">
                   Elle vous accompagne personnellement de A à Z pour trouver le conférencier idéal pour votre événement.
