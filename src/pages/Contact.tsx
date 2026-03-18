@@ -52,20 +52,20 @@ const SocialProofCard = () => {
   };
 
   return (
-    <div className="bg-accent/5 border border-accent/20 rounded-2xl p-5">
-      <Quote className="h-5 w-5 text-accent mb-2" />
-      <p className="text-sm text-foreground italic leading-relaxed">
+    <div className="bg-card rounded-2xl border border-border/40 p-4 shadow-sm">
+      <Quote className="h-4 w-4 text-accent mb-1.5" />
+      <p className="text-xs text-muted-foreground italic leading-relaxed line-clamp-3">
         "{item.comment}"
       </p>
-      <div className="flex items-center gap-2 mt-3">
-        <div className="flex gap-0.5">
+      <div className="flex items-center gap-1.5 mt-2">
+        <div className="flex gap-px">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+            <Star key={i} className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
           ))}
         </div>
-        <span className="text-xs font-semibold text-foreground">— {item.author_name}</span>
+        <span className="text-[11px] font-medium text-foreground">— {item.author_name}</span>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-2">+ de 50 entreprises accompagnées · Note 5/5 sur Google</p>
+      <p className="text-[10px] text-muted-foreground mt-1.5">50+ entreprises · 5/5 Google</p>
     </div>
   );
 };
