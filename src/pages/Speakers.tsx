@@ -16,6 +16,21 @@ const SCROLL_KEY = "speakers-scroll-pos";
 const DISPLAY_COUNT_KEY = "speakers-display-count";
 
 const Speakers = () => {
+  // SEO meta
+  useEffect(() => {
+    document.title = "Nos conférenciers - Les Conférenciers";
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute("content", "Découvrez nos 300+ conférenciers et intervenants d'exception. Trouvez le profil idéal pour votre événement professionnel. Devis gratuit sous 24h.");
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.href = "https://www.lesconferenciers.com/conferenciers";
+    return () => { document.querySelector('link[rel="canonical"]')?.remove(); };
+  }, []);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
   const initialTheme = searchParams.get("theme") || null;
