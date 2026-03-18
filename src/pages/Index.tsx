@@ -38,10 +38,13 @@ const Index = () => {
   // SEO: structured data for home page
   useEffect(() => {
     document.title = "Agence de conférenciers et de célébrités | Les Conférenciers";
-    
+
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute("content", "Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme");
+      metaDesc.setAttribute(
+        "content",
+        "Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme",
+      );
     }
 
     let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
@@ -70,9 +73,7 @@ const Index = () => {
         postalCode: "92140",
         addressCountry: "FR",
       },
-      sameAs: [
-        "https://www.google.com/search?q=lesconferenciers.com+avis"
-      ],
+      sameAs: ["https://www.google.com/search?q=lesconferenciers.com+avis"],
       aggregateRating: {
         "@type": "AggregateRating",
         ratingValue: "5",
@@ -237,7 +238,7 @@ const Index = () => {
               ))}
             </div>
             <span className="text-primary-foreground font-semibold text-lg">5/5</span>
-            <span className="text-primary-foreground/60 text-sm">— 105 avis Google</span>
+            <span className="text-primary-foreground/60 text-sm">— 105 avis</span>
           </div>
 
           {/* Category search (rubriques only, no name search) */}
@@ -403,8 +404,8 @@ const Index = () => {
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
                 Trouver le bon conférencier est <strong className="text-foreground">chronophage</strong> : recherches,
-                comparaisons, négociations, logistique… Nelly accompagne les entreprises pour leur
-                faire <strong className="text-foreground">gagner du temps</strong> et{" "}
+                comparaisons, négociations, logistique… Nelly accompagne les entreprises pour leur faire{" "}
+                <strong className="text-foreground">gagner du temps</strong> et{" "}
                 <strong className="text-foreground">sécuriser chaque étape</strong> de l'organisation.
               </p>
 
@@ -492,9 +493,7 @@ const Index = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">
-                Conférenciers inspirants à découvrir
-              </h2>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">Conférenciers inspirants à découvrir</h2>
               <p className="text-muted-foreground">
                 Thierry Marx, Nina Métayer, Tony Estanguet, Julia de Funès… et bien d'autres
               </p>
@@ -509,14 +508,11 @@ const Index = () => {
           {/* Mention: not all speakers are listed */}
           <div className="mt-10 text-center bg-card border border-border/40 rounded-2xl p-6 max-w-2xl mx-auto">
             <p className="text-muted-foreground text-sm leading-relaxed">
-              <strong className="text-foreground">Tous nos conférenciers ne sont pas présents sur le site.</strong>{" "}
-              Vous cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement.
+              <strong className="text-foreground">Tous nos conférenciers ne sont pas présents sur le site.</strong> Vous
+              cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre
+              événement.
             </p>
-            <Button
-              variant="outline"
-              className="mt-4 gap-2"
-              onClick={() => navigate("/contact")}
-            >
+            <Button variant="outline" className="mt-4 gap-2" onClick={() => navigate("/contact")}>
               Nous contacter <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
