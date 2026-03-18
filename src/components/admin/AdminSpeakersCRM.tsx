@@ -1362,9 +1362,14 @@ const AdminSpeakersCRM = () => {
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     <Mic className="h-4 w-4" /> Conférences ({conferences.length})
                   </Label>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAddConference(!showAddConference)}>
-                    <Plus className="h-3.5 w-3.5" /> Ajouter
-                  </Button>
+                  <div className="flex gap-1.5">
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAiGenerateConference} disabled={generatingAiConf}>
+                      {generatingAiConf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Générer via IA
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAddConference(!showAddConference)}>
+                      <Plus className="h-3.5 w-3.5" /> Ajouter
+                    </Button>
+                  </div>
                 </div>
 
                 {showAddConference && (
