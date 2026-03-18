@@ -59,7 +59,7 @@ const ValueProposition = () => {
           {STEPS.map((step, idx) => (
             <div
               key={step.title}
-              className="group text-center rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 overflow-hidden"
+              className="group text-center rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
             >
               <div className="h-[160px] overflow-hidden">
                 <img
