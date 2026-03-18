@@ -60,10 +60,14 @@ const THEME_ALIASES: Record<string, string> = {
   "entrepreunariat": "Entrepreneuriat",
   "entrepreneuriat": "Entrepreneuriat",
 
-  // Écologie / Environnement
-  "ecologie": "Écologie",
-  "écologie": "Écologie",
+  // Environnement (regroupe RSE, Écologie, Urbanisme, Aménagement)
+  "ecologie": "Environnement",
+  "écologie": "Environnement",
   "environnement": "Environnement",
+  "écologie & environnement": "Environnement",
+  "rse": "Environnement",
+  "urbanisme": "Environnement",
+  "aménagement du territoire": "Environnement",
 
   // Économie
   "economie": "Économie",
