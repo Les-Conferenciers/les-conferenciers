@@ -8,7 +8,6 @@ import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 
