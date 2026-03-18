@@ -61,7 +61,7 @@ const ValueProposition = () => {
               key={step.title}
               className="group text-center rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 overflow-hidden"
             >
-              <div className="aspect-[16/10] overflow-hidden max-h-[180px]">
+              <div className="h-[160px] overflow-hidden">
                 <img
                   src={step.image}
                   alt={step.title}
@@ -69,7 +69,7 @@ const ValueProposition = () => {
                   loading="lazy"
                 />
               </div>
-              <div className="p-6">
+              <div className="p-5">
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent text-accent-foreground font-bold text-sm mb-3">
                   {idx + 1}
                 </div>
