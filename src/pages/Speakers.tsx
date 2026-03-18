@@ -238,6 +238,23 @@ const Speakers = () => {
         )}
       </div>
 
+      {/* CTA block */}
+      <div className="bg-muted/50 py-12 px-4">
+        <div className="container mx-auto max-w-2xl text-center bg-card rounded-2xl p-8 shadow-sm border border-border/30">
+          <p className="text-foreground text-sm md:text-base leading-relaxed mb-6">
+            <strong>Tous nos conférenciers ne sont pas présents sur le site.</strong>{" "}
+            Vous cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement.
+          </p>
+          <Button
+            variant="outline"
+            className="rounded-xl font-semibold gap-2 border-foreground/20 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
+            onClick={() => window.location.href = "/contact"}
+          >
+            Nous contacter <ChevronDown className="h-4 w-4 -rotate-90" />
+          </Button>
+        </div>
+      </div>
+
       <Footer />
     </div>
   );
