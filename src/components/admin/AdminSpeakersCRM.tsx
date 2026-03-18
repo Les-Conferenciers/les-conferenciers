@@ -1090,9 +1090,31 @@ const AdminSpeakersCRM = () => {
                     <User className="w-8 h-8 text-muted-foreground/50" />
                   </div>
                 )}
-                <div className="flex-grow space-y-1">
-                  <Label className="text-xs text-muted-foreground">URL de la photo</Label>
-                  <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />
+                <div className="flex-grow space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">URL de la photo</Label>
+                    <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Ou importer une photo (JPG, PNG)</Label>
+                    <Input 
+                      type="file" 
+                      accept="image/jpeg,image/png"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !editSpeaker) return;
+                        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                        const filePath = `${editSpeaker.slug}.${ext}`;
+                        toast.info("Upload en cours…");
+                        const { error: upErr } = await supabase.storage.from('speaker-photos').upload(filePath, file, { upsert: true });
+                        if (upErr) { toast.error(`Erreur upload : ${upErr.message}`); return; }
+                        const { data: urlData } = supabase.storage.from('speaker-photos').getPublicUrl(filePath);
+                        setEditForm(p => ({ ...p, image_url: urlData.publicUrl }));
+                        toast.success("Photo importée !");
+                      }}
+                      className="text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 
