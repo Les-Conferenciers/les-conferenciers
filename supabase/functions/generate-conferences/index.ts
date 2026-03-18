@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
   );
 
   const body = await req.json().catch(() => ({}));
-  const mode = body.mode || "generate"; // "generate" | "reformulate"
+  const mode = body.mode || "generate"; // "generate" | "reformulate" | "generate_single"
   const speakerIds: string[] = body.speaker_ids || [];
 
   if (!speakerIds.length) {
