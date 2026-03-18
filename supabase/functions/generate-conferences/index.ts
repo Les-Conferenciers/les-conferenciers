@@ -68,7 +68,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      if (mode === "generate") {
+      if (mode === "generate" || mode === "generate_single") {
+        // For "generate" mode, skip if already has conferences
+        if (mode === "generate") {
         // Check if already has conferences
         const { count } = await supabase
           .from("speaker_conferences")
