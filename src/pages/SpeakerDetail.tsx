@@ -506,8 +506,8 @@ const SpeakerDetail = () => {
               {speaker.key_points && speaker.key_points.length > 0 && (
                 <div className="flex flex-col gap-2 items-center md:items-start">
                   {speaker.key_points.slice(0, 4).map((point: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2.5 text-sm text-primary-foreground/80">
-                      <img src={nuggetIcon} alt="" className="h-4 w-4 flex-shrink-0 object-contain" />
+                    <div key={idx} className="flex items-start gap-2.5 text-sm text-primary-foreground/80">
+                      <img src={nuggetIcon} alt="" className="h-4 w-4 flex-shrink-0 object-contain mt-0.5" />
                       <span>{point}</span>
                     </div>
                   ))}
