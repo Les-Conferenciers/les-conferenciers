@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
   );
 
   const body = await req.json().catch(() => ({}));
-  const mode = body.mode || "generate"; // "generate" | "reformulate"
+  const mode = body.mode || "generate"; // "generate" | "reformulate" | "generate_single"
   const speakerIds: string[] = body.speaker_ids || [];
 
   if (!speakerIds.length) {
@@ -68,42 +68,52 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      if (mode === "generate") {
-        // Check if already has conferences
-        const { count } = await supabase
+      if (mode === "generate" || mode === "generate_single") {
+        if (mode === "generate") {
+          // Check if already has conferences
+          const { count } = await supabase
+            .from("speaker_conferences")
+            .select("id", { count: "exact", head: true })
+            .eq("speaker_id", speakerId);
+
+          if (count && count > 0) {
+            results.push({ id: speakerId, name: speaker.name, skipped: true, reason: "Already has conferences" });
+            continue;
+          }
+        }
+
+        // Get existing conference count for display_order
+        const { count: existingCount } = await supabase
           .from("speaker_conferences")
           .select("id", { count: "exact", head: true })
           .eq("speaker_id", speakerId);
-
-        if (count && count > 0) {
-          results.push({ id: speakerId, name: speaker.name, skipped: true, reason: "Already has conferences" });
-          continue;
-        }
+        const startOrder = existingCount || 0;
 
         // Strip HTML from biography for the prompt
         const bioText = (speaker.biography || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
         const themes = (speaker.themes || []).join(", ");
         const keyPoints = (speaker.key_points || []).join(", ");
+        const numConfs = mode === "generate_single" ? 1 : "2 à 3";
 
-        const prompt = `Tu es un r\u00e9dacteur expert pour l'agence de conf\u00e9renciers premium lesconferenciers.com.
+        const prompt = `Tu es un rédacteur expert pour l'agence de conférenciers premium lesconferenciers.com.
 
-\u00c0 partir de la biographie et des informations du conf\u00e9rencier, g\u00e9n\u00e8re 2 \u00e0 3 conf\u00e9rences pertinentes qu'il pourrait proposer.
+À partir de la biographie et des informations du conférencier, génère ${numConfs} conférence(s) pertinente(s) qu'il pourrait proposer.
 
-Conf\u00e9rencier : ${speaker.name}
-R\u00f4le : ${speaker.specialty || speaker.role || ""}
-Th\u00e9matiques : ${themes}
-Points cl\u00e9s : ${keyPoints}
+Conférencier : ${speaker.name}
+Rôle : ${speaker.specialty || speaker.role || ""}
+Thématiques : ${themes}
+Points clés : ${keyPoints}
 Biographie : ${bioText.substring(0, 2000)}
 
-R\u00e8gles :
-- Chaque conf\u00e9rence a un titre accrocheur et professionnel (pas g\u00e9n\u00e9rique)
+Règles :
+- Chaque conférence a un titre accrocheur et professionnel (pas générique)
 - La description fait 2-4 paragraphes en HTML (<p>, <strong>)
-- Mets en gras les termes cl\u00e9s, chiffres, concepts importants (5-8 mots/expressions en gras par description)
-- Ton premium, engageant, orient\u00e9 b\u00e9n\u00e9fices pour l'audience corporate
+- Mets en gras les termes clés, chiffres, concepts importants (5-8 mots/expressions en gras par description)
+- Ton premium, engageant, orienté bénéfices pour l'audience corporate
 - Ne mentionne AUCUN concurrent (Orators, WeChamp, Simone & Nelson)
-- Base-toi sur l'expertise r\u00e9elle du conf\u00e9rencier, pas d'invention
+- Base-toi sur l'expertise réelle du conférencier, pas d'invention
 
-R\u00e9ponds UNIQUEMENT en JSON valide (array), format :
+Réponds UNIQUEMENT en JSON valide (array), format :
 [{"title": "...", "description": "<p>...</p>"}]`;
 
         const aiResult = await callAI(LOVABLE_API_KEY, prompt);
@@ -124,7 +134,7 @@ R\u00e9ponds UNIQUEMENT en JSON valide (array), format :
               speaker_id: speakerId,
               title: conf.title,
               description: conf.description,
-              display_order: i,
+              display_order: startOrder + i,
             });
           if (!insertErr) inserted++;
         }

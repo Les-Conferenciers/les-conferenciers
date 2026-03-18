@@ -131,6 +131,8 @@ const AdminSpeakersCRM = () => {
   const [regeneratingConf, setRegeneratingConf] = useState<string | null>(null);
   const [editingConfId, setEditingConfId] = useState<string | null>(null);
   const [editConfForm, setEditConfForm] = useState<{ title: string; description: string }>({ title: "", description: "" });
+  const [generatingAiConf, setGeneratingAiConf] = useState(false);
+  const [regeneratingConfTitle, setRegeneratingConfTitle] = useState<string | null>(null);
 
   const fetchSpeakers = async () => {
     setLoading(true);
@@ -556,6 +558,53 @@ const AdminSpeakersCRM = () => {
       toast.error(`Erreur IA : ${err.message}`);
     }
     setRegeneratingConf(null);
+  };
+
+  // AI: Generate a new conference from speaker profile
+  const handleAiGenerateConference = async () => {
+    if (!editSpeaker) return;
+    setGeneratingAiConf(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-conferences", {
+        body: { speaker_ids: [editSpeaker.id], mode: "generate_single" },
+      });
+      if (error) throw error;
+      if (data?.results?.[0]?.error) throw new Error(data.results[0].error);
+      toast.success("Conférence générée par l'IA !");
+      fetchConferences(editSpeaker.id);
+    } catch (err: any) {
+      toast.error(`Erreur IA : ${err.message}`);
+    }
+    setGeneratingAiConf(false);
+  };
+
+  // AI: Regenerate conference title based on its content
+  const handleRegenerateConfTitle = async (confId: string) => {
+    const conf = conferences.find(c => c.id === confId);
+    if (!conf || !editSpeaker) return;
+    setRegeneratingConfTitle(confId);
+    try {
+      const { data, error } = await supabase.functions.invoke("format-conference-descriptions", {
+        body: {
+          speaker_id: editSpeaker.id,
+          conference_id: confId,
+          title: conf.title,
+          description: conf.description || "",
+          speaker_name: editSpeaker.name,
+          speaker_role: editSpeaker.specialty || editSpeaker.role || "",
+          mode: "title_only",
+        },
+      });
+      if (error) throw error;
+      if (data?.title) {
+        await supabase.from("speaker_conferences").update({ title: data.title } as any).eq("id", confId);
+        toast.success("Titre régénéré par l'IA !");
+        fetchConferences(editSpeaker.id);
+      }
+    } catch (err: any) {
+      toast.error(`Erreur IA : ${err.message}`);
+    }
+    setRegeneratingConfTitle(null);
   };
 
   // Enrichment handler
@@ -1163,9 +1212,48 @@ const AdminSpeakersCRM = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
-                  <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} />
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues d'intervention</Label>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {(editForm.languages || []).map((lang, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 bg-accent/10 text-accent-foreground text-xs font-medium px-2.5 py-1 rounded-full border border-accent/20">
+                        {lang}
+                        <button type="button" onClick={() => {
+                          const newLangs = [...(editForm.languages || [])];
+                          newLangs.splice(idx, 1);
+                          setEditForm(p => ({ ...p, languages: newLangs }));
+                        }} className="hover:text-destructive transition-colors">
+                          <X className="h-3 w-3" />
+                        </button>
+                        {idx > 0 && (
+                          <button type="button" onClick={() => {
+                            const newLangs = [...(editForm.languages || [])];
+                            [newLangs[idx - 1], newLangs[idx]] = [newLangs[idx], newLangs[idx - 1]];
+                            setEditForm(p => ({ ...p, languages: newLangs }));
+                          }} className="hover:text-accent transition-colors" title="Monter">
+                            <ArrowUp className="h-3 w-3" />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm flex-grow"
+                      value=""
+                      onChange={e => {
+                        if (e.target.value && !(editForm.languages || []).includes(e.target.value)) {
+                          setEditForm(p => ({ ...p, languages: [...(p.languages || []), e.target.value] }));
+                        }
+                        e.target.value = "";
+                      }}
+                    >
+                      <option value="">Ajouter une langue…</option>
+                      {["Français", "Anglais", "Espagnol", "Allemand", "Italien", "Portugais", "Néerlandais", "Arabe", "Chinois", "Japonais", "Russe", "Coréen", "Hindi"].filter(l => !(editForm.languages || []).includes(l)).map(l => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
@@ -1274,9 +1362,14 @@ const AdminSpeakersCRM = () => {
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     <Mic className="h-4 w-4" /> Conférences ({conferences.length})
                   </Label>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAddConference(!showAddConference)}>
-                    <Plus className="h-3.5 w-3.5" /> Ajouter
-                  </Button>
+                  <div className="flex gap-1.5">
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAiGenerateConference} disabled={generatingAiConf}>
+                      {generatingAiConf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Générer via IA
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAddConference(!showAddConference)}>
+                      <Plus className="h-3.5 w-3.5" /> Ajouter
+                    </Button>
+                  </div>
                 </div>
 
                 {showAddConference && (
@@ -1342,7 +1435,10 @@ const AdminSpeakersCRM = () => {
                                 }} title="Modifier">
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReformulateConference(conf.id)} disabled={regeneratingConf === conf.id} title="Reformuler avec l'IA">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRegenerateConfTitle(conf.id)} disabled={regeneratingConfTitle === conf.id} title="Régénérer le titre via IA">
+                                  {regeneratingConfTitle === conf.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReformulateConference(conf.id)} disabled={regeneratingConf === conf.id} title="Reformuler la description via IA">
                                   {regeneratingConf === conf.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteConference(conf.id)} title="Supprimer">

@@ -92,6 +92,47 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Title-only regeneration mode
+    if (body.mode === "title_only") {
+      const titlePrompt = `Tu es un rédacteur expert pour une agence de conférenciers premium (lesconferenciers.com).
+À partir du contenu de cette conférence, génère un nouveau titre accrocheur et professionnel.
+
+Conférencier : ${body.speaker_name} (${body.speaker_role || ""})
+Titre actuel : ${body.title}
+Description : ${(body.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}
+
+Règles :
+- Le titre doit être percutant, mémorable, orienté bénéfice pour l'audience corporate
+- Pas de titre générique comme "Conférence de..." ou "Intervention sur..."
+- Maximum 10 mots
+- Ne mentionne AUCUN concurrent
+- Réponds UNIQUEMENT avec le nouveau titre, rien d'autre (pas de guillemets)`;
+
+      try {
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [{ role: "user", content: titlePrompt }],
+          }),
+        });
+        if (!aiResp.ok) throw new Error(`AI error: ${aiResp.status}`);
+        const aiData = await aiResp.json();
+        let title = (aiData.choices?.[0]?.message?.content || "").trim().replace(/^["«]|["»]$/g, "");
+        return new Response(JSON.stringify({ success: true, title }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const prompt = `Tu es un rédacteur expert pour une agence de conférenciers premium (lesconferenciers.com).
 Reformule la description de cette conférence pour la rendre percutante, engageante et professionnelle.
 

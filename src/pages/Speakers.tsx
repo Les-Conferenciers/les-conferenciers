@@ -6,8 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
-import { Input } from "@/components/ui/input";
-import { Search, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
@@ -151,18 +150,6 @@ const Speakers = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8 flex-grow">
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Rechercher..."
-              className="pl-9 border-border/50 shadow-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
 
         {/* Theme filters */}
         <div className="flex flex-wrap gap-2 mb-4">
