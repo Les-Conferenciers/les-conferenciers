@@ -35,6 +35,115 @@ const Index = () => {
   const [topThemes, setTopThemes] = useState<string[]>([]);
   const navigate = useNavigate();
 
+  // SEO: structured data for home page
+  useEffect(() => {
+    document.title = "Agence de conférenciers et de célébrités | Les Conférenciers";
+
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute(
+        "content",
+        "Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme",
+      );
+    }
+
+    let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (!canonicalEl) {
+      canonicalEl = document.createElement("link");
+      canonicalEl.setAttribute("rel", "canonical");
+      document.head.appendChild(canonicalEl);
+    }
+    canonicalEl.href = "https://www.lesconferenciers.com/";
+
+    const organizationJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": "https://www.lesconferenciers.com/#organization",
+      name: "Les Conférenciers",
+      alternateName: "LES CONFERENCIERS - LES CONFERENCIERS.COM",
+      url: "https://www.lesconferenciers.com",
+      logo: "https://www.lesconferenciers.com/images/les-conferenciers-banniere.png",
+      description: "Agence de conférenciers et de célébrités pour vos événements professionnels.",
+      telephone: "+33695939791",
+      email: "contact@lesconferenciers.com",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "4 B Villa de la Gare",
+        addressLocality: "Clamart",
+        postalCode: "92140",
+        addressCountry: "FR",
+      },
+      sameAs: ["https://www.google.com/search?q=lesconferenciers.com+avis"],
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "5",
+        bestRating: "5",
+        worstRating: "1",
+        ratingCount: "105",
+        reviewCount: "105",
+      },
+    };
+
+    const websiteJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://www.lesconferenciers.com/#website",
+      name: "Les Conférenciers",
+      url: "https://www.lesconferenciers.com",
+      publisher: { "@id": "https://www.lesconferenciers.com/#organization" },
+    };
+
+    const localBusinessJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "@id": "https://www.lesconferenciers.com/#localbusiness",
+      name: "Les Conférenciers",
+      image: "https://www.lesconferenciers.com/images/les-conferenciers-banniere.png",
+      telephone: "+33695939791",
+      email: "contact@lesconferenciers.com",
+      url: "https://www.lesconferenciers.com",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "4 B Villa de la Gare",
+        addressLocality: "Clamart",
+        postalCode: "92140",
+        addressCountry: "FR",
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "5",
+        bestRating: "5",
+        worstRating: "1",
+        ratingCount: "105",
+        reviewCount: "105",
+      },
+      priceRange: "€€€",
+    };
+
+    const schemas = [
+      { key: "organization", data: organizationJsonLd },
+      { key: "website", data: websiteJsonLd },
+      { key: "localbusiness", data: localBusinessJsonLd },
+    ];
+
+    schemas.forEach(({ key, data }) => {
+      let el = document.querySelector(`script[data-jsonld="${key}"]`);
+      if (!el) {
+        el = document.createElement("script");
+        el.setAttribute("type", "application/ld+json");
+        el.setAttribute("data-jsonld", key);
+        document.head.appendChild(el);
+      }
+      el.textContent = JSON.stringify(data);
+    });
+
+    return () => {
+      schemas.forEach(({ key }) => {
+        document.querySelector(`script[data-jsonld="${key}"]`)?.remove();
+      });
+    };
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       const { data, count } = await supabase
@@ -129,7 +238,7 @@ const Index = () => {
               ))}
             </div>
             <span className="text-primary-foreground font-semibold text-lg">5/5</span>
-            <span className="text-primary-foreground/60 text-sm">— 54 avis Google</span>
+            <span className="text-primary-foreground/60 text-sm">— 105 avis</span>
           </div>
 
           {/* Category search (rubriques only, no name search) */}
@@ -295,8 +404,8 @@ const Index = () => {
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
                 Trouver le bon conférencier est <strong className="text-foreground">chronophage</strong> : recherches,
-                comparaisons, négociations, logistique… Nelly accompagne les entreprises pour leur
-                faire <strong className="text-foreground">gagner du temps</strong> et{" "}
+                comparaisons, négociations, logistique… Nelly accompagne les entreprises pour leur faire{" "}
+                <strong className="text-foreground">gagner du temps</strong> et{" "}
                 <strong className="text-foreground">sécuriser chaque étape</strong> de l'organisation.
               </p>
 
@@ -384,9 +493,7 @@ const Index = () => {
         <div className="container mx-auto">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">
-                Conférenciers inspirants à découvrir
-              </h2>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-2">Conférenciers inspirants à découvrir</h2>
               <p className="text-muted-foreground">
                 Thierry Marx, Nina Métayer, Tony Estanguet, Julia de Funès… et bien d'autres
               </p>
@@ -401,14 +508,11 @@ const Index = () => {
           {/* Mention: not all speakers are listed */}
           <div className="mt-10 text-center bg-card border border-border/40 rounded-2xl p-6 max-w-2xl mx-auto">
             <p className="text-muted-foreground text-sm leading-relaxed">
-              <strong className="text-foreground">Tous nos conférenciers ne sont pas présents sur le site.</strong>{" "}
-              Vous cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement.
+              <strong className="text-foreground">Tous nos conférenciers ne sont pas présents sur le site.</strong> Vous
+              cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre
+              événement.
             </p>
-            <Button
-              variant="outline"
-              className="mt-4 gap-2"
-              onClick={() => navigate("/contact")}
-            >
+            <Button variant="outline" className="mt-4 gap-2" onClick={() => navigate("/contact")}>
               Nous contacter <ArrowRight className="h-4 w-4" />
             </Button>
           </div>

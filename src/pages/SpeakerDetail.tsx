@@ -243,8 +243,10 @@ const SpeakerDetail = () => {
   // SEO: JSON-LD + meta
   useEffect(() => {
     if (speaker) {
-      document.title = speaker.seo_title || `Conférence ${speaker.name} — ${conferencier_e(speaker)} | Les Conférenciers`;
-      const desc = speaker.meta_description || `Réservez la conférence de ${speaker.name} pour votre événement. ${speaker.specialty || speaker.role || "Conférencier professionnel"}. Devis gratuit sous 24h.`;
+      const role = speaker.specialty || speaker.role || "";
+      const titleGender = isFemale(speaker) ? "Conférencière" : "Conférencier";
+      document.title = speaker.seo_title || `${speaker.name} - ${titleGender}${role ? " et " + role : ""} | Les Conférenciers`;
+      const desc = speaker.meta_description || `Réservez ${speaker.name}, ${titleGender.toLowerCase()} ${role ? "et " + role.toLowerCase() + " " : ""}pour votre événement professionnel. Devis gratuit sous 24h.`;
       let metaEl = document.querySelector('meta[name="description"]');
       if (metaEl) {
         metaEl.setAttribute("content", desc);

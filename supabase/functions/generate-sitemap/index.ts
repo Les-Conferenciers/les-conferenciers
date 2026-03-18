@@ -49,6 +49,16 @@ Deno.serve(async (req) => {
     <loc>${baseUrl}/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/mentions-legales</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/rgpd</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>`;
 
   // Speaker pages
