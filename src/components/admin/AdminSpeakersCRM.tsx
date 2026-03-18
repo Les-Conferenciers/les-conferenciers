@@ -131,6 +131,8 @@ const AdminSpeakersCRM = () => {
   const [regeneratingConf, setRegeneratingConf] = useState<string | null>(null);
   const [editingConfId, setEditingConfId] = useState<string | null>(null);
   const [editConfForm, setEditConfForm] = useState<{ title: string; description: string }>({ title: "", description: "" });
+  const [generatingAiConf, setGeneratingAiConf] = useState(false);
+  const [regeneratingConfTitle, setRegeneratingConfTitle] = useState<string | null>(null);
 
   const fetchSpeakers = async () => {
     setLoading(true);
