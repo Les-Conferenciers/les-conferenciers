@@ -247,7 +247,7 @@ const Contact = () => {
               <img
                 src={nellyBuste}
                 alt="Nelly, fondatrice de l'agence"
-                className="w-full object-cover object-center aspect-[3/4] scale-[0.7]"
+                className="w-full object-cover object-top aspect-[4/5] scale-[0.5]"
               />
               <div className="px-5 pb-5 pt-4">
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
