@@ -83,7 +83,7 @@ const GoogleReviewsSidebar = () => {
   );
 };
 
-
+const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
   const [searchParams] = useSearchParams();
   const speakerName = searchParams.get("speaker") || "";
