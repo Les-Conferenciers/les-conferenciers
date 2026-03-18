@@ -1163,9 +1163,30 @@ const AdminSpeakersCRM = () => {
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
                   <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo</Label>
-                  <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} />
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo (YouTube)</Label>
+                    <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Ou importer une vidéo (MP4)</Label>
+                    <Input 
+                      type="file" 
+                      accept="video/mp4"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !editSpeaker) return;
+                        const filePath = `${editSpeaker.slug}.mp4`;
+                        toast.info("Upload vidéo en cours…");
+                        const { error: upErr } = await supabase.storage.from('speaker-videos').upload(filePath, file, { upsert: true });
+                        if (upErr) { toast.error(`Erreur upload : ${upErr.message}`); return; }
+                        const { data: urlData } = supabase.storage.from('speaker-videos').getPublicUrl(filePath);
+                        setEditForm(p => ({ ...p, video_url: urlData.publicUrl }));
+                        toast.success("Vidéo importée !");
+                      }}
+                      className="text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 
