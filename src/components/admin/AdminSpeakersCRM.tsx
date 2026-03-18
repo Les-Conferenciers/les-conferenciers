@@ -278,12 +278,14 @@ const AdminSpeakersCRM = () => {
       themes: speaker.themes,
       languages: speaker.languages,
       featured: speaker.featured,
+      featured_order: (speaker as any).featured_order,
+      display_order: (speaker as any).display_order,
       gender: speaker.gender,
       why_expertise: speaker.why_expertise,
       why_impact: speaker.why_impact,
       phone: speaker.phone,
       email: speaker.email,
-    });
+    } as any);
   };
 
   const handleSave = async () => {
@@ -304,6 +306,8 @@ const AdminSpeakersCRM = () => {
         themes: editForm.themes || [],
         languages: editForm.languages || [],
         featured: editForm.featured ?? false,
+        featured_order: (editForm as any).featured_order || null,
+        display_order: (editForm as any).display_order ?? 999,
         gender: editForm.gender || 'male',
         why_expertise: editForm.why_expertise || null,
         why_impact: editForm.why_impact || null,
@@ -1090,9 +1094,31 @@ const AdminSpeakersCRM = () => {
                     <User className="w-8 h-8 text-muted-foreground/50" />
                   </div>
                 )}
-                <div className="flex-grow space-y-1">
-                  <Label className="text-xs text-muted-foreground">URL de la photo</Label>
-                  <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />
+                <div className="flex-grow space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">URL de la photo</Label>
+                    <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Ou importer une photo (JPG, PNG)</Label>
+                    <Input 
+                      type="file" 
+                      accept="image/jpeg,image/png"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !editSpeaker) return;
+                        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                        const filePath = `${editSpeaker.slug}.${ext}`;
+                        toast.info("Upload en cours…");
+                        const { error: upErr } = await supabase.storage.from('speaker-photos').upload(filePath, file, { upsert: true });
+                        if (upErr) { toast.error(`Erreur upload : ${upErr.message}`); return; }
+                        const { data: urlData } = supabase.storage.from('speaker-photos').getPublicUrl(filePath);
+                        setEditForm(p => ({ ...p, image_url: urlData.publicUrl }));
+                        toast.success("Photo importée !");
+                      }}
+                      className="text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1141,9 +1167,30 @@ const AdminSpeakersCRM = () => {
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues</Label>
                   <Input value={(editForm.languages || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, languages: e.target.value.split(",").map(l => l.trim()).filter(Boolean) }))} />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo</Label>
-                  <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} />
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3 w-3" /> URL vidéo (YouTube)</Label>
+                    <Input value={editForm.video_url || ""} onChange={e => setEditForm(p => ({ ...p, video_url: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Ou importer une vidéo (MP4)</Label>
+                    <Input 
+                      type="file" 
+                      accept="video/mp4"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !editSpeaker) return;
+                        const filePath = `${editSpeaker.slug}.mp4`;
+                        toast.info("Upload vidéo en cours…");
+                        const { error: upErr } = await supabase.storage.from('speaker-videos').upload(filePath, file, { upsert: true });
+                        if (upErr) { toast.error(`Erreur upload : ${upErr.message}`); return; }
+                        const { data: urlData } = supabase.storage.from('speaker-videos').getPublicUrl(filePath);
+                        setEditForm(p => ({ ...p, video_url: urlData.publicUrl }));
+                        toast.success("Vidéo importée !");
+                      }}
+                      className="text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1314,17 +1361,30 @@ const AdminSpeakersCRM = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={editForm.featured ?? false} onChange={e => setEditForm(p => ({ ...p, featured: e.target.checked }))} className="rounded border-input" />
-                  <span className="text-sm">Mis en avant (featured)</span>
-                </label>
+              <div className="space-y-3 border-t border-border pt-4">
+                <div className="flex items-center gap-6 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={editForm.featured ?? false} onChange={e => setEditForm(p => ({ ...p, featured: e.target.checked }))} className="rounded border-input" />
+                    <span className="text-sm">Mis en avant (featured)</span>
+                  </label>
+                  {editForm.featured && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground">Position carrousel (1-5)</Label>
+                      <Input type="number" min={1} max={5} value={(editForm as any).featured_order ?? ""} onChange={e => setEditForm(p => ({ ...p, featured_order: e.target.value ? Number(e.target.value) : null }))} className="w-20 h-8 text-sm" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">Genre</Label>
+                    <select className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm" value={editForm.gender || "male"} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}>
+                      <option value="male">Masculin</option>
+                      <option value="female">Féminin</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Genre</Label>
-                  <select className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm" value={editForm.gender || "male"} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}>
-                    <option value="male">Masculin</option>
-                    <option value="female">Féminin</option>
-                  </select>
+                  <Label className="text-xs text-muted-foreground">Position sur /conferenciers</Label>
+                  <Input type="number" min={1} value={(editForm as any).display_order ?? ""} onChange={e => setEditForm(p => ({ ...p, display_order: e.target.value ? Number(e.target.value) : 999 }))} className="w-24 h-8 text-sm" />
+                  <span className="text-xs text-muted-foreground">(plus petit = plus haut)</span>
                 </div>
               </div>
 

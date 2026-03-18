@@ -20,7 +20,8 @@ const FeaturedSpeakers = () => {
         .from("speakers")
         .select("*")
         .eq("featured", true)
-        .eq("archived", false);
+        .eq("archived", false)
+        .order("featured_order", { ascending: true });
 
       if (error) throw error;
       return data as Speaker[];

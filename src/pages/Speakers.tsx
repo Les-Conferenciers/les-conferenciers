@@ -44,9 +44,12 @@ const Speakers = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("speakers").select("*").eq("archived", false).order("name", { ascending: true }).limit(500);
       if (error) throw error;
-      // Sort by last name
-      const speakers = data as Speaker[];
+      const speakers = data as (Speaker & { display_order?: number })[];
+      // Sort by display_order first, then by last name for those with default (999)
       speakers.sort((a, b) => {
+        const aOrder = (a as any).display_order ?? 999;
+        const bOrder = (b as any).display_order ?? 999;
+        if (aOrder !== bOrder) return aOrder - bOrder;
         const aLast = a.name.trim().split(/\s+/).pop()?.toLowerCase() || "";
         const bLast = b.name.trim().split(/\s+/).pop()?.toLowerCase() || "";
         return aLast.localeCompare(bLast, "fr");

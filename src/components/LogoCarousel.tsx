@@ -35,7 +35,7 @@ const LogoCarousel = () => {
           {doubled.map((logo, i) => (
             <div
               key={`${logo.name}-${i}`}
-              className="flex-shrink-0 h-20 w-36 flex items-center justify-center hover:scale-105 transition-all duration-300"
+              className="flex-shrink-0 h-24 w-44 flex items-center justify-center hover:scale-105 transition-all duration-300"
             >
               <img
                 src={logo.src}

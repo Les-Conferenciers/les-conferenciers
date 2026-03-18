@@ -614,8 +614,10 @@ export type Database = {
           biography: string | null
           city: string | null
           created_at: string
+          display_order: number | null
           email: string | null
           featured: boolean | null
+          featured_order: number | null
           fee_details: string | null
           formal_address: boolean | null
           gender: string | null
@@ -642,8 +644,10 @@ export type Database = {
           biography?: string | null
           city?: string | null
           created_at?: string
+          display_order?: number | null
           email?: string | null
           featured?: boolean | null
+          featured_order?: number | null
           fee_details?: string | null
           formal_address?: boolean | null
           gender?: string | null
@@ -670,8 +674,10 @@ export type Database = {
           biography?: string | null
           city?: string | null
           created_at?: string
+          display_order?: number | null
           email?: string | null
           featured?: boolean | null
+          featured_order?: number | null
           fee_details?: string | null
           formal_address?: boolean | null
           gender?: string | null

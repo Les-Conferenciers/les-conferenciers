@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Send, CheckCircle2, Clock, Star } from "lucide-react";
+import { Send, CheckCircle2, Clock, Star, Quote } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import nellyBuste from "@/assets/nelly-buste.jpg";
 
 const contactSchema = z.object({
@@ -34,6 +35,40 @@ const CLIENT_LOGOS = [
   { name: "Orange", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/orange66bc7f90f39cc_150_150.jpg" },
   { name: "Hermès", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/hermes66bc7f8eaac82_150_150.png" },
 ];
+
+const SocialProofCard = () => {
+  const [review, setReview] = useState<any>(null);
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await (supabase as any).from("google_reviews").select("*").order("created_at", { ascending: false }).limit(1);
+      if (data?.[0]) setReview(data[0]);
+    };
+    load();
+  }, []);
+
+  const item = review || {
+    author_name: "SERVICE RH SEMARDEL",
+    comment: "Un accompagnement de qualité et réactif. Merci à toute l'équipe pour leur professionnalisme et leur disponibilité.",
+  };
+
+  return (
+    <div className="bg-card rounded-2xl border border-border/40 p-4 shadow-sm">
+      <Quote className="h-4 w-4 text-accent mb-1.5" />
+      <p className="text-xs text-muted-foreground italic leading-relaxed line-clamp-3">
+        "{item.comment}"
+      </p>
+      <div className="flex items-center gap-1.5 mt-2">
+        <div className="flex gap-px">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Star key={i} className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+          ))}
+        </div>
+        <span className="text-[11px] font-medium text-foreground">— {item.author_name}</span>
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-1.5">50+ entreprises · 5/5 Google</p>
+    </div>
+  );
+};
 
 const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -199,12 +234,14 @@ const Contact = () => {
 
             {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
-              <img
-                src={nellyBuste}
-                alt="Nelly, fondatrice de l'agence"
-                className="w-full object-cover object-center aspect-[3/4] scale-[0.85]"
-              />
-              <div className="px-5 pb-5 pt-4">
+              <div className="flex justify-center bg-muted/30 p-4">
+                <img
+                  src={nellyBuste}
+                  alt="Nelly, fondatrice de l'agence"
+                  className="w-32 h-32 rounded-full object-cover object-top shadow-md"
+                />
+              </div>
+              <div className="px-5 pb-5 pt-3 text-center">
                 <h3 className="font-serif font-bold text-foreground text-base">Nelly, votre interlocutrice</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mt-1.5">
                   Elle vous accompagne personnellement de A à Z pour trouver le conférencier idéal pour votre événement.
@@ -215,36 +252,16 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* Avis */}
-            <div className="bg-card rounded-2xl border border-border/40 p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                <span className="font-semibold text-sm text-foreground">Avis Google</span>
-                <div className="flex gap-0.5 ml-auto">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "Marie L.", text: "Accompagnement exceptionnel !" },
-                  { name: "Thomas B.", text: "Réactivité et professionnalisme." },
-                ].map((r) => (
-                  <div key={r.name} className="border-l-2 border-accent/30 pl-3">
-                    <p className="text-sm text-muted-foreground italic">"{r.text}"</p>
-                    <p className="text-sm font-medium text-foreground mt-0.5">— {r.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Preuve sociale */}
+            <SocialProofCard />
+
 
             {/* Logos clients — en couleur */}
             <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
               <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mb-3">Ils nous font confiance</p>
               <div className="grid grid-cols-3 gap-3">
-                {CLIENT_LOGOS.map((l) => (
-                  <div key={l.name} className="flex items-center justify-center h-10 hover:scale-105 transition-transform">
+                  {CLIENT_LOGOS.map((l) => (
+                    <div key={l.name} className="flex items-center justify-center h-14 hover:scale-105 transition-transform">
                     <img src={l.src} alt={l.name} className="max-h-full max-w-full object-contain" loading="lazy" />
                   </div>
                 ))}

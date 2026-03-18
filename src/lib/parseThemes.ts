@@ -60,10 +60,14 @@ const THEME_ALIASES: Record<string, string> = {
   "entrepreunariat": "Entrepreneuriat",
   "entrepreneuriat": "Entrepreneuriat",
 
-  // Écologie / Environnement
-  "ecologie": "Écologie",
-  "écologie": "Écologie",
+  // Environnement (regroupe RSE, Écologie, Urbanisme, Aménagement)
+  "ecologie": "Environnement",
+  "écologie": "Environnement",
   "environnement": "Environnement",
+  "écologie & environnement": "Environnement",
+  "rse": "Environnement",
+  "urbanisme": "Environnement",
+  "aménagement du territoire": "Environnement",
 
   // Économie
   "economie": "Économie",
@@ -138,52 +142,42 @@ const THEME_ALIASES: Record<string, string> = {
   // Others kept consistent
   "bienveillance": "Bienveillance",
   "bonheur": "Bonheur",
-  "changement climatique": "Changement climatique",
-  "transition écologique": "Transition écologique",
-  "sobriété énergétique": "Sobriété énergétique",
+  "changement climatique": "Environnement",
+  "transition écologique": "Environnement",
+  "sobriété énergétique": "Environnement",
   "confiance": "Confiance",
   "confiance en soi": "Confiance en soi",
   "créativité": "Créativité",
   "engagement": "Engagement",
   "handicap": "Handicap",
   "marketing": "Marketing",
-  "mémoire": "Mémoire",
-  "mental": "Mental",
   "motivation": "Motivation",
-  "networking": "Networking",
   "neurosciences": "Neurosciences",
   "optimisme": "Optimisme",
-  "psychologie": "Psychologie",
   "qualité de vie au travail": "Qualité de vie au travail",
-  "rse": "RSE",
   "storytelling": "Storytelling",
   "transformation": "Transformation",
   "vente": "Vente",
   "communication": "Communication",
-  "excellence": "Excellence",
   "audace": "Audace",
   "collectif": "Collectif",
   "empowerment": "Empowerment",
   "facteur humain": "Facteur humain",
-  "impact": "Impact",
   "maîtrise des risques": "Maîtrise des risques",
-  "croyances collectives": "Croyances collectives",
   "droit à l'erreur": "Droit à l'erreur",
   "expérience collaborateur": "Expérience collaborateur",
-  "politique société": "Politique et société",
-  "tourisme et loisirs": "Tourisme et loisirs",
-  "urbanisme": "Urbanisme",
-  "aménagement du territoire": "Urbanisme",
 };
 
 /** Normalize a single theme string to its canonical form */
 const normalizeTheme = (theme: string): string => {
   const trimmed = theme.trim();
   if (!trimmed) return "";
-  const lower = trimmed.toLowerCase();
+  // Replace curly apostrophes with straight ones
+  const normalized = trimmed.replace(/\u2019/g, "'");
+  const lower = normalized.toLowerCase();
   if (THEME_ALIASES[lower]) return THEME_ALIASES[lower];
   // Default: capitalize first letter of the string, keep rest as-is
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 };
 
 /**
