@@ -324,9 +324,10 @@ RÈGLES SEO (seo_title et meta_description) :
 RÈGLES CONFÉRENCES :
 - Crée 1 à 3 conférences thématiques basées sur les infos trouvées
 - Titre accrocheur et inspirant
-- Description HTML de 3-4 paragraphes <p> avec des <strong> sur les mots-clés
+- Description HTML de 3-4 paragraphes <p> avec des <strong> sur les mots-clés. JAMAIS de markdown (** ou *).
 - Inclure les enseignements concrets et la valeur ajoutée pour le public
 - NE PAS insérer d'images dans les descriptions de conférences
+- REFORMULATION OBLIGATOIRE : descriptions 100% originales, pas de copier-coller des sources
 
 RÈGLES KEY_POINTS :
 - 3-5 points forts factuels et percutants (chiffres, titres, palmarès, distinctions)
