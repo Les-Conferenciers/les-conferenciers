@@ -450,7 +450,7 @@ const AdminSpeakersCRM = () => {
             photo_url: data.profile.photo_url,
             video_url: data.profile.video_url,
             city: data.profile.city,
-            archived: isOffline,
+            archived: true,
           },
           conferences: data.profile.conferences,
         }),
