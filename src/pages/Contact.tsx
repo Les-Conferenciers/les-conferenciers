@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send, CheckCircle2, Clock, Star, Quote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import nellyBuste from "@/assets/nelly-buste.jpg";
+import nellyBuste from "@/assets/nelly-buste-medaillon.png";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
