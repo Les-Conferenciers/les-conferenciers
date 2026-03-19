@@ -61,11 +61,11 @@ const ValueProposition = () => {
               key={step.title}
               className="group text-center rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
             >
-              <div className="flex items-center justify-center p-4 bg-muted/20">
+              <div className="flex items-center justify-center p-4 bg-muted/20 h-[160px]">
                 <img
                   src={step.image}
                   alt={step.title}
-                  className="max-h-[140px] w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-500"
+                  className="h-full w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                 />
               </div>

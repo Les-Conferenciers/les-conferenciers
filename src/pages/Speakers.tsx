@@ -246,9 +246,7 @@ const Speakers = () => {
               </div>
             )}
 
-            <p className="text-center text-sm text-muted-foreground mt-4">
-              {Math.min(displayCount, speakers?.length ?? 0)} sur {speakers?.length} conférenciers affichés
-            </p>
+
           </>
         )}
       </div>
