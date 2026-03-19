@@ -206,11 +206,7 @@ const AdminSpeakersCRM = () => {
       // Visibility filter
       if (visibilityFilter === "online" && s.archived) return false;
       if (visibilityFilter === "offline" && !s.archived) return false;
-      // Legacy archived toggle (when visibilityFilter is "all")
-      if (visibilityFilter === "all") {
-        if (!showArchived && s.archived) return false;
-        if (showArchived && !s.archived) return false;
-      }
+      // "all" shows everything — no filtering
       if (search) {
         const q = search.toLowerCase();
         const nameMatch = s.name.toLowerCase().includes(q);
@@ -454,7 +450,7 @@ const AdminSpeakersCRM = () => {
             photo_url: data.profile.photo_url,
             video_url: data.profile.video_url,
             city: data.profile.city,
-            archived: isOffline,
+            archived: true,
           },
           conferences: data.profile.conferences,
         }),
@@ -462,9 +458,7 @@ const AdminSpeakersCRM = () => {
       const pubData = await pubResp.json();
       if (!pubData.success) throw new Error(pubData.error);
 
-      toast.success(isOffline 
-        ? `${data.profile.name} créé HORS LIGNE (sources : Wikipedia/Evene/Gala). Enrichissez la fiche manuellement.`
-        : `${data.profile.name} importé avec succès !`);
+      toast.success(`${data.profile.name} importé HORS LIGNE. Vérifiez la fiche avant de la mettre en ligne.`);
       setImportName("");
       setShowImport(false);
       fetchSpeakers();
@@ -886,21 +880,21 @@ const AdminSpeakersCRM = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Nom *</Label>
-                <Input value={manualForm.name} onChange={e => setManualForm(p => ({ ...p, name: e.target.value }))} placeholder="Thomas d'Ansembourg" />
+                <Input value={manualForm.name} onChange={e => setManualForm(p => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Titre / Rôle</Label>
-                <Input value={manualForm.specialty} onChange={e => setManualForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Auteur, Psychothérapeute" />
+                <Input value={manualForm.specialty} onChange={e => setManualForm(p => ({ ...p, specialty: e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Ville</Label>
-                <Input value={manualForm.city} onChange={e => setManualForm(p => ({ ...p, city: e.target.value }))} placeholder="Bruxelles" />
+                <Input value={manualForm.city} onChange={e => setManualForm(p => ({ ...p, city: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
-                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} placeholder="4000" />
+                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Genre</Label>
@@ -912,25 +906,25 @@ const AdminSpeakersCRM = () => {
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Détails tarifs</Label>
-              <Input value={manualForm.fee_details} onChange={e => setManualForm(p => ({ ...p, fee_details: e.target.value }))} placeholder="5K Paris, 8 à 10K province, 3K online" />
+              <Input value={manualForm.fee_details} onChange={e => setManualForm(p => ({ ...p, fee_details: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📱 Téléphone</Label>
-                <Input value={manualForm.phone} onChange={e => setManualForm(p => ({ ...p, phone: e.target.value }))} placeholder="+32 479 234 4..." />
+                <Input value={manualForm.phone} onChange={e => setManualForm(p => ({ ...p, phone: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📧 Email</Label>
-                <Input type="email" value={manualForm.email} onChange={e => setManualForm(p => ({ ...p, email: e.target.value }))} placeholder="contact@speaker.com" />
+                <Input type="email" value={manualForm.email} onChange={e => setManualForm(p => ({ ...p, email: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Thématiques (séparées par virgules)</Label>
-              <Input value={manualForm.themes} onChange={e => setManualForm(p => ({ ...p, themes: e.target.value }))} placeholder="Leadership, Communication Non Violente" />
+              <Input value={manualForm.themes} onChange={e => setManualForm(p => ({ ...p, themes: e.target.value }))} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Langues</Label>
-              <Input value={manualForm.languages} onChange={e => setManualForm(p => ({ ...p, languages: e.target.value }))} placeholder="Français, Anglais" />
+              <Input value={manualForm.languages} onChange={e => setManualForm(p => ({ ...p, languages: e.target.value }))} />
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={manualForm.archived} onChange={e => setManualForm(p => ({ ...p, archived: e.target.checked }))} className="rounded border-input" />
