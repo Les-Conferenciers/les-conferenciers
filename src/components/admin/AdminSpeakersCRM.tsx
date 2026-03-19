@@ -39,6 +39,7 @@ type Speaker = {
   phone: string | null;
   email: string | null;
   key_points: string[] | null;
+  interview_only: boolean | null;
 };
 
 type Review = {
@@ -123,6 +124,8 @@ const AdminSpeakersCRM = () => {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [newReview, setNewReview] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editReviewForm, setEditReviewForm] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
 
   // Conferences state
   const [conferences, setConferences] = useState<Conference[]>([]);
@@ -139,7 +142,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only")
       .order("name");
     setSpeakers((data as any) || []);
     setLoading(false);
@@ -285,6 +288,7 @@ const AdminSpeakersCRM = () => {
       phone: speaker.phone,
       email: speaker.email,
       key_points: speaker.key_points,
+      interview_only: (speaker as any).interview_only ?? false,
     } as any);
   };
 
@@ -314,6 +318,7 @@ const AdminSpeakersCRM = () => {
         phone: editForm.phone || null,
         email: editForm.email || null,
         key_points: (editForm as any).key_points || [],
+        interview_only: (editForm as any).interview_only ?? false,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
@@ -492,6 +497,19 @@ const AdminSpeakersCRM = () => {
     const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
     if (error) { toast.error("Erreur"); return; }
     toast.success("Avis supprimé");
+    if (editSpeaker) fetchReviews(editSpeaker.id);
+  };
+
+  const handleSaveReview = async (reviewId: string) => {
+    const { error } = await supabase.from("reviews").update({
+      author_name: editReviewForm.author_name,
+      author_title: editReviewForm.author_title || null,
+      rating: editReviewForm.rating,
+      comment: editReviewForm.comment,
+    } as any).eq("id", reviewId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Avis mis à jour");
+    setEditingReviewId(null);
     if (editSpeaker) fetchReviews(editSpeaker.id);
   };
 
@@ -808,7 +826,7 @@ const AdminSpeakersCRM = () => {
       setEnrichUrl("");
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points")
+        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
@@ -1251,6 +1269,10 @@ const AdminSpeakersCRM = () => {
                       ))}
                     </select>
                   </div>
+                  <label className="flex items-center gap-2 cursor-pointer mt-2">
+                    <input type="checkbox" checked={(editForm as any).interview_only ?? false} onChange={e => setEditForm(p => ({ ...p, interview_only: e.target.checked }))} className="rounded border-input" />
+                    <span className="text-xs text-muted-foreground">Interview seulement (interne)</span>
+                  </label>
                 </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
@@ -1563,22 +1585,55 @@ const AdminSpeakersCRM = () => {
                 ) : reviews.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Aucun avis pour ce conférencier.</p>
                 ) : (
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {reviews.map(r => (
-                      <div key={r.id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg text-sm">
-                        <div className="flex-grow min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground">{r.author_name}</span>
-                            <div className="flex gap-0.5">
-                              {[1,2,3,4,5].map(s => <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />)}
+                      <div key={r.id} className="p-3 bg-muted/20 rounded-lg text-sm space-y-2">
+                        {editingReviewId === r.id ? (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input value={editReviewForm.author_name} onChange={e => setEditReviewForm(p => ({ ...p, author_name: e.target.value }))} placeholder="Nom" />
+                              <Input value={editReviewForm.author_title} onChange={e => setEditReviewForm(p => ({ ...p, author_title: e.target.value }))} placeholder="Poste / Entreprise" />
+                            </div>
+                            <div className="flex gap-1">
+                              {[1,2,3,4,5].map(s => (
+                                <button key={s} type="button" onClick={() => setEditReviewForm(p => ({ ...p, rating: s }))}>
+                                  <Star className={`h-4 w-4 ${s <= editReviewForm.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                                </button>
+                              ))}
+                            </div>
+                            <Textarea value={editReviewForm.comment} onChange={e => setEditReviewForm(p => ({ ...p, comment: e.target.value }))} rows={3} />
+                            <div className="flex gap-2">
+                              <Button size="sm" className="gap-1" onClick={() => handleSaveReview(r.id)}>
+                                <Save className="h-3.5 w-3.5" /> Enregistrer
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingReviewId(null)}>Annuler</Button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-start gap-3">
+                            <div className="flex-grow min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-foreground">{r.author_name}</span>
+                                <div className="flex gap-0.5">
+                                  {[1,2,3,4,5].map(s => <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />)}
+                                </div>
+                              </div>
+                              {r.author_title && <p className="text-xs text-muted-foreground">{r.author_title}</p>}
+                              {r.comment && <p className="text-muted-foreground text-xs mt-1">{r.comment}</p>}
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                setEditingReviewId(r.id);
+                                setEditReviewForm({ author_name: r.author_name, author_title: r.author_title || "", rating: r.rating, comment: r.comment || "" });
+                              }}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteReview(r.id)}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
                             </div>
                           </div>
-                          {r.author_title && <p className="text-xs text-muted-foreground">{r.author_title}</p>}
-                          {r.comment && <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{r.comment}</p>}
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => handleDeleteReview(r.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        )}
                       </div>
                     ))}
                   </div>
