@@ -1284,7 +1284,40 @@ const AdminSpeakersCRM = () => {
                 <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} />
               </div>
 
-              {/* Biography with AI regeneration */}
+              {/* Key Points (Pépites / Diamant) */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Diamond className="h-3.5 w-3.5" /> Points clés (pépites affichées en haut de la fiche)
+                </Label>
+                <div className="space-y-1.5">
+                  {((editForm as any).key_points || []).map((point: string, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <Input
+                        value={point}
+                        onChange={e => {
+                          const newPoints = [...((editForm as any).key_points || [])];
+                          newPoints[idx] = e.target.value;
+                          setEditForm(p => ({ ...p, key_points: newPoints }));
+                        }}
+                        className="flex-grow text-sm"
+                      />
+                      <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => {
+                        const newPoints = [...((editForm as any).key_points || [])];
+                        newPoints.splice(idx, 1);
+                        setEditForm(p => ({ ...p, key_points: newPoints }));
+                      }}>
+                        <X className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                  setEditForm(p => ({ ...p, key_points: [...((p as any).key_points || []), ""] }));
+                }}>
+                  <Plus className="h-3.5 w-3.5" /> Ajouter un point clé
+                </Button>
+              </div>
+
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Biographie</Label>
