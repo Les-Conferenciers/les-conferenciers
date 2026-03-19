@@ -458,9 +458,7 @@ const AdminSpeakersCRM = () => {
       const pubData = await pubResp.json();
       if (!pubData.success) throw new Error(pubData.error);
 
-      toast.success(isOffline 
-        ? `${data.profile.name} créé HORS LIGNE (sources : Wikipedia/Evene/Gala). Enrichissez la fiche manuellement.`
-        : `${data.profile.name} importé avec succès !`);
+      toast.success(`${data.profile.name} importé HORS LIGNE. Vérifiez la fiche avant de la mettre en ligne.`);
       setImportName("");
       setShowImport(false);
       fetchSpeakers();
