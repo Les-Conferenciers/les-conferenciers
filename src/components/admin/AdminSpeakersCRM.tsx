@@ -124,6 +124,8 @@ const AdminSpeakersCRM = () => {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [newReview, setNewReview] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editReviewForm, setEditReviewForm] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
 
   // Conferences state
   const [conferences, setConferences] = useState<Conference[]>([]);
