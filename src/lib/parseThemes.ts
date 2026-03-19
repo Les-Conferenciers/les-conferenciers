@@ -158,7 +158,7 @@ const THEME_ALIASES: Record<string, string> = {
   "qualité de vie au travail": "Qualité de vie au travail",
   "storytelling": "Storytelling",
   "transformation": "Transformation",
-  "vente": "Vente",
+  
   "communication": "Communication",
   "audace": "Audace",
   "collectif": "Collectif",
