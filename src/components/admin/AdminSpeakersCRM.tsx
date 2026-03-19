@@ -808,7 +808,7 @@ const AdminSpeakersCRM = () => {
       setEnrichUrl("");
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email")
+        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
