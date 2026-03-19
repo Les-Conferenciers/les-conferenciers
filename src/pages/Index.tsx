@@ -476,7 +476,7 @@ const Index = () => {
                 icon: BookOpen,
                 title: "Connaissance approfondie de chaque profil",
                 description:
-                  "Nous connaissons personnellement nos conférenciers, leur style, leurs forces et leur capacité à s'adapter. Cette proximité nous permet de vous recommander le profil idéal, bien au-delà du simple CV.",
+                  "Cette proximité nous permet de vous recommander le profil idéal, bien au-delà du simple CV.",
               },
             ].map((item) => (
               <div
