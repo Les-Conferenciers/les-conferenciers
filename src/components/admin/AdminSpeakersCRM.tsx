@@ -900,7 +900,7 @@ const AdminSpeakersCRM = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
-                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} placeholder="4000" />
+                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Genre</Label>
