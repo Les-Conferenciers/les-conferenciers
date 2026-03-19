@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic, Eye, EyeOff, User } from "lucide-react";
+import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic, Eye, EyeOff, User, Diamond } from "lucide-react";
 import { parseThemes } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
@@ -38,6 +38,7 @@ type Speaker = {
   why_impact: string | null;
   phone: string | null;
   email: string | null;
+  key_points: string[] | null;
 };
 
 type Review = {
@@ -138,7 +139,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points")
       .order("name");
     setSpeakers((data as any) || []);
     setLoading(false);
@@ -206,11 +207,7 @@ const AdminSpeakersCRM = () => {
       // Visibility filter
       if (visibilityFilter === "online" && s.archived) return false;
       if (visibilityFilter === "offline" && !s.archived) return false;
-      // Legacy archived toggle (when visibilityFilter is "all")
-      if (visibilityFilter === "all") {
-        if (!showArchived && s.archived) return false;
-        if (showArchived && !s.archived) return false;
-      }
+      // "all" shows everything — no filtering
       if (search) {
         const q = search.toLowerCase();
         const nameMatch = s.name.toLowerCase().includes(q);
@@ -287,6 +284,7 @@ const AdminSpeakersCRM = () => {
       why_impact: speaker.why_impact,
       phone: speaker.phone,
       email: speaker.email,
+      key_points: speaker.key_points,
     } as any);
   };
 
@@ -315,6 +313,7 @@ const AdminSpeakersCRM = () => {
         why_impact: editForm.why_impact || null,
         phone: editForm.phone || null,
         email: editForm.email || null,
+        key_points: (editForm as any).key_points || [],
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
@@ -454,7 +453,7 @@ const AdminSpeakersCRM = () => {
             photo_url: data.profile.photo_url,
             video_url: data.profile.video_url,
             city: data.profile.city,
-            archived: isOffline,
+            archived: true,
           },
           conferences: data.profile.conferences,
         }),
@@ -462,9 +461,7 @@ const AdminSpeakersCRM = () => {
       const pubData = await pubResp.json();
       if (!pubData.success) throw new Error(pubData.error);
 
-      toast.success(isOffline 
-        ? `${data.profile.name} créé HORS LIGNE (sources : Wikipedia/Evene/Gala). Enrichissez la fiche manuellement.`
-        : `${data.profile.name} importé avec succès !`);
+      toast.success(`${data.profile.name} importé HORS LIGNE. Vérifiez la fiche avant de la mettre en ligne.`);
       setImportName("");
       setShowImport(false);
       fetchSpeakers();
@@ -811,7 +808,7 @@ const AdminSpeakersCRM = () => {
       setEnrichUrl("");
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email")
+        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
@@ -886,21 +883,21 @@ const AdminSpeakersCRM = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Nom *</Label>
-                <Input value={manualForm.name} onChange={e => setManualForm(p => ({ ...p, name: e.target.value }))} placeholder="Thomas d'Ansembourg" />
+                <Input value={manualForm.name} onChange={e => setManualForm(p => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Titre / Rôle</Label>
-                <Input value={manualForm.specialty} onChange={e => setManualForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Auteur, Psychothérapeute" />
+                <Input value={manualForm.specialty} onChange={e => setManualForm(p => ({ ...p, specialty: e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Ville</Label>
-                <Input value={manualForm.city} onChange={e => setManualForm(p => ({ ...p, city: e.target.value }))} placeholder="Bruxelles" />
+                <Input value={manualForm.city} onChange={e => setManualForm(p => ({ ...p, city: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
-                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} placeholder="4000" />
+                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Genre</Label>
@@ -912,25 +909,25 @@ const AdminSpeakersCRM = () => {
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Détails tarifs</Label>
-              <Input value={manualForm.fee_details} onChange={e => setManualForm(p => ({ ...p, fee_details: e.target.value }))} placeholder="5K Paris, 8 à 10K province, 3K online" />
+              <Input value={manualForm.fee_details} onChange={e => setManualForm(p => ({ ...p, fee_details: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📱 Téléphone</Label>
-                <Input value={manualForm.phone} onChange={e => setManualForm(p => ({ ...p, phone: e.target.value }))} placeholder="+32 479 234 4..." />
+                <Input value={manualForm.phone} onChange={e => setManualForm(p => ({ ...p, phone: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📧 Email</Label>
-                <Input type="email" value={manualForm.email} onChange={e => setManualForm(p => ({ ...p, email: e.target.value }))} placeholder="contact@speaker.com" />
+                <Input type="email" value={manualForm.email} onChange={e => setManualForm(p => ({ ...p, email: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Thématiques (séparées par virgules)</Label>
-              <Input value={manualForm.themes} onChange={e => setManualForm(p => ({ ...p, themes: e.target.value }))} placeholder="Leadership, Communication Non Violente" />
+              <Input value={manualForm.themes} onChange={e => setManualForm(p => ({ ...p, themes: e.target.value }))} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Langues</Label>
-              <Input value={manualForm.languages} onChange={e => setManualForm(p => ({ ...p, languages: e.target.value }))} placeholder="Français, Anglais" />
+              <Input value={manualForm.languages} onChange={e => setManualForm(p => ({ ...p, languages: e.target.value }))} />
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={manualForm.archived} onChange={e => setManualForm(p => ({ ...p, archived: e.target.checked }))} className="rounded border-input" />
@@ -1287,7 +1284,40 @@ const AdminSpeakersCRM = () => {
                 <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} />
               </div>
 
-              {/* Biography with AI regeneration */}
+              {/* Key Points (Pépites / Diamant) */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Diamond className="h-3.5 w-3.5" /> Points clés (pépites affichées en haut de la fiche)
+                </Label>
+                <div className="space-y-1.5">
+                  {((editForm as any).key_points || []).map((point: string, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <Input
+                        value={point}
+                        onChange={e => {
+                          const newPoints = [...((editForm as any).key_points || [])];
+                          newPoints[idx] = e.target.value;
+                          setEditForm(p => ({ ...p, key_points: newPoints }));
+                        }}
+                        className="flex-grow text-sm"
+                      />
+                      <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => {
+                        const newPoints = [...((editForm as any).key_points || [])];
+                        newPoints.splice(idx, 1);
+                        setEditForm(p => ({ ...p, key_points: newPoints }));
+                      }}>
+                        <X className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                  setEditForm(p => ({ ...p, key_points: [...((p as any).key_points || []), ""] }));
+                }}>
+                  <Plus className="h-3.5 w-3.5" /> Ajouter un point clé
+                </Button>
+              </div>
+
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Biographie</Label>
