@@ -890,7 +890,7 @@ const AdminSpeakersCRM = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Titre / Rôle</Label>
-                <Input value={manualForm.specialty} onChange={e => setManualForm(p => ({ ...p, specialty: e.target.value }))} placeholder="Auteur, Psychothérapeute" />
+                <Input value={manualForm.specialty} onChange={e => setManualForm(p => ({ ...p, specialty: e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
