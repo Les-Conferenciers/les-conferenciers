@@ -926,7 +926,7 @@ const AdminSpeakersCRM = () => {
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Thématiques (séparées par virgules)</Label>
-              <Input value={manualForm.themes} onChange={e => setManualForm(p => ({ ...p, themes: e.target.value }))} placeholder="Leadership, Communication Non Violente" />
+              <Input value={manualForm.themes} onChange={e => setManualForm(p => ({ ...p, themes: e.target.value }))} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Langues</Label>
