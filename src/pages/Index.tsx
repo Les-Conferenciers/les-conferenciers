@@ -462,7 +462,7 @@ const Index = () => {
             {[
               {
                 icon: UserCheck,
-                title: "Un seul interlocuteur : Nelly",
+                title: "Une seule interlocutrice : Nelly",
                 description:
                   "Pas de plateforme anonyme, pas de turnover. Nelly gère votre projet de A à Z. Relation directe, personnalisée et sans intermédiaire.",
               },
