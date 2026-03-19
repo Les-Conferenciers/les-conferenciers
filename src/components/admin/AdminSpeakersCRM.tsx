@@ -912,7 +912,7 @@ const AdminSpeakersCRM = () => {
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Détails tarifs</Label>
-              <Input value={manualForm.fee_details} onChange={e => setManualForm(p => ({ ...p, fee_details: e.target.value }))} placeholder="5K Paris, 8 à 10K province, 3K online" />
+              <Input value={manualForm.fee_details} onChange={e => setManualForm(p => ({ ...p, fee_details: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
