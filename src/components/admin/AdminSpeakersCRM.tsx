@@ -1269,6 +1269,10 @@ const AdminSpeakersCRM = () => {
                       ))}
                     </select>
                   </div>
+                  <label className="flex items-center gap-2 cursor-pointer mt-2">
+                    <input type="checkbox" checked={(editForm as any).interview_only ?? false} onChange={e => setEditForm(p => ({ ...p, interview_only: e.target.checked }))} className="rounded border-input" />
+                    <span className="text-xs text-muted-foreground">Interview seulement (interne)</span>
+                  </label>
                 </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
