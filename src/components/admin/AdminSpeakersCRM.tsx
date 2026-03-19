@@ -921,7 +921,7 @@ const AdminSpeakersCRM = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📧 Email</Label>
-                <Input type="email" value={manualForm.email} onChange={e => setManualForm(p => ({ ...p, email: e.target.value }))} placeholder="contact@speaker.com" />
+                <Input type="email" value={manualForm.email} onChange={e => setManualForm(p => ({ ...p, email: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-1">
