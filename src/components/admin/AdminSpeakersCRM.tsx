@@ -1585,22 +1585,55 @@ const AdminSpeakersCRM = () => {
                 ) : reviews.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Aucun avis pour ce conférencier.</p>
                 ) : (
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {reviews.map(r => (
-                      <div key={r.id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg text-sm">
-                        <div className="flex-grow min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground">{r.author_name}</span>
-                            <div className="flex gap-0.5">
-                              {[1,2,3,4,5].map(s => <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />)}
+                      <div key={r.id} className="p-3 bg-muted/20 rounded-lg text-sm space-y-2">
+                        {editingReviewId === r.id ? (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input value={editReviewForm.author_name} onChange={e => setEditReviewForm(p => ({ ...p, author_name: e.target.value }))} placeholder="Nom" />
+                              <Input value={editReviewForm.author_title} onChange={e => setEditReviewForm(p => ({ ...p, author_title: e.target.value }))} placeholder="Poste / Entreprise" />
+                            </div>
+                            <div className="flex gap-1">
+                              {[1,2,3,4,5].map(s => (
+                                <button key={s} type="button" onClick={() => setEditReviewForm(p => ({ ...p, rating: s }))}>
+                                  <Star className={`h-4 w-4 ${s <= editReviewForm.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                                </button>
+                              ))}
+                            </div>
+                            <Textarea value={editReviewForm.comment} onChange={e => setEditReviewForm(p => ({ ...p, comment: e.target.value }))} rows={3} />
+                            <div className="flex gap-2">
+                              <Button size="sm" className="gap-1" onClick={() => handleSaveReview(r.id)}>
+                                <Save className="h-3.5 w-3.5" /> Enregistrer
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingReviewId(null)}>Annuler</Button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-start gap-3">
+                            <div className="flex-grow min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-foreground">{r.author_name}</span>
+                                <div className="flex gap-0.5">
+                                  {[1,2,3,4,5].map(s => <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />)}
+                                </div>
+                              </div>
+                              {r.author_title && <p className="text-xs text-muted-foreground">{r.author_title}</p>}
+                              {r.comment && <p className="text-muted-foreground text-xs mt-1">{r.comment}</p>}
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                setEditingReviewId(r.id);
+                                setEditReviewForm({ author_name: r.author_name, author_title: r.author_title || "", rating: r.rating, comment: r.comment || "" });
+                              }}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteReview(r.id)}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
                             </div>
                           </div>
-                          {r.author_title && <p className="text-xs text-muted-foreground">{r.author_title}</p>}
-                          {r.comment && <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{r.comment}</p>}
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => handleDeleteReview(r.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        )}
                       </div>
                     ))}
                   </div>
