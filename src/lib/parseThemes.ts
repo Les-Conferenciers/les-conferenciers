@@ -126,6 +126,7 @@ const THEME_ALIASES: Record<string, string> = {
   // Négociation
   "négociation": "Négociation",
   "négociation/vente": "Négociation",
+  "vente": "Négociation",
 
   // Jeunes générations
   "jeunes générations": "Jeunes générations",
