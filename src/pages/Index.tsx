@@ -458,7 +458,7 @@ const Index = () => {
               Beaucoup de nos clients nous posent cette question. Voici la réponse.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
                 icon: UserCheck,
@@ -471,6 +471,12 @@ const Index = () => {
                 title: "Grande réactivité",
                 description:
                   "Tous les mails sont traités dans la journée. Vous recevez un devis détaillé sous 24h avec des profils adaptés à votre brief.",
+              },
+              {
+                icon: BookOpen,
+                title: "Connaissance approfondie de chaque profil",
+                description:
+                  "Nous connaissons personnellement nos conférenciers, leur style, leurs forces et leur capacité à s'adapter. Cette proximité nous permet de vous recommander le profil idéal, bien au-delà du simple CV.",
               },
             ].map((item) => (
               <div
