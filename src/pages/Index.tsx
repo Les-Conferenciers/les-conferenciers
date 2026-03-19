@@ -462,21 +462,21 @@ const Index = () => {
             {[
               {
                 icon: UserCheck,
-                title: "Une seule interlocutrice : Nelly",
+                title: "Une seule interlocutrice",
                 description:
                   "Pas de plateforme anonyme, pas de turnover. Nelly gère votre projet de A à Z. Relation directe, personnalisée et sans intermédiaire.",
               },
               {
                 icon: Zap,
-                title: "Grande réactivité",
+                title: "Réactivité et disponibilité",
                 description:
                   "Tous les mails sont traités dans la journée. Vous recevez un devis détaillé sous 24h avec des profils adaptés à votre brief.",
               },
               {
                 icon: BookOpen,
-                title: "Connaissance approfondie de chaque profil",
+                title: "Connaissance approfondie des profils",
                 description:
-                  "Cette proximité nous permet de vous recommander le profil idéal, bien au-delà du simple CV.",
+                  "Nous connaissons personnellement chaque conférencier. Cette proximité nous permet de vous recommander le profil idéal, bien au-delà du simple CV.",
               },
             ].map((item) => (
               <div
