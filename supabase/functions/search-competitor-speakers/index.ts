@@ -301,8 +301,9 @@ RÈGLES BIOGRAPHIE (CRITIQUES) :
 - Progression chronologique : parcours → expertise → conférences/impact
 - Ton professionnel, engageant et narratif (pas de liste sèche de faits)
 - IMPORTANT : Chaque paragraphe doit être sur une NOUVELLE LIGNE (pas tout collé)
-- REFORMULATION OBLIGATOIRE : Le texte doit être 100% original. Ne jamais recopier les phrases des sources. Reformule entièrement avec ton propre style. Chaque phrase doit être différente des sources.
-- INTERDICTION ABSOLUE : Ne mentionne JAMAIS les noms des sites sources (Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise). Aucun de ces noms ne doit apparaître dans le contenu généré, que ce soit dans la biographie, les conférences, les key_points, why_expertise, why_impact, seo_title ou meta_description.
+- REFORMULATION OBLIGATOIRE ET STRICTE : Le texte DOIT être 100% original et UNIQUE. Tu ne dois JAMAIS copier-coller ou paraphraser les sources. Réécris chaque idée avec ta propre structure de phrase, ton propre vocabulaire et tes propres tournures. Si la source dit "Il a été champion du monde en 2010", toi tu écrirais "Sacré champion du monde lors de l'édition 2010" ou "Le titre mondial obtenu en 2010 a marqué un tournant". Change l'ordre des informations, les verbes, les adjectifs. Le texte final ne doit partager AUCUNE phrase identique avec les sources.
+- INTERDICTION ABSOLUE : Ne mentionne JAMAIS les noms des sites sources (Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise). Aucun de ces noms ne doit apparaître dans le contenu généré.
+- AUCUN CARACTÈRE MARKDOWN : N'utilise JAMAIS les astérisques ** ou * pour le gras ou l'italique. Utilise exclusivement les balises HTML <strong> et <em>. Le texte ne doit contenir AUCUN formatage markdown.
 - SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière (ex: "Aujourd'hui, ses conférences inspirent…" ou "En tant que conférencier, il partage…"). Cela doit couler naturellement dans le récit, JAMAIS forcer de mots-clés.
 
 ⚠️ CONTENU FACTUEL OBLIGATOIRE — RÈGLE LA PLUS IMPORTANTE ⚠️
