@@ -38,6 +38,7 @@ type Speaker = {
   why_impact: string | null;
   phone: string | null;
   email: string | null;
+  key_points: string[] | null;
 };
 
 type Review = {
