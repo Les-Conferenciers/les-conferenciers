@@ -39,6 +39,7 @@ type Speaker = {
   phone: string | null;
   email: string | null;
   key_points: string[] | null;
+  interview_only: boolean | null;
 };
 
 type Review = {
