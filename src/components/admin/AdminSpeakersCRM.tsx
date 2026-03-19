@@ -500,6 +500,19 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchReviews(editSpeaker.id);
   };
 
+  const handleSaveReview = async (reviewId: string) => {
+    const { error } = await supabase.from("reviews").update({
+      author_name: editReviewForm.author_name,
+      author_title: editReviewForm.author_title || null,
+      rating: editReviewForm.rating,
+      comment: editReviewForm.comment,
+    } as any).eq("id", reviewId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Avis mis à jour");
+    setEditingReviewId(null);
+    if (editSpeaker) fetchReviews(editSpeaker.id);
+  };
+
   // Conference CRUD handlers
   const handleAddConference = async () => {
     if (!editSpeaker || !newConference.title.trim()) return;
