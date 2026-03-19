@@ -206,11 +206,7 @@ const AdminSpeakersCRM = () => {
       // Visibility filter
       if (visibilityFilter === "online" && s.archived) return false;
       if (visibilityFilter === "offline" && !s.archived) return false;
-      // Legacy archived toggle (when visibilityFilter is "all")
-      if (visibilityFilter === "all") {
-        if (!showArchived && s.archived) return false;
-        if (showArchived && !s.archived) return false;
-      }
+      // "all" shows everything — no filtering
       if (search) {
         const q = search.toLowerCase();
         const nameMatch = s.name.toLowerCase().includes(q);
