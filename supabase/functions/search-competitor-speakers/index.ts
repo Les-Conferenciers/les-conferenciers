@@ -305,6 +305,17 @@ RÈGLES BIOGRAPHIE (CRITIQUES) :
 - INTERDICTION ABSOLUE : Ne mentionne JAMAIS les noms des sites sources (Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise). Aucun de ces noms ne doit apparaître dans le contenu généré, que ce soit dans la biographie, les conférences, les key_points, why_expertise, why_impact, seo_title ou meta_description.
 - SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière (ex: "Aujourd'hui, ses conférences inspirent…" ou "En tant que conférencier, il partage…"). Cela doit couler naturellement dans le récit, JAMAIS forcer de mots-clés.
 
+⚠️ CONTENU FACTUEL OBLIGATOIRE — RÈGLE LA PLUS IMPORTANTE ⚠️
+La biographie DOIT contenir des DÉTAILS FACTUELS CONCRETS issus des sources :
+- Dates précises (naissance, début carrière, événements marquants)
+- Chiffres vérifiables (nombre de médailles, livres vendus, entreprises créées, années d'expérience)
+- Noms d'institutions, entreprises, équipes, compétitions
+- Titres exacts (diplômes, postes occupés, palmarès sportif détaillé)
+- Anecdotes ou faits marquants qui rendent le parcours vivant
+NE FAIS PAS une simple énumération de postes ou titres. Chaque paragraphe doit RACONTER une histoire avec du contexte et des détails concrets.
+MAUVAIS EXEMPLE : "Ancienne journaliste et présentatrice sportive." → trop sec
+BON EXEMPLE : "Après <strong>10 ans</strong> comme journaliste sportive sur <strong>Canal+</strong> et <strong>France Télévisions</strong>, elle a couvert <strong>3 Coupes du Monde</strong> et interviewé les plus grands athlètes français." → riche et factuel
+
 RÈGLES SEO (seo_title et meta_description) :
 - seo_title : Format "${name} — Conférencier [thème principal] | Les Conférenciers" (max 60 caractères, adapter Conférencier/Conférencière selon le genre)
 - meta_description : 1 phrase fluide de 140-155 caractères présentant le speaker et invitant à réserver. Doit contenir naturellement "conférence" ou "conférencier/ère" + le nom. Pas de bourrage de mots-clés.
@@ -331,7 +342,7 @@ JSON ATTENDU :
   "name": "Prénom Nom",
   "role": "Titre professionnel court (ex: Double Champion Olympique de Judo)",
   "specialty": "Phrase d'accroche courte pour la carte (max 8 mots)",
-  "biography": "HTML riche structuré comme l'exemple ci-dessus",
+  "biography": "HTML riche structuré comme l'exemple ci-dessus — MINIMUM 5 paragraphes avec détails factuels concrets",
   "themes": ["Thème 1", "Thème 2", "Thème 3"],
   "conferences": [
     {"title": "Titre accrocheur", "description": "HTML riche avec <p> et <strong>, SANS images"}
