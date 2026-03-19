@@ -917,7 +917,7 @@ const AdminSpeakersCRM = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📱 Téléphone</Label>
-                <Input value={manualForm.phone} onChange={e => setManualForm(p => ({ ...p, phone: e.target.value }))} placeholder="+32 479 234 4..." />
+                <Input value={manualForm.phone} onChange={e => setManualForm(p => ({ ...p, phone: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📧 Email</Label>
