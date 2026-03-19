@@ -284,6 +284,7 @@ const AdminSpeakersCRM = () => {
       why_impact: speaker.why_impact,
       phone: speaker.phone,
       email: speaker.email,
+      key_points: speaker.key_points,
     } as any);
   };
 
