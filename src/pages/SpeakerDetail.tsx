@@ -420,17 +420,28 @@ const SpeakerDetail = () => {
   const isHtmlBio = speaker.biography?.includes("<") ?? false;
   let processedBio = speaker.biography || "";
   
+  // Sanitize: remove broken/orphan closing tags like "/p>" and strip inline style attributes with CSS vars
+  processedBio = processedBio
+    .replace(/(?<![<])\/(p|div|span|h[1-6])>/gi, '') // orphan closing tags without <
+    .replace(/<(h[1-6])[^>]*>.*?<\/\1>\s*/gi, (match) => {
+      // Remove h2/h3 tags that just contain the speaker name
+      const innerText = match.replace(/<[^>]+>/g, '').trim();
+      if (innerText === speaker.name) return '';
+      return match;
+    })
+    .replace(/\s*style="[^"]*(?:--tw-|caret-color|text-decoration-thickness|border-color)[^"]*"/gi, '') // strip Tailwind CSS var styles
+    .replace(/\s*data-(?:start|end)="[^"]*"/gi, '') // strip data-start/data-end attributes
+    .replace(/\s*style="[^"]*color:\s*rgb\([^)]+\)[^"]*"/gi, '') // strip inline color styles  
+    .replace(/<span\s*>/gi, '') // strip empty <span> tags
+    .replace(/<\/span>/gi, '');
+  
   if (isHtmlBio) {
-    // HTML bio from rich text editor or AI formatting — already has <strong> etc.
-    // Don't double-apply highlightBioKeywords if already rich HTML
-    const hasExistingStrong = (processedBio.match(/<strong>/g) || []).length >= 2;
-    if (!hasExistingStrong) {
-      processedBio = highlightBioKeywords(processedBio);
-    }
+    // HTML bio from scraping or rich text editor — respect the original formatting as-is
+    // Do NOT auto-add bold; the source formatting is the truth
   } else {
-    // Plain text bio — split into paragraphs
+    // Plain text bio — split into paragraphs, no auto-bold either
     const rawBioParagraphs = processedBio.split("\n").filter(Boolean);
-    processedBio = rawBioParagraphs.map(p => `<p>${highlightBioKeywords(formatBioForWeb(p))}</p>`).join("");
+    processedBio = rawBioParagraphs.map(p => `<p>${formatBioForWeb(p)}</p>`).join("");
   }
 
   // Language flag mapping
@@ -551,7 +562,13 @@ const SpeakerDetail = () => {
                     [&_li]:mb-1.5 [&_li]:text-[0.95rem]
                     [&_p]:mb-3 [&_p]:text-[0.95rem] [&_p]:leading-[1.8]
                     [&_strong]:text-foreground [&_strong]:font-semibold
-                    [&_img]:rounded-xl [&_img]:shadow-md [&_img]:my-4 [&_img]:max-w-[40%] [&_img]:float-right [&_img]:ml-6 [&_img]:mb-4
+                    [&_figure.bio-image-block]:my-8 [&_figure.bio-image-block]:flex [&_figure.bio-image-block]:justify-center
+                    [&_figure.bio-image-block_img]:block
+                    [&_figure.bio-image-block_img]:w-full
+                    [&_figure.bio-image-block_img]:max-w-xl
+                    [&_figure.bio-image-block_img]:rounded-xl
+                    [&_figure.bio-image-block_img]:shadow-md
+                    [&_img]:rounded-xl [&_img]:shadow-md
                     ${!bioExpanded ? "max-h-[180px]" : "max-h-[5000px]"}`}
                   dangerouslySetInnerHTML={{ __html: processedBio }}
                 />

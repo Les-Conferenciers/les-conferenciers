@@ -5,6 +5,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 type Lead = {
   id: string;
@@ -19,6 +20,10 @@ type Lead = {
   location: string | null;
   additional_info: string | null;
   suggested_speakers: string[] | null;
+  lead_type: string;
+  company: string | null;
+  phone: string | null;
+  event_date: string | null;
   created_at: string;
 };
 
@@ -57,14 +62,14 @@ const AdminLeads = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Nom</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Entreprise</TableHead>
+              <TableHead>Téléphone</TableHead>
               <TableHead>Événement</TableHead>
-              <TableHead>Audience</TableHead>
               <TableHead>Thématiques</TableHead>
-              <TableHead>Objectif</TableHead>
-              <TableHead>Budget</TableHead>
-              <TableHead>Lieu</TableHead>
+              <TableHead>Message / Objectif</TableHead>
               <TableHead>Speakers suggérés</TableHead>
             </TableRow>
           </TableHeader>
@@ -72,14 +77,18 @@ const AdminLeads = () => {
             {leads.map((lead) => (
               <TableRow key={lead.id}>
                 <TableCell className="whitespace-nowrap text-xs">{formatDate(lead.created_at)}</TableCell>
+                <TableCell>
+                  <Badge variant={lead.lead_type === "Contact" ? "default" : "secondary"} className="text-xs">
+                    {lead.lead_type || "Simulateur"}
+                  </Badge>
+                </TableCell>
                 <TableCell className="whitespace-nowrap font-medium">{lead.first_name} {lead.last_name}</TableCell>
                 <TableCell className="text-sm">{lead.email}</TableCell>
+                <TableCell className="text-sm">{lead.company || "—"}</TableCell>
+                <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
                 <TableCell className="text-sm">{lead.event_type || "—"}</TableCell>
-                <TableCell className="text-sm">{lead.audience_size || "—"}</TableCell>
                 <TableCell className="text-sm">{lead.themes?.join(", ") || "—"}</TableCell>
-                <TableCell className="text-sm">{lead.objective || "—"}</TableCell>
-                <TableCell className="text-sm">{lead.budget || "—"}</TableCell>
-                <TableCell className="text-sm">{lead.location || "—"}</TableCell>
+                <TableCell className="text-sm max-w-[200px] truncate">{lead.additional_info || lead.objective || "—"}</TableCell>
                 <TableCell className="text-sm">{lead.suggested_speakers?.join(", ") || "—"}</TableCell>
               </TableRow>
             ))}

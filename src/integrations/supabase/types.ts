@@ -523,14 +523,18 @@ export type Database = {
           additional_info: string | null
           audience_size: string | null
           budget: string | null
+          company: string | null
           created_at: string
           email: string
+          event_date: string | null
           event_type: string | null
           first_name: string
           id: string
           last_name: string
+          lead_type: string
           location: string | null
           objective: string | null
+          phone: string | null
           suggested_speakers: string[] | null
           themes: string[] | null
         }
@@ -538,14 +542,18 @@ export type Database = {
           additional_info?: string | null
           audience_size?: string | null
           budget?: string | null
+          company?: string | null
           created_at?: string
           email: string
+          event_date?: string | null
           event_type?: string | null
-          first_name: string
+          first_name?: string
           id?: string
-          last_name: string
+          last_name?: string
+          lead_type?: string
           location?: string | null
           objective?: string | null
+          phone?: string | null
           suggested_speakers?: string[] | null
           themes?: string[] | null
         }
@@ -553,14 +561,18 @@ export type Database = {
           additional_info?: string | null
           audience_size?: string | null
           budget?: string | null
+          company?: string | null
           created_at?: string
           email?: string
+          event_date?: string | null
           event_type?: string | null
           first_name?: string
           id?: string
           last_name?: string
+          lead_type?: string
           location?: string | null
           objective?: string | null
+          phone?: string | null
           suggested_speakers?: string[] | null
           themes?: string[] | null
         }

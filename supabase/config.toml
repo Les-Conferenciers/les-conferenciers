@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.resync-speaker-from-site]
 verify_jwt = false
+
+[functions.resync-bios-from-site]
+verify_jwt = false
