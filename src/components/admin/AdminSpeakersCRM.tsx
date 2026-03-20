@@ -1244,6 +1244,18 @@ const AdminSpeakersCRM = () => {
                 </div>
               </div>
 
+              {/* Agent fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">🧑‍💼 Nom (agent)</Label>
+                  <Input value={(editForm as any).agent_name || ""} onChange={e => setEditForm(p => ({ ...p, agent_name: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">📞 Téléphone (agent)</Label>
+                  <Input value={(editForm as any).agent_phone || ""} onChange={e => setEditForm(p => ({ ...p, agent_phone: e.target.value }))} />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1"><Globe className="h-3 w-3" /> Langues d'intervention</Label>
