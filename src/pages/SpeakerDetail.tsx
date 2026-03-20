@@ -246,8 +246,8 @@ const SpeakerDetail = () => {
       const role = speaker.specialty || speaker.role || "";
       const titleGender = isFemale(speaker) ? "Conférencière" : "Conférencier";
       document.title = `${speaker.name} - ${titleGender}${role ? " et " + role : ""} | Les Conférenciers`;
-      const themes = parseThemes(speaker.themes);
-      const topThemes = themes.slice(0, 3).join(", ");
+      const speakerThemes = parseThemes(speaker.themes);
+      const topThemes = speakerThemes.slice(0, 3).join(", ");
       const desc = topThemes
         ? `Réservez ${speaker.name}, ${titleGender.toLowerCase()}${role ? " et " + role.toLowerCase() : ""}, expert${isFemale(speaker) ? "e" : ""} en ${topThemes}. Devis gratuit sous 24h pour votre événement.`
         : `Réservez ${speaker.name}, ${titleGender.toLowerCase()}${role ? " et " + role.toLowerCase() : ""}, pour votre événement professionnel. Devis gratuit sous 24h.`;
