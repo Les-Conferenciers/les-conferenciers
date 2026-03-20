@@ -299,8 +299,7 @@ const SpeakerDetail = () => {
       canonicalEl.href = canonicalUrl;
 
       const themes = parseThemes(speaker.themes);
-      const pageUrl = window.location.origin + `/conferencier/${speaker.slug}`;
-      const imageUrl = speaker.image_url || "";
+      const pageUrl = canonicalUrl;
 
       const personJsonLd = {
         "@context": "https://schema.org",
