@@ -123,16 +123,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Insert image into biography after 3rd paragraph if we have one
+      // Place image after the biography block, matching the original site behavior
       let finalBio = bioHtml;
       if (finalImageUrl) {
-        const paragraphs = bioHtml.match(/<p>[\s\S]*?<\/p>/g) || [];
-        if (paragraphs.length >= 3) {
-          const insertAfter = paragraphs.slice(0, 3).join("");
-          const rest = bioHtml.substring(bioHtml.indexOf(insertAfter) + insertAfter.length);
-          const imgTag = `<figure class="bio-inline-image"><img src="${finalImageUrl}" alt="${speaker.slug} biographie" style="max-width:100%;border-radius:8px;margin:1rem 0;" /></figure>`;
-          finalBio = insertAfter + imgTag + rest;
-        }
+        const imgTag = `<figure class="bio-image-block"><img src="${finalImageUrl}" alt="${speaker.slug} biographie" /></figure>`;
+        finalBio = `${bioHtml}${imgTag}`;
       }
 
       const strongCount = (finalBio.match(/<strong>/g) || []).length;
