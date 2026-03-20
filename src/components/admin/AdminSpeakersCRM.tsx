@@ -319,6 +319,7 @@ const AdminSpeakersCRM = () => {
         email: editForm.email || null,
         key_points: (editForm as any).key_points || [],
         interview_only: (editForm as any).interview_only ?? false,
+        updated_at: editSpeaker.created_at ? undefined : undefined,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
