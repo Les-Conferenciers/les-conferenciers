@@ -291,6 +291,8 @@ const AdminSpeakersCRM = () => {
       email: speaker.email,
       key_points: speaker.key_points,
       interview_only: (speaker as any).interview_only ?? false,
+      agent_name: speaker.agent_name,
+      agent_phone: speaker.agent_phone,
     } as any);
   };
 
