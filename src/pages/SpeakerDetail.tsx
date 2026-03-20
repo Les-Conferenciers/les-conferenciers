@@ -420,8 +420,23 @@ const SpeakerDetail = () => {
   const isHtmlBio = speaker.biography?.includes("<") ?? false;
   let processedBio = speaker.biography || "";
   
+  // Sanitize: remove broken/orphan closing tags like "/p>" and strip inline style attributes with CSS vars
+  processedBio = processedBio
+    .replace(/(?<![<])\/(p|div|span|h[1-6])>/gi, '') // orphan closing tags without <
+    .replace(/<(h[1-6])[^>]*>.*?<\/\1>\s*/gi, (match) => {
+      // Remove h2/h3 tags that just contain the speaker name
+      const innerText = match.replace(/<[^>]+>/g, '').trim();
+      if (innerText === speaker.name) return '';
+      return match;
+    })
+    .replace(/\s*style="[^"]*(?:--tw-|caret-color|text-decoration-thickness|border-color)[^"]*"/gi, '') // strip Tailwind CSS var styles
+    .replace(/\s*data-(?:start|end)="[^"]*"/gi, '') // strip data-start/data-end attributes
+    .replace(/\s*style="[^"]*color:\s*rgb\([^)]+\)[^"]*"/gi, '') // strip inline color styles  
+    .replace(/<span\s*>/gi, '') // strip empty <span> tags
+    .replace(/<\/span>/gi, '');
+  
   if (isHtmlBio) {
-    // HTML bio from rich text editor or AI formatting — already has <strong> etc.
+    // HTML bio from rich text editor or scraping — already has <strong> etc.
     // Don't double-apply highlightBioKeywords if already rich HTML
     const hasExistingStrong = (processedBio.match(/<strong>/g) || []).length >= 2;
     if (!hasExistingStrong) {
