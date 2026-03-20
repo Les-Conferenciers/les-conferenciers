@@ -98,6 +98,29 @@ serve(async (req) => {
       });
     }
 
+    // Save as lead in simulator_leads table
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseKey);
+      const nameParts = name.trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      await sb.from("simulator_leads").insert({
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        event_type: eventType || null,
+        additional_info: message,
+        lead_type: "Contact",
+        company: company || null,
+        phone: phone || null,
+        event_date: eventDate || null,
+      });
+    } catch (e) {
+      console.error("Failed to save contact lead:", e);
+    }
+
     const emailBody = `
 Nouvelle demande de devis reçue via le site web :
 
