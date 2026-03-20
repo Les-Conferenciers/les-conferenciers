@@ -35,7 +35,7 @@ const SpeakerCard = ({ speaker, onThemeClick, onNavigate }: SpeakerCardProps) =>
     if (onThemeClick) {
       onThemeClick(theme);
     } else {
-      navigate(`/conferenciers?theme=${encodeURIComponent(theme)}`);
+      navigate(`/conferencier?theme=${encodeURIComponent(theme)}`);
     }
   };
 

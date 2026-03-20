@@ -249,14 +249,14 @@ const Index = () => {
             {topThemes.map((theme) => (
               <button
                 key={theme}
-                onClick={() => navigate(`/conferenciers?theme=${encodeURIComponent(theme)}`)}
+                onClick={() => navigate(`/conferencier?theme=${encodeURIComponent(theme)}`)}
                 className="px-4 py-2 rounded-full bg-primary-foreground/10 border border-primary-foreground/20 text-sm text-primary-foreground/90 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-200"
               >
                 {theme}
               </button>
             ))}
             <button
-              onClick={() => navigate("/conferenciers")}
+              onClick={() => navigate("/conferencier")}
               className="px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200"
             >
               Tous les conférenciers →
@@ -504,7 +504,7 @@ const Index = () => {
                 Thierry Marx, Nina Métayer, Tony Estanguet, Julia de Funès… et bien d'autres
               </p>
             </div>
-            <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/conferenciers")}>
+            <Button variant="outline" className="hidden md:flex gap-2" onClick={() => navigate("/conferencier")}>
               Voir tous <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -524,7 +524,7 @@ const Index = () => {
           </div>
 
           <div className="mt-8 text-center md:hidden">
-            <Button variant="outline" className="w-full" onClick={() => navigate("/conferenciers")}>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/conferencier")}>
               Voir tous les conférenciers
             </Button>
           </div>
@@ -556,7 +556,7 @@ const Index = () => {
               size="lg"
               variant="outline"
               className="border-accent/50 text-accent hover:bg-accent/10 rounded-xl font-semibold"
-              onClick={() => navigate("/conferenciers")}
+              onClick={() => navigate("/conferencier")}
             >
               Découvrir nos conférenciers
             </Button>

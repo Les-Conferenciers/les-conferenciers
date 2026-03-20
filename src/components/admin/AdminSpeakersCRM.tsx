@@ -1594,7 +1594,7 @@ const AdminSpeakersCRM = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Position sur /conferenciers</Label>
+                  <Label className="text-xs text-muted-foreground">Position sur /conferencier</Label>
                   <Input type="number" min={1} value={(editForm as any).display_order ?? ""} onChange={e => setEditForm(p => ({ ...p, display_order: e.target.value ? Number(e.target.value) : 999 }))} className="w-24 h-8 text-sm" />
                   <span className="text-xs text-muted-foreground">(plus petit = plus haut)</span>
                 </div>

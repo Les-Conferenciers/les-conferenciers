@@ -295,7 +295,7 @@ const SpeakerDetail = () => {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Accueil", item: window.location.origin + "/" },
-          { "@type": "ListItem", position: 2, name: "Conférenciers", item: window.location.origin + "/conferenciers" },
+          { "@type": "ListItem", position: 2, name: "Conférenciers", item: window.location.origin + "/conferencier" },
           { "@type": "ListItem", position: 3, name: `Conférence ${speaker.name}`, item: pageUrl },
         ],
       };
@@ -405,7 +405,7 @@ const SpeakerDetail = () => {
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Conférencier non trouvé</h1>
-            <Button onClick={() => navigate("/conferenciers")}>Retour à la liste</Button>
+            <Button onClick={() => navigate("/conferencier")}>Retour à la liste</Button>
           </div>
         </div>
       </div>
@@ -458,7 +458,7 @@ const SpeakerDetail = () => {
           <nav className="flex items-center gap-1.5 text-sm text-primary-foreground/60 mb-8" aria-label="Breadcrumb">
             <Link to="/" className="hover:text-accent transition-colors">Accueil</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <Link to="/conferenciers" className="hover:text-accent transition-colors">Conférenciers</Link>
+            <Link to="/conferencier" className="hover:text-accent transition-colors">Conférenciers</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="text-primary-foreground font-medium">{speaker.name}</span>
           </nav>
@@ -496,7 +496,7 @@ const SpeakerDetail = () => {
                 {themes.map((theme) => (
                   <button
                     key={theme}
-                    onClick={() => navigate(`/conferenciers?theme=${encodeURIComponent(theme)}`)}
+                    onClick={() => navigate(`/conferencier?theme=${encodeURIComponent(theme)}`)}
                     className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
                   >
                     {theme}
@@ -794,7 +794,7 @@ const SpeakerDetail = () => {
                   {themes.map((theme) => (
                     <button
                       key={theme}
-                      onClick={() => navigate(`/conferenciers?theme=${encodeURIComponent(theme)}`)}
+                      onClick={() => navigate(`/conferencier?theme=${encodeURIComponent(theme)}`)}
                       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors hover:opacity-80 cursor-pointer ${getThemeColor(theme)}`}
                     >
                       {theme}
