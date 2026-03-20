@@ -1301,9 +1301,47 @@ const AdminSpeakersCRM = () => {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Thématiques (séparées par des virgules)</Label>
-                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} />
+              {/* Thématiques as tags with reordering */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Thématiques</Label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(editForm.themes || []).map((theme, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 bg-accent/10 text-accent-foreground text-xs font-medium px-2.5 py-1 rounded-full border border-accent/20">
+                      {theme}
+                      <button type="button" onClick={() => {
+                        const newThemes = [...(editForm.themes || [])];
+                        newThemes.splice(idx, 1);
+                        setEditForm(p => ({ ...p, themes: newThemes }));
+                      }} className="hover:text-destructive transition-colors">
+                        <X className="h-3 w-3" />
+                      </button>
+                      {idx > 0 && (
+                        <button type="button" onClick={() => {
+                          const newThemes = [...(editForm.themes || [])];
+                          [newThemes[idx - 1], newThemes[idx]] = [newThemes[idx], newThemes[idx - 1]];
+                          setEditForm(p => ({ ...p, themes: newThemes }));
+                        }} className="hover:text-accent transition-colors" title="Monter">
+                          <ArrowUp className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <select
+                  className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm w-full"
+                  value=""
+                  onChange={e => {
+                    if (e.target.value && !(editForm.themes || []).includes(e.target.value)) {
+                      setEditForm(p => ({ ...p, themes: [...(p.themes || []), e.target.value] }));
+                    }
+                    e.target.value = "";
+                  }}
+                >
+                  <option value="">Ajouter une thématique…</option>
+                  {allThemes.filter(t => !(editForm.themes || []).includes(t)).map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Key Points (Pépites / Diamant) */}
