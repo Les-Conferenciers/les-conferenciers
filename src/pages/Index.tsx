@@ -458,19 +458,25 @@ const Index = () => {
               Beaucoup de nos clients nous posent cette question. Voici la réponse.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
                 icon: UserCheck,
-                title: "Un seul interlocuteur : Nelly",
+                title: "Une seule interlocutrice",
                 description:
                   "Pas de plateforme anonyme, pas de turnover. Nelly gère votre projet de A à Z. Relation directe, personnalisée et sans intermédiaire.",
               },
               {
                 icon: Zap,
-                title: "Grande réactivité",
+                title: "Réactivité et disponibilité",
                 description:
                   "Tous les mails sont traités dans la journée. Vous recevez un devis détaillé sous 24h avec des profils adaptés à votre brief.",
+              },
+              {
+                icon: BookOpen,
+                title: "Connaissance approfondie des profils",
+                description:
+                  "Nous connaissons personnellement chaque conférencier. Cette proximité nous permet de vous recommander le profil idéal, bien au-delà du simple CV.",
               },
             ].map((item) => (
               <div

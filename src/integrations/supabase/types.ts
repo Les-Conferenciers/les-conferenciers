@@ -623,6 +623,7 @@ export type Database = {
           gender: string | null
           id: string
           image_url: string | null
+          interview_only: boolean | null
           key_points: string[] | null
           languages: string[] | null
           meta_description: string | null
@@ -653,6 +654,7 @@ export type Database = {
           gender?: string | null
           id?: string
           image_url?: string | null
+          interview_only?: boolean | null
           key_points?: string[] | null
           languages?: string[] | null
           meta_description?: string | null
@@ -683,6 +685,7 @@ export type Database = {
           gender?: string | null
           id?: string
           image_url?: string | null
+          interview_only?: boolean | null
           key_points?: string[] | null
           languages?: string[] | null
           meta_description?: string | null

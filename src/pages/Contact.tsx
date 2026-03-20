@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -13,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send, CheckCircle2, Clock, Star, Quote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import nellyBuste from "@/assets/nelly-buste.jpg";
+import nellyBuste from "@/assets/nelly-buste-medaillon.png";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -28,19 +27,41 @@ const contactSchema = z.object({
 type ContactFormData = z.infer<typeof contactSchema>;
 
 const CLIENT_LOGOS = [
-  { name: "Thales", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/thales66cd98d746fb3_150_150.jpg" },
-  { name: "EDF", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/edf66bc7f8ead2dc_150_150.png" },
-  { name: "Decathlon", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/decathlon66bc7f8eb1fff_150_150.png" },
-  { name: "SNCF", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/sncf66bc7f8ea0415_150_150.jpg" },
-  { name: "Orange", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/orange66bc7f90f39cc_150_150.jpg" },
-  { name: "Hermès", src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/hermes66bc7f8eaac82_150_150.png" },
+  {
+    name: "Thales",
+    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/thales66cd98d746fb3_150_150.jpg",
+  },
+  {
+    name: "EDF",
+    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/edf66bc7f8ead2dc_150_150.png",
+  },
+  {
+    name: "Decathlon",
+    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/decathlon66bc7f8eb1fff_150_150.png",
+  },
+  {
+    name: "SNCF",
+    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/sncf66bc7f8ea0415_150_150.jpg",
+  },
+  {
+    name: "Orange",
+    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/orange66bc7f90f39cc_150_150.jpg",
+  },
+  {
+    name: "Hermès",
+    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/hermes66bc7f8eaac82_150_150.png",
+  },
 ];
 
 const SocialProofCard = () => {
   const [review, setReview] = useState<any>(null);
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any).from("google_reviews").select("*").order("created_at", { ascending: false }).limit(1);
+      const { data } = await (supabase as any)
+        .from("google_reviews")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1);
       if (data?.[0]) setReview(data[0]);
     };
     load();
@@ -48,15 +69,14 @@ const SocialProofCard = () => {
 
   const item = review || {
     author_name: "SERVICE RH SEMARDEL",
-    comment: "Un accompagnement de qualité et réactif. Merci à toute l'équipe pour leur professionnalisme et leur disponibilité.",
+    comment:
+      "Un accompagnement de qualité et réactif. Merci à toute l'équipe pour leur professionnalisme et leur disponibilité.",
   };
 
   return (
     <div className="bg-card rounded-2xl border border-border/40 p-4 shadow-sm">
       <Quote className="h-4 w-4 text-accent mb-1.5" />
-      <p className="text-xs text-muted-foreground italic leading-relaxed line-clamp-3">
-        "{item.comment}"
-      </p>
+      <p className="text-xs text-muted-foreground italic leading-relaxed line-clamp-3">"{item.comment}"</p>
       <div className="flex items-center gap-1.5 mt-2">
         <div className="flex gap-px">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -76,7 +96,11 @@ const Contact = () => {
   useEffect(() => {
     document.title = "Contact - Demandez un devis gratuit | Les Conférenciers";
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", "Contactez notre agence de conférenciers. Recevez une proposition personnalisée sous 24h. Devis gratuit, accompagnement sur mesure pour votre événement.");
+    if (meta)
+      meta.setAttribute(
+        "content",
+        "Contactez notre agence de conférenciers. Recevez une proposition personnalisée sous 24h. Devis gratuit, accompagnement sur mesure pour votre événement.",
+      );
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canonical) {
       canonical = document.createElement("link");
@@ -84,7 +108,9 @@ const Contact = () => {
       document.head.appendChild(canonical);
     }
     canonical.href = "https://www.lesconferenciers.com/contact";
-    return () => { document.querySelector('link[rel="canonical"]')?.remove(); };
+    return () => {
+      document.querySelector('link[rel="canonical"]')?.remove();
+    };
   }, []);
   const [searchParams] = useSearchParams();
   const speakerName = searchParams.get("speaker") || "";
@@ -114,17 +140,14 @@ const Contact = () => {
 
   const onSubmit = async (data: ContactFormData) => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-contact-email`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify(data),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-contact-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify(data),
+      });
       if (!res.ok) throw new Error("Erreur serveur");
       setSubmitted(true);
       toast.success("Votre demande a bien été envoyée !");
@@ -145,7 +168,7 @@ const Contact = () => {
             Trouvez le conférencier idéal
           </h1>
           <p className="text-primary-foreground/75 max-w-lg mx-auto text-base">
-            Parlez-nous de votre projet et recevez une proposition personnalisée sous 24h
+            Parlez-nous de votre projet et recevez une proposition personnalisée sous 24h.
           </p>
         </div>
       </div>
@@ -153,7 +176,6 @@ const Contact = () => {
       {/* Main content */}
       <div className="container mx-auto px-4 py-12 flex-grow">
         <div className="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-
           {/* Form — takes priority */}
           <div id="contact-form" className="lg:col-span-2 order-1">
             <div className="bg-card rounded-2xl border border-border/40 p-7 md:p-8 shadow-sm">
@@ -227,7 +249,9 @@ const Contact = () => {
                     disabled={isSubmitting}
                     className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base h-12 rounded-xl shadow-md hover:shadow-lg transition-all"
                   >
-                    {isSubmitting ? "Envoi en cours…" : (
+                    {isSubmitting ? (
+                      "Envoi en cours…"
+                    ) : (
                       <span className="flex items-center gap-2">
                         <Send className="h-4 w-4" /> Envoyer ma demande
                       </span>
@@ -235,8 +259,12 @@ const Contact = () => {
                   </Button>
 
                   <div className="flex flex-wrap items-center justify-center gap-5 pt-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-accent" /> Réponse sous 24h</span>
-                    <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-accent" /> Devis gratuit</span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-accent" /> Réponse sous 24h
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-accent" /> Devis gratuit
+                    </span>
                   </div>
                 </form>
               )}
@@ -245,14 +273,13 @@ const Contact = () => {
 
           {/* Right sidebar — reassurance épurée */}
           <div className="lg:col-span-1 order-2 space-y-6">
-
             {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
               <div className="flex justify-center bg-muted/30 p-4">
                 <img
                   src={nellyBuste}
                   alt="Nelly, fondatrice de l'agence"
-                  className="w-32 h-32 rounded-full object-cover object-top shadow-md"
+                  className="w-40 h-auto rounded-[50%] object-contain shadow-md ring-2 ring-accent/30 ring-offset-2 ring-offset-background"
                 />
               </div>
               <div className="px-5 pb-5 pt-3 text-center">
@@ -269,13 +296,17 @@ const Contact = () => {
             {/* Preuve sociale */}
             <SocialProofCard />
 
-
             {/* Logos clients — en couleur */}
             <div className="bg-card rounded-2xl border border-border/40 p-5 shadow-sm">
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mb-3">Ils nous font confiance</p>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mb-3">
+                Ils nous font confiance
+              </p>
               <div className="grid grid-cols-3 gap-3">
-                  {CLIENT_LOGOS.map((l) => (
-                    <div key={l.name} className="flex items-center justify-center h-14 hover:scale-105 transition-transform">
+                {CLIENT_LOGOS.map((l) => (
+                  <div
+                    key={l.name}
+                    className="flex items-center justify-center h-14 hover:scale-105 transition-transform"
+                  >
                     <img src={l.src} alt={l.name} className="max-h-full max-w-full object-contain" loading="lazy" />
                   </div>
                 ))}

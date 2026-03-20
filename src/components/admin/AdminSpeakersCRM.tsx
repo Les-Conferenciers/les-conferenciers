@@ -39,6 +39,7 @@ type Speaker = {
   phone: string | null;
   email: string | null;
   key_points: string[] | null;
+  interview_only: boolean | null;
 };
 
 type Review = {
@@ -123,6 +124,8 @@ const AdminSpeakersCRM = () => {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [newReview, setNewReview] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editReviewForm, setEditReviewForm] = useState({ author_name: "", author_title: "", rating: 5, comment: "" });
 
   // Conferences state
   const [conferences, setConferences] = useState<Conference[]>([]);
@@ -139,7 +142,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only")
       .order("name");
     setSpeakers((data as any) || []);
     setLoading(false);
@@ -285,6 +288,7 @@ const AdminSpeakersCRM = () => {
       phone: speaker.phone,
       email: speaker.email,
       key_points: speaker.key_points,
+      interview_only: (speaker as any).interview_only ?? false,
     } as any);
   };
 
@@ -307,13 +311,14 @@ const AdminSpeakersCRM = () => {
         languages: editForm.languages || [],
         featured: editForm.featured ?? false,
         featured_order: (editForm as any).featured_order || null,
-        display_order: (editForm as any).display_order ?? 999,
+        display_order: (editForm as any).display_order != null ? (editForm as any).display_order : (editSpeaker as any).display_order ?? 999,
         gender: editForm.gender || 'male',
         why_expertise: editForm.why_expertise || null,
         why_impact: editForm.why_impact || null,
         phone: editForm.phone || null,
         email: editForm.email || null,
         key_points: (editForm as any).key_points || [],
+        interview_only: (editForm as any).interview_only ?? false,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
@@ -495,6 +500,19 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchReviews(editSpeaker.id);
   };
 
+  const handleSaveReview = async (reviewId: string) => {
+    const { error } = await supabase.from("reviews").update({
+      author_name: editReviewForm.author_name,
+      author_title: editReviewForm.author_title || null,
+      rating: editReviewForm.rating,
+      comment: editReviewForm.comment,
+    } as any).eq("id", reviewId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Avis mis à jour");
+    setEditingReviewId(null);
+    if (editSpeaker) fetchReviews(editSpeaker.id);
+  };
+
   // Conference CRUD handlers
   const handleAddConference = async () => {
     if (!editSpeaker || !newConference.title.trim()) return;
@@ -530,7 +548,19 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchConferences(editSpeaker.id);
   };
 
-  const handleReformulateConference = async (confId: string) => {
+  const handleReorderConference = async (idx: number, direction: 'up' | 'down') => {
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= conferences.length) return;
+    const a = conferences[idx];
+    const b = conferences[swapIdx];
+    await Promise.all([
+      supabase.from("speaker_conferences").update({ display_order: swapIdx } as any).eq("id", a.id),
+      supabase.from("speaker_conferences").update({ display_order: idx } as any).eq("id", b.id),
+    ]);
+    if (editSpeaker) fetchConferences(editSpeaker.id);
+  };
+
+  const handleRegenerateConfDescription = async (confId: string) => {
     const conf = conferences.find(c => c.id === confId);
     if (!conf || !editSpeaker) return;
     setRegeneratingConf(confId);
@@ -808,7 +838,7 @@ const AdminSpeakersCRM = () => {
       setEnrichUrl("");
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points")
+        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
@@ -1251,6 +1281,10 @@ const AdminSpeakersCRM = () => {
                       ))}
                     </select>
                   </div>
+                  <label className="flex items-center gap-2 cursor-pointer mt-2">
+                    <input type="checkbox" checked={(editForm as any).interview_only ?? false} onChange={e => setEditForm(p => ({ ...p, interview_only: e.target.checked }))} className="rounded border-input" />
+                    <span className="text-xs text-muted-foreground">Interview seulement (interne)</span>
+                  </label>
                 </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
@@ -1279,9 +1313,47 @@ const AdminSpeakersCRM = () => {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Thématiques (séparées par des virgules)</Label>
-                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} />
+              {/* Thématiques as tags with reordering */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Thématiques</Label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(editForm.themes || []).map((theme, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 bg-accent/10 text-accent-foreground text-xs font-medium px-2.5 py-1 rounded-full border border-accent/20">
+                      {theme}
+                      <button type="button" onClick={() => {
+                        const newThemes = [...(editForm.themes || [])];
+                        newThemes.splice(idx, 1);
+                        setEditForm(p => ({ ...p, themes: newThemes }));
+                      }} className="hover:text-destructive transition-colors">
+                        <X className="h-3 w-3" />
+                      </button>
+                      {idx > 0 && (
+                        <button type="button" onClick={() => {
+                          const newThemes = [...(editForm.themes || [])];
+                          [newThemes[idx - 1], newThemes[idx]] = [newThemes[idx], newThemes[idx - 1]];
+                          setEditForm(p => ({ ...p, themes: newThemes }));
+                        }} className="hover:text-accent transition-colors" title="Monter">
+                          <ArrowUp className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <select
+                  className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm w-full"
+                  value=""
+                  onChange={e => {
+                    if (e.target.value && !(editForm.themes || []).includes(e.target.value)) {
+                      setEditForm(p => ({ ...p, themes: [...(p.themes || []), e.target.value] }));
+                    }
+                    e.target.value = "";
+                  }}
+                >
+                  <option value="">Ajouter une thématique…</option>
+                  {allThemes.filter(t => !(editForm.themes || []).includes(t)).map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Key Points (Pépites / Diamant) */}
@@ -1430,7 +1502,7 @@ const AdminSpeakersCRM = () => {
                   <p className="text-xs text-muted-foreground italic">Aucune conférence pour ce conférencier.</p>
                 ) : (
                   <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {conferences.map(conf => (
+                    {conferences.map((conf, idx) => (
                       <div key={conf.id} className="p-3 bg-muted/20 rounded-lg text-sm space-y-2">
                         {editingConfId === conf.id ? (
                           <>
@@ -1457,7 +1529,21 @@ const AdminSpeakersCRM = () => {
                         ) : (
                           <>
                             <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-semibold text-foreground">{conf.title}</h4>
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-0.5">
+                                  {idx > 0 && (
+                                    <button type="button" onClick={() => handleReorderConference(idx, 'up')} className="hover:text-accent transition-colors" title="Monter">
+                                      <ArrowUp className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                  {idx < conferences.length - 1 && (
+                                    <button type="button" onClick={() => handleReorderConference(idx, 'down')} className="hover:text-accent transition-colors" title="Descendre">
+                                      <ArrowDown className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                                <h4 className="font-semibold text-foreground">{conf.title}</h4>
+                              </div>
                               <div className="flex gap-1 flex-shrink-0">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
                                   setEditingConfId(conf.id);
@@ -1468,7 +1554,7 @@ const AdminSpeakersCRM = () => {
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRegenerateConfTitle(conf.id)} disabled={regeneratingConfTitle === conf.id} title="Régénérer le titre via IA">
                                   {regeneratingConfTitle === conf.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReformulateConference(conf.id)} disabled={regeneratingConf === conf.id} title="Reformuler la description via IA">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRegenerateConfDescription(conf.id)} disabled={regeneratingConf === conf.id} title="Reformuler la description via IA">
                                   {regeneratingConf === conf.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteConference(conf.id)} title="Supprimer">
@@ -1563,22 +1649,55 @@ const AdminSpeakersCRM = () => {
                 ) : reviews.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Aucun avis pour ce conférencier.</p>
                 ) : (
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {reviews.map(r => (
-                      <div key={r.id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg text-sm">
-                        <div className="flex-grow min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground">{r.author_name}</span>
-                            <div className="flex gap-0.5">
-                              {[1,2,3,4,5].map(s => <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />)}
+                      <div key={r.id} className="p-3 bg-muted/20 rounded-lg text-sm space-y-2">
+                        {editingReviewId === r.id ? (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input value={editReviewForm.author_name} onChange={e => setEditReviewForm(p => ({ ...p, author_name: e.target.value }))} placeholder="Nom" />
+                              <Input value={editReviewForm.author_title} onChange={e => setEditReviewForm(p => ({ ...p, author_title: e.target.value }))} placeholder="Poste / Entreprise" />
+                            </div>
+                            <div className="flex gap-1">
+                              {[1,2,3,4,5].map(s => (
+                                <button key={s} type="button" onClick={() => setEditReviewForm(p => ({ ...p, rating: s }))}>
+                                  <Star className={`h-4 w-4 ${s <= editReviewForm.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                                </button>
+                              ))}
+                            </div>
+                            <Textarea value={editReviewForm.comment} onChange={e => setEditReviewForm(p => ({ ...p, comment: e.target.value }))} rows={3} />
+                            <div className="flex gap-2">
+                              <Button size="sm" className="gap-1" onClick={() => handleSaveReview(r.id)}>
+                                <Save className="h-3.5 w-3.5" /> Enregistrer
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingReviewId(null)}>Annuler</Button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-start gap-3">
+                            <div className="flex-grow min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-foreground">{r.author_name}</span>
+                                <div className="flex gap-0.5">
+                                  {[1,2,3,4,5].map(s => <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />)}
+                                </div>
+                              </div>
+                              {r.author_title && <p className="text-xs text-muted-foreground">{r.author_title}</p>}
+                              {r.comment && <p className="text-muted-foreground text-xs mt-1">{r.comment}</p>}
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                setEditingReviewId(r.id);
+                                setEditReviewForm({ author_name: r.author_name, author_title: r.author_title || "", rating: r.rating, comment: r.comment || "" });
+                              }}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteReview(r.id)}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
                             </div>
                           </div>
-                          {r.author_title && <p className="text-xs text-muted-foreground">{r.author_title}</p>}
-                          {r.comment && <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{r.comment}</p>}
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => handleDeleteReview(r.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        )}
                       </div>
                     ))}
                   </div>
