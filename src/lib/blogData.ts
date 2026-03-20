@@ -121,8 +121,7 @@ Le coût d'un conférencier est un investissement, pas une dépense. Le bon conf
     title: "Comment améliorer l'engagement environnemental en entreprise ?",
     excerpt:
       "Nombreuses sont les entreprises qui ont compris qu'elles étaient un maillon de la chaîne dans la lutte contre le réchauffement climatique. Découvrez comment agir concrètement.",
-    image:
-      "https://www.lesconferenciers.com/wp-content/uploads/2023/06/icones-de-recyclage-de-nature-et-deolienne-entre-les-mains-dun-collaborateur.png",
+    image: "/blog-engagement-environnemental.png",
     category: "RSE & Environnement",
     date: "2023-06-15",
     readTime: "8 min",
@@ -168,8 +167,7 @@ Un conférencier spécialisé dans l'environnement peut sensibiliser vos équipe
     title: "Comment réussir le management de la génération Y ?",
     excerpt:
       "Le management de la génération Y est plus que jamais un sujet d'actualité. Découvrez comment adapter votre management aux millennials.",
-    image:
-      "https://www.lesconferenciers.com/wp-content/uploads/2023/06/2023-06-07_22-35-09.png",
+    image: "/blog-manager-generation-y.png",
     category: "Management",
     date: "2023-06-07",
     readTime: "10 min",
@@ -214,8 +212,7 @@ Un conférencier expert du management intergénérationnel peut aider vos manage
     title: "Accompagner le changement en entreprise : comment le réussir ?",
     excerpt:
       "La conduite du changement demande du temps et de l'énergie, mais c'est un investissement puissant sur le long terme. Découvrez les clés du succès.",
-    image:
-      "https://www.lesconferenciers.com/wp-content/uploads/2023/05/equation-du-changement-1080x335.jpg",
+    image: "/blog-conduite-changement.jpg",
     category: "Transformation",
     date: "2023-05-20",
     readTime: "9 min",
