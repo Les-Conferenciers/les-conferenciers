@@ -42,6 +42,7 @@ type Speaker = {
   interview_only: boolean | null;
   agent_name: string | null;
   agent_phone: string | null;
+  agent_email: string | null;
 };
 
 type Review = {
@@ -144,7 +145,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email")
       .order("name");
     setSpeakers((data as any) || []);
     setLoading(false);
@@ -293,6 +294,7 @@ const AdminSpeakersCRM = () => {
       interview_only: (speaker as any).interview_only ?? false,
       agent_name: speaker.agent_name,
       agent_phone: speaker.agent_phone,
+      agent_email: speaker.agent_email,
     } as any);
   };
 
@@ -325,6 +327,7 @@ const AdminSpeakersCRM = () => {
         interview_only: (editForm as any).interview_only ?? false,
         agent_name: (editForm as any).agent_name || null,
         agent_phone: (editForm as any).agent_phone || null,
+        agent_email: (editForm as any).agent_email || null,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
@@ -844,7 +847,7 @@ const AdminSpeakersCRM = () => {
       setEnrichUrl("");
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone")
+        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
@@ -1232,27 +1235,37 @@ const AdminSpeakersCRM = () => {
                 <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} />
               </div>
 
-              {/* Phone & Email (internal only) */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">📱 Téléphone (interne)</Label>
-                  <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">📧 Email (interne)</Label>
-                  <Input type="email" value={editForm.email || ""} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+              {/* Contact conférencier */}
+              <div className="rounded-lg border border-border/60 p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">📋 Contact conférencier</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">📱 Téléphone</Label>
+                    <Input value={editForm.phone || ""} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">📧 Email</Label>
+                    <Input type="email" value={editForm.email || ""} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                  </div>
                 </div>
               </div>
 
-              {/* Agent fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">🧑‍💼 Nom (agent)</Label>
-                  <Input value={(editForm as any).agent_name || ""} onChange={e => setEditForm(p => ({ ...p, agent_name: e.target.value }))} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">📞 Téléphone (agent)</Label>
-                  <Input value={(editForm as any).agent_phone || ""} onChange={e => setEditForm(p => ({ ...p, agent_phone: e.target.value }))} />
+              {/* Contact agent */}
+              <div className="rounded-lg border border-border/60 p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">🧑‍💼 Contact agent / manager</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Nom</Label>
+                    <Input value={(editForm as any).agent_name || ""} onChange={e => setEditForm(p => ({ ...p, agent_name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">📧 Email</Label>
+                    <Input type="email" value={(editForm as any).agent_email || ""} onChange={e => setEditForm(p => ({ ...p, agent_email: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">📞 Téléphone</Label>
+                    <Input value={(editForm as any).agent_phone || ""} onChange={e => setEditForm(p => ({ ...p, agent_phone: e.target.value }))} />
+                  </div>
                 </div>
               </div>
 
