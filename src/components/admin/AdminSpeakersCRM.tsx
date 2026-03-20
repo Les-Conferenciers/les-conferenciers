@@ -560,7 +560,7 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchConferences(editSpeaker.id);
   };
 
-
+  const handleRegenerateConfDescription = async (confId: string) => {
     const conf = conferences.find(c => c.id === confId);
     if (!conf || !editSpeaker) return;
     setRegeneratingConf(confId);
@@ -1554,7 +1554,7 @@ const AdminSpeakersCRM = () => {
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRegenerateConfTitle(conf.id)} disabled={regeneratingConfTitle === conf.id} title="Régénérer le titre via IA">
                                   {regeneratingConfTitle === conf.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReformulateConference(conf.id)} disabled={regeneratingConf === conf.id} title="Reformuler la description via IA">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRegenerateConfDescription(conf.id)} disabled={regeneratingConf === conf.id} title="Reformuler la description via IA">
                                   {regeneratingConf === conf.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteConference(conf.id)} title="Supprimer">
