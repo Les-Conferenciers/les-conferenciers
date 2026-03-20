@@ -4,11 +4,12 @@
 # Redirections 301 — anciennes URLs du site lesconferenciers.com
 
 # Pages principales
-/conferencier/   /conferenciers   301
+/conferenciers/   /conferencier   301
+/conferenciers   /conferencier   301
 
 # Anciennes URLs WordPress — pages
-/nos-conferenciers/   /conferenciers   301
-/nos-conferenciers   /conferenciers   301
+/nos-conferenciers/   /conferencier   301
+/nos-conferenciers   /conferencier   301
 /contact-2/   /contact   301
 /a-propos/   /   301
 /notre-approche/   /   301
