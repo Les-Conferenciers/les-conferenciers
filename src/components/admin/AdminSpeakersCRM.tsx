@@ -1502,7 +1502,7 @@ const AdminSpeakersCRM = () => {
                   <p className="text-xs text-muted-foreground italic">Aucune conférence pour ce conférencier.</p>
                 ) : (
                   <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {conferences.map(conf => (
+                    {conferences.map((conf, idx) => (
                       <div key={conf.id} className="p-3 bg-muted/20 rounded-lg text-sm space-y-2">
                         {editingConfId === conf.id ? (
                           <>
