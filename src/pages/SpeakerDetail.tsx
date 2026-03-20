@@ -566,7 +566,13 @@ const SpeakerDetail = () => {
                     [&_li]:mb-1.5 [&_li]:text-[0.95rem]
                     [&_p]:mb-3 [&_p]:text-[0.95rem] [&_p]:leading-[1.8]
                     [&_strong]:text-foreground [&_strong]:font-semibold
-                    [&_img]:block [&_img]:w-full [&_img]:max-w-2xl [&_img]:rounded-xl [&_img]:shadow-md [&_img]:my-6 [&_img]:mx-auto [&_img]:clear-both
+                    [&_figure.bio-image-block]:my-8 [&_figure.bio-image-block]:flex [&_figure.bio-image-block]:justify-center
+                    [&_figure.bio-image-block_img]:block
+                    [&_figure.bio-image-block_img]:w-full
+                    [&_figure.bio-image-block_img]:max-w-xl
+                    [&_figure.bio-image-block_img]:rounded-xl
+                    [&_figure.bio-image-block_img]:shadow-md
+                    [&_img]:rounded-xl [&_img]:shadow-md
                     ${!bioExpanded ? "max-h-[180px]" : "max-h-[5000px]"}`}
                   dangerouslySetInnerHTML={{ __html: processedBio }}
                 />
