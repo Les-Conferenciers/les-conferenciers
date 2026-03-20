@@ -51,8 +51,8 @@
 /project_category/transformation-digitale/   /conferencier   301
 /project_category/*   /conferencier   301
 
-# Anciennes URLs speakers avec trailing slash → nouvelles URLs sans trailing slash
-/conferencier/:slug/   /conferencier/:slug   301
+# Anciennes URLs speakers avec trailing slash → SPA catch-all (pas de 301 pour éviter les boucles)
+/conferencier/:slug/   /index.html   200
 
 # Anciennes URLs /speakers/ et /speaker/ → /conferencier/
 /speakers/:slug   /conferencier/:slug   301
