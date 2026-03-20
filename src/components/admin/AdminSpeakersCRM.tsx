@@ -42,6 +42,7 @@ type Speaker = {
   interview_only: boolean | null;
   agent_name: string | null;
   agent_phone: string | null;
+  agent_email: string | null;
 };
 
 type Review = {
