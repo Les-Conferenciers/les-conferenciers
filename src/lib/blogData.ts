@@ -121,8 +121,7 @@ Le coût d'un conférencier est un investissement, pas une dépense. Le bon conf
     title: "Comment améliorer l'engagement environnemental en entreprise ?",
     excerpt:
       "Nombreuses sont les entreprises qui ont compris qu'elles étaient un maillon de la chaîne dans la lutte contre le réchauffement climatique. Découvrez comment agir concrètement.",
-    image:
-      "https://www.lesconferenciers.com/wp-content/uploads/2023/06/icones-de-recyclage-de-nature-et-deolienne-entre-les-mains-dun-collaborateur.png",
+    image: "/blog-engagement-environnemental.png",
     category: "RSE & Environnement",
     date: "2023-06-15",
     readTime: "8 min",
