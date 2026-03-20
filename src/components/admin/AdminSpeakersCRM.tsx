@@ -560,7 +560,7 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchConferences(editSpeaker.id);
   };
 
-
+  const handleRegenerateConfDescription = async (confId: string) => {
     const conf = conferences.find(c => c.id === confId);
     if (!conf || !editSpeaker) return;
     setRegeneratingConf(confId);
