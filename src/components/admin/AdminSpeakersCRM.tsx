@@ -311,7 +311,7 @@ const AdminSpeakersCRM = () => {
         languages: editForm.languages || [],
         featured: editForm.featured ?? false,
         featured_order: (editForm as any).featured_order || null,
-        display_order: (editForm as any).display_order ?? 999,
+        display_order: (editForm as any).display_order != null ? (editForm as any).display_order : (editSpeaker as any).display_order ?? 999,
         gender: editForm.gender || 'male',
         why_expertise: editForm.why_expertise || null,
         why_impact: editForm.why_impact || null,
@@ -548,7 +548,19 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchConferences(editSpeaker.id);
   };
 
-  const handleReformulateConference = async (confId: string) => {
+  const handleReorderConference = async (idx: number, direction: 'up' | 'down') => {
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= conferences.length) return;
+    const a = conferences[idx];
+    const b = conferences[swapIdx];
+    await Promise.all([
+      supabase.from("speaker_conferences").update({ display_order: swapIdx } as any).eq("id", a.id),
+      supabase.from("speaker_conferences").update({ display_order: idx } as any).eq("id", b.id),
+    ]);
+    if (editSpeaker) fetchConferences(editSpeaker.id);
+  };
+
+
     const conf = conferences.find(c => c.id === confId);
     if (!conf || !editSpeaker) return;
     setRegeneratingConf(confId);
@@ -1301,9 +1313,47 @@ const AdminSpeakersCRM = () => {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Thématiques (séparées par des virgules)</Label>
-                <Input value={(editForm.themes || []).join(", ")} onChange={e => setEditForm(p => ({ ...p, themes: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} />
+              {/* Thématiques as tags with reordering */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Thématiques</Label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(editForm.themes || []).map((theme, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 bg-accent/10 text-accent-foreground text-xs font-medium px-2.5 py-1 rounded-full border border-accent/20">
+                      {theme}
+                      <button type="button" onClick={() => {
+                        const newThemes = [...(editForm.themes || [])];
+                        newThemes.splice(idx, 1);
+                        setEditForm(p => ({ ...p, themes: newThemes }));
+                      }} className="hover:text-destructive transition-colors">
+                        <X className="h-3 w-3" />
+                      </button>
+                      {idx > 0 && (
+                        <button type="button" onClick={() => {
+                          const newThemes = [...(editForm.themes || [])];
+                          [newThemes[idx - 1], newThemes[idx]] = [newThemes[idx], newThemes[idx - 1]];
+                          setEditForm(p => ({ ...p, themes: newThemes }));
+                        }} className="hover:text-accent transition-colors" title="Monter">
+                          <ArrowUp className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <select
+                  className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm w-full"
+                  value=""
+                  onChange={e => {
+                    if (e.target.value && !(editForm.themes || []).includes(e.target.value)) {
+                      setEditForm(p => ({ ...p, themes: [...(p.themes || []), e.target.value] }));
+                    }
+                    e.target.value = "";
+                  }}
+                >
+                  <option value="">Ajouter une thématique…</option>
+                  {allThemes.filter(t => !(editForm.themes || []).includes(t)).map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Key Points (Pépites / Diamant) */}
@@ -1452,7 +1502,7 @@ const AdminSpeakersCRM = () => {
                   <p className="text-xs text-muted-foreground italic">Aucune conférence pour ce conférencier.</p>
                 ) : (
                   <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {conferences.map(conf => (
+                    {conferences.map((conf, idx) => (
                       <div key={conf.id} className="p-3 bg-muted/20 rounded-lg text-sm space-y-2">
                         {editingConfId === conf.id ? (
                           <>
@@ -1479,7 +1529,21 @@ const AdminSpeakersCRM = () => {
                         ) : (
                           <>
                             <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-semibold text-foreground">{conf.title}</h4>
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-0.5">
+                                  {idx > 0 && (
+                                    <button type="button" onClick={() => handleReorderConference(idx, 'up')} className="hover:text-accent transition-colors" title="Monter">
+                                      <ArrowUp className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                  {idx < conferences.length - 1 && (
+                                    <button type="button" onClick={() => handleReorderConference(idx, 'down')} className="hover:text-accent transition-colors" title="Descendre">
+                                      <ArrowDown className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                                <h4 className="font-semibold text-foreground">{conf.title}</h4>
+                              </div>
                               <div className="flex gap-1 flex-shrink-0">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
                                   setEditingConfId(conf.id);
