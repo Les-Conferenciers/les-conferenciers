@@ -27,30 +27,12 @@ const contactSchema = z.object({
 type ContactFormData = z.infer<typeof contactSchema>;
 
 const CLIENT_LOGOS = [
-  {
-    name: "Thales",
-    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/thales66cd98d746fb3_150_150.jpg",
-  },
-  {
-    name: "EDF",
-    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/edf66bc7f8ead2dc_150_150.png",
-  },
-  {
-    name: "Decathlon",
-    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/decathlon66bc7f8eb1fff_150_150.png",
-  },
-  {
-    name: "SNCF",
-    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/sncf66bc7f8ea0415_150_150.jpg",
-  },
-  {
-    name: "Orange",
-    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/orange66bc7f90f39cc_150_150.jpg",
-  },
-  {
-    name: "Hermès",
-    src: "https://www.lesconferenciers.com/wp-content/uploads/continuous-image-carousel-with-lightbox/hermes66bc7f8eaac82_150_150.png",
-  },
+  { name: "Thales", src: "/logos/thales66cd98d746fb3.jpg" },
+  { name: "EDF", src: "/logos/edf66bc7f8ead2dc.png" },
+  { name: "Decathlon", src: "/logos/decathlon66bc7f8eb1fff.png" },
+  { name: "SNCF", src: "/logos/sncf66bc7f8ea0415.jpg" },
+  { name: "Orange", src: "/logos/orange66bc7f90f39cc.jpg" },
+  { name: "Hermès", src: "/logos/hermes66bc7f8eaac82.png" },
 ];
 
 const SocialProofCard = () => {
