@@ -245,7 +245,7 @@ const SpeakerDetail = () => {
     if (speaker) {
       const role = speaker.specialty || speaker.role || "";
       const titleGender = isFemale(speaker) ? "Conférencière" : "Conférencier";
-      document.title = speaker.seo_title || `${speaker.name} - ${titleGender}${role ? " et " + role : ""} | Les Conférenciers`;
+      document.title = `${speaker.name} - ${titleGender}${role ? " et " + role : ""} | Les Conférenciers`;
       const desc = speaker.meta_description || `Réservez ${speaker.name}, ${titleGender.toLowerCase()} ${role ? "et " + role.toLowerCase() + " " : ""}pour votre événement professionnel. Devis gratuit sous 24h.`;
       let metaEl = document.querySelector('meta[name="description"]');
       if (metaEl) {
@@ -263,7 +263,7 @@ const SpeakerDetail = () => {
         canonicalEl.setAttribute("rel", "canonical");
         document.head.appendChild(canonicalEl);
       }
-      canonicalEl.href = window.location.origin + `/conferencier/${speaker.slug}`;
+      canonicalEl.href = `https://www.lesconferenciers.com/conferencier/${speaker.slug}`;
 
       const themes = parseThemes(speaker.themes);
       const pageUrl = window.location.origin + `/conferencier/${speaker.slug}`;
