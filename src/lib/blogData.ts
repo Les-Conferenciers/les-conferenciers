@@ -167,8 +167,7 @@ Un conférencier spécialisé dans l'environnement peut sensibiliser vos équipe
     title: "Comment réussir le management de la génération Y ?",
     excerpt:
       "Le management de la génération Y est plus que jamais un sujet d'actualité. Découvrez comment adapter votre management aux millennials.",
-    image:
-      "https://www.lesconferenciers.com/wp-content/uploads/2023/06/2023-06-07_22-35-09.png",
+    image: "/blog-manager-generation-y.png",
     category: "Management",
     date: "2023-06-07",
     readTime: "10 min",
