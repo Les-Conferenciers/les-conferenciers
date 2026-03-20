@@ -1529,7 +1529,21 @@ const AdminSpeakersCRM = () => {
                         ) : (
                           <>
                             <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-semibold text-foreground">{conf.title}</h4>
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-0.5">
+                                  {idx > 0 && (
+                                    <button type="button" onClick={() => handleReorderConference(idx, 'up')} className="hover:text-accent transition-colors" title="Monter">
+                                      <ArrowUp className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                  {idx < conferences.length - 1 && (
+                                    <button type="button" onClick={() => handleReorderConference(idx, 'down')} className="hover:text-accent transition-colors" title="Descendre">
+                                      <ArrowDown className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                                <h4 className="font-semibold text-foreground">{conf.title}</h4>
+                              </div>
                               <div className="flex gap-1 flex-shrink-0">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
                                   setEditingConfId(conf.id);
