@@ -212,8 +212,7 @@ Un conférencier expert du management intergénérationnel peut aider vos manage
     title: "Accompagner le changement en entreprise : comment le réussir ?",
     excerpt:
       "La conduite du changement demande du temps et de l'énergie, mais c'est un investissement puissant sur le long terme. Découvrez les clés du succès.",
-    image:
-      "https://www.lesconferenciers.com/wp-content/uploads/2023/05/equation-du-changement-1080x335.jpg",
+    image: "/blog-conduite-changement.jpg",
     category: "Transformation",
     date: "2023-05-20",
     readTime: "9 min",
