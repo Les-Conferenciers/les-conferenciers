@@ -327,6 +327,7 @@ const AdminSpeakersCRM = () => {
         interview_only: (editForm as any).interview_only ?? false,
         agent_name: (editForm as any).agent_name || null,
         agent_phone: (editForm as any).agent_phone || null,
+        agent_email: (editForm as any).agent_email || null,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
