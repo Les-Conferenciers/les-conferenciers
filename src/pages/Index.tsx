@@ -227,6 +227,18 @@ const Index = () => {
             ))}
           </div>
 
+          {/* CTA mobile only - above the fold */}
+          <div className="md:hidden flex justify-center mb-8 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <Button
+              size="lg"
+              onClick={() => navigate("/contact")}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold text-base px-8 py-3 rounded-full shadow-lg"
+            >
+              Demander un devis
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+
           {/* Rating */}
           <div
             className="flex items-center justify-center gap-2 mb-10 animate-fade-in"
