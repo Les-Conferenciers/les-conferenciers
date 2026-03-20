@@ -65,6 +65,12 @@
 /conferencier/justine-henin/   /conferencier/justine-henin-2   301
 
 # Anciennes URLs WordPress blog/articles
+/comment-manager-generation-y/   /blog/comment-manager-generation-y   301
+/comment-manager-generation-y   /blog/comment-manager-generation-y   301
+/engagement-environnemental-entreprise/   /blog/engagement-environnemental-entreprise   301
+/engagement-environnemental-entreprise   /blog/engagement-environnemental-entreprise   301
+/accompagner-le-changement-en-entreprise/   /blog/accompagner-le-changement-en-entreprise   301
+/accompagner-le-changement-en-entreprise   /blog/accompagner-le-changement-en-entreprise   301
 /category/*   /blog   301
 /tag/*   /blog   301
 /author/*   /   301
