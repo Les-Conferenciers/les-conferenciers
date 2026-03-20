@@ -257,13 +257,46 @@ const SpeakerDetail = () => {
         document.head.appendChild(metaEl);
       }
 
+      // Update OG and Twitter meta tags
+      const pageTitle = document.title;
+      const canonicalUrl = `https://www.lesconferenciers.com/conferencier/${speaker.slug}`;
+      const imageUrl = speaker.image_url || "";
+
+      const metaTags: Record<string, string> = {
+        'og:title': pageTitle,
+        'og:description': desc,
+        'og:url': canonicalUrl,
+        'og:image': imageUrl,
+        'og:type': 'profile',
+        'twitter:title': pageTitle,
+        'twitter:description': desc,
+        'twitter:image': imageUrl,
+        'twitter:card': 'summary_large_image',
+      };
+
+      Object.entries(metaTags).forEach(([key, value]) => {
+        const isOg = key.startsWith('og:');
+        const selector = isOg
+          ? `meta[property="${key}"]`
+          : `meta[name="${key}"]`;
+        let el = document.querySelector(selector);
+        if (el) {
+          el.setAttribute("content", value);
+        } else {
+          el = document.createElement("meta");
+          el.setAttribute(isOg ? "property" : "name", key);
+          el.setAttribute("content", value);
+          document.head.appendChild(el);
+        }
+      });
+
       let canonicalEl = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
       if (!canonicalEl) {
         canonicalEl = document.createElement("link");
         canonicalEl.setAttribute("rel", "canonical");
         document.head.appendChild(canonicalEl);
       }
-      canonicalEl.href = `https://www.lesconferenciers.com/conferencier/${speaker.slug}`;
+      canonicalEl.href = canonicalUrl;
 
       const themes = parseThemes(speaker.themes);
       const pageUrl = window.location.origin + `/conferencier/${speaker.slug}`;
