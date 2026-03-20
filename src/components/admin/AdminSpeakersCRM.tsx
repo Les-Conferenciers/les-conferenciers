@@ -40,6 +40,8 @@ type Speaker = {
   email: string | null;
   key_points: string[] | null;
   interview_only: boolean | null;
+  agent_name: string | null;
+  agent_phone: string | null;
 };
 
 type Review = {
@@ -142,7 +144,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only")
+      .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone")
       .order("name");
     setSpeakers((data as any) || []);
     setLoading(false);
@@ -289,6 +291,8 @@ const AdminSpeakersCRM = () => {
       email: speaker.email,
       key_points: speaker.key_points,
       interview_only: (speaker as any).interview_only ?? false,
+      agent_name: speaker.agent_name,
+      agent_phone: speaker.agent_phone,
     } as any);
   };
 
@@ -319,6 +323,8 @@ const AdminSpeakersCRM = () => {
         email: editForm.email || null,
         key_points: (editForm as any).key_points || [],
         interview_only: (editForm as any).interview_only ?? false,
+        agent_name: (editForm as any).agent_name || null,
+        agent_phone: (editForm as any).agent_phone || null,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
@@ -838,7 +844,7 @@ const AdminSpeakersCRM = () => {
       setEnrichUrl("");
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only")
+        .select("id, name, slug, role, themes, image_url, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
@@ -1235,6 +1241,18 @@ const AdminSpeakersCRM = () => {
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">📧 Email (interne)</Label>
                   <Input type="email" value={editForm.email || ""} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+              </div>
+
+              {/* Agent fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">🧑‍💼 Nom (agent)</Label>
+                  <Input value={(editForm as any).agent_name || ""} onChange={e => setEditForm(p => ({ ...p, agent_name: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">📞 Téléphone (agent)</Label>
+                  <Input value={(editForm as any).agent_phone || ""} onChange={e => setEditForm(p => ({ ...p, agent_phone: e.target.value }))} />
                 </div>
               </div>
 
