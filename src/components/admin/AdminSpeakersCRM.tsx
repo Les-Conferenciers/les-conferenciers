@@ -40,6 +40,8 @@ type Speaker = {
   email: string | null;
   key_points: string[] | null;
   interview_only: boolean | null;
+  agent_name: string | null;
+  agent_phone: string | null;
 };
 
 type Review = {
