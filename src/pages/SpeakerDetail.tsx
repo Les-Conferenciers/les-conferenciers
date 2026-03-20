@@ -436,16 +436,12 @@ const SpeakerDetail = () => {
     .replace(/<\/span>/gi, '');
   
   if (isHtmlBio) {
-    // HTML bio from rich text editor or scraping — already has <strong> etc.
-    // Don't double-apply highlightBioKeywords if already rich HTML
-    const hasExistingStrong = (processedBio.match(/<strong>/g) || []).length >= 2;
-    if (!hasExistingStrong) {
-      processedBio = highlightBioKeywords(processedBio);
-    }
+    // HTML bio from scraping or rich text editor — respect the original formatting as-is
+    // Do NOT auto-add bold; the source formatting is the truth
   } else {
-    // Plain text bio — split into paragraphs
+    // Plain text bio — split into paragraphs, no auto-bold either
     const rawBioParagraphs = processedBio.split("\n").filter(Boolean);
-    processedBio = rawBioParagraphs.map(p => `<p>${highlightBioKeywords(formatBioForWeb(p))}</p>`).join("");
+    processedBio = rawBioParagraphs.map(p => `<p>${formatBioForWeb(p)}</p>`).join("");
   }
 
   // Language flag mapping
