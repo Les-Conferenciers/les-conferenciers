@@ -548,7 +548,19 @@ const AdminSpeakersCRM = () => {
     if (editSpeaker) fetchConferences(editSpeaker.id);
   };
 
-  const handleReformulateConference = async (confId: string) => {
+  const handleReorderConference = async (idx: number, direction: 'up' | 'down') => {
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= conferences.length) return;
+    const a = conferences[idx];
+    const b = conferences[swapIdx];
+    await Promise.all([
+      supabase.from("speaker_conferences").update({ display_order: swapIdx } as any).eq("id", a.id),
+      supabase.from("speaker_conferences").update({ display_order: idx } as any).eq("id", b.id),
+    ]);
+    if (editSpeaker) fetchConferences(editSpeaker.id);
+  };
+
+
     const conf = conferences.find(c => c.id === confId);
     if (!conf || !editSpeaker) return;
     setRegeneratingConf(confId);
