@@ -27,7 +27,7 @@ const Speakers = () => {
       canonical.setAttribute("rel", "canonical");
       document.head.appendChild(canonical);
     }
-    canonical.href = "https://www.lesconferenciers.com/conferenciers";
+    canonical.href = "https://www.lesconferenciers.com/conferencier";
     return () => { document.querySelector('link[rel="canonical"]')?.remove(); };
   }, []);
 

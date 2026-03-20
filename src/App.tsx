@@ -34,9 +34,10 @@ const App = () => (
         <ScrollToTop />
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/conferenciers" element={<Speakers />} />
+          <Route path="/conferencier" element={<Speakers />} />
+          <Route path="/conferenciers" element={<Navigate to="/conferencier" replace />} />
           <Route path="/conferencier/:slug" element={<SpeakerDetail />} />
-          <Route path="/speakers" element={<Navigate to="/conferenciers" replace />} />
+          <Route path="/speakers" element={<Navigate to="/conferencier" replace />} />
           <Route path="/speakers/:slug" element={<SpeakerDetail />} />
           <Route path="/speaker/:slug" element={<SpeakerDetail />} />
           <Route path="/contact" element={<Contact />} />

@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
-import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RichTextEditorProps {
   value: string;
@@ -23,7 +24,7 @@ const ToolbarButton = ({
   <button
     type="button"
     onMouseDown={(e) => {
-      e.preventDefault(); // Prevent losing focus/selection
+      e.preventDefault();
       onClick();
     }}
     title={title}
@@ -40,8 +41,8 @@ const ToolbarButton = ({
 const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalUpdate = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync value -> editor only on mount or external changes
   useEffect(() => {
     if (editorRef.current && !isInternalUpdate.current) {
       if (editorRef.current.innerHTML !== value) {
@@ -63,10 +64,8 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     }
   }, [onChange]);
 
-  // Convert plain text with \n to HTML on first load
   useEffect(() => {
     if (editorRef.current && value && !value.includes("<")) {
-      // Plain text: convert newlines to <p> tags
       const html = value
         .split("\n")
         .filter(Boolean)
@@ -76,10 +75,9 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
       isInternalUpdate.current = true;
       onChange(html);
     }
-  }, []); // Only on mount
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // Ctrl+B, Ctrl+I, Ctrl+U shortcuts
     if (e.ctrlKey || e.metaKey) {
       switch (e.key.toLowerCase()) {
         case "b":
@@ -106,17 +104,65 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     }
   }, [execCommand]);
 
-  // Convert HTML back to clean text for storage
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
     const text = e.clipboardData.getData("text/html") || e.clipboardData.getData("text/plain");
-    // Clean the pasted HTML — keep only safe tags
     const temp = document.createElement("div");
     temp.innerHTML = text;
-    // Remove scripts, styles, etc.
     temp.querySelectorAll("script, style, meta, link").forEach((el) => el.remove());
     document.execCommand("insertHTML", false, temp.innerHTML);
     handleInput();
+  }, [handleInput]);
+
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Seules les images sont acceptées");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("L'image ne doit pas dépasser 5 Mo");
+      return;
+    }
+
+    const toastId = toast.loading("Upload de l'image en cours...");
+
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const fileName = `editor-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("speaker-photos")
+        .upload(fileName, file, {
+          contentType: file.type,
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("speaker-photos")
+        .getPublicUrl(fileName);
+
+      const imgTag = `<img src="${urlData.publicUrl}" alt="Image" class="rounded-lg max-w-full my-4" />`;
+      
+      if (editorRef.current) {
+        editorRef.current.focus();
+        document.execCommand("insertHTML", false, imgTag);
+        handleInput();
+      }
+
+      toast.success("Image ajoutée", { id: toastId });
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      toast.error(`Erreur d'upload: ${err.message}`, { id: toastId });
+    }
+
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }, [handleInput]);
 
   return (
@@ -144,6 +190,12 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
 
         <div className="w-px h-5 bg-border mx-1" />
 
+        <ToolbarButton onClick={() => fileInputRef.current?.click()} title="Insérer une image">
+          <ImagePlus className="h-4 w-4" />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-border mx-1" />
+
         <ToolbarButton onClick={() => execCommand("removeFormat")} title="Supprimer le formatage">
           <RemoveFormatting className="h-4 w-4" />
         </ToolbarButton>
@@ -154,6 +206,15 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           <Redo className="h-4 w-4" />
         </ToolbarButton>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageUpload}
+      />
 
       {/* Editable area */}
       <div
@@ -170,6 +231,7 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-2
           [&_li]:mb-1
           [&_p]:mb-2
+          [&_img]:rounded-lg [&_img]:max-w-full [&_img]:my-4
           [&_strong]:font-semibold [&_strong]:text-foreground
           focus:ring-0"
         style={{ minHeight }}

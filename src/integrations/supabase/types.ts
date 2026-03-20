@@ -609,6 +609,9 @@ export type Database = {
       }
       speakers: {
         Row: {
+          agent_email: string | null
+          agent_name: string | null
+          agent_phone: string | null
           archived: boolean
           base_fee: number | null
           biography: string | null
@@ -640,6 +643,9 @@ export type Database = {
           why_impact: string | null
         }
         Insert: {
+          agent_email?: string | null
+          agent_name?: string | null
+          agent_phone?: string | null
           archived?: boolean
           base_fee?: number | null
           biography?: string | null
@@ -671,6 +677,9 @@ export type Database = {
           why_impact?: string | null
         }
         Update: {
+          agent_email?: string | null
+          agent_name?: string | null
+          agent_phone?: string | null
           archived?: boolean
           base_fee?: number | null
           biography?: string | null

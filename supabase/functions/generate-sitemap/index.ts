@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     <lastmod>${now}</lastmod>
   </url>
   <url>
-    <loc>${baseUrl}/speakers</loc>
+    <loc>${baseUrl}/conferencier</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
     <lastmod>${now}</lastmod>

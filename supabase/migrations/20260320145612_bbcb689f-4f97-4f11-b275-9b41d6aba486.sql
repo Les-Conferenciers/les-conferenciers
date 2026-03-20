@@ -1,0 +1,1 @@
+ALTER TABLE public.speakers ADD COLUMN agent_email text NULL;
