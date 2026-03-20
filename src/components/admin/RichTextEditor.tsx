@@ -1,5 +1,5 @@
-import { useRef, useCallback, useEffect } from "react";
-import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus } from "lucide-react";
+import { useRef, useCallback, useEffect, useState } from "react";
+import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -42,20 +42,21 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalUpdate = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragImageRef = useRef<HTMLImageElement | null>(null);
+  const dragPlaceholderRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (editorRef.current && !isInternalUpdate.current) {
       if (editorRef.current.innerHTML !== value) {
         editorRef.current.innerHTML = value || "";
+        setupImageHandlers();
       }
     }
     isInternalUpdate.current = false;
   }, [value]);
-
-  const execCommand = useCallback((command: string, value?: string) => {
-    document.execCommand(command, false, value);
-    handleInput();
-  }, []);
 
   const handleInput = useCallback(() => {
     if (editorRef.current) {
@@ -63,6 +64,295 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
       onChange(editorRef.current.innerHTML);
     }
   }, [onChange]);
+
+  const execCommand = useCallback((command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    handleInput();
+  }, [handleInput]);
+
+  const setupImageHandlers = useCallback(() => {
+    if (!editorRef.current) return;
+    const images = editorRef.current.querySelectorAll("img");
+    images.forEach((img) => {
+      img.style.cursor = "pointer";
+      img.draggable = true;
+      // Ensure images have explicit width for resizing
+      if (!img.style.width && img.naturalWidth) {
+        img.style.width = "100%";
+        img.style.maxWidth = "100%";
+      }
+    });
+  }, []);
+
+  const selectImage = useCallback((img: HTMLImageElement) => {
+    // Deselect previous
+    if (selectedImage && selectedImage !== img) {
+      selectedImage.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+      const oldWrapper = selectedImage.closest(".img-resize-wrapper");
+      if (oldWrapper) {
+        const parent = oldWrapper.parentNode;
+        if (parent) {
+          parent.insertBefore(selectedImage, oldWrapper);
+          oldWrapper.remove();
+        }
+      }
+    }
+
+    img.classList.add("ring-2", "ring-primary", "ring-offset-2");
+    setSelectedImage(img);
+
+    // Wrap in resize container if not already
+    if (!img.closest(".img-resize-wrapper")) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "img-resize-wrapper";
+      wrapper.contentEditable = "false";
+      wrapper.style.cssText = `
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+        user-select: none;
+      `;
+
+      // Add resize handles
+      const positions = ["se", "sw", "ne", "nw"];
+      positions.forEach((pos) => {
+        const handle = document.createElement("div");
+        handle.className = `resize-handle resize-handle-${pos}`;
+        handle.dataset.handle = pos;
+        const posStyles: Record<string, string> = {
+          se: "bottom: -4px; right: -4px; cursor: nwse-resize;",
+          sw: "bottom: -4px; left: -4px; cursor: nesw-resize;",
+          ne: "top: -4px; right: -4px; cursor: nesw-resize;",
+          nw: "top: -4px; left: -4px; cursor: nwse-resize;",
+        };
+        handle.style.cssText = `
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          background: hsl(var(--primary));
+          border: 2px solid white;
+          border-radius: 2px;
+          z-index: 10;
+          ${posStyles[pos]}
+        `;
+        wrapper.appendChild(handle);
+      });
+
+      // Add size label
+      const sizeLabel = document.createElement("div");
+      sizeLabel.className = "img-size-label";
+      sizeLabel.style.cssText = `
+        position: absolute;
+        bottom: -24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: hsl(var(--primary));
+        color: white;
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 3px;
+        white-space: nowrap;
+        z-index: 10;
+      `;
+      sizeLabel.textContent = `${Math.round(img.getBoundingClientRect().width)}px`;
+      wrapper.appendChild(sizeLabel);
+
+      img.parentNode?.insertBefore(wrapper, img);
+      wrapper.insertBefore(img, wrapper.firstChild);
+    }
+  }, [selectedImage]);
+
+  const deselectImage = useCallback(() => {
+    if (selectedImage) {
+      selectedImage.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+      const wrapper = selectedImage.closest(".img-resize-wrapper");
+      if (wrapper) {
+        const parent = wrapper.parentNode;
+        if (parent) {
+          parent.insertBefore(selectedImage, wrapper);
+          wrapper.remove();
+        }
+      }
+      setSelectedImage(null);
+    }
+  }, [selectedImage]);
+
+  // Handle click on editor to select/deselect images
+  const handleEditorClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    if (target.tagName === "IMG") {
+      e.preventDefault();
+      selectImage(target as HTMLImageElement);
+    } else if (!target.closest(".img-resize-wrapper")) {
+      deselectImage();
+    }
+  }, [selectImage, deselectImage]);
+
+  // Handle resize via mousedown on handles
+  const handleEditorMouseDown = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // Check if clicking a resize handle
+    if (target.classList.contains("resize-handle") && selectedImage) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsResizing(true);
+
+      const handle = target.dataset.handle || "se";
+      const startX = e.clientX;
+      const startWidth = selectedImage.getBoundingClientRect().width;
+      const aspectRatio = selectedImage.naturalWidth / selectedImage.naturalHeight;
+
+      const onMouseMove = (me: MouseEvent) => {
+        const isLeft = handle.includes("w");
+        const dx = isLeft ? startX - me.clientX : me.clientX - startX;
+        const newWidth = Math.max(80, Math.min(startWidth + dx, editorRef.current?.clientWidth || 800));
+        selectedImage.style.width = `${newWidth}px`;
+        selectedImage.style.maxWidth = "100%";
+        selectedImage.style.height = "auto";
+
+        // Update size label
+        const wrapper = selectedImage.closest(".img-resize-wrapper");
+        const label = wrapper?.querySelector(".img-size-label") as HTMLElement;
+        if (label) label.textContent = `${Math.round(newWidth)}px`;
+      };
+
+      const onMouseUp = () => {
+        setIsResizing(false);
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        handleInput();
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    }
+
+    // Start dragging an image
+    if (target.tagName === "IMG") {
+      const img = target as HTMLImageElement;
+      const startY = e.clientY;
+      const startX = e.clientX;
+      let hasMoved = false;
+
+      const onMouseMove = (me: MouseEvent) => {
+        if (Math.abs(me.clientX - startX) < 5 && Math.abs(me.clientY - startY) < 5) return;
+        
+        if (!hasMoved) {
+          hasMoved = true;
+          setIsDragging(true);
+          dragImageRef.current = img;
+          img.style.opacity = "0.4";
+          
+          // Create drop placeholder
+          const ph = document.createElement("div");
+          ph.style.cssText = "height: 3px; background: hsl(var(--primary)); border-radius: 2px; margin: 4px 0;";
+          dragPlaceholderRef.current = ph;
+        }
+
+        // Position placeholder at cursor
+        if (editorRef.current && dragPlaceholderRef.current) {
+          dragPlaceholderRef.current.remove();
+          
+          const range = document.caretRangeFromPoint(me.clientX, me.clientY);
+          if (range) {
+            const container = range.startContainer;
+            const node = container.nodeType === 3 ? container.parentNode : container;
+            if (node && editorRef.current.contains(node)) {
+              // Find the block-level parent
+              let block: Node | null = node as Node;
+              while (block && block !== editorRef.current && block.parentNode !== editorRef.current) {
+                block = block.parentNode;
+              }
+              if (block && block !== editorRef.current) {
+                const rect = (block as HTMLElement).getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                if (me.clientY < midY) {
+                  block.parentNode?.insertBefore(dragPlaceholderRef.current, block);
+                } else {
+                  block.parentNode?.insertBefore(dragPlaceholderRef.current, block.nextSibling);
+                }
+              }
+            }
+          }
+        }
+      };
+
+      const onMouseUp = () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        
+        if (hasMoved && dragImageRef.current && dragPlaceholderRef.current && editorRef.current) {
+          // Move image to placeholder position
+          const imgEl = dragImageRef.current;
+          const wrapper = imgEl.closest(".img-resize-wrapper");
+          const elementToMove = wrapper || imgEl;
+          
+          dragPlaceholderRef.current.parentNode?.insertBefore(elementToMove, dragPlaceholderRef.current);
+          dragPlaceholderRef.current.remove();
+          imgEl.style.opacity = "1";
+          
+          handleInput();
+        } else if (dragImageRef.current) {
+          dragImageRef.current.style.opacity = "1";
+        }
+        
+        setIsDragging(false);
+        dragImageRef.current = null;
+        dragPlaceholderRef.current = null;
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    }
+  }, [selectedImage, handleInput]);
+
+  // Alignment for selected image
+  const alignImage = useCallback((align: "left" | "center" | "right") => {
+    if (!selectedImage) return;
+    const wrapper = selectedImage.closest(".img-resize-wrapper") || selectedImage;
+    const container = wrapper.parentNode as HTMLElement;
+    
+    // Remove old alignment
+    selectedImage.style.float = "none";
+    selectedImage.style.marginLeft = "";
+    selectedImage.style.marginRight = "";
+    selectedImage.style.display = "";
+
+    if (container && container !== editorRef.current) {
+      container.style.textAlign = "";
+    }
+
+    if (align === "left") {
+      selectedImage.style.float = "left";
+      selectedImage.style.marginRight = "16px";
+      selectedImage.style.marginBottom = "8px";
+    } else if (align === "right") {
+      selectedImage.style.float = "right";
+      selectedImage.style.marginLeft = "16px";
+      selectedImage.style.marginBottom = "8px";
+    } else {
+      selectedImage.style.display = "block";
+      selectedImage.style.marginLeft = "auto";
+      selectedImage.style.marginRight = "auto";
+      if (container && container !== editorRef.current) {
+        container.style.textAlign = "center";
+      }
+    }
+    handleInput();
+  }, [selectedImage, handleInput]);
+
+  // Click outside to deselect
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (editorRef.current && !editorRef.current.contains(e.target as Node)) {
+        deselectImage();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [deselectImage]);
 
   useEffect(() => {
     if (editorRef.current && value && !value.includes("<")) {
@@ -78,6 +368,17 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Delete selected image on Delete/Backspace
+    if (selectedImage && (e.key === "Delete" || e.key === "Backspace")) {
+      e.preventDefault();
+      const wrapper = selectedImage.closest(".img-resize-wrapper");
+      if (wrapper) wrapper.remove();
+      else selectedImage.remove();
+      setSelectedImage(null);
+      handleInput();
+      return;
+    }
+
     if (e.ctrlKey || e.metaKey) {
       switch (e.key.toLowerCase()) {
         case "b":
@@ -102,7 +403,7 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           break;
       }
     }
-  }, [execCommand]);
+  }, [execCommand, selectedImage, handleInput]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
@@ -112,7 +413,8 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     temp.querySelectorAll("script, style, meta, link").forEach((el) => el.remove());
     document.execCommand("insertHTML", false, temp.innerHTML);
     handleInput();
-  }, [handleInput]);
+    setTimeout(setupImageHandlers, 100);
+  }, [handleInput, setupImageHandlers]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -147,12 +449,13 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
         .from("speaker-photos")
         .getPublicUrl(fileName);
 
-      const imgTag = `<img src="${urlData.publicUrl}" alt="Image" class="rounded-lg max-w-full my-4" />`;
+      const imgTag = `<figure style="text-align:center;margin:16px 0"><img src="${urlData.publicUrl}" alt="Image" style="max-width:100%;width:100%;border-radius:8px;cursor:pointer;" /></figure>`;
       
       if (editorRef.current) {
         editorRef.current.focus();
         document.execCommand("insertHTML", false, imgTag);
         handleInput();
+        setTimeout(setupImageHandlers, 100);
       }
 
       toast.success("Image ajoutée", { id: toastId });
@@ -161,9 +464,13 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
       toast.error(`Erreur d'upload: ${err.message}`, { id: toastId });
     }
 
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, [handleInput]);
+  }, [handleInput, setupImageHandlers]);
+
+  // Setup image handlers on mount
+  useEffect(() => {
+    setTimeout(setupImageHandlers, 200);
+  }, [setupImageHandlers]);
 
   return (
     <div className="border border-input rounded-lg overflow-hidden bg-background">
@@ -193,6 +500,21 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
         <ToolbarButton onClick={() => fileInputRef.current?.click()} title="Insérer une image">
           <ImagePlus className="h-4 w-4" />
         </ToolbarButton>
+
+        {selectedImage && (
+          <>
+            <div className="w-px h-5 bg-border mx-1" />
+            <ToolbarButton onClick={() => alignImage("left")} title="Image à gauche">
+              <AlignLeft className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => alignImage("center")} title="Image centrée">
+              <AlignCenter className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => alignImage("right")} title="Image à droite">
+              <AlignRight className="h-4 w-4" />
+            </ToolbarButton>
+          </>
+        )}
 
         <div className="w-px h-5 bg-border mx-1" />
 
@@ -224,16 +546,20 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onClick={handleEditorClick}
+        onMouseDown={handleEditorMouseDown}
         data-placeholder={placeholder}
-        className="px-4 py-3 outline-none text-sm leading-relaxed prose prose-sm max-w-none
+        className={`px-4 py-3 outline-none text-sm leading-relaxed prose prose-sm max-w-none
           [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-muted-foreground/50 [&:empty]:before:pointer-events-none
           [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-2
           [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-2
           [&_li]:mb-1
           [&_p]:mb-2
-          [&_img]:rounded-lg [&_img]:max-w-full [&_img]:my-4
+          [&_img]:rounded-lg [&_img]:max-w-full [&_img]:my-4 [&_img]:cursor-pointer
           [&_strong]:font-semibold [&_strong]:text-foreground
-          focus:ring-0"
+          focus:ring-0
+          ${isDragging ? "cursor-grabbing" : ""}
+        `}
         style={{ minHeight }}
       />
     </div>
