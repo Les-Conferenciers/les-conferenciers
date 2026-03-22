@@ -250,7 +250,7 @@ const Index = () => {
               ))}
             </div>
             <span className="text-primary-foreground font-semibold text-lg">5/5</span>
-            <span className="text-primary-foreground/60 text-sm">— 105 avis</span>
+            <span className="text-primary-foreground/60 text-sm">— 63 avis</span>
           </div>
 
           {/* Category search (rubriques only, no name search) */}
@@ -488,7 +488,7 @@ const Index = () => {
                 icon: BookOpen,
                 title: "Connaissance approfondie des profils",
                 description:
-                  "Nous connaissons personnellement chaque conférencier. Cette proximité nous permet de vous recommander le profil idéal, bien au-delà du simple CV.",
+                  "Notre grande connaissance des interventions de chaque conférencier nous permet de vous proposer le profil idéal, parfaitement adapté à vos besoins.",
               },
             ].map((item) => (
               <div
