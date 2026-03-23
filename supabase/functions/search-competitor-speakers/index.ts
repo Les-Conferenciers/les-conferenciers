@@ -516,9 +516,9 @@ Deno.serve(async (req) => {
     // Get video URL
     const videoUrl = found.find((s) => s.videos?.length)?.videos?.[0] || null;
 
-    // Synthesize with AI
-    console.log("Synthesizing with AI...");
-    const aiProfile = await synthesizeWithAI(name, sources);
+    // Synthesize with AI using ALL sources (competitors + factual)
+    console.log(`Synthesizing with AI from ${allFound.length} sources...`);
+    const aiProfile = await synthesizeWithAI(name, allFound);
     
     if (aiProfile) {
       console.log(`AI synthesis OK: bio=${(aiProfile.biography || "").length}c, conferences=${(aiProfile.conferences || []).length}, key_points=${(aiProfile.key_points || []).length}`);
@@ -545,7 +545,8 @@ Deno.serve(async (req) => {
       photo_url: bestPhoto,
       video_url: videoUrl,
       city: found.find((s) => s.city)?.city || null,
-      sources: sources.map((s) => ({ source: s.source, found: s.found, photo_url: s.photo_url || null })),
+      offline: found.length === 0, // Flag offline if only from fallback sources
+      sources: allSources.map((s) => ({ source: s.source, found: s.found, photo_url: s.photo_url || null })),
     };
 
     return new Response(JSON.stringify({ success: true, profile }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
