@@ -417,8 +417,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch all 3 sources in parallel
-    console.log("Fetching sources...");
+    // Fetch all 3 competitor sources in parallel
+    console.log("Fetching competitor sources...");
     const [oratorsHtml, wechampHtml, simoneHtml] = await Promise.all([
       fetchPage(`https://orators.fr/les-intervenants/${slug}/`),
       fetchPage(`https://www.wechamp-entreprise.co/conferencier/${slug}/`),
@@ -439,102 +439,62 @@ Deno.serve(async (req) => {
 
     const sources = [orators, wechamp, simone];
     const found = sources.filter((s) => s.found);
-    console.log(`Found on ${found.length} source(s): ${found.map(s => s.source).join(", ")}`);
+    console.log(`Found on ${found.length} competitor source(s): ${found.map(s => s.source).join(", ")}`);
     
     // Log what data was extracted
     found.forEach(s => {
       console.log(`  ${s.source}: bio=${(s.biography || "").length}c, role="${s.role || ""}", themes=${(s.themes || []).length}, faits=${(s.faits || []).length}`);
     });
 
-    if (found.length === 0) {
-      // Fallback: try Wikipedia, Gala.fr, Evene
-      console.log("No competitor sources found. Trying fallback sources (Wikipedia, Gala, Evene)...");
-
-      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-      if (!firecrawlKey) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Ce profil n'existe pas chez les concurrents et Firecrawl n'est pas configuré pour les sources alternatives.",
-          sources: sources.map((s) => ({ source: s.source, found: false })),
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      const searchQuery = `${name.trim()} conférencier biographie`;
+    // ── ALWAYS fetch Wikipedia/Gala/Evene as supplementary factual sources ──
+    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    const supplementarySources: any[] = [];
+    
+    if (firecrawlKey) {
+      console.log("Fetching supplementary factual sources (Wikipedia, Gala, Evene)...");
       const fallbackUrls = [
-        `https://fr.wikipedia.org/wiki/${encodeURIComponent(name.trim().replace(/ /g, "_"))}`,
-        `https://evene.lefigaro.fr/celebre/biographie/${slug}.php`,
-        `https://www.gala.fr/stars_et_gotha/${slug}`,
+        { url: `https://fr.wikipedia.org/wiki/${encodeURIComponent(name.trim().replace(/ /g, "_"))}`, name: "Wikipedia" },
+        { url: `https://evene.lefigaro.fr/celebre/biographie/${slug}.php`, name: "Evene/Le Figaro" },
+        { url: `https://www.gala.fr/stars_et_gotha/${slug}`, name: "Gala.fr" },
       ];
 
-      const fallbackResults: any[] = [];
-
-      for (const fbUrl of fallbackUrls) {
+      const fbPromises = fallbackUrls.map(async ({ url, name: srcName }) => {
         try {
           const fbResp = await fetch("https://api.firecrawl.dev/v1/scrape", {
             method: "POST",
             headers: { Authorization: `Bearer ${firecrawlKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ url: fbUrl, formats: ["markdown"], onlyMainContent: true, waitFor: 3000 }),
+            body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true, waitFor: 3000 }),
           });
           const fbData = await fbResp.json();
           const md = fbData?.data?.markdown || fbData?.markdown || "";
-          const sourceName = fbUrl.includes("wikipedia") ? "Wikipedia" : fbUrl.includes("evene") ? "Evene/Le Figaro" : "Gala.fr";
           
-          if (md.length > 200 && !md.includes("page n'existe pas") && !md.includes("404") && !md.includes("Aucun résultat")) {
-            fallbackResults.push({ source: sourceName, found: true, biography: md.substring(0, 8000) });
-            console.log(`  ✓ ${sourceName}: ${md.length} chars`);
+          if (md.length > 200 && !md.includes("page n'existe pas") && !md.includes("404") && !md.includes("Aucun résultat") && !md.includes("n'existe pas encore")) {
+            console.log(`  ✓ ${srcName}: ${md.length} chars`);
+            return { source: srcName, found: true, biography: md.substring(0, 8000) };
           } else {
-            fallbackResults.push({ source: sourceName, found: false });
-            console.log(`  ✗ ${sourceName}: not found or too short`);
+            console.log(`  ✗ ${srcName}: not found or too short`);
+            return { source: srcName, found: false };
           }
-        } catch (fbErr) {
-          const sourceName = fbUrl.includes("wikipedia") ? "Wikipedia" : fbUrl.includes("evene") ? "Evene/Le Figaro" : "Gala.fr";
-          fallbackResults.push({ source: sourceName, found: false });
-          console.log(`  ✗ ${sourceName}: error`);
+        } catch {
+          console.log(`  ✗ ${srcName}: error`);
+          return { source: srcName, found: false };
         }
-      }
+      });
 
-      const fallbackFound = fallbackResults.filter(f => f.found);
-      if (fallbackFound.length === 0) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Ce profil n'existe ni chez les concurrents, ni sur Wikipedia, Gala ou Evene.",
-          sources: [
-            ...sources.map((s) => ({ source: s.source, found: false, photo_url: null })),
-            ...fallbackResults.map(f => ({ source: f.source, found: false, photo_url: null })),
-          ],
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
+      const fbResults = await Promise.all(fbPromises);
+      supplementarySources.push(...fbResults.filter(f => f.found));
+    }
 
-      // Synthesize from fallback sources
-      console.log(`Found ${fallbackFound.length} fallback source(s). Synthesizing...`);
-      const fallbackAI = await synthesizeWithAI(name, fallbackFound);
+    // Combine all sources for AI synthesis
+    const allSources = [...sources, ...supplementarySources];
+    const allFound = allSources.filter((s) => s.found);
 
-      const fallbackProfile = {
-        name: fallbackAI?.name || name.trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "),
-        slug,
-        role: fallbackAI?.role || null,
-        specialty: fallbackAI?.specialty || null,
-        biography: fallbackAI?.biography || null,
-        themes: fallbackAI?.themes || [],
-        conferences: fallbackAI?.conferences || [],
-        languages: fallbackAI?.languages || ["Français"],
-        gender: fallbackAI?.gender || "male",
-        key_points: fallbackAI?.key_points || [],
-        why_expertise: fallbackAI?.why_expertise || null,
-        why_impact: fallbackAI?.why_impact || null,
-        seo_title: fallbackAI?.seo_title || null,
-        meta_description: fallbackAI?.meta_description || null,
-        photo_url: null,
-        video_url: null,
-        city: null,
-        offline: true, // Flag to create as archived/offline
-        sources: [
-          ...sources.map((s) => ({ source: s.source, found: false, photo_url: null })),
-          ...fallbackResults.map(f => ({ source: f.source, found: f.found, photo_url: null })),
-        ],
-      };
-
-      return new Response(JSON.stringify({ success: true, profile: fallbackProfile }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (allFound.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Ce profil n'existe ni chez les concurrents, ni sur Wikipedia, Gala ou Evene.",
+        sources: allSources.map((s) => ({ source: s.source, found: false, photo_url: null })),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Get the best photo URL
