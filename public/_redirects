@@ -51,6 +51,14 @@
 /project_category/transformation-digitale/   /conferencier   301
 /project_category/*   /conferencier   301
 
+# Slugs spéciaux — doivent être AVANT le catch-all :slug
+/conferencier/justine-henin/   /conferencier/justine-henin-2   301
+/conferencier/justine-henin   /conferencier/justine-henin-2   301
+/conferencier/gael-chatelain-berry/   /conferencier/gael-chatelain   301
+/conferencier/gael-chatelain-berry   /conferencier/gael-chatelain   301
+/conferencier/jean-philippe-ackerman/   /conferencier/jean-philippe-ackermann   301
+/conferencier/jean-philippe-ackerman   /conferencier/jean-philippe-ackermann   301
+
 # Anciennes URLs speakers avec trailing slash → SPA catch-all (pas de 301 pour éviter les boucles)
 /conferencier/:slug/   /index.html   200
 
