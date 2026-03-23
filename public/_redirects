@@ -68,9 +68,7 @@
 /speakers/   /conferencier   301
 /speakers   /conferencier   301
 
-# Slugs spéciaux — anciens slugs qui ne correspondent pas au nouveau site
-/conferencier/gael-chatelain-berry/   /conferencier/gael-chatelain   301
-/conferencier/justine-henin/   /conferencier/justine-henin-2   301
+
 
 # Anciennes URLs WordPress blog/articles
 /comment-manager-generation-y/   /blog/comment-manager-generation-y   301
