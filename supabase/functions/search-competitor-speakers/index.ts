@@ -301,13 +301,24 @@ RÈGLES BIOGRAPHIE (CRITIQUES) :
 - Progression chronologique : parcours → expertise → conférences/impact
 - Ton professionnel, engageant et narratif (pas de liste sèche de faits)
 - IMPORTANT : Chaque paragraphe doit être sur une NOUVELLE LIGNE (pas tout collé)
-- REFORMULATION OBLIGATOIRE ET STRICTE : Le texte DOIT être 100% original et UNIQUE. Tu ne dois JAMAIS copier-coller ou paraphraser les sources. Réécris chaque idée avec ta propre structure de phrase, ton propre vocabulaire et tes propres tournures. Si la source dit "Il a été champion du monde en 2010", toi tu écrirais "Sacré champion du monde lors de l'édition 2010" ou "Le titre mondial obtenu en 2010 a marqué un tournant". Change l'ordre des informations, les verbes, les adjectifs. Le texte final ne doit partager AUCUNE phrase identique avec les sources.
-- INTERDICTION ABSOLUE : Ne mentionne JAMAIS les noms des sites sources (Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise). Aucun de ces noms ne doit apparaître dans le contenu généré.
-- AUCUN CARACTÈRE MARKDOWN : N'utilise JAMAIS les astérisques ** ou * pour le gras ou l'italique. Utilise exclusivement les balises HTML <strong> et <em>. Le texte ne doit contenir AUCUN formatage markdown.
-- SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière (ex: "Aujourd'hui, ses conférences inspirent…" ou "En tant que conférencier, il partage…"). Cela doit couler naturellement dans le récit, JAMAIS forcer de mots-clés.
 
-⚠️ CONTENU FACTUEL OBLIGATOIRE — RÈGLE LA PLUS IMPORTANTE ⚠️
-La biographie DOIT contenir des DÉTAILS FACTUELS CONCRETS issus des sources :
+⚠️⚠️⚠️ RÈGLE ANTI-PLAGIAT LA PLUS IMPORTANTE ⚠️⚠️⚠️
+Le texte DOIT être 100% ORIGINAL. Tu as reçu des données BRUTES de plusieurs sources (concurrents + Wikipedia/Gala/Evene).
+Tu dois :
+1. CROISER les informations de TOUTES les sources pour vérifier les faits
+2. PRIORISER les données factuelles de Wikipedia et des sources journalistiques (dates, chiffres, institutions, palmarès)
+3. REFORMULER INTÉGRALEMENT chaque phrase — AUCUNE phrase ne doit ressembler aux sources
+4. Changer l'ORDRE des informations, les VERBES, les ADJECTIFS, la STRUCTURE des phrases
+5. Ajouter du CONTEXTE et des TRANSITIONS narratives absents des sources
+6. Si la source dit "Il a été champion du monde en 2010", toi tu écrirais par exemple "Sacré au sommet de la compétition mondiale lors de l'édition 2010" — structure COMPLÈTEMENT différente
+
+INTERDICTIONS ABSOLUES :
+- Ne JAMAIS copier-coller ou paraphraser simplement une phrase source
+- Ne JAMAIS mentionner les noms : Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise, Wikipedia, Gala, Evene
+- AUCUN caractère markdown (** ou *) — utiliser exclusivement <strong> et <em>
+
+⚠️ CONTENU FACTUEL OBLIGATOIRE ⚠️
+La biographie DOIT contenir des DÉTAILS FACTUELS CONCRETS vérifiés en croisant les sources :
 - Dates précises (naissance, début carrière, événements marquants)
 - Chiffres vérifiables (nombre de médailles, livres vendus, entreprises créées, années d'expérience)
 - Noms d'institutions, entreprises, équipes, compétitions
@@ -316,6 +327,8 @@ La biographie DOIT contenir des DÉTAILS FACTUELS CONCRETS issus des sources :
 NE FAIS PAS une simple énumération de postes ou titres. Chaque paragraphe doit RACONTER une histoire avec du contexte et des détails concrets.
 MAUVAIS EXEMPLE : "Ancienne journaliste et présentatrice sportive." → trop sec
 BON EXEMPLE : "Après <strong>10 ans</strong> comme journaliste sportive sur <strong>Canal+</strong> et <strong>France Télévisions</strong>, elle a couvert <strong>3 Coupes du Monde</strong> et interviewé les plus grands athlètes français." → riche et factuel
+
+- SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière.
 
 RÈGLES SEO (seo_title et meta_description) :
 - seo_title : Format "${name} — Conférencier [thème principal] | Les Conférenciers" (max 60 caractères, adapter Conférencier/Conférencière selon le genre)
