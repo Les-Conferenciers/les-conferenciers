@@ -1370,21 +1370,37 @@ const AdminSpeakersCRM = () => {
                     </span>
                   ))}
                 </div>
-                <select
-                  className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm w-full"
-                  value=""
-                  onChange={e => {
-                    if (e.target.value && !(editForm.themes || []).includes(e.target.value)) {
-                      setEditForm(p => ({ ...p, themes: [...(p.themes || []), e.target.value] }));
+                <div className="flex gap-2">
+                  <select
+                    className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm flex-grow"
+                    value=""
+                    onChange={e => {
+                      if (e.target.value && !(editForm.themes || []).includes(e.target.value)) {
+                        setEditForm(p => ({ ...p, themes: [...(p.themes || []), e.target.value] }));
+                      }
+                      e.target.value = "";
+                    }}
+                  >
+                    <option value="">Ajouter une thématique…</option>
+                    {allThemes.filter(t => !(editForm.themes || []).includes(t)).map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <form className="flex gap-1" onSubmit={e => {
+                    e.preventDefault();
+                    const input = (e.target as HTMLFormElement).elements.namedItem("newTheme") as HTMLInputElement;
+                    const val = input.value.trim();
+                    if (val && !(editForm.themes || []).includes(val)) {
+                      setEditForm(p => ({ ...p, themes: [...(p.themes || []), val] }));
+                      input.value = "";
                     }
-                    e.target.value = "";
-                  }}
-                >
-                  <option value="">Ajouter une thématique…</option>
-                  {allThemes.filter(t => !(editForm.themes || []).includes(t)).map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
+                  }}>
+                    <Input name="newTheme" placeholder="Nouvelle catégorie…" className="text-sm w-40" />
+                    <Button type="submit" variant="outline" size="sm" className="gap-1 whitespace-nowrap">
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </form>
+                </div>
               </div>
 
               {/* Key Points (Pépites / Diamant) */}
