@@ -18,9 +18,9 @@ const DISPLAY_COUNT_KEY = "speakers-display-count";
 const Speakers = () => {
   // SEO meta
   useEffect(() => {
-    document.title = "Nos conférenciers - Les Conférenciers";
+    document.title = "Découvrez tous nos conférenciers professionnels pour vos événements";
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", "Découvrez nos 300+ conférenciers et intervenants d'exception. Trouvez le profil idéal pour votre événement professionnel. Devis gratuit sous 24h.");
+    if (meta) meta.setAttribute("content", "Parmi nos 300+ conférenciers et intervenants d'exception, trouvez celui qui marquera votre événement.");
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canonical) {
       canonical = document.createElement("link");
