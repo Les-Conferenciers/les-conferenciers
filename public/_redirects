@@ -7,6 +7,12 @@
 /conferenciers/   /conferencier   301
 /conferenciers   /conferencier   301
 
+# Pages thématiques et divers
+/motivation/   /conferencier?theme=Motivation   301
+/motivation   /conferencier?theme=Motivation   301
+/temoignages/   /   301
+/temoignages   /   301
+
 # Anciennes URLs WordPress — pages
 /nos-conferenciers/   /conferencier   301
 /nos-conferenciers   /conferencier   301
