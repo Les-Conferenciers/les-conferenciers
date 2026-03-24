@@ -301,13 +301,24 @@ RÈGLES BIOGRAPHIE (CRITIQUES) :
 - Progression chronologique : parcours → expertise → conférences/impact
 - Ton professionnel, engageant et narratif (pas de liste sèche de faits)
 - IMPORTANT : Chaque paragraphe doit être sur une NOUVELLE LIGNE (pas tout collé)
-- REFORMULATION OBLIGATOIRE ET STRICTE : Le texte DOIT être 100% original et UNIQUE. Tu ne dois JAMAIS copier-coller ou paraphraser les sources. Réécris chaque idée avec ta propre structure de phrase, ton propre vocabulaire et tes propres tournures. Si la source dit "Il a été champion du monde en 2010", toi tu écrirais "Sacré champion du monde lors de l'édition 2010" ou "Le titre mondial obtenu en 2010 a marqué un tournant". Change l'ordre des informations, les verbes, les adjectifs. Le texte final ne doit partager AUCUNE phrase identique avec les sources.
-- INTERDICTION ABSOLUE : Ne mentionne JAMAIS les noms des sites sources (Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise). Aucun de ces noms ne doit apparaître dans le contenu généré.
-- AUCUN CARACTÈRE MARKDOWN : N'utilise JAMAIS les astérisques ** ou * pour le gras ou l'italique. Utilise exclusivement les balises HTML <strong> et <em>. Le texte ne doit contenir AUCUN formatage markdown.
-- SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière (ex: "Aujourd'hui, ses conférences inspirent…" ou "En tant que conférencier, il partage…"). Cela doit couler naturellement dans le récit, JAMAIS forcer de mots-clés.
 
-⚠️ CONTENU FACTUEL OBLIGATOIRE — RÈGLE LA PLUS IMPORTANTE ⚠️
-La biographie DOIT contenir des DÉTAILS FACTUELS CONCRETS issus des sources :
+⚠️⚠️⚠️ RÈGLE ANTI-PLAGIAT LA PLUS IMPORTANTE ⚠️⚠️⚠️
+Le texte DOIT être 100% ORIGINAL. Tu as reçu des données BRUTES de plusieurs sources (concurrents + Wikipedia/Gala/Evene).
+Tu dois :
+1. CROISER les informations de TOUTES les sources pour vérifier les faits
+2. PRIORISER les données factuelles de Wikipedia et des sources journalistiques (dates, chiffres, institutions, palmarès)
+3. REFORMULER INTÉGRALEMENT chaque phrase — AUCUNE phrase ne doit ressembler aux sources
+4. Changer l'ORDRE des informations, les VERBES, les ADJECTIFS, la STRUCTURE des phrases
+5. Ajouter du CONTEXTE et des TRANSITIONS narratives absents des sources
+6. Si la source dit "Il a été champion du monde en 2010", toi tu écrirais par exemple "Sacré au sommet de la compétition mondiale lors de l'édition 2010" — structure COMPLÈTEMENT différente
+
+INTERDICTIONS ABSOLUES :
+- Ne JAMAIS copier-coller ou paraphraser simplement une phrase source
+- Ne JAMAIS mentionner les noms : Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise, Wikipedia, Gala, Evene
+- AUCUN caractère markdown (** ou *) — utiliser exclusivement <strong> et <em>
+
+⚠️ CONTENU FACTUEL OBLIGATOIRE ⚠️
+La biographie DOIT contenir des DÉTAILS FACTUELS CONCRETS vérifiés en croisant les sources :
 - Dates précises (naissance, début carrière, événements marquants)
 - Chiffres vérifiables (nombre de médailles, livres vendus, entreprises créées, années d'expérience)
 - Noms d'institutions, entreprises, équipes, compétitions
@@ -316,6 +327,8 @@ La biographie DOIT contenir des DÉTAILS FACTUELS CONCRETS issus des sources :
 NE FAIS PAS une simple énumération de postes ou titres. Chaque paragraphe doit RACONTER une histoire avec du contexte et des détails concrets.
 MAUVAIS EXEMPLE : "Ancienne journaliste et présentatrice sportive." → trop sec
 BON EXEMPLE : "Après <strong>10 ans</strong> comme journaliste sportive sur <strong>Canal+</strong> et <strong>France Télévisions</strong>, elle a couvert <strong>3 Coupes du Monde</strong> et interviewé les plus grands athlètes français." → riche et factuel
+
+- SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière.
 
 RÈGLES SEO (seo_title et meta_description) :
 - seo_title : Format "${name} — Conférencier [thème principal] | Les Conférenciers" (max 60 caractères, adapter Conférencier/Conférencière selon le genre)
@@ -417,8 +430,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch all 3 sources in parallel
-    console.log("Fetching sources...");
+    // Fetch all 3 competitor sources in parallel
+    console.log("Fetching competitor sources...");
     const [oratorsHtml, wechampHtml, simoneHtml] = await Promise.all([
       fetchPage(`https://orators.fr/les-intervenants/${slug}/`),
       fetchPage(`https://www.wechamp-entreprise.co/conferencier/${slug}/`),
@@ -439,102 +452,62 @@ Deno.serve(async (req) => {
 
     const sources = [orators, wechamp, simone];
     const found = sources.filter((s) => s.found);
-    console.log(`Found on ${found.length} source(s): ${found.map(s => s.source).join(", ")}`);
+    console.log(`Found on ${found.length} competitor source(s): ${found.map(s => s.source).join(", ")}`);
     
     // Log what data was extracted
     found.forEach(s => {
       console.log(`  ${s.source}: bio=${(s.biography || "").length}c, role="${s.role || ""}", themes=${(s.themes || []).length}, faits=${(s.faits || []).length}`);
     });
 
-    if (found.length === 0) {
-      // Fallback: try Wikipedia, Gala.fr, Evene
-      console.log("No competitor sources found. Trying fallback sources (Wikipedia, Gala, Evene)...");
-
-      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-      if (!firecrawlKey) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Ce profil n'existe pas chez les concurrents et Firecrawl n'est pas configuré pour les sources alternatives.",
-          sources: sources.map((s) => ({ source: s.source, found: false })),
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      const searchQuery = `${name.trim()} conférencier biographie`;
+    // ── ALWAYS fetch Wikipedia/Gala/Evene as supplementary factual sources ──
+    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    const supplementarySources: any[] = [];
+    
+    if (firecrawlKey) {
+      console.log("Fetching supplementary factual sources (Wikipedia, Gala, Evene)...");
       const fallbackUrls = [
-        `https://fr.wikipedia.org/wiki/${encodeURIComponent(name.trim().replace(/ /g, "_"))}`,
-        `https://evene.lefigaro.fr/celebre/biographie/${slug}.php`,
-        `https://www.gala.fr/stars_et_gotha/${slug}`,
+        { url: `https://fr.wikipedia.org/wiki/${encodeURIComponent(name.trim().replace(/ /g, "_"))}`, name: "Wikipedia" },
+        { url: `https://evene.lefigaro.fr/celebre/biographie/${slug}.php`, name: "Evene/Le Figaro" },
+        { url: `https://www.gala.fr/stars_et_gotha/${slug}`, name: "Gala.fr" },
       ];
 
-      const fallbackResults: any[] = [];
-
-      for (const fbUrl of fallbackUrls) {
+      const fbPromises = fallbackUrls.map(async ({ url, name: srcName }) => {
         try {
           const fbResp = await fetch("https://api.firecrawl.dev/v1/scrape", {
             method: "POST",
             headers: { Authorization: `Bearer ${firecrawlKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ url: fbUrl, formats: ["markdown"], onlyMainContent: true, waitFor: 3000 }),
+            body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true, waitFor: 3000 }),
           });
           const fbData = await fbResp.json();
           const md = fbData?.data?.markdown || fbData?.markdown || "";
-          const sourceName = fbUrl.includes("wikipedia") ? "Wikipedia" : fbUrl.includes("evene") ? "Evene/Le Figaro" : "Gala.fr";
           
-          if (md.length > 200 && !md.includes("page n'existe pas") && !md.includes("404") && !md.includes("Aucun résultat")) {
-            fallbackResults.push({ source: sourceName, found: true, biography: md.substring(0, 8000) });
-            console.log(`  ✓ ${sourceName}: ${md.length} chars`);
+          if (md.length > 200 && !md.includes("page n'existe pas") && !md.includes("404") && !md.includes("Aucun résultat") && !md.includes("n'existe pas encore")) {
+            console.log(`  ✓ ${srcName}: ${md.length} chars`);
+            return { source: srcName, found: true, biography: md.substring(0, 8000) };
           } else {
-            fallbackResults.push({ source: sourceName, found: false });
-            console.log(`  ✗ ${sourceName}: not found or too short`);
+            console.log(`  ✗ ${srcName}: not found or too short`);
+            return { source: srcName, found: false };
           }
-        } catch (fbErr) {
-          const sourceName = fbUrl.includes("wikipedia") ? "Wikipedia" : fbUrl.includes("evene") ? "Evene/Le Figaro" : "Gala.fr";
-          fallbackResults.push({ source: sourceName, found: false });
-          console.log(`  ✗ ${sourceName}: error`);
+        } catch {
+          console.log(`  ✗ ${srcName}: error`);
+          return { source: srcName, found: false };
         }
-      }
+      });
 
-      const fallbackFound = fallbackResults.filter(f => f.found);
-      if (fallbackFound.length === 0) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Ce profil n'existe ni chez les concurrents, ni sur Wikipedia, Gala ou Evene.",
-          sources: [
-            ...sources.map((s) => ({ source: s.source, found: false, photo_url: null })),
-            ...fallbackResults.map(f => ({ source: f.source, found: false, photo_url: null })),
-          ],
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
+      const fbResults = await Promise.all(fbPromises);
+      supplementarySources.push(...fbResults.filter(f => f.found));
+    }
 
-      // Synthesize from fallback sources
-      console.log(`Found ${fallbackFound.length} fallback source(s). Synthesizing...`);
-      const fallbackAI = await synthesizeWithAI(name, fallbackFound);
+    // Combine all sources for AI synthesis
+    const allSources = [...sources, ...supplementarySources];
+    const allFound = allSources.filter((s) => s.found);
 
-      const fallbackProfile = {
-        name: fallbackAI?.name || name.trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "),
-        slug,
-        role: fallbackAI?.role || null,
-        specialty: fallbackAI?.specialty || null,
-        biography: fallbackAI?.biography || null,
-        themes: fallbackAI?.themes || [],
-        conferences: fallbackAI?.conferences || [],
-        languages: fallbackAI?.languages || ["Français"],
-        gender: fallbackAI?.gender || "male",
-        key_points: fallbackAI?.key_points || [],
-        why_expertise: fallbackAI?.why_expertise || null,
-        why_impact: fallbackAI?.why_impact || null,
-        seo_title: fallbackAI?.seo_title || null,
-        meta_description: fallbackAI?.meta_description || null,
-        photo_url: null,
-        video_url: null,
-        city: null,
-        offline: true, // Flag to create as archived/offline
-        sources: [
-          ...sources.map((s) => ({ source: s.source, found: false, photo_url: null })),
-          ...fallbackResults.map(f => ({ source: f.source, found: f.found, photo_url: null })),
-        ],
-      };
-
-      return new Response(JSON.stringify({ success: true, profile: fallbackProfile }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (allFound.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Ce profil n'existe ni chez les concurrents, ni sur Wikipedia, Gala ou Evene.",
+        sources: allSources.map((s) => ({ source: s.source, found: false, photo_url: null })),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Get the best photo URL
@@ -543,9 +516,9 @@ Deno.serve(async (req) => {
     // Get video URL
     const videoUrl = found.find((s) => s.videos?.length)?.videos?.[0] || null;
 
-    // Synthesize with AI
-    console.log("Synthesizing with AI...");
-    const aiProfile = await synthesizeWithAI(name, sources);
+    // Synthesize with AI using ALL sources (competitors + factual)
+    console.log(`Synthesizing with AI from ${allFound.length} sources...`);
+    const aiProfile = await synthesizeWithAI(name, allFound);
     
     if (aiProfile) {
       console.log(`AI synthesis OK: bio=${(aiProfile.biography || "").length}c, conferences=${(aiProfile.conferences || []).length}, key_points=${(aiProfile.key_points || []).length}`);
@@ -572,7 +545,8 @@ Deno.serve(async (req) => {
       photo_url: bestPhoto,
       video_url: videoUrl,
       city: found.find((s) => s.city)?.city || null,
-      sources: sources.map((s) => ({ source: s.source, found: s.found, photo_url: s.photo_url || null })),
+      offline: found.length === 0, // Flag offline if only from fallback sources
+      sources: allSources.map((s) => ({ source: s.source, found: s.found, photo_url: s.photo_url || null })),
     };
 
     return new Response(JSON.stringify({ success: true, profile }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

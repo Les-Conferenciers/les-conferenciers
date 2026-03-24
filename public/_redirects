@@ -13,7 +13,7 @@
 /contact-2/   /contact   301
 /a-propos/   /   301
 /notre-approche/   /   301
-/mentions-legales/   /   301
+/mentions-legales/   /mentions-legales   301
 /politique-de-confidentialite/   /   301
 
 # Anciennes URLs catégories (/project_category/) → page conférenciers avec filtre
@@ -51,6 +51,14 @@
 /project_category/transformation-digitale/   /conferencier   301
 /project_category/*   /conferencier   301
 
+# Slugs spéciaux — doivent être AVANT le catch-all :slug
+/conferencier/justine-henin/   /conferencier/justine-henin-2   301
+/conferencier/justine-henin   /conferencier/justine-henin-2   301
+/conferencier/gael-chatelain-berry/   /conferencier/gael-chatelain   301
+/conferencier/gael-chatelain-berry   /conferencier/gael-chatelain   301
+/conferencier/jean-philippe-ackerman/   /conferencier/jean-philippe-ackermann   301
+/conferencier/jean-philippe-ackerman   /conferencier/jean-philippe-ackermann   301
+
 # Anciennes URLs speakers avec trailing slash → SPA catch-all (pas de 301 pour éviter les boucles)
 /conferencier/:slug/   /index.html   200
 
@@ -60,9 +68,7 @@
 /speakers/   /conferencier   301
 /speakers   /conferencier   301
 
-# Slugs spéciaux — anciens slugs qui ne correspondent pas au nouveau site
-/conferencier/gael-chatelain-berry/   /conferencier/gael-chatelain   301
-/conferencier/justine-henin/   /conferencier/justine-henin-2   301
+
 
 # Anciennes URLs WordPress blog/articles
 /comment-manager-generation-y/   /blog/comment-manager-generation-y   301
