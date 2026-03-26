@@ -598,7 +598,7 @@ const SpeakerDetail = () => {
                     [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:my-3
                     [&_li]:mb-1.5 [&_li]:text-[0.95rem]
                     [&_p]:mb-3 [&_p]:text-[0.95rem] [&_p]:leading-[1.8]
-                    [&_strong]:text-foreground [&_strong]:font-semibold
+                    [&_strong]:text-muted-foreground [&_strong]:font-semibold
                     [&_figure.bio-image-block]:my-8 [&_figure.bio-image-block]:flex [&_figure.bio-image-block]:justify-center
                     [&_figure.bio-image-block_img]:block
                     [&_figure.bio-image-block_img]:w-full
@@ -652,7 +652,7 @@ const SpeakerDetail = () => {
                           <div 
                             className="text-muted-foreground text-sm leading-relaxed prose prose-sm max-w-none
                               [&_p]:mb-3 [&_p:last-child]:mb-0
-                              [&_strong]:text-foreground [&_strong]:font-semibold
+                              [&_strong]:text-muted-foreground [&_strong]:font-semibold
                               [&_ul]:my-3 [&_ul]:ml-1 [&_ul]:space-y-1.5
                               [&_ol]:my-3 [&_ol]:ml-1 [&_ol]:space-y-1.5
                               [&_li]:relative [&_li]:pl-5
