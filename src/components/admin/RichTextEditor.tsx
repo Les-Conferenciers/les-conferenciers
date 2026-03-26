@@ -61,7 +61,23 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       isInternalUpdate.current = true;
-      onChange(editorRef.current.innerHTML);
+      // Clean up any selection artifacts before saving
+      const clone = editorRef.current.cloneNode(true) as HTMLDivElement;
+      // Remove resize wrappers from saved HTML
+      clone.querySelectorAll(".img-resize-wrapper").forEach(wrapper => {
+        const img = wrapper.querySelector("img");
+        if (img) {
+          wrapper.parentNode?.insertBefore(img, wrapper);
+        }
+        wrapper.remove();
+      });
+      // Remove selection classes from images
+      clone.querySelectorAll("img").forEach(img => {
+        img.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+        img.style.outline = "";
+        img.style.outlineOffset = "";
+      });
+      onChange(clone.innerHTML);
     }
   }, [onChange]);
 
