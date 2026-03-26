@@ -34,21 +34,34 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY non configurée");
 
-    const systemPrompt = `Tu es le rédacteur de l'agence de conférenciers "Nuggets de Génie". Tu écris avec un ton professionnel, chaleureux et engageant. Tu mets en valeur les intervenants avec conviction, sans être pompeux. Tu utilises des phrases courtes et percutantes.`;
+    const systemPrompt = `Tu es le rédacteur de l'agence de conférenciers "Les Conférenciers" (lesconferenciers.com). Tu rédiges des biographies professionnelles captivantes mais rigoureusement factuelles. Tu mélanges objectivité journalistique (style Wikipédia pour les faits) et narration immersive (storytelling sur la mission et la vision). Tu mets l'accent sur l'authenticité comme levier de performance et d'impact. Tu évites le jargon marketing creux et privilégies les résultats concrets.`;
 
     let userPrompt = "";
     if (field === "biography") {
-      userPrompt = `Réécris la biographie de ${speaker.name} (${speaker.role || "conférencier"}) pour le site web de l'agence.
+      const genderHint = speaker.gender === "female" ? "Elle" : "Il";
+      userPrompt = `Rédige une biographie professionnelle pour ${speaker.name} (${speaker.role || "conférencier"}) destinée au site lesconferenciers.com.
+
 Contexte actuel : ${speaker.biography || "Aucune biographie existante."}
 Thématiques : ${(speaker.themes || []).join(", ")}
+Points clés : ${(speaker.key_points || []).join(", ")}
 
-Règles :
-- Utilise du HTML sémantique (<p>, <strong>) pour structurer
-- 3-4 paragraphes maximum
-- Commence par un paragraphe d'accroche percutant
-- Mets en gras les éléments clés (titres, réalisations marquantes)
-- Termine par ce qu'il/elle apporte en conférence
-- N'utilise pas de listes à puces, uniquement des paragraphes narratifs`;
+STRUCTURE OBLIGATOIRE :
+1. L'Amorce (Accroche) : Une phrase forte qui résume la singularité. NE commence JAMAIS par le prénom ou le nom.
+2. Le Parcours (Factuel) : Les étapes clés, les réalisations majeures et l'expertise technique. Dates, chiffres, institutions.
+3. La Vision (Narratif) : Pourquoi ${genderHint.toLowerCase()} fait ce qu'${genderHint.toLowerCase()} fait et ce que le public ressent/apprend.
+4. Signature : Une conclusion brève sur l'impact humain et son activité de conférenci${speaker.gender === "female" ? "ère" : "er"}.
+
+CONTRAINTES DE RÉDACTION :
+- Rédige à la troisième personne (${genderHint}).
+- Utilise des verbes d'action puissants.
+- Organise le texte en paragraphes aérés avec des sous-titres évocateurs en <strong>.
+- Longueur : 500 à 700 mots.
+- HTML sémantique : <p>, <strong>, <ul><li> pour les énumérations.
+- Met en <strong> : dates, chiffres clés, titres/prix, institutions, mots-clés importants.
+- 5 à 7 paragraphes séparés, chacun 2-3 phrases max.
+- REFORMULATION 100% originale, anti-plagiat.
+- AUCUN markdown (** ou *), uniquement du HTML.
+- Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférenci${speaker.gender === "female" ? "ère" : "er"}.`;
     } else if (field === "why_expertise") {
       userPrompt = `Rédige un bloc "Expertise reconnue" pour ${speaker.name} (${speaker.role || "conférencier"}).
 Bio actuelle : ${speaker.biography || "N/A"}
