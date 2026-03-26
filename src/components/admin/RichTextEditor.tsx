@@ -236,6 +236,9 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
       const startX = e.clientX;
       let hasMoved = false;
 
+      // Prevent browser default drag behavior
+      e.preventDefault();
+
       const onMouseMove = (me: MouseEvent) => {
         if (Math.abs(me.clientX - startX) < 5 && Math.abs(me.clientY - startY) < 5) return;
         
@@ -243,7 +246,10 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           hasMoved = true;
           setIsDragging(true);
           dragImageRef.current = img;
-          img.style.opacity = "0.4";
+          
+          // Use outline instead of opacity to avoid greying out
+          img.style.outline = "2px dashed hsl(var(--primary))";
+          img.style.outlineOffset = "2px";
           
           // Create drop placeholder
           const ph = document.createElement("div");
@@ -284,18 +290,33 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
         document.removeEventListener("mouseup", onMouseUp);
         
         if (hasMoved && dragImageRef.current && dragPlaceholderRef.current && editorRef.current) {
-          // Move image to placeholder position
           const imgEl = dragImageRef.current;
-          const wrapper = imgEl.closest(".img-resize-wrapper");
-          const elementToMove = wrapper || imgEl;
           
-          dragPlaceholderRef.current.parentNode?.insertBefore(elementToMove, dragPlaceholderRef.current);
+          // First, deselect to remove any wrapper
+          deselectImage();
+          
+          // Remove image from current position
+          const oldParent = imgEl.parentNode;
+          if (oldParent) {
+            oldParent.removeChild(imgEl);
+            // Clean up empty parent paragraph if needed
+            if (oldParent !== editorRef.current && oldParent.childNodes.length === 0) {
+              oldParent.parentNode?.removeChild(oldParent);
+            }
+          }
+          
+          // Insert at placeholder position
+          dragPlaceholderRef.current.parentNode?.insertBefore(imgEl, dragPlaceholderRef.current);
           dragPlaceholderRef.current.remove();
-          imgEl.style.opacity = "1";
+          
+          // Reset styles
+          imgEl.style.outline = "";
+          imgEl.style.outlineOffset = "";
           
           handleInput();
         } else if (dragImageRef.current) {
-          dragImageRef.current.style.opacity = "1";
+          dragImageRef.current.style.outline = "";
+          dragImageRef.current.style.outlineOffset = "";
         }
         
         setIsDragging(false);
