@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from "react";
-import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus, AlignLeft, AlignCenter, AlignRight, WrapText, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -345,8 +345,8 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     }
   }, [selectedImage, handleInput]);
 
-  // Alignment for selected image - with text wrapping
-  const alignImage = useCallback((align: "left" | "center" | "right") => {
+  // Alignment for selected image
+  const alignImage = useCallback((align: "left" | "center" | "right", wrap: boolean = false) => {
     if (!selectedImage) return;
     
     // Reset all alignment styles
@@ -355,27 +355,38 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     selectedImage.style.marginRight = "";
     selectedImage.style.marginBottom = "";
     selectedImage.style.display = "";
+    selectedImage.style.clear = "";
 
-    // Also reset parent container textAlign
+    // Reset parent container textAlign
     const container = (selectedImage.closest(".img-resize-wrapper") || selectedImage).parentNode as HTMLElement;
     if (container && container !== editorRef.current) {
       container.style.textAlign = "";
     }
 
-    if (align === "left") {
-      selectedImage.style.float = "left";
-      selectedImage.style.marginRight = "16px";
-      selectedImage.style.marginBottom = "8px";
-    } else if (align === "right") {
-      selectedImage.style.float = "right";
-      selectedImage.style.marginLeft = "16px";
-      selectedImage.style.marginBottom = "8px";
+    if (wrap) {
+      // Float mode: text wraps around image
+      if (align === "left") {
+        selectedImage.style.float = "left";
+        selectedImage.style.marginRight = "16px";
+        selectedImage.style.marginBottom = "8px";
+      } else if (align === "right") {
+        selectedImage.style.float = "right";
+        selectedImage.style.marginLeft = "16px";
+        selectedImage.style.marginBottom = "8px";
+      }
     } else {
+      // Block mode (default): image on its own line, no text wrapping
       selectedImage.style.float = "none";
       selectedImage.style.display = "block";
-      selectedImage.style.marginLeft = "auto";
-      selectedImage.style.marginRight = "auto";
+      selectedImage.style.clear = "both";
       selectedImage.style.marginBottom = "8px";
+      if (align === "center") {
+        selectedImage.style.marginLeft = "auto";
+        selectedImage.style.marginRight = "auto";
+      } else if (align === "right") {
+        selectedImage.style.marginLeft = "auto";
+        selectedImage.style.marginRight = "0";
+      }
     }
     handleInput();
   }, [selectedImage, handleInput]);
@@ -556,14 +567,23 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
 
         {selectedImage ? (
           <>
-            <ToolbarButton onClick={() => alignImage("left")} title="Image à gauche (habillage)">
+            <span className="text-[10px] text-muted-foreground mr-1">Bloc :</span>
+            <ToolbarButton onClick={() => alignImage("left", false)} title="Image bloc à gauche">
               <AlignLeft className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => alignImage("center")} title="Image centrée">
+            <ToolbarButton onClick={() => alignImage("center", false)} title="Image bloc centrée">
               <AlignCenter className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => alignImage("right")} title="Image à droite (habillage)">
+            <ToolbarButton onClick={() => alignImage("right", false)} title="Image bloc à droite">
               <AlignRight className="h-4 w-4" />
+            </ToolbarButton>
+            <div className="w-px h-5 bg-border mx-1" />
+            <span className="text-[10px] text-muted-foreground mr-1">Habillage :</span>
+            <ToolbarButton onClick={() => alignImage("left", true)} title="Habillage texte à gauche">
+              <WrapText className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => alignImage("right", true)} title="Habillage texte à droite">
+              <WrapText className="h-4 w-4 scale-x-[-1]" />
             </ToolbarButton>
           </>
         ) : (
