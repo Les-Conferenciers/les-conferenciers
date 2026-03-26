@@ -280,6 +280,7 @@ const AdminSpeakersCRM = () => {
       fee_details: (speaker as any).fee_details,
       biography: speaker.biography,
       image_url: speaker.image_url,
+      image_position: (speaker as any).image_position || 'center center',
       video_url: speaker.video_url,
       themes: speaker.themes,
       languages: speaker.languages,
