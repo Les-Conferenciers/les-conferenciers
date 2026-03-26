@@ -345,18 +345,19 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     }
   }, [selectedImage, handleInput]);
 
-  // Alignment for selected image
+  // Alignment for selected image - with text wrapping
   const alignImage = useCallback((align: "left" | "center" | "right") => {
     if (!selectedImage) return;
-    const wrapper = selectedImage.closest(".img-resize-wrapper") || selectedImage;
-    const container = wrapper.parentNode as HTMLElement;
     
-    // Remove old alignment
+    // Reset all alignment styles
     selectedImage.style.float = "none";
     selectedImage.style.marginLeft = "";
     selectedImage.style.marginRight = "";
+    selectedImage.style.marginBottom = "";
     selectedImage.style.display = "";
 
+    // Also reset parent container textAlign
+    const container = (selectedImage.closest(".img-resize-wrapper") || selectedImage).parentNode as HTMLElement;
     if (container && container !== editorRef.current) {
       container.style.textAlign = "";
     }
@@ -370,12 +371,11 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
       selectedImage.style.marginLeft = "16px";
       selectedImage.style.marginBottom = "8px";
     } else {
+      selectedImage.style.float = "none";
       selectedImage.style.display = "block";
       selectedImage.style.marginLeft = "auto";
       selectedImage.style.marginRight = "auto";
-      if (container && container !== editorRef.current) {
-        container.style.textAlign = "center";
-      }
+      selectedImage.style.marginBottom = "8px";
     }
     handleInput();
   }, [selectedImage, handleInput]);
