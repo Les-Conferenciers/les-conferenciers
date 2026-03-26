@@ -314,6 +314,7 @@ const AdminSpeakersCRM = () => {
         fee_details: (editForm as any).fee_details || null,
         biography: editForm.biography || null,
         image_url: editForm.image_url || null,
+        image_position: (editForm as any).image_position || 'center center',
         video_url: editForm.video_url || null,
         themes: editForm.themes || [],
         languages: editForm.languages || [],
