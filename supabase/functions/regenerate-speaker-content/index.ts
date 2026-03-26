@@ -34,21 +34,34 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY non configurée");
 
-    const systemPrompt = `Tu es le rédacteur de l'agence de conférenciers "Nuggets de Génie". Tu écris avec un ton professionnel, chaleureux et engageant. Tu mets en valeur les intervenants avec conviction, sans être pompeux. Tu utilises des phrases courtes et percutantes.`;
+    const systemPrompt = `Tu es le rédacteur de l'agence de conférenciers "Les Conférenciers" (lesconferenciers.com). Tu rédiges des biographies professionnelles factuelles et fluides, dans un style journalistique sobre (inspiré de Wikipédia). Tu évites le jargon marketing creux, les superlatifs, et le blabla. Chaque phrase doit apporter une information concrète.`;
 
     let userPrompt = "";
     if (field === "biography") {
-      userPrompt = `Réécris la biographie de ${speaker.name} (${speaker.role || "conférencier"}) pour le site web de l'agence.
+      const genderHint = speaker.gender === "female" ? "Elle" : "Il";
+      const confWord = speaker.gender === "female" ? "conférencière" : "conférencier";
+      userPrompt = `Rédige une biographie professionnelle pour ${speaker.name} (${speaker.role || "conférencier"}) destinée au site lesconferenciers.com.
+
 Contexte actuel : ${speaker.biography || "Aucune biographie existante."}
 Thématiques : ${(speaker.themes || []).join(", ")}
+Points clés : ${(speaker.key_points || []).join(", ")}
 
-Règles :
-- Utilise du HTML sémantique (<p>, <strong>) pour structurer
-- 3-4 paragraphes maximum
-- Commence par un paragraphe d'accroche percutant
-- Mets en gras les éléments clés (titres, réalisations marquantes)
-- Termine par ce qu'il/elle apporte en conférence
-- N'utilise pas de listes à puces, uniquement des paragraphes narratifs`;
+STRUCTURE OBLIGATOIRE :
+- PAS de phrase d'accroche isolée. Commence directement par le parcours.
+- PAS de sous-titres ni de titres de parties. C'est une biographie continue, pas un article structuré.
+- Enchaîne les paragraphes de manière fluide et naturelle, comme une notice biographique.
+- Le dernier paragraphe doit ouvrir naturellement sur l'activité de ${confWord} de ${speaker.name}, en donnant envie de découvrir ses conférences.
+
+CONTRAINTES DE RÉDACTION :
+- Rédige à la troisième personne (${genderHint}).
+- Utilise des verbes d'action. Sois factuel et concis.
+- 4 à 6 paragraphes, chacun 2-3 phrases max.
+- Longueur : 400 à 600 mots.
+- HTML sémantique : uniquement <p> pour les paragraphes et <strong> pour les éléments importants (dates, chiffres, institutions, prix).
+- PAS de <ul>, <li>, <h2>, <h3>, ni de sous-titres en <strong> seul sur une ligne.
+- REFORMULATION 100% originale, anti-plagiat.
+- AUCUN markdown (** ou *), uniquement du HTML.
+- Évite les phrases creuses, les superlatifs, et le ton publicitaire.`;
     } else if (field === "why_expertise") {
       userPrompt = `Rédige un bloc "Expertise reconnue" pour ${speaker.name} (${speaker.role || "conférencier"}).
 Bio actuelle : ${speaker.biography || "N/A"}
