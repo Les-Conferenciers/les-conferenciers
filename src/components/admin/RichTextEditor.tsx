@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from "react";
-import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus, AlignLeft, AlignCenter, AlignRight, WrapText, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
