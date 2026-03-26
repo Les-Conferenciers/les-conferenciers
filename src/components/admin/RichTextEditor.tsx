@@ -552,16 +552,29 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           <ImagePlus className="h-4 w-4" />
         </ToolbarButton>
 
-        {selectedImage && (
+        <div className="w-px h-5 bg-border mx-1" />
+
+        {selectedImage ? (
           <>
-            <div className="w-px h-5 bg-border mx-1" />
-            <ToolbarButton onClick={() => alignImage("left")} title="Image à gauche">
+            <ToolbarButton onClick={() => alignImage("left")} title="Image à gauche (habillage)">
               <AlignLeft className="h-4 w-4" />
             </ToolbarButton>
             <ToolbarButton onClick={() => alignImage("center")} title="Image centrée">
               <AlignCenter className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => alignImage("right")} title="Image à droite">
+            <ToolbarButton onClick={() => alignImage("right")} title="Image à droite (habillage)">
+              <AlignRight className="h-4 w-4" />
+            </ToolbarButton>
+          </>
+        ) : (
+          <>
+            <ToolbarButton onClick={() => execCommand("justifyLeft")} title="Aligner à gauche">
+              <AlignLeft className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => execCommand("justifyCenter")} title="Centrer">
+              <AlignCenter className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => execCommand("justifyRight")} title="Aligner à droite">
               <AlignRight className="h-4 w-4" />
             </ToolbarButton>
           </>
