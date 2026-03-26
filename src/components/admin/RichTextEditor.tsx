@@ -345,8 +345,8 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     }
   }, [selectedImage, handleInput]);
 
-  // Alignment for selected image - with text wrapping
-  const alignImage = useCallback((align: "left" | "center" | "right") => {
+  // Alignment for selected image
+  const alignImage = useCallback((align: "left" | "center" | "right", wrap: boolean = false) => {
     if (!selectedImage) return;
     
     // Reset all alignment styles
@@ -355,27 +355,38 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     selectedImage.style.marginRight = "";
     selectedImage.style.marginBottom = "";
     selectedImage.style.display = "";
+    selectedImage.style.clear = "";
 
-    // Also reset parent container textAlign
+    // Reset parent container textAlign
     const container = (selectedImage.closest(".img-resize-wrapper") || selectedImage).parentNode as HTMLElement;
     if (container && container !== editorRef.current) {
       container.style.textAlign = "";
     }
 
-    if (align === "left") {
-      selectedImage.style.float = "left";
-      selectedImage.style.marginRight = "16px";
-      selectedImage.style.marginBottom = "8px";
-    } else if (align === "right") {
-      selectedImage.style.float = "right";
-      selectedImage.style.marginLeft = "16px";
-      selectedImage.style.marginBottom = "8px";
+    if (wrap) {
+      // Float mode: text wraps around image
+      if (align === "left") {
+        selectedImage.style.float = "left";
+        selectedImage.style.marginRight = "16px";
+        selectedImage.style.marginBottom = "8px";
+      } else if (align === "right") {
+        selectedImage.style.float = "right";
+        selectedImage.style.marginLeft = "16px";
+        selectedImage.style.marginBottom = "8px";
+      }
     } else {
+      // Block mode (default): image on its own line, no text wrapping
       selectedImage.style.float = "none";
       selectedImage.style.display = "block";
-      selectedImage.style.marginLeft = "auto";
-      selectedImage.style.marginRight = "auto";
+      selectedImage.style.clear = "both";
       selectedImage.style.marginBottom = "8px";
+      if (align === "center") {
+        selectedImage.style.marginLeft = "auto";
+        selectedImage.style.marginRight = "auto";
+      } else if (align === "right") {
+        selectedImage.style.marginLeft = "auto";
+        selectedImage.style.marginRight = "0";
+      }
     }
     handleInput();
   }, [selectedImage, handleInput]);
