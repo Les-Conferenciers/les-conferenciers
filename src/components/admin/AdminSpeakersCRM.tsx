@@ -1151,30 +1151,10 @@ const AdminSpeakersCRM = () => {
                 <span className={`text-xs px-2 py-1 rounded font-medium ${editSpeaker.archived ? "bg-destructive/10 text-destructive" : "bg-green-100 text-green-700"}`}>
                   {editSpeaker.archived ? "🔴 Hors ligne (CRM uniquement)" : "🟢 En ligne"}
                 </span>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowEnrichSingle(!showEnrichSingle)}>
-                  <Sparkles className="h-3.5 w-3.5" /> Enrichir la fiche
+                <Button variant="outline" size="sm" className="gap-1.5" disabled={enrichingSingle} onClick={handleEnrichSingle}>
+                  {enrichingSingle ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Enrichissement…</> : <><Sparkles className="h-3.5 w-3.5" /> Enrichir la fiche</>}
                 </Button>
               </div>
-
-              {/* Enrich from URL */}
-              {showEnrichSingle && (
-                <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    Renseignez l'URL d'un site concurrent pour enrichir automatiquement cette fiche (biographie, conférences, photo…).
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="https://www.simoneetnelson.com/conferencier/..."
-                      value={enrichUrl}
-                      onChange={e => setEnrichUrl(e.target.value)}
-                      className="flex-grow"
-                    />
-                    <Button size="sm" disabled={enrichingSingle || !enrichUrl.trim()} onClick={handleEnrichSingle} className="gap-1.5 min-w-[120px]">
-                      {enrichingSingle ? <><Loader2 className="h-4 w-4 animate-spin" /> Enrichissement…</> : <><Search className="h-4 w-4" /> Enrichir</>}
-                    </Button>
-                  </div>
-                </div>
-              )}
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
                   {editForm.image_url ? (
