@@ -112,8 +112,6 @@ const AdminSpeakersCRM = () => {
   
   // Single speaker enrichment
   const [enrichingSingle, setEnrichingSingle] = useState(false);
-  const [enrichUrl, setEnrichUrl] = useState("");
-  const [showEnrichSingle, setShowEnrichSingle] = useState(false);
 
   // Edit dialog state
   const [editSpeaker, setEditSpeaker] = useState<Speaker | null>(null);
