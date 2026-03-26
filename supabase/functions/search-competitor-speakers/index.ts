@@ -279,96 +279,91 @@ async function synthesizeWithAI(name: string, sources: any[]): Promise<any> {
     return t;
   }).join("\n");
 
-  const prompt = `Tu es un rédacteur expert en fiches de conférenciers professionnels pour l'agence "Les Conférenciers".
+  const prompt = `Tu es un rédacteur expert en fiches de conférenciers professionnels pour l'agence "Les Conférenciers" (lesconferenciers.com).
+L'objectif est de transformer le parcours de l'intervenant en un récit captivant mais rigoureusement factuel.
 
 DONNÉES BRUTES trouvées pour "${name}" :
 ${sourcesText}
 
-CRÉE UNE FICHE COMPLÈTE en JSON. Voici un EXEMPLE DE BIOGRAPHIE PARFAITE à suivre :
+CRÉE UNE FICHE COMPLÈTE en JSON.
 
-"<p>Titulaire d'un <strong>DESS en Stratégie et Communication</strong>, il a accompagné des décideurs de grands groupes durant une <strong>quinzaine d'années</strong> dans les domaines du <strong>marketing, du management et de la communication</strong>.</p>
-<p>Parallèlement à cette carrière, il a pratiqué l'illusion sous toutes ses formes :</p>
-<ul><li><strong>Close-up</strong> et magie de salon</li><li><strong>Mentalisme</strong> et lecture de pensée</li><li><strong>Grandes illusions</strong> sur scène</li></ul>
-<p>En <strong>2011</strong>, il fonde sa société et propose aux entreprises un concept novateur : <strong>la Magie de la Vente®</strong>, une méthode unique qui allie techniques magiques et stratégies commerciales.</p>
-<p>Aujourd'hui, il intervient auprès de <strong>grands groupes du CAC 40</strong> et a formé plus de <strong>15 000 collaborateurs</strong> en France et à l'international.</p>"
+═══════════════════════════════════════════
+STRUCTURE BIOGRAPHIE OBLIGATOIRE (500-700 mots) :
+═══════════════════════════════════════════
 
-RÈGLES BIOGRAPHIE (CRITIQUES) :
-- NE commence JAMAIS par le prénom ou le nom. Commence par un titre, une qualité ou un fait marquant (ex: "Ancien champion...", "Titulaire d'un...", "Diplômé de...", "Figure incontournable de...")
-- Structure en <strong>5 à 7 paragraphes</strong> <p>...</p> séparés
-- Chaque paragraphe = 2-3 phrases max, aérées
-- Met en <strong> : dates, chiffres clés, titres/prix, institutions, mots-clés importants
-- Utilise des listes <ul><li> quand il y a une énumération (palmarès, domaines d'expertise, ouvrages, etc.)
-- Progression chronologique : parcours → expertise → conférences/impact
-- Ton professionnel, engageant et narratif (pas de liste sèche de faits)
-- IMPORTANT : Chaque paragraphe doit être sur une NOUVELLE LIGNE (pas tout collé)
+1. L'AMORCE (Accroche) : Une phrase forte qui résume la singularité. NE commence JAMAIS par le prénom ou le nom. Ex: "Figure incontournable de...", "Ancien champion...", "Titulaire d'un..."
 
-⚠️⚠️⚠️ RÈGLE ANTI-PLAGIAT LA PLUS IMPORTANTE ⚠️⚠️⚠️
-Le texte DOIT être 100% ORIGINAL. Tu as reçu des données BRUTES de plusieurs sources (concurrents + Wikipedia/Gala/Evene).
-Tu dois :
-1. CROISER les informations de TOUTES les sources pour vérifier les faits
-2. PRIORISER les données factuelles de Wikipedia et des sources journalistiques (dates, chiffres, institutions, palmarès)
-3. REFORMULER INTÉGRALEMENT chaque phrase — AUCUNE phrase ne doit ressembler aux sources
-4. Changer l'ORDRE des informations, les VERBES, les ADJECTIFS, la STRUCTURE des phrases
-5. Ajouter du CONTEXTE et des TRANSITIONS narratives absents des sources
-6. Si la source dit "Il a été champion du monde en 2010", toi tu écrirais par exemple "Sacré au sommet de la compétition mondiale lors de l'édition 2010" — structure COMPLÈTEMENT différente
+2. LE PARCOURS (Factuel) : Les étapes clés, réalisations majeures et expertise technique.
+   - Dates précises, chiffres vérifiables, noms d'institutions
+   - Progression chronologique avec CONTEXTE narratif
+   - Chaque paragraphe RACONTE une histoire (pas une liste sèche de postes)
 
-INTERDICTIONS ABSOLUES :
-- Ne JAMAIS copier-coller ou paraphraser simplement une phrase source
-- Ne JAMAIS mentionner les noms : Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise, Wikipedia, Gala, Evene
-- AUCUN caractère markdown (** ou *) — utiliser exclusivement <strong> et <em>
+3. LA VISION (Narratif) : Pourquoi il/elle fait ce qu'il/elle fait. Ce que le public ressent et apprend après l'avoir écouté(e).
 
-⚠️ CONTENU FACTUEL OBLIGATOIRE ⚠️
-La biographie DOIT contenir des DÉTAILS FACTUELS CONCRETS vérifiés en croisant les sources :
-- Dates précises (naissance, début carrière, événements marquants)
-- Chiffres vérifiables (nombre de médailles, livres vendus, entreprises créées, années d'expérience)
-- Noms d'institutions, entreprises, équipes, compétitions
-- Titres exacts (diplômes, postes occupés, palmarès sportif détaillé)
-- Anecdotes ou faits marquants qui rendent le parcours vivant
-NE FAIS PAS une simple énumération de postes ou titres. Chaque paragraphe doit RACONTER une histoire avec du contexte et des détails concrets.
+4. SIGNATURE : Conclusion brève sur l'impact humain + mention naturelle de son activité de conférencier/ère.
+
+STYLE ET TON :
+- Mélange d'objectivité journalistique (style Wikipédia pour les faits) et narration immersive (storytelling sur la mission/vision)
+- Accent sur l'authenticité comme levier de performance et d'impact
+- Éviter le jargon marketing creux, privilégier les résultats concrets
+- Verbes d'action puissants, paragraphes aérés
+- Rédaction à la 3e personne (Il/Elle)
+
+FORMATAGE HTML :
+- 5 à 7 paragraphes <p>...</p> séparés, chacun 2-3 phrases max
+- <strong> sur : dates, chiffres clés, titres/prix, institutions, mots-clés importants
+- <ul><li> pour les énumérations (palmarès, domaines d'expertise, ouvrages)
+- AUCUN markdown (** ou *) — HTML exclusivement
+- Chaque paragraphe sur une NOUVELLE LIGNE
+
 MAUVAIS EXEMPLE : "Ancienne journaliste et présentatrice sportive." → trop sec
 BON EXEMPLE : "Après <strong>10 ans</strong> comme journaliste sportive sur <strong>Canal+</strong> et <strong>France Télévisions</strong>, elle a couvert <strong>3 Coupes du Monde</strong> et interviewé les plus grands athlètes français." → riche et factuel
 
-- SEO NATUREL : Intègre subtilement dans le dernier paragraphe une mention naturelle de son activité de conférencier/conférencière.
+⚠️ RÈGLE ANTI-PLAGIAT ⚠️
+- REFORMULER INTÉGRALEMENT — AUCUNE phrase ne doit ressembler aux sources
+- CROISER les informations de TOUTES les sources pour vérifier les faits
+- Changer ORDRE, VERBES, ADJECTIFS, STRUCTURE des phrases
+- Ajouter CONTEXTE et TRANSITIONS narratives absents des sources
+- Ne JAMAIS mentionner : Orators, WeChamp, We Champ, Simone et Nelson, simoneetnelson, wechamp-entreprise, Wikipedia, Gala, Evene
 
-RÈGLES SEO (seo_title et meta_description) :
-- seo_title : Format "${name} — Conférencier [thème principal] | Les Conférenciers" (max 60 caractères, adapter Conférencier/Conférencière selon le genre)
-- meta_description : 1 phrase fluide de 140-155 caractères présentant le speaker et invitant à réserver. Doit contenir naturellement "conférence" ou "conférencier/ère" + le nom. Pas de bourrage de mots-clés.
+CONTENU FACTUEL OBLIGATOIRE :
+- Dates précises, chiffres vérifiables, noms d'institutions/entreprises/compétitions
+- Titres exacts (diplômes, postes, palmarès)
+- Anecdotes ou faits marquants qui rendent le parcours vivant
 
-RÈGLES CONFÉRENCES :
-- Crée 1 à 3 conférences thématiques basées sur les infos trouvées
-- Titre accrocheur et inspirant
-- Description HTML de 3-4 paragraphes <p> avec des <strong> sur les mots-clés. JAMAIS de markdown (** ou *).
-- Inclure les enseignements concrets et la valeur ajoutée pour le public
-- NE PAS insérer d'images dans les descriptions de conférences
-- REFORMULATION OBLIGATOIRE : descriptions 100% originales, pas de copier-coller des sources
+═══════════════════════════════════════════
+AUTRES CHAMPS :
+═══════════════════════════════════════════
 
-RÈGLES KEY_POINTS :
-- 3-5 points forts factuels et percutants (chiffres, titres, palmarès, distinctions)
+RÈGLES SEO :
+- seo_title : "${name} — Conférencier [thème principal] | Les Conférenciers" (max 60 car., adapter Conférencier/Conférencière selon le genre)
+- meta_description : 1 phrase fluide 140-155 car. avec "conférence" ou "conférencier/ère" + le nom
 
-RÈGLES WHY_EXPERTISE et WHY_IMPACT (TRÈS IMPORTANT) :
-- why_expertise : une phrase UNIQUE et SPÉCIFIQUE à ce speaker expliquant son expertise. Mentionner ses domaines précis, ses réalisations concrètes. PAS de phrase générique.
-  Exemple pour un sportif : "Double champion olympique de judo et ancien ministre des Sports, David Douillet apporte un regard unique sur le dépassement de soi forgé par 20 ans de compétition au plus haut niveau."
-  Exemple pour un entrepreneur : "Fondateur de 3 entreprises et auteur de 5 ouvrages sur le leadership, il partage des méthodes éprouvées issues de 15 ans d'expérience terrain."
-- why_impact : une phrase UNIQUE et SPÉCIFIQUE décrivant l'impact concret de ses interventions. Mentionner ce que le public retient, les transformations observées.
-  Exemple : "Ses interventions provoquent un véritable déclic : les participants repartent avec une nouvelle vision du leadership et des outils concrets applicables dès le lendemain."
+CONFÉRENCES :
+- 1 à 3 conférences thématiques, titre accrocheur
+- Description HTML 3-4 paragraphes <p> avec <strong>, SANS images, SANS markdown
+- REFORMULATION OBLIGATOIRE, 100% originale
+
+KEY_POINTS : 3-5 points forts factuels et percutants
+
+WHY_EXPERTISE : phrase UNIQUE et SPÉCIFIQUE sur l'expertise (domaines précis, réalisations concrètes, PAS générique)
+WHY_IMPACT : phrase UNIQUE et SPÉCIFIQUE sur l'impact concret des interventions
 
 JSON ATTENDU :
 {
   "name": "Prénom Nom",
-  "role": "Titre professionnel court (ex: Double Champion Olympique de Judo)",
-  "specialty": "Phrase d'accroche courte pour la carte (max 8 mots)",
-  "biography": "HTML riche structuré comme l'exemple ci-dessus — MINIMUM 5 paragraphes avec détails factuels concrets",
+  "role": "Titre professionnel court",
+  "specialty": "Phrase d'accroche courte (max 8 mots)",
+  "biography": "HTML riche — MINIMUM 5 paragraphes, 500-700 mots",
   "themes": ["Thème 1", "Thème 2", "Thème 3"],
-  "conferences": [
-    {"title": "Titre accrocheur", "description": "HTML riche avec <p> et <strong>, SANS images"}
-  ],
+  "conferences": [{"title": "Titre", "description": "HTML riche"}],
   "languages": ["Français"],
   "gender": "male ou female",
   "key_points": ["Point fort 1", "Point fort 2"],
-  "why_expertise": "Phrase personnalisée sur l'expertise unique de ce speaker",
-  "why_impact": "Phrase personnalisée sur l'impact concret de ses interventions",
-  "seo_title": "Titre SEO optimisé (max 60 car.)",
-  "meta_description": "Meta description engageante (140-155 car.)"
+  "why_expertise": "Phrase personnalisée",
+  "why_impact": "Phrase personnalisée",
+  "seo_title": "Titre SEO (max 60 car.)",
+  "meta_description": "Meta description (140-155 car.)"
 }
 
 IMPORTANT : Réponds UNIQUEMENT avec le JSON valide, sans commentaire ni backtick.`;
