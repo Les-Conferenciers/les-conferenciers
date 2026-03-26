@@ -23,8 +23,8 @@ import {
   MessageCircle,
   UserCheck,
   Zap,
-  BookOpen } from
-"lucide-react";
+  BookOpen,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +43,7 @@ const Index = () => {
     if (metaDesc) {
       metaDesc.setAttribute(
         "content",
-        "Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme"
+        "Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme",
       );
     }
 
@@ -71,7 +71,7 @@ const Index = () => {
         streetAddress: "4 B Villa de la Gare",
         addressLocality: "Clamart",
         postalCode: "92140",
-        addressCountry: "FR"
+        addressCountry: "FR",
       },
       sameAs: ["https://www.google.com/search?q=lesconferenciers.com+avis"],
       aggregateRating: {
@@ -80,8 +80,8 @@ const Index = () => {
         bestRating: "5",
         worstRating: "1",
         ratingCount: "105",
-        reviewCount: "105"
-      }
+        reviewCount: "105",
+      },
     };
 
     const websiteJsonLd = {
@@ -90,7 +90,7 @@ const Index = () => {
       "@id": "https://www.lesconferenciers.com/#website",
       name: "Les Conférenciers",
       url: "https://www.lesconferenciers.com",
-      publisher: { "@id": "https://www.lesconferenciers.com/#organization" }
+      publisher: { "@id": "https://www.lesconferenciers.com/#organization" },
     };
 
     const localBusinessJsonLd = {
@@ -107,7 +107,7 @@ const Index = () => {
         streetAddress: "4 B Villa de la Gare",
         addressLocality: "Clamart",
         postalCode: "92140",
-        addressCountry: "FR"
+        addressCountry: "FR",
       },
       aggregateRating: {
         "@type": "AggregateRating",
@@ -115,16 +115,16 @@ const Index = () => {
         bestRating: "5",
         worstRating: "1",
         ratingCount: "105",
-        reviewCount: "105"
+        reviewCount: "105",
       },
-      priceRange: "€€€"
+      priceRange: "€€€",
     };
 
     const schemas = [
-    { key: "organization", data: organizationJsonLd },
-    { key: "website", data: websiteJsonLd },
-    { key: "localbusiness", data: localBusinessJsonLd }];
-
+      { key: "organization", data: organizationJsonLd },
+      { key: "website", data: websiteJsonLd },
+      { key: "localbusiness", data: localBusinessJsonLd },
+    ];
 
     schemas.forEach(({ key, data }) => {
       let el = document.querySelector(`script[data-jsonld="${key}"]`);
@@ -146,11 +146,11 @@ const Index = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data, count } = await supabase.
-      from("speakers").
-      select("themes", { count: "exact" }).
-      eq("archived", false).
-      limit(500);
+      const { data, count } = await supabase
+        .from("speakers")
+        .select("themes", { count: "exact" })
+        .eq("archived", false)
+        .limit(500);
       setSpeakerCount(count || 0);
 
       // Extract top themes for category search
@@ -165,10 +165,10 @@ const Index = () => {
             counts.set(displayName, (counts.get(displayName) || 0) + 1);
           });
         });
-        const sorted = Array.from(counts.entries()).
-        sort((a, b) => b[1] - a[1]).
-        slice(0, 9).
-        map(([theme]) => theme);
+        const sorted = Array.from(counts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 9)
+          .map(([theme]) => theme);
         setTopThemes(sorted);
       }
     };
@@ -176,29 +176,25 @@ const Index = () => {
   }, []);
 
   const STATS = [
-  { icon: Users, value: "300+", label: "Conférenciers" },
-  { icon: Award, value: "500+", label: "Événements" },
-  { icon: Clock, value: "24h", label: "Temps de réponse" },
-  { icon: Star, value: "5/5", label: "Note Google" }];
-
+    { icon: Users, value: "300+", label: "Conférenciers" },
+    { icon: Award, value: "500+", label: "Événements" },
+    { icon: Clock, value: "24h", label: "Temps de réponse" },
+    { icon: Star, value: "5/5", label: "Note Google" },
+  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative py-28 md:py-40 px-4 overflow-hidden bg-primary text-primary-foreground">
+      <section className="relative py-12 md:py-20 px-4 overflow-hidden bg-primary text-primary-foreground">
         <div className="absolute inset-0 bg-[url('https://www.lesconferenciers.com/wp-content/uploads/2022/09/lesconferenciers.jpg')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-primary/80" />
         <div className="container mx-auto relative z-10 text-center max-w-4xl">
-          
-
-          
-
           <h1
             className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight animate-fade-in"
-            style={{ animationDelay: "0.1s" }}>
-            
+            style={{ animationDelay: "0.1s" }}
+          >
             Agence de conférenciers
             <br />
             <span className="text-accent italic">et de célébrités</span>
@@ -206,29 +202,29 @@ const Index = () => {
 
           <h2
             className="text-lg md:text-2xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto font-normal animate-fade-in"
-            style={{ animationDelay: "0.2s" }}>
-            
+            style={{ animationDelay: "0.2s" }}
+          >
             Gagnez du temps, trouvez le conférencier idéal pour vos événements professionnels.
           </h2>
 
           {/* Reassurance pills */}
           <div
             className="flex flex-wrap items-center justify-center gap-3 mb-10 animate-fade-in"
-            style={{ animationDelay: "0.25s" }}>
-            
+            style={{ animationDelay: "0.25s" }}
+          >
             {[
-            { icon: HeartHandshake, label: "Un seul interlocuteur dédié" },
-            { icon: Clock, label: "Réponse garantie sous 24h" },
-            { icon: Sparkles, label: "Événement sécurisé de A à Z" }].
-            map(({ icon: Icon, label }) =>
-            <span
-              key={label}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-sm text-primary-foreground/90 backdrop-blur-sm">
-              
+              { icon: HeartHandshake, label: "Un seul interlocuteur dédié" },
+              { icon: Clock, label: "Réponse garantie sous 24h" },
+              { icon: Sparkles, label: "Événement sécurisé de A à Z" },
+            ].map(({ icon: Icon, label }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-sm text-primary-foreground/90 backdrop-blur-sm"
+              >
                 <Icon className="h-4 w-4 text-accent" />
                 {label}
               </span>
-            )}
+            ))}
           </div>
 
           {/* CTA mobile only - above the fold */}
@@ -236,8 +232,8 @@ const Index = () => {
             <Button
               size="lg"
               onClick={() => navigate("/contact")}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold text-base px-8 py-3 rounded-full shadow-lg">
-              
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold text-base px-8 py-3 rounded-full shadow-lg"
+            >
               Demander un devis
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -246,35 +242,34 @@ const Index = () => {
           {/* Rating */}
           <div
             className="flex items-center justify-center gap-2 mb-10 animate-fade-in"
-            style={{ animationDelay: "0.25s" }}>
-            
+            style={{ animationDelay: "0.25s" }}
+          >
             <div className="flex gap-0.5">
-              {[1, 2, 3, 4, 5].map((i) =>
-              <Star key={i} className="h-5 w-5 fill-accent text-accent" />
-              )}
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} className="h-5 w-5 fill-accent text-accent" />
+              ))}
             </div>
             <span className="text-primary-foreground font-semibold text-lg">5/5</span>
-            
           </div>
 
           {/* Category search (rubriques only, no name search) */}
           <div
             className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto animate-fade-in"
-            style={{ animationDelay: "0.3s" }}>
-            
-            {topThemes.map((theme) =>
-            <button
-              key={theme}
-              onClick={() => navigate(`/conferencier?theme=${encodeURIComponent(theme)}`)}
-              className="px-4 py-2 rounded-full bg-primary-foreground/10 border border-primary-foreground/20 text-sm text-primary-foreground/90 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-200">
-              
+            style={{ animationDelay: "0.3s" }}
+          >
+            {topThemes.map((theme) => (
+              <button
+                key={theme}
+                onClick={() => navigate(`/conferencier?theme=${encodeURIComponent(theme)}`)}
+                className="px-4 py-2 rounded-full bg-primary-foreground/10 border border-primary-foreground/20 text-sm text-primary-foreground/90 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-200"
+              >
                 {theme}
               </button>
-            )}
+            ))}
             <button
               onClick={() => navigate("/conferencier")}
-              className="px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200">
-              
+              className="px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200"
+            >
               Tous les conférenciers →
             </button>
           </div>
@@ -285,13 +280,13 @@ const Index = () => {
       <section className="relative -mt-12 z-10 px-4">
         <div className="container mx-auto max-w-4xl">
           <div className="bg-card rounded-2xl shadow-xl border border-border/40 grid grid-cols-2 md:grid-cols-4 divide-x divide-border/40">
-            {STATS.map(({ icon: Icon, value, label }) =>
-            <div key={label} className="flex flex-col items-center gap-1 py-8 px-4">
+            {STATS.map(({ icon: Icon, value, label }) => (
+              <div key={label} className="flex flex-col items-center gap-1 py-8 px-4">
                 <Icon className="h-6 w-6 text-accent mb-1" />
                 <span className="text-2xl md:text-3xl font-bold text-foreground">{value}</span>
                 <span className="text-xs text-muted-foreground font-medium">{label}</span>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </section>
@@ -366,16 +361,16 @@ const Index = () => {
                 <img
                   src={speakersCollage1}
                   alt="Sélection de conférenciers stars"
-                  className="w-full rounded-2xl shadow-2xl border border-primary-foreground/10" />
-                
+                  className="w-full rounded-2xl shadow-2xl border border-primary-foreground/10"
+                />
 
                 {/* Floating second image */}
                 <div className="absolute -bottom-8 -left-8 w-2/3">
                   <img
                     src={speakersCollage2}
                     alt="Nos intervenants d'exception"
-                    className="rounded-2xl shadow-2xl border-4 border-primary" />
-                  
+                    className="rounded-2xl shadow-2xl border-4 border-primary"
+                  />
                 </div>
                 {/* Badge */}
                 <div className="absolute -top-4 -right-4 bg-accent text-accent-foreground px-4 py-2 rounded-xl shadow-lg font-bold text-sm">
@@ -400,8 +395,9 @@ const Index = () => {
                 <img
                   src={nellySelfies}
                   alt="Nelly avec des conférenciers lors d'événements"
-                  className="w-full rounded-2xl shadow-lg border border-border/40" />
-                
+                  className="w-full rounded-2xl shadow-lg border border-border/40"
+                />
+
                 <div className="text-center mt-4">
                   <p className="font-serif font-bold text-foreground">Nelly</p>
                   <p className="text-sm text-accent font-semibold">Fondatrice de l'agence</p>
@@ -427,32 +423,32 @@ const Index = () => {
 
               <ul className="space-y-3">
                 {[
-                "Un seul interlocuteur — relation directe et personnalisée",
-                "Devis détaillé sous 24 heures",
-                "Coordination logistique complète, de A à Z",
-                "Suivi personnalisé avant, pendant et après l'événement"].
-                map((item) =>
-                <li key={item} className="flex items-center gap-3 text-foreground">
+                  "Un seul interlocuteur — relation directe et personnalisée",
+                  "Devis détaillé sous 24 heures",
+                  "Coordination logistique complète, de A à Z",
+                  "Suivi personnalisé avant, pendant et après l'événement",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-3 text-foreground">
                     <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
                       <svg
-                      className="w-3.5 h-3.5 text-accent"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={3}>
-                      
+                        className="w-3.5 h-3.5 text-accent"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={3}
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
                     <span className="font-medium">{item}</span>
                   </li>
-                )}
+                ))}
               </ul>
               <Button
                 size="lg"
                 className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-xl mt-4"
-                onClick={() => navigate("/contact")}>
-                
+                onClick={() => navigate("/contact")}
+              >
                 Contacter Nelly
               </Button>
             </div>
@@ -476,36 +472,36 @@ const Index = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-            {
-              icon: UserCheck,
-              title: "Une seule interlocutrice",
-              description:
-              "Pas de plateforme anonyme, pas de turnover. Nelly gère votre projet de A à Z. Relation directe, personnalisée et sans intermédiaire."
-            },
-            {
-              icon: Zap,
-              title: "Réactivité et disponibilité",
-              description:
-              "Tous les mails sont traités dans la journée. Vous recevez un devis détaillé sous 24h avec des profils adaptés à votre brief."
-            },
-            {
-              icon: BookOpen,
-              title: "Connaissance approfondie des profils",
-              description:
-              "Notre grande connaissance des interventions de chaque conférencier nous permet de vous proposer le profil idéal, parfaitement adapté à vos besoins."
-            }].
-            map((item) =>
-            <div
-              key={item.title}
-              className="p-7 rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 text-center group">
-              
+              {
+                icon: UserCheck,
+                title: "Une seule interlocutrice",
+                description:
+                  "Pas de plateforme anonyme, pas de turnover. Nelly gère votre projet de A à Z. Relation directe, personnalisée et sans intermédiaire.",
+              },
+              {
+                icon: Zap,
+                title: "Réactivité et disponibilité",
+                description:
+                  "Tous les mails sont traités dans la journée. Vous recevez un devis détaillé sous 24h avec des profils adaptés à votre brief.",
+              },
+              {
+                icon: BookOpen,
+                title: "Connaissance approfondie des profils",
+                description:
+                  "Notre grande connaissance des interventions de chaque conférencier nous permet de vous proposer le profil idéal, parfaitement adapté à vos besoins.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="p-7 rounded-2xl bg-card border border-border/40 hover:border-accent/40 hover:shadow-xl transition-all duration-300 text-center group"
+              >
                 <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5 group-hover:bg-accent/20 group-hover:scale-110 transition-all">
                   <item.icon className="h-7 w-7 text-accent" />
                 </div>
                 <h3 className="text-lg font-serif font-bold text-foreground mb-2">{item.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </section>
@@ -564,16 +560,16 @@ const Index = () => {
             <Button
               size="lg"
               className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-10 rounded-xl"
-              onClick={() => navigate("/contact")}>
-              
+              onClick={() => navigate("/contact")}
+            >
               Demander un devis gratuit
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="border-accent/50 text-accent hover:bg-accent/10 rounded-xl font-semibold"
-              onClick={() => navigate("/conferencier")}>
-              
+              onClick={() => navigate("/conferencier")}
+            >
               Découvrir nos conférenciers
             </Button>
           </div>
@@ -581,8 +577,8 @@ const Index = () => {
       </section>
 
       <Footer />
-    </div>);
-
+    </div>
+  );
 };
 
 export default Index;
