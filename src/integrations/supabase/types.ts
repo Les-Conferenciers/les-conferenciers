@@ -637,6 +637,7 @@ export type Database = {
           formal_address: boolean | null
           gender: string | null
           id: string
+          image_position: string | null
           image_url: string | null
           interview_only: boolean | null
           key_points: string[] | null
@@ -671,6 +672,7 @@ export type Database = {
           formal_address?: boolean | null
           gender?: string | null
           id?: string
+          image_position?: string | null
           image_url?: string | null
           interview_only?: boolean | null
           key_points?: string[] | null
@@ -705,6 +707,7 @@ export type Database = {
           formal_address?: boolean | null
           gender?: string | null
           id?: string
+          image_position?: string | null
           image_url?: string | null
           interview_only?: boolean | null
           key_points?: string[] | null
