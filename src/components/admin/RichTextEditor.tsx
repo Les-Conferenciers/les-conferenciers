@@ -408,9 +408,23 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     // Delete selected image on Delete/Backspace
     if (selectedImage && (e.key === "Delete" || e.key === "Backspace")) {
       e.preventDefault();
+      // Clean up parent container styles before removing
       const wrapper = selectedImage.closest(".img-resize-wrapper");
-      if (wrapper) wrapper.remove();
-      else selectedImage.remove();
+      const elementToRemove = wrapper || selectedImage;
+      const parentEl = elementToRemove.parentNode as HTMLElement;
+      
+      elementToRemove.remove();
+      
+      // Reset parent text-align and clear floats if the image was the only child or had float
+      if (parentEl && parentEl !== editorRef.current) {
+        parentEl.style.textAlign = "";
+        // If parent is now empty, remove it or add a <br>
+        if (!parentEl.textContent?.trim() && !parentEl.querySelector("img")) {
+          parentEl.innerHTML = "<br>";
+          parentEl.style.textAlign = "";
+        }
+      }
+      
       setSelectedImage(null);
       handleInput();
       return;
