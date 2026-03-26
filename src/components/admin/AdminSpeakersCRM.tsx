@@ -790,9 +790,9 @@ const AdminSpeakersCRM = () => {
     fetchSpeakers();
   };
 
-  // Single speaker enrichment from URL
+  // Single speaker enrichment (same as import, using speaker name)
   const handleEnrichSingle = async () => {
-    if (!editSpeaker || !enrichUrl.trim()) return;
+    if (!editSpeaker) return;
     setEnrichingSingle(true);
     try {
       const session = await supabase.auth.getSession();
@@ -809,11 +809,11 @@ const AdminSpeakersCRM = () => {
         body: JSON.stringify({ name: editSpeaker.name, enrich: true }),
       });
       const data = await resp.json();
-      if (!data.success) throw new Error(data.error || "Conférencier non trouvé sur ce site");
+      if (!data.success) throw new Error(data.error || "Conférencier non trouvé");
       
       const profile = data.profile;
       const updateData: any = {};
-      if (profile.biography) updateData.biography = profile.biography;
+      // Don't import competitor biography - generate our own instead
       if (profile.photo_url && (!editSpeaker.image_url || editSpeaker.image_url === "/placeholder.svg")) updateData.image_url = profile.photo_url;
       if (profile.role && !editSpeaker.role) { updateData.role = profile.role; updateData.specialty = profile.role; }
       if (profile.themes?.length && (!editSpeaker.themes || editSpeaker.themes.length === 0)) updateData.themes = profile.themes;
@@ -822,7 +822,10 @@ const AdminSpeakersCRM = () => {
       if (profile.city && !editSpeaker.city) updateData.city = profile.city;
       if (profile.why_expertise && !editSpeaker.why_expertise) updateData.why_expertise = profile.why_expertise;
       if (profile.why_impact && !editSpeaker.why_impact) updateData.why_impact = profile.why_impact;
-      if (profile.key_points?.length) updateData.key_points = profile.key_points;
+      if (profile.key_points?.length) {
+        // Strip HTML tags from key points
+        updateData.key_points = profile.key_points.map((kp: string) => kp.replace(/<[^>]*>/g, ''));
+      }
 
       if (Object.keys(updateData).length > 0) {
         await supabase.from("speakers").update(updateData).eq("id", editSpeaker.id);
@@ -846,8 +849,6 @@ const AdminSpeakersCRM = () => {
       
       const updatedFields = Object.keys(updateData);
       toast.success(`Fiche enrichie ! ${updatedFields.length > 0 ? "Champs : " + updatedFields.join(", ") : "Aucun nouveau champ"}`);
-      setShowEnrichSingle(false);
-      setEnrichUrl("");
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
         .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email")
