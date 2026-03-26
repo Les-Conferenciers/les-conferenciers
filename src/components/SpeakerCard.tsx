@@ -11,6 +11,7 @@ export interface Speaker {
   role: string | null;
   themes: string[] | null;
   image_url: string | null;
+  image_position: string | null;
   biography: string | null;
   specialty: string | null;
   languages?: string[] | null;
