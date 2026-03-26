@@ -23,6 +23,7 @@ type Speaker = {
   role: string | null;
   themes: string[] | null;
   image_url: string | null;
+  image_position: string | null;
   biography: string | null;
   specialty: string | null;
   base_fee: number | null;
