@@ -50,6 +50,7 @@ const SpeakerCard = ({ speaker, onThemeClick, onNavigate }: SpeakerCardProps) =>
                 src={imageUrl}
                 alt={`${speaker.name} - conférencier professionnel`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                style={{ objectPosition: speaker.image_position || 'center center' }}
                 loading="lazy"
               />
             ) : (

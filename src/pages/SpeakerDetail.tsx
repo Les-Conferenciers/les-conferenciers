@@ -519,6 +519,7 @@ const SpeakerDetail = () => {
                     src={speaker.image_url}
                     alt={`${speaker.name} - conférencier professionnel`}
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: speaker.image_position || 'center center' }}
                     width={176} height={176}
                   />
                 ) : (

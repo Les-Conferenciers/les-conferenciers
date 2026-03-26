@@ -1174,40 +1174,66 @@ const AdminSpeakersCRM = () => {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-4">
-                {editForm.image_url ? (
-                  <img src={editForm.image_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
-                ) : (
-                  <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
-                    <User className="w-8 h-8 text-muted-foreground/50" />
-                  </div>
-                )}
-                <div className="flex-grow space-y-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">URL de la photo</Label>
-                    <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Ou importer une photo (JPG, PNG)</Label>
-                    <Input 
-                      type="file" 
-                      accept="image/jpeg,image/png"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file || !editSpeaker) return;
-                        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-                        const filePath = `${editSpeaker.slug}.${ext}`;
-                        toast.info("Upload en cours…");
-                        const { error: upErr } = await supabase.storage.from('speaker-photos').upload(filePath, file, { upsert: true });
-                        if (upErr) { toast.error(`Erreur upload : ${upErr.message}`); return; }
-                        const { data: urlData } = supabase.storage.from('speaker-photos').getPublicUrl(filePath);
-                        setEditForm(p => ({ ...p, image_url: urlData.publicUrl }));
-                        toast.success("Photo importée !");
-                      }}
-                      className="text-xs"
-                    />
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  {editForm.image_url ? (
+                    <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                      <img src={editForm.image_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: (editForm as any).image_position || 'center center' }} />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                      <User className="w-8 h-8 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="flex-grow space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">URL de la photo</Label>
+                      <Input value={editForm.image_url || ""} onChange={e => setEditForm(p => ({ ...p, image_url: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Ou importer une photo (JPG, PNG)</Label>
+                      <Input 
+                        type="file" 
+                        accept="image/jpeg,image/png"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file || !editSpeaker) return;
+                          const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                          const filePath = `${editSpeaker.slug}.${ext}`;
+                          toast.info("Upload en cours…");
+                          const { error: upErr } = await supabase.storage.from('speaker-photos').upload(filePath, file, { upsert: true });
+                          if (upErr) { toast.error(`Erreur upload : ${upErr.message}`); return; }
+                          const { data: urlData } = supabase.storage.from('speaker-photos').getPublicUrl(filePath);
+                          setEditForm(p => ({ ...p, image_url: urlData.publicUrl }));
+                          toast.success("Photo importée !");
+                        }}
+                        className="text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
+                {editForm.image_url && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Repositionner l'image (vertical)</Label>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-muted-foreground">Haut</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={parseInt(((editForm as any).image_position || 'center center').replace(/center\s*/i, '').replace('%', '') || '50')}
+                        onChange={e => setEditForm(p => ({ ...p, image_position: `center ${e.target.value}%` }))}
+                        className="flex-grow h-2 accent-primary"
+                      />
+                      <span className="text-[10px] text-muted-foreground">Bas</span>
+                    </div>
+                    <div className="flex justify-center">
+                      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
+                        <img src={editForm.image_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: (editForm as any).image_position || 'center center' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
