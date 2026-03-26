@@ -61,7 +61,23 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       isInternalUpdate.current = true;
-      onChange(editorRef.current.innerHTML);
+      // Clean up any selection artifacts before saving
+      const clone = editorRef.current.cloneNode(true) as HTMLDivElement;
+      // Remove resize wrappers from saved HTML
+      clone.querySelectorAll(".img-resize-wrapper").forEach(wrapper => {
+        const img = wrapper.querySelector("img");
+        if (img) {
+          wrapper.parentNode?.insertBefore(img, wrapper);
+        }
+        wrapper.remove();
+      });
+      // Remove selection classes from images
+      clone.querySelectorAll("img").forEach(img => {
+        img.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+        img.style.outline = "";
+        img.style.outlineOffset = "";
+      });
+      onChange(clone.innerHTML);
     }
   }, [onChange]);
 
@@ -329,18 +345,19 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     }
   }, [selectedImage, handleInput]);
 
-  // Alignment for selected image
+  // Alignment for selected image - with text wrapping
   const alignImage = useCallback((align: "left" | "center" | "right") => {
     if (!selectedImage) return;
-    const wrapper = selectedImage.closest(".img-resize-wrapper") || selectedImage;
-    const container = wrapper.parentNode as HTMLElement;
     
-    // Remove old alignment
+    // Reset all alignment styles
     selectedImage.style.float = "none";
     selectedImage.style.marginLeft = "";
     selectedImage.style.marginRight = "";
+    selectedImage.style.marginBottom = "";
     selectedImage.style.display = "";
 
+    // Also reset parent container textAlign
+    const container = (selectedImage.closest(".img-resize-wrapper") || selectedImage).parentNode as HTMLElement;
     if (container && container !== editorRef.current) {
       container.style.textAlign = "";
     }
@@ -354,12 +371,11 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
       selectedImage.style.marginLeft = "16px";
       selectedImage.style.marginBottom = "8px";
     } else {
+      selectedImage.style.float = "none";
       selectedImage.style.display = "block";
       selectedImage.style.marginLeft = "auto";
       selectedImage.style.marginRight = "auto";
-      if (container && container !== editorRef.current) {
-        container.style.textAlign = "center";
-      }
+      selectedImage.style.marginBottom = "8px";
     }
     handleInput();
   }, [selectedImage, handleInput]);
@@ -392,9 +408,23 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     // Delete selected image on Delete/Backspace
     if (selectedImage && (e.key === "Delete" || e.key === "Backspace")) {
       e.preventDefault();
+      // Clean up parent container styles before removing
       const wrapper = selectedImage.closest(".img-resize-wrapper");
-      if (wrapper) wrapper.remove();
-      else selectedImage.remove();
+      const elementToRemove = wrapper || selectedImage;
+      const parentEl = elementToRemove.parentNode as HTMLElement;
+      
+      elementToRemove.remove();
+      
+      // Reset parent text-align and clear floats if the image was the only child or had float
+      if (parentEl && parentEl !== editorRef.current) {
+        parentEl.style.textAlign = "";
+        // If parent is now empty, remove it or add a <br>
+        if (!parentEl.textContent?.trim() && !parentEl.querySelector("img")) {
+          parentEl.innerHTML = "<br>";
+          parentEl.style.textAlign = "";
+        }
+      }
+      
       setSelectedImage(null);
       handleInput();
       return;
@@ -522,16 +552,29 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           <ImagePlus className="h-4 w-4" />
         </ToolbarButton>
 
-        {selectedImage && (
+        <div className="w-px h-5 bg-border mx-1" />
+
+        {selectedImage ? (
           <>
-            <div className="w-px h-5 bg-border mx-1" />
-            <ToolbarButton onClick={() => alignImage("left")} title="Image à gauche">
+            <ToolbarButton onClick={() => alignImage("left")} title="Image à gauche (habillage)">
               <AlignLeft className="h-4 w-4" />
             </ToolbarButton>
             <ToolbarButton onClick={() => alignImage("center")} title="Image centrée">
               <AlignCenter className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => alignImage("right")} title="Image à droite">
+            <ToolbarButton onClick={() => alignImage("right")} title="Image à droite (habillage)">
+              <AlignRight className="h-4 w-4" />
+            </ToolbarButton>
+          </>
+        ) : (
+          <>
+            <ToolbarButton onClick={() => execCommand("justifyLeft")} title="Aligner à gauche">
+              <AlignLeft className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => execCommand("justifyCenter")} title="Centrer">
+              <AlignCenter className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => execCommand("justifyRight")} title="Aligner à droite">
               <AlignRight className="h-4 w-4" />
             </ToolbarButton>
           </>
