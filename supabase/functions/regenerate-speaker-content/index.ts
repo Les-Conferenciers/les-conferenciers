@@ -55,14 +55,14 @@ STRUCTURE OBLIGATOIRE :
 RÈGLE ANTI-BLABLA (CRITIQUE) :
 - Chaque phrase DOIT contenir un fait vérifiable : une date, un chiffre, un nom d'institution, un titre, un lieu, un événement précis.
 - INTERDICTION ABSOLUE de phrases génériques du type : "sa trajectoire illustre...", "il développe une vision de...", "sa capacité à surmonter...", "ces conférences sont conçues pour inspirer...", "en s'appuyant sur des principes universels...", "il met en avant l'importance de...", "constitue des leviers de croissance...".
-- Si tu n'as pas assez d'informations factuelles pour remplir 500 mots, RÉDUIS la longueur plutôt que de meubler avec du blabla. Une bio de 300 mots factuels vaut mieux qu'une bio de 600 mots avec du remplissage.
+- Tu DOIS produire une biographie d'au moins 400 mots. La cible est 500-700 mots. Pour atteindre cette longueur sans meubler, détaille les FAITS : contexte des victoires, circonstances des nominations, impact chiffré des actions, anecdotes factuelles connues, collaborations notables, institutions fréquentées, prix et distinctions reçus.
 - INTERDICTION de paraphraser les thématiques de conférence dans le corps de la bio. Les thèmes sont déjà affichés ailleurs sur la page.
 
 CONTRAINTES DE RÉDACTION :
 - Rédige à la troisième personne (${genderHint}).
 - Utilise des verbes d'action. Sois factuel et concis.
 - 3 à 5 paragraphes, chacun 2-3 phrases max.
-- Longueur cible : 400 à 600 mots, mais 300 mots minimum acceptables si les infos factuelles manquent.
+- Longueur cible : 500 à 700 mots. MINIMUM ABSOLU : 400 mots. Si tu produis moins de 400 mots, c'est un échec.
 - HTML sémantique : uniquement <p> pour les paragraphes et <strong> pour les éléments importants (dates, chiffres, institutions, prix).
 - PAS de <ul>, <li>, <h2>, <h3>, ni de sous-titres en <strong> seul sur une ligne.
 - REFORMULATION 100% originale, anti-plagiat.
