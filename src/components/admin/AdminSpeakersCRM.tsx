@@ -112,8 +112,6 @@ const AdminSpeakersCRM = () => {
   
   // Single speaker enrichment
   const [enrichingSingle, setEnrichingSingle] = useState(false);
-  const [enrichUrl, setEnrichUrl] = useState("");
-  const [showEnrichSingle, setShowEnrichSingle] = useState(false);
 
   // Edit dialog state
   const [editSpeaker, setEditSpeaker] = useState<Speaker | null>(null);
@@ -185,8 +183,6 @@ const AdminSpeakersCRM = () => {
       setEditingConfId(null);
       setNewReview({ author_name: "", author_title: "", rating: 5, comment: "" });
       setNewConference({ title: "", description: "" });
-      setShowEnrichSingle(false);
-      setEnrichUrl("");
     }
   }, [editSpeaker?.id]);
 
@@ -790,9 +786,9 @@ const AdminSpeakersCRM = () => {
     fetchSpeakers();
   };
 
-  // Single speaker enrichment from URL
+  // Single speaker enrichment (same as import, using speaker name)
   const handleEnrichSingle = async () => {
-    if (!editSpeaker || !enrichUrl.trim()) return;
+    if (!editSpeaker) return;
     setEnrichingSingle(true);
     try {
       const session = await supabase.auth.getSession();
@@ -809,11 +805,11 @@ const AdminSpeakersCRM = () => {
         body: JSON.stringify({ name: editSpeaker.name, enrich: true }),
       });
       const data = await resp.json();
-      if (!data.success) throw new Error(data.error || "Conférencier non trouvé sur ce site");
+      if (!data.success) throw new Error(data.error || "Conférencier non trouvé");
       
       const profile = data.profile;
       const updateData: any = {};
-      if (profile.biography) updateData.biography = profile.biography;
+      // Don't import competitor biography - generate our own instead
       if (profile.photo_url && (!editSpeaker.image_url || editSpeaker.image_url === "/placeholder.svg")) updateData.image_url = profile.photo_url;
       if (profile.role && !editSpeaker.role) { updateData.role = profile.role; updateData.specialty = profile.role; }
       if (profile.themes?.length && (!editSpeaker.themes || editSpeaker.themes.length === 0)) updateData.themes = profile.themes;
@@ -822,7 +818,10 @@ const AdminSpeakersCRM = () => {
       if (profile.city && !editSpeaker.city) updateData.city = profile.city;
       if (profile.why_expertise && !editSpeaker.why_expertise) updateData.why_expertise = profile.why_expertise;
       if (profile.why_impact && !editSpeaker.why_impact) updateData.why_impact = profile.why_impact;
-      if (profile.key_points?.length) updateData.key_points = profile.key_points;
+      if (profile.key_points?.length) {
+        // Strip HTML tags from key points
+        updateData.key_points = profile.key_points.map((kp: string) => kp.replace(/<[^>]*>/g, ''));
+      }
 
       if (Object.keys(updateData).length > 0) {
         await supabase.from("speakers").update(updateData).eq("id", editSpeaker.id);
@@ -846,8 +845,6 @@ const AdminSpeakersCRM = () => {
       
       const updatedFields = Object.keys(updateData);
       toast.success(`Fiche enrichie ! ${updatedFields.length > 0 ? "Champs : " + updatedFields.join(", ") : "Aucun nouveau champ"}`);
-      setShowEnrichSingle(false);
-      setEnrichUrl("");
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
         .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email")
@@ -939,7 +936,7 @@ const AdminSpeakersCRM = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
-                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} />
+                <Input type="number" value={manualForm.base_fee} onChange={e => setManualForm(p => ({ ...p, base_fee: e.target.value }))} className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Genre</Label>
@@ -1150,30 +1147,10 @@ const AdminSpeakersCRM = () => {
                 <span className={`text-xs px-2 py-1 rounded font-medium ${editSpeaker.archived ? "bg-destructive/10 text-destructive" : "bg-green-100 text-green-700"}`}>
                   {editSpeaker.archived ? "🔴 Hors ligne (CRM uniquement)" : "🟢 En ligne"}
                 </span>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowEnrichSingle(!showEnrichSingle)}>
-                  <Sparkles className="h-3.5 w-3.5" /> Enrichir la fiche
+                <Button variant="outline" size="sm" className="gap-1.5" disabled={enrichingSingle} onClick={handleEnrichSingle}>
+                  {enrichingSingle ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Enrichissement…</> : <><Sparkles className="h-3.5 w-3.5" /> Enrichir la fiche</>}
                 </Button>
               </div>
-
-              {/* Enrich from URL */}
-              {showEnrichSingle && (
-                <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    Renseignez l'URL d'un site concurrent pour enrichir automatiquement cette fiche (biographie, conférences, photo…).
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="https://www.simoneetnelson.com/conferencier/..."
-                      value={enrichUrl}
-                      onChange={e => setEnrichUrl(e.target.value)}
-                      className="flex-grow"
-                    />
-                    <Button size="sm" disabled={enrichingSingle || !enrichUrl.trim()} onClick={handleEnrichSingle} className="gap-1.5 min-w-[120px]">
-                      {enrichingSingle ? <><Loader2 className="h-4 w-4 animate-spin" /> Enrichissement…</> : <><Search className="h-4 w-4" /> Enrichir</>}
-                    </Button>
-                  </div>
-                </div>
-              )}
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
                   {editForm.image_url ? (
@@ -1254,7 +1231,7 @@ const AdminSpeakersCRM = () => {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Cachet de base (€)</Label>
-                  <Input type="number" value={editForm.base_fee ?? ""} onChange={e => setEditForm(p => ({ ...p, base_fee: e.target.value ? Number(e.target.value) : null }))} />
+                  <Input type="number" value={editForm.base_fee ?? ""} onChange={e => setEditForm(p => ({ ...p, base_fee: e.target.value ? Number(e.target.value) : null }))} className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                 </div>
               </div>
 
@@ -1441,10 +1418,10 @@ const AdminSpeakersCRM = () => {
                   {((editForm as any).key_points || []).map((point: string, idx: number) => (
                     <div key={idx} className="flex items-start gap-2">
                       <Input
-                        value={point}
+                        value={point.replace(/<[^>]*>/g, '')}
                         onChange={e => {
                           const newPoints = [...((editForm as any).key_points || [])];
-                          newPoints[idx] = e.target.value;
+                          newPoints[idx] = e.target.value.replace(/<[^>]*>/g, '');
                           setEditForm(p => ({ ...p, key_points: newPoints }));
                         }}
                         className="flex-grow text-sm"

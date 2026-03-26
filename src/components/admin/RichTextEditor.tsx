@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from "react";
-import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { Bold, Italic, Underline, List, ListOrdered, Undo, Redo, RemoveFormatting, ImagePlus, AlignLeft, AlignCenter, AlignRight, WrapText, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -61,7 +61,23 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       isInternalUpdate.current = true;
-      onChange(editorRef.current.innerHTML);
+      // Clean up any selection artifacts before saving
+      const clone = editorRef.current.cloneNode(true) as HTMLDivElement;
+      // Remove resize wrappers from saved HTML
+      clone.querySelectorAll(".img-resize-wrapper").forEach(wrapper => {
+        const img = wrapper.querySelector("img");
+        if (img) {
+          wrapper.parentNode?.insertBefore(img, wrapper);
+        }
+        wrapper.remove();
+      });
+      // Remove selection classes from images
+      clone.querySelectorAll("img").forEach(img => {
+        img.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+        img.style.outline = "";
+        img.style.outlineOffset = "";
+      });
+      onChange(clone.innerHTML);
     }
   }, [onChange]);
 
@@ -236,6 +252,9 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
       const startX = e.clientX;
       let hasMoved = false;
 
+      // Prevent browser default drag behavior
+      e.preventDefault();
+
       const onMouseMove = (me: MouseEvent) => {
         if (Math.abs(me.clientX - startX) < 5 && Math.abs(me.clientY - startY) < 5) return;
         
@@ -243,7 +262,10 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           hasMoved = true;
           setIsDragging(true);
           dragImageRef.current = img;
-          img.style.opacity = "0.4";
+          
+          // Use outline instead of opacity to avoid greying out
+          img.style.outline = "2px dashed hsl(var(--primary))";
+          img.style.outlineOffset = "2px";
           
           // Create drop placeholder
           const ph = document.createElement("div");
@@ -284,18 +306,33 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
         document.removeEventListener("mouseup", onMouseUp);
         
         if (hasMoved && dragImageRef.current && dragPlaceholderRef.current && editorRef.current) {
-          // Move image to placeholder position
           const imgEl = dragImageRef.current;
-          const wrapper = imgEl.closest(".img-resize-wrapper");
-          const elementToMove = wrapper || imgEl;
           
-          dragPlaceholderRef.current.parentNode?.insertBefore(elementToMove, dragPlaceholderRef.current);
+          // First, deselect to remove any wrapper
+          deselectImage();
+          
+          // Remove image from current position
+          const oldParent = imgEl.parentNode;
+          if (oldParent) {
+            oldParent.removeChild(imgEl);
+            // Clean up empty parent paragraph if needed
+            if (oldParent !== editorRef.current && oldParent.childNodes.length === 0) {
+              oldParent.parentNode?.removeChild(oldParent);
+            }
+          }
+          
+          // Insert at placeholder position
+          dragPlaceholderRef.current.parentNode?.insertBefore(imgEl, dragPlaceholderRef.current);
           dragPlaceholderRef.current.remove();
-          imgEl.style.opacity = "1";
+          
+          // Reset styles
+          imgEl.style.outline = "";
+          imgEl.style.outlineOffset = "";
           
           handleInput();
         } else if (dragImageRef.current) {
-          dragImageRef.current.style.opacity = "1";
+          dragImageRef.current.style.outline = "";
+          dragImageRef.current.style.outlineOffset = "";
         }
         
         setIsDragging(false);
@@ -309,35 +346,46 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
   }, [selectedImage, handleInput]);
 
   // Alignment for selected image
-  const alignImage = useCallback((align: "left" | "center" | "right") => {
+  const alignImage = useCallback((align: "left" | "center" | "right", wrap: boolean = false) => {
     if (!selectedImage) return;
-    const wrapper = selectedImage.closest(".img-resize-wrapper") || selectedImage;
-    const container = wrapper.parentNode as HTMLElement;
     
-    // Remove old alignment
+    // Reset all alignment styles
     selectedImage.style.float = "none";
     selectedImage.style.marginLeft = "";
     selectedImage.style.marginRight = "";
+    selectedImage.style.marginBottom = "";
     selectedImage.style.display = "";
+    selectedImage.style.clear = "";
 
+    // Reset parent container textAlign
+    const container = (selectedImage.closest(".img-resize-wrapper") || selectedImage).parentNode as HTMLElement;
     if (container && container !== editorRef.current) {
       container.style.textAlign = "";
     }
 
-    if (align === "left") {
-      selectedImage.style.float = "left";
-      selectedImage.style.marginRight = "16px";
-      selectedImage.style.marginBottom = "8px";
-    } else if (align === "right") {
-      selectedImage.style.float = "right";
-      selectedImage.style.marginLeft = "16px";
-      selectedImage.style.marginBottom = "8px";
+    if (wrap) {
+      // Float mode: text wraps around image
+      if (align === "left") {
+        selectedImage.style.float = "left";
+        selectedImage.style.marginRight = "16px";
+        selectedImage.style.marginBottom = "8px";
+      } else if (align === "right") {
+        selectedImage.style.float = "right";
+        selectedImage.style.marginLeft = "16px";
+        selectedImage.style.marginBottom = "8px";
+      }
     } else {
+      // Block mode (default): image on its own line, no text wrapping
+      selectedImage.style.float = "none";
       selectedImage.style.display = "block";
-      selectedImage.style.marginLeft = "auto";
-      selectedImage.style.marginRight = "auto";
-      if (container && container !== editorRef.current) {
-        container.style.textAlign = "center";
+      selectedImage.style.clear = "both";
+      selectedImage.style.marginBottom = "8px";
+      if (align === "center") {
+        selectedImage.style.marginLeft = "auto";
+        selectedImage.style.marginRight = "auto";
+      } else if (align === "right") {
+        selectedImage.style.marginLeft = "auto";
+        selectedImage.style.marginRight = "0";
       }
     }
     handleInput();
@@ -371,9 +419,23 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
     // Delete selected image on Delete/Backspace
     if (selectedImage && (e.key === "Delete" || e.key === "Backspace")) {
       e.preventDefault();
+      // Clean up parent container styles before removing
       const wrapper = selectedImage.closest(".img-resize-wrapper");
-      if (wrapper) wrapper.remove();
-      else selectedImage.remove();
+      const elementToRemove = wrapper || selectedImage;
+      const parentEl = elementToRemove.parentNode as HTMLElement;
+      
+      elementToRemove.remove();
+      
+      // Reset parent text-align and clear floats if the image was the only child or had float
+      if (parentEl && parentEl !== editorRef.current) {
+        parentEl.style.textAlign = "";
+        // If parent is now empty, remove it or add a <br>
+        if (!parentEl.textContent?.trim() && !parentEl.querySelector("img")) {
+          parentEl.innerHTML = "<br>";
+          parentEl.style.textAlign = "";
+        }
+      }
+      
       setSelectedImage(null);
       handleInput();
       return;
@@ -501,16 +563,38 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           <ImagePlus className="h-4 w-4" />
         </ToolbarButton>
 
-        {selectedImage && (
+        <div className="w-px h-5 bg-border mx-1" />
+
+        {selectedImage ? (
           <>
-            <div className="w-px h-5 bg-border mx-1" />
-            <ToolbarButton onClick={() => alignImage("left")} title="Image à gauche">
+            <span className="text-[10px] text-muted-foreground mr-1">Bloc :</span>
+            <ToolbarButton onClick={() => alignImage("left", false)} title="Image bloc à gauche">
               <AlignLeft className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => alignImage("center")} title="Image centrée">
+            <ToolbarButton onClick={() => alignImage("center", false)} title="Image bloc centrée">
               <AlignCenter className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => alignImage("right")} title="Image à droite">
+            <ToolbarButton onClick={() => alignImage("right", false)} title="Image bloc à droite">
+              <AlignRight className="h-4 w-4" />
+            </ToolbarButton>
+            <div className="w-px h-5 bg-border mx-1" />
+            <span className="text-[10px] text-muted-foreground mr-1">Habillage :</span>
+            <ToolbarButton onClick={() => alignImage("left", true)} title="Habillage texte à gauche">
+              <WrapText className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => alignImage("right", true)} title="Habillage texte à droite">
+              <WrapText className="h-4 w-4 scale-x-[-1]" />
+            </ToolbarButton>
+          </>
+        ) : (
+          <>
+            <ToolbarButton onClick={() => execCommand("justifyLeft")} title="Aligner à gauche">
+              <AlignLeft className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => execCommand("justifyCenter")} title="Centrer">
+              <AlignCenter className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => execCommand("justifyRight")} title="Aligner à droite">
               <AlignRight className="h-4 w-4" />
             </ToolbarButton>
           </>
