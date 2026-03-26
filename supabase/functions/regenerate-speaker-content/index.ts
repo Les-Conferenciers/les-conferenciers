@@ -62,7 +62,7 @@ CONTRAINTES DE RÉDACTION :
 - Rédige à la troisième personne (${genderHint}).
 - Utilise des verbes d'action. Sois factuel et concis.
 - 3 à 5 paragraphes, chacun 2-3 phrases max.
-- Longueur cible : 400 à 600 mots, mais 300 mots minimum acceptables si les infos factuelles manquent.
+- Longueur cible : 500 à 700 mots. MINIMUM ABSOLU : 400 mots. Si tu produis moins de 400 mots, c'est un échec.
 - HTML sémantique : uniquement <p> pour les paragraphes et <strong> pour les éléments importants (dates, chiffres, institutions, prix).
 - PAS de <ul>, <li>, <h2>, <h3>, ni de sous-titres en <strong> seul sur une ligne.
 - REFORMULATION 100% originale, anti-plagiat.
