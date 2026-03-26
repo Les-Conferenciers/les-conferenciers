@@ -155,15 +155,19 @@ const Index = () => {
 
       // Extract top themes for category search
       if (data) {
+        const excludedThemes = ["Communication", "Bien-être au travail", "Bien être au travail", "Confiance en soi"];
+        const renameMap: Record<string, string> = { "Gestion du stress": "Gestion de crise" };
         const counts = new Map<string, number>();
         data.forEach((s: any) => {
           parseThemes(s.themes).forEach((t: string) => {
-            counts.set(t, (counts.get(t) || 0) + 1);
+            if (excludedThemes.includes(t)) return;
+            const displayName = renameMap[t] || t;
+            counts.set(displayName, (counts.get(displayName) || 0) + 1);
           });
         });
         const sorted = Array.from(counts.entries()).
         sort((a, b) => b[1] - a[1]).
-        slice(0, 12).
+        slice(0, 9).
         map(([theme]) => theme);
         setTopThemes(sorted);
       }

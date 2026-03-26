@@ -1422,10 +1422,10 @@ const AdminSpeakersCRM = () => {
                   {((editForm as any).key_points || []).map((point: string, idx: number) => (
                     <div key={idx} className="flex items-start gap-2">
                       <Input
-                        value={point}
+                        value={point.replace(/<[^>]*>/g, '')}
                         onChange={e => {
                           const newPoints = [...((editForm as any).key_points || [])];
-                          newPoints[idx] = e.target.value;
+                          newPoints[idx] = e.target.value.replace(/<[^>]*>/g, '');
                           setEditForm(p => ({ ...p, key_points: newPoints }));
                         }}
                         className="flex-grow text-sm"
