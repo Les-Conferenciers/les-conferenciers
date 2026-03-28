@@ -188,7 +188,7 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative py-12 md:py-20 px-4 overflow-hidden bg-primary text-primary-foreground">
-        <div className="absolute inset-0 bg-[url('https://www.lesconferenciers.com/wp-content/uploads/2022/09/lesconferenciers.jpg')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-[url('https://www.lesconferenciers.com/wp-content/uploads/2022/09/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
         <div className="absolute inset-0 bg-primary/80" />
         <div className="container mx-auto relative z-10 text-center max-w-4xl">
           <h1
@@ -268,7 +268,7 @@ const Index = () => {
             ))}
             <button
               onClick={() => navigate("/conferencier")}
-              className="px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200"
+              className="px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200 py-[8px]"
             >
               Tous les conférenciers →
             </button>
@@ -278,7 +278,7 @@ const Index = () => {
 
       {/* Stats */}
       <section className="relative -mt-12 z-10 px-4">
-        <div className="container mx-auto max-w-4xl">
+        <div className="container mx-auto max-w-4xl py-[10px]">
           <div className="bg-card rounded-2xl shadow-xl border border-border/40 grid grid-cols-2 md:grid-cols-4 divide-x divide-border/40">
             {STATS.map(({ icon: Icon, value, label }) => (
               <div key={label} className="flex flex-col items-center gap-1 py-8 px-4">
@@ -362,6 +362,10 @@ const Index = () => {
                   src={speakersCollage1}
                   alt="Sélection de conférenciers stars"
                   className="w-full rounded-2xl shadow-2xl border border-primary-foreground/10"
+                  loading="lazy"
+                  decoding="async"
+                  width={600}
+                  height={400}
                 />
 
                 {/* Floating second image */}
@@ -370,6 +374,10 @@ const Index = () => {
                     src={speakersCollage2}
                     alt="Nos intervenants d'exception"
                     className="rounded-2xl shadow-2xl border-4 border-primary"
+                    loading="lazy"
+                    decoding="async"
+                    width={400}
+                    height={267}
                   />
                 </div>
                 {/* Badge */}
@@ -396,6 +404,10 @@ const Index = () => {
                   src={nellySelfies}
                   alt="Nelly avec des conférenciers lors d'événements"
                   className="w-full rounded-2xl shadow-lg border border-border/40"
+                  loading="lazy"
+                  decoding="async"
+                  width={320}
+                  height={400}
                 />
 
                 <div className="text-center mt-4">

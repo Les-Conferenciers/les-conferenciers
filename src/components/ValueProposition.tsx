@@ -67,6 +67,9 @@ const ValueProposition = () => {
                   alt={step.title}
                   className="h-full w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
+                  decoding="async"
+                  width={240}
+                  height={160}
                 />
               </div>
               <div className="p-5">
