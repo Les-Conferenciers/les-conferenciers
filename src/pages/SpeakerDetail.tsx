@@ -520,6 +520,8 @@ const SpeakerDetail = () => {
                     alt={`${speaker.name} - conférencier professionnel`}
                     className="w-full h-full object-cover"
                     style={{ objectPosition: speaker.image_position || 'center center' }}
+                    fetchPriority="high"
+                    decoding="async"
                     width={176} height={176}
                   />
                 ) : (
