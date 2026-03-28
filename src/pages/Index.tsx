@@ -410,6 +410,10 @@ const Index = () => {
                   src={nellySelfies}
                   alt="Nelly avec des conférenciers lors d'événements"
                   className="w-full rounded-2xl shadow-lg border border-border/40"
+                  loading="lazy"
+                  decoding="async"
+                  width={320}
+                  height={400}
                 />
 
                 <div className="text-center mt-4">
