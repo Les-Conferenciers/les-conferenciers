@@ -39,9 +39,12 @@ const LogoCarousel = () => {
             >
               <img
                 src={logo.src}
-                alt={logo.name}
+                alt={`Logo ${logo.name} - client de notre agence de conférenciers`}
                 className="max-h-full max-w-full object-contain"
                 loading="lazy"
+                decoding="async"
+                width={176}
+                height={96}
               />
             </div>
           ))}

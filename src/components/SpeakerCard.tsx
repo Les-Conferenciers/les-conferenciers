@@ -52,6 +52,9 @@ const SpeakerCard = ({ speaker, onThemeClick, onNavigate }: SpeakerCardProps) =>
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 style={{ objectPosition: speaker.image_position || 'center center' }}
                 loading="lazy"
+                decoding="async"
+                width={128}
+                height={128}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">

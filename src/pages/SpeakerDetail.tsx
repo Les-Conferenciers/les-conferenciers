@@ -520,6 +520,8 @@ const SpeakerDetail = () => {
                     alt={`${speaker.name} - conférencier professionnel`}
                     className="w-full h-full object-cover"
                     style={{ objectPosition: speaker.image_position || 'center center' }}
+                    fetchPriority="high"
+                    decoding="async"
                     width={176} height={176}
                   />
                 ) : (
@@ -738,7 +740,7 @@ const SpeakerDetail = () => {
                       Vidéo de conférence
                     </h2>
                     <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm">
-                      <video controls className="w-full" preload="metadata">
+                      <video controls className="w-full" preload="none">
                         <source src={videoUrl} type="video/mp4" />
                         Votre navigateur ne supporte pas la lecture vidéo.
                       </video>
