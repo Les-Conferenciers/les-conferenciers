@@ -268,7 +268,7 @@ const Index = () => {
             ))}
             <button
               onClick={() => navigate("/conferencier")}
-              className="px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200"
+              className="px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200 py-[8px]"
             >
               Tous les conférenciers →
             </button>
