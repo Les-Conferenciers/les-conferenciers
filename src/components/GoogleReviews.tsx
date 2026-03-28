@@ -117,7 +117,7 @@ const GoogleReviews = () => {
       <div className="container mx-auto max-w-6xl">
         {/* Google Header Badge */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-4 mb-8">
+          <div className="inline-flex flex-wrap items-center justify-center gap-3 md:gap-4 mb-8">
             <svg viewBox="0 0 272 92" width="100" height="34" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M115.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18C71.25 34.32 81.24 25 93.5 25s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44S80.99 39.2 80.99 47.18c0 7.9 5.79 13.44 12.51 13.44s12.51-5.55 12.51-13.44z"
@@ -141,15 +141,15 @@ const GoogleReviews = () => {
                 fill="#4285F4"
               />
             </svg>
-            <span className="text-muted-foreground font-medium text-lg">Excellent</span>
+            <span className="text-muted-foreground font-medium text-base md:text-lg">Excellent</span>
             <div className="flex gap-0.5">
               {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="h-6 w-6 fill-amber-400 text-amber-400" />
+                <Star key={i} className="h-5 w-5 md:h-6 md:w-6 fill-amber-400 text-amber-400" />
               ))}
             </div>
-            <span className="font-bold text-foreground text-lg">{averageRating}</span>
-            <span className="text-muted-foreground text-lg">|</span>
-            <span className="text-muted-foreground text-lg">{totalReviews} avis</span>
+            <span className="font-bold text-foreground text-base md:text-lg">{averageRating}</span>
+            <span className="hidden sm:inline text-muted-foreground text-lg">|</span>
+            <span className="text-muted-foreground text-base md:text-lg">{totalReviews} avis</span>
           </div>
         </div>
 
