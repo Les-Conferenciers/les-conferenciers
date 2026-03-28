@@ -268,7 +268,7 @@ const Index = () => {
             ))}
             <button
               onClick={() => navigate("/conferencier")}
-              className="px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200"
+              className="px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200 py-[8px]"
             >
               Tous les conférenciers →
             </button>
@@ -278,7 +278,7 @@ const Index = () => {
 
       {/* Stats */}
       <section className="relative -mt-12 z-10 px-4">
-        <div className="container mx-auto max-w-4xl">
+        <div className="container mx-auto max-w-4xl py-[10px]">
           <div className="bg-card rounded-2xl shadow-xl border border-border/40 grid grid-cols-2 md:grid-cols-4 divide-x divide-border/40">
             {STATS.map(({ icon: Icon, value, label }) => (
               <div key={label} className="flex flex-col items-center gap-1 py-8 px-4">
