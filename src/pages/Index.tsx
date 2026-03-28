@@ -368,6 +368,10 @@ const Index = () => {
                   src={speakersCollage1}
                   alt="Sélection de conférenciers stars"
                   className="w-full rounded-2xl shadow-2xl border border-primary-foreground/10"
+                  loading="lazy"
+                  decoding="async"
+                  width={600}
+                  height={400}
                 />
 
                 {/* Floating second image */}
