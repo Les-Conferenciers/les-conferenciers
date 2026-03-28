@@ -278,7 +278,7 @@ const Index = () => {
 
       {/* Stats */}
       <section className="relative -mt-12 z-10 px-4">
-        <div className="container mx-auto max-w-4xl">
+        <div className="container mx-auto max-w-4xl py-[10px]">
           <div className="bg-card rounded-2xl shadow-xl border border-border/40 grid grid-cols-2 md:grid-cols-4 divide-x divide-border/40">
             {STATS.map(({ icon: Icon, value, label }) => (
               <div key={label} className="flex flex-col items-center gap-1 py-8 px-4">
