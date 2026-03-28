@@ -738,7 +738,7 @@ const SpeakerDetail = () => {
                       Vidéo de conférence
                     </h2>
                     <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm">
-                      <video controls className="w-full" preload="metadata">
+                      <video controls className="w-full" preload="none" poster={`https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-videos/poster-placeholder.jpg`}>
                         <source src={videoUrl} type="video/mp4" />
                         Votre navigateur ne supporte pas la lecture vidéo.
                       </video>
