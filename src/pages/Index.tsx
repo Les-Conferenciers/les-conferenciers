@@ -380,6 +380,10 @@ const Index = () => {
                     src={speakersCollage2}
                     alt="Nos intervenants d'exception"
                     className="rounded-2xl shadow-2xl border-4 border-primary"
+                    loading="lazy"
+                    decoding="async"
+                    width={400}
+                    height={267}
                   />
                 </div>
                 {/* Badge */}
