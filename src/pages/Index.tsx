@@ -62,7 +62,7 @@ const Index = () => {
       name: "Les Conférenciers",
       alternateName: "LES CONFERENCIERS - LES CONFERENCIERS.COM",
       url: "https://www.lesconferenciers.com",
-      logo: "https://www.lesconferenciers.com/images/les-conferenciers-banniere.png",
+      logo: "https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg",
       description: "Agence de conférenciers et de célébrités pour vos événements professionnels.",
       telephone: "+33695939791",
       email: "contact@lesconferenciers.com",
