@@ -133,6 +133,14 @@ const Contact = () => {
       if (!res.ok) throw new Error("Erreur serveur");
       setSubmitted(true);
       toast.success("Votre demande a bien été envoyée !");
+
+      // Google Ads conversion tracking
+      if (typeof (window as any).gtag === "function") {
+        (window as any).gtag("event", "conversion", {
+          send_to: "AW-10981211591/RCxnCITHy94DEMf7n_Qo",
+        });
+      }
+
       reset();
     } catch {
       toast.error("Une erreur est survenue. Veuillez réessayer ou nous contacter par téléphone.");
