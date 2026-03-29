@@ -1,6 +1,10 @@
 /// <reference types="vite/client" />
 
-interface Window {
-  gtag: (...args: unknown[]) => void;
-  dataLayer: unknown[];
+declare global {
+  interface Window {
+    gtag: (...args: unknown[]) => void;
+    dataLayer: unknown[];
+  }
 }
+
+export {};
