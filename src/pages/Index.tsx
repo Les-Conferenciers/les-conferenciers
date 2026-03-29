@@ -98,7 +98,7 @@ const Index = () => {
       "@type": "LocalBusiness",
       "@id": "https://www.lesconferenciers.com/#localbusiness",
       name: "Les Conférenciers",
-      image: "https://www.lesconferenciers.com/images/les-conferenciers-banniere.png",
+      image: "https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg",
       telephone: "+33695939791",
       email: "contact@lesconferenciers.com",
       url: "https://www.lesconferenciers.com",
