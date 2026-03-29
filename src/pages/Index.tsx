@@ -188,7 +188,7 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative py-12 md:py-20 px-4 overflow-hidden bg-primary text-primary-foreground">
-        <div className="absolute inset-0 bg-[url('https://www.lesconferenciers.com/wp-content/uploads/2022/09/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
+        <div className="absolute inset-0 bg-[url('https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
         <div className="absolute inset-0 bg-primary/80" />
         <div className="container mx-auto relative z-10 text-center max-w-4xl">
           <h1
