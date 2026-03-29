@@ -62,7 +62,7 @@ const Index = () => {
       name: "Les Conférenciers",
       alternateName: "LES CONFERENCIERS - LES CONFERENCIERS.COM",
       url: "https://www.lesconferenciers.com",
-      logo: "https://www.lesconferenciers.com/images/les-conferenciers-banniere.png",
+      logo: "https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg",
       description: "Agence de conférenciers et de célébrités pour vos événements professionnels.",
       telephone: "+33695939791",
       email: "contact@lesconferenciers.com",
@@ -98,7 +98,7 @@ const Index = () => {
       "@type": "LocalBusiness",
       "@id": "https://www.lesconferenciers.com/#localbusiness",
       name: "Les Conférenciers",
-      image: "https://www.lesconferenciers.com/images/les-conferenciers-banniere.png",
+      image: "https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg",
       telephone: "+33695939791",
       email: "contact@lesconferenciers.com",
       url: "https://www.lesconferenciers.com",
@@ -188,7 +188,7 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative py-12 md:py-20 px-4 overflow-hidden bg-primary text-primary-foreground">
-        <div className="absolute inset-0 bg-[url('https://www.lesconferenciers.com/wp-content/uploads/2022/09/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
+        <div className="absolute inset-0 bg-[url('https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
         <div className="absolute inset-0 bg-primary/80" />
         <div className="container mx-auto relative z-10 text-center max-w-4xl">
           <h1
