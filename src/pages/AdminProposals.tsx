@@ -351,6 +351,21 @@ Belle journée,`;
       if (newClient) clientId = newClient.id;
     }
 
+    if (editingDraftId) {
+      // Update existing draft
+      const { error } = await supabase.from("proposals").update({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null, client_id: clientId }).eq("id", editingDraftId);
+      if (error) { toast.error("Erreur mise à jour"); setSubmitting(false); return; }
+      // Replace proposal_speakers
+      await supabase.from("proposal_speakers").delete().eq("proposal_id", editingDraftId);
+      await supabase.from("proposal_speakers").insert(selectedSpeakers.map((s, i) => ({
+        proposal_id: editingDraftId, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee, travel_costs: s.travel_costs,
+        agency_commission: s.agency_commission, total_price: s.total_price, display_order: i,
+        selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
+      })));
+      toast.success("Proposition mise à jour !"); setDialogOpen(false); resetForm(); fetchAll(); setSubmitting(false);
+      return;
+    }
+
     const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null, client_id: clientId }).select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     await supabase.from("proposal_speakers").insert(selectedSpeakers.map((s, i) => ({
@@ -360,7 +375,27 @@ Belle journée,`;
     })));
     toast.success("Proposition créée !"); setDialogOpen(false); resetForm(); fetchAll(); setSubmitting(false);
   };
-  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setEventCity(""); setEventDate(""); setAudienceSize(""); setIsEnglish(false); setSelectedSpeakers([]); };
+  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setEventCity(""); setEventDate(""); setAudienceSize(""); setIsEnglish(false); setSelectedSpeakers([]); setEditingDraftId(null); };
+
+  const editDraft = (p: Proposal) => {
+    setEditingDraftId(p.id);
+    setClientName(p.client_name);
+    setClientEmail(p.client_email);
+    setRecipientName(p.recipient_name || "");
+    setMessage(p.message || defaultMessage);
+    setSelectedSpeakers(
+      (p.proposal_speakers || []).map((ps, i) => ({
+        speaker_id: ps.speaker_id,
+        speaker_fee: ps.speaker_fee,
+        travel_costs: ps.travel_costs,
+        agency_commission: ps.agency_commission,
+        total_price: ps.total_price,
+        display_order: i,
+        selected_conference_ids: (ps as any).selected_conference_ids || [],
+      }))
+    );
+    setDialogOpen(true);
+  };
 
   const handleSend = async (proposal: Proposal) => {
     setSending(proposal.id);
