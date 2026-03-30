@@ -230,7 +230,9 @@ const Speakers = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {visibleSpeakers?.map((speaker) => (
-                <SpeakerCard key={speaker.id} speaker={speaker} onThemeClick={handleThemeClick} onNavigate={saveScrollPosition} />
+                <div key={speaker.id} className="speaker-card-container">
+                  <SpeakerCard speaker={speaker} onThemeClick={handleThemeClick} onNavigate={saveScrollPosition} />
+                </div>
               ))}
             </div>
 

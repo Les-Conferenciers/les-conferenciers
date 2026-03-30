@@ -4,14 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Google Ads (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-10981211591"></script>
+    <!-- Preload LCP hero background image -->
+    <link rel="preload" as="image" href="https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg" fetchpriority="high" />
+
+    <!-- Google Ads (gtag.js) — deferred to not block rendering -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'AW-10981211591');
     </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-10981211591"></script>
     <title>Agence de conférenciers et de célébrités | Les Conférenciers</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
