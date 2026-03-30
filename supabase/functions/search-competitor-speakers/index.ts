@@ -397,7 +397,7 @@ JSON ATTENDU :
   "name": "Prénom Nom",
   "role": "Titre professionnel court",
   "specialty": "Phrase d'accroche courte (max 8 mots)",
-  "biography": "HTML riche — MINIMUM 5 paragraphes, 500-700 mots",
+  "biography": "HTML riche — MINIMUM 300 mots, MAXIMUM 800 mots",
   "themes": ["Thème 1", "Thème 2", "Thème 3"],
   "conferences": [{"title": "Titre", "description": "HTML riche"}],
   "languages": ["Français"],
