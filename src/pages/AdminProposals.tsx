@@ -695,6 +695,10 @@ Belle journée,`;
                     <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          <div className="flex flex-col gap-0.5 mr-1">
+                            <button onClick={() => moveSpeaker(selectedSpeakers.indexOf(ps), "up")} disabled={selectedSpeakers.indexOf(ps) === 0} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"><ArrowUp className="h-3.5 w-3.5" /></button>
+                            <button onClick={() => moveSpeaker(selectedSpeakers.indexOf(ps), "down")} disabled={selectedSpeakers.indexOf(ps) === selectedSpeakers.length - 1} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"><ArrowDown className="h-3.5 w-3.5" /></button>
+                          </div>
                           <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
                             {imageUrl ? <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-5 w-5 text-muted-foreground" /></div>}
                           </div>
