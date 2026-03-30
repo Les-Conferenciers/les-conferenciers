@@ -152,7 +152,7 @@ Belle journée,`;
   const fetchAll = async () => {
     setLoading(true);
     const [propRes, spkRes, confRes, evtRes, ctrRes, invRes, tplRes] = await Promise.all([
-      supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, speakers(name, image_url, formal_address, phone, email))").order("created_at", { ascending: false }),
+      supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, phone, email))").order("created_at", { ascending: false }),
       supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, city").order("name"),
       supabase.from("speaker_conferences").select("id, title, speaker_id").order("display_order"),
       supabase.from("events").select("id, proposal_id, info_sent_speaker_at, contract_sent_speaker_at, visio_date, liaison_sheet_sent_at, speaker_paid_at, selected_speaker_id"),
