@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Send, Trash2, ExternalLink, Copy, Check, User, Filter, ChevronDown, ChevronRight, X, Save } from "lucide-react";
+import { ArrowLeft, Plus, Send, Trash2, ExternalLink, Copy, Check, User, Filter, ChevronDown, ChevronRight, ChevronUp, X, Save, Pencil, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import EventDossier from "@/components/admin/EventDossier";
 import { cn } from "@/lib/utils";
@@ -118,7 +118,7 @@ const AdminProposals = () => {
   const [activeTab, setActiveTab] = useState("sent");
   const [stepFilter, setStepFilter] = useState<string | null>(null);
   const [saveTemplateName, setSaveTemplateName] = useState("");
-
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   // Form state
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -152,7 +152,7 @@ Belle journée,`;
   const fetchAll = async () => {
     setLoading(true);
     const [propRes, spkRes, confRes, evtRes, ctrRes, invRes, tplRes] = await Promise.all([
-      supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, speakers(name, image_url, formal_address, phone, email))").order("created_at", { ascending: false }),
+      supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, phone, email))").order("created_at", { ascending: false }),
       supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, city").order("name"),
       supabase.from("speaker_conferences").select("id, title, speaker_id").order("display_order"),
       supabase.from("events").select("id, proposal_id, info_sent_speaker_at, contract_sent_speaker_at, visio_date, liaison_sheet_sent_at, speaker_paid_at, selected_speaker_id"),
@@ -247,6 +247,15 @@ Belle journée,`;
     }]);
   };
   const removeSpeaker = (speakerId: string) => setSelectedSpeakers(prev => prev.filter(s => s.speaker_id !== speakerId));
+  const moveSpeaker = (index: number, direction: "up" | "down") => {
+    setSelectedSpeakers(prev => {
+      const arr = [...prev];
+      const newIndex = direction === "up" ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= arr.length) return prev;
+      [arr[index], arr[newIndex]] = [arr[newIndex], arr[index]];
+      return arr.map((s, i) => ({ ...s, display_order: i }));
+    });
+  };
   const toggleConference = (speakerId: string, confId: string) => {
     setSelectedSpeakers(prev => prev.map(s => {
       if (s.speaker_id !== speakerId) return s;
@@ -342,6 +351,21 @@ Belle journée,`;
       if (newClient) clientId = newClient.id;
     }
 
+    if (editingDraftId) {
+      // Update existing draft
+      const { error } = await supabase.from("proposals").update({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null, client_id: clientId }).eq("id", editingDraftId);
+      if (error) { toast.error("Erreur mise à jour"); setSubmitting(false); return; }
+      // Replace proposal_speakers
+      await supabase.from("proposal_speakers").delete().eq("proposal_id", editingDraftId);
+      await supabase.from("proposal_speakers").insert(selectedSpeakers.map((s, i) => ({
+        proposal_id: editingDraftId, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee, travel_costs: s.travel_costs,
+        agency_commission: s.agency_commission, total_price: s.total_price, display_order: i,
+        selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
+      })));
+      toast.success("Proposition mise à jour !"); setDialogOpen(false); resetForm(); fetchAll(); setSubmitting(false);
+      return;
+    }
+
     const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null, client_id: clientId }).select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     await supabase.from("proposal_speakers").insert(selectedSpeakers.map((s, i) => ({
@@ -351,7 +375,27 @@ Belle journée,`;
     })));
     toast.success("Proposition créée !"); setDialogOpen(false); resetForm(); fetchAll(); setSubmitting(false);
   };
-  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setEventCity(""); setEventDate(""); setAudienceSize(""); setIsEnglish(false); setSelectedSpeakers([]); };
+  const resetForm = () => { setClientName(""); setClientEmail(""); setMessage(defaultMessage); setRecipientName(""); setEventCity(""); setEventDate(""); setAudienceSize(""); setIsEnglish(false); setSelectedSpeakers([]); setEditingDraftId(null); };
+
+  const editDraft = (p: Proposal) => {
+    setEditingDraftId(p.id);
+    setClientName(p.client_name);
+    setClientEmail(p.client_email);
+    setRecipientName(p.recipient_name || "");
+    setMessage(p.message || defaultMessage);
+    setSelectedSpeakers(
+      (p.proposal_speakers || []).map((ps, i) => ({
+        speaker_id: ps.speaker_id,
+        speaker_fee: ps.speaker_fee,
+        travel_costs: ps.travel_costs,
+        agency_commission: ps.agency_commission,
+        total_price: ps.total_price,
+        display_order: i,
+        selected_conference_ids: (ps as any).selected_conference_ids || [],
+      }))
+    );
+    setDialogOpen(true);
+  };
 
   const handleSend = async (proposal: Proposal) => {
     setSending(proposal.id);
@@ -489,9 +533,14 @@ Belle journée,`;
                 <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
               </Button>
               {tab === "drafts" && (
-                <Button variant="outline" size="sm" className="gap-1" onClick={() => handleSend(p)} disabled={sending === p.id}>
-                  <Send className="h-3 w-3" /> {sending === p.id ? "Envoi…" : "Envoyer"}
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => editDraft(p)} title="Modifier">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => handleSend(p)} disabled={sending === p.id}>
+                    <Send className="h-3 w-3" /> {sending === p.id ? "Envoi…" : "Envoyer"}
+                  </Button>
+                </div>
               )}
               {tab === "sent" && !accepted && (
                 <div className="flex gap-1">
@@ -590,7 +639,7 @@ Belle journée,`;
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle className="font-serif">Créer une proposition</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="font-serif">{editingDraftId ? "Modifier la proposition" : "Créer une proposition"}</DialogTitle></DialogHeader>
             <div className="space-y-6 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" /></div>
@@ -646,6 +695,10 @@ Belle journée,`;
                     <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          <div className="flex flex-col gap-0.5 mr-1">
+                            <button onClick={() => moveSpeaker(selectedSpeakers.indexOf(ps), "up")} disabled={selectedSpeakers.indexOf(ps) === 0} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"><ArrowUp className="h-3.5 w-3.5" /></button>
+                            <button onClick={() => moveSpeaker(selectedSpeakers.indexOf(ps), "down")} disabled={selectedSpeakers.indexOf(ps) === selectedSpeakers.length - 1} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"><ArrowDown className="h-3.5 w-3.5" /></button>
+                          </div>
                           <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
                             {imageUrl ? <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-5 w-5 text-muted-foreground" /></div>}
                           </div>
@@ -703,7 +756,7 @@ Belle journée,`;
                   </Button>
                 </div>
               )}
-              <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? "Création…" : "Créer la proposition"}</Button>
+              <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? (editingDraftId ? "Mise à jour…" : "Création…") : (editingDraftId ? "Mettre à jour la proposition" : "Créer la proposition")}</Button>
             </div>
           </DialogContent>
         </Dialog>
