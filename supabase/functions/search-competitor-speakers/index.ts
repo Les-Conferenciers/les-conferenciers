@@ -306,7 +306,26 @@ async function synthesizeWithAI(name: string, sources: any[]): Promise<any> {
   const prompt = `Tu es un rédacteur expert en fiches de conférenciers professionnels pour l'agence "Les Conférenciers" (lesconferenciers.com).
 L'objectif est de transformer le parcours de l'intervenant en un récit captivant mais rigoureusement factuel.
 
-DONNÉES BRUTES trouvées pour "${name}" :
+PERSONNE : "${name}"
+
+═══════════════════════════════════════════
+ÉTAPE 1 — RECHERCHE DANS TES CONNAISSANCES :
+═══════════════════════════════════════════
+AVANT de rédiger, utilise TOUTES tes connaissances internes sur "${name}" :
+- Parcours professionnel, carrière, postes occupés
+- Formations, diplômes, institutions
+- Réalisations, prix, records, palmarès
+- Publications, livres, médias
+- Engagements, causes défendues
+- Anecdotes connues publiquement
+
+C'est ta SOURCE PRINCIPALE pour rédiger la biographie.
+
+═══════════════════════════════════════════
+ÉTAPE 2 — DONNÉES COMPLÉMENTAIRES (indices uniquement) :
+═══════════════════════════════════════════
+Voici quelques données factuelles complémentaires trouvées en ligne.
+Utilise-les UNIQUEMENT pour compléter ou vérifier tes connaissances, PAS comme base de rédaction :
 ${sourcesText}
 
 CRÉE UNE FICHE COMPLÈTE en JSON.
