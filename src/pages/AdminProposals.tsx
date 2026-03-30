@@ -639,7 +639,7 @@ Belle journée,`;
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle className="font-serif">Créer une proposition</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="font-serif">{editingDraftId ? "Modifier la proposition" : "Créer une proposition"}</DialogTitle></DialogHeader>
             <div className="space-y-6 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" /></div>
