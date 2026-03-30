@@ -268,10 +268,22 @@ async function synthesizeWithAI(name: string, sources: any[]): Promise<any> {
   });
   const uniqueImages = [...new Set(allImages)].slice(0, 6); // Max 6 images
 
+  // Extract only structured facts from sources — NEVER pass raw biographies to avoid plagiarism
   const sourcesText = foundSources.map((s) => {
     let t = `\n=== SOURCE: ${s.source} ===\n`;
     if (s.role) t += `Rôle/Titre: ${s.role}\n`;
-    if (s.biography) t += `Biographie complète:\n${s.biography.substring(0, 5000)}\n`;
+    // Extract only key facts from biography (dates, numbers, institutions) — NOT the full text
+    if (s.biography) {
+      const facts: string[] = [];
+      // Extract sentences with dates/years
+      const dateMatches = s.biography.match(/[^.]*\b(19|20)\d{2}\b[^.]*/g);
+      if (dateMatches) facts.push(...dateMatches.map((m: string) => m.trim()));
+      // Extract sentences with numbers/statistics
+      const numMatches = s.biography.match(/[^.]*\b\d+\s*(ans?|personnes?|opérations?|missions?|médailles?|titres?|livres?|ouvrages?|pays|entreprises?|millions?|milliards?)\b[^.]*/gi);
+      if (numMatches) facts.push(...numMatches.map((m: string) => m.trim()));
+      const uniqueFacts = [...new Set(facts)].slice(0, 15);
+      if (uniqueFacts.length > 0) t += `Faits biographiques clés:\n- ${uniqueFacts.join("\n- ")}\n`;
+    }
     if (s.conferences?.length) t += `Conférences: ${s.conferences.join(" | ")}\n`;
     if (s.themes?.length) t += `Thèmes: ${s.themes.join(", ")}\n`;
     if (s.faits?.length) t += `Faits marquants: ${s.faits.join(" | ")}\n`;
