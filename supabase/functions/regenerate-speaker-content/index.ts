@@ -61,7 +61,7 @@ RÈGLE ANTI-BLABLA (CRITIQUE) :
 CONTRAINTES DE RÉDACTION :
 - Rédige à la troisième personne (${genderHint}).
 - Utilise des verbes d'action. Sois factuel et concis.
-- 3 à 5 paragraphes, chacun 2-3 phrases max.
+- 5 à 8 paragraphes. Chaque paragraphe fait 3 à 5 phrases. C'est ESSENTIEL pour atteindre le minimum de 300 mots.
 - Longueur cible : 500 à 600 mots. MINIMUM ABSOLU : 300 mots. MAXIMUM : 800 mots.
 - HTML sémantique : uniquement <p> pour les paragraphes et <strong> pour les éléments importants (dates, chiffres, institutions, prix).
 - PAS de <ul>, <li>, <h2>, <h3>, ni de sous-titres en <strong> seul sur une ligne.
