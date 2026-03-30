@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send, CheckCircle2, Clock, Star, Quote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import nellyBuste from "@/assets/nelly-buste-medaillon.png";
+import nellyBuste from "@/assets/nelly-buste-detouree.png";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -265,11 +265,12 @@ const Contact = () => {
           <div className="lg:col-span-1 order-2 space-y-6">
             {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
-              <div className="flex justify-center bg-muted/30 pt-4 px-4">
+              <div className="flex justify-center bg-muted/30 pt-5 px-6">
                 <img
                   src={nellyBuste}
                   alt="Nelly, fondatrice de l'agence"
-                  className="w-36 h-auto object-contain drop-shadow-lg"
+                  className="w-40 h-auto object-contain drop-shadow-xl"
+                  style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.15))" }}
                 />
               </div>
               <div className="px-5 pb-5 pt-3 text-center">
