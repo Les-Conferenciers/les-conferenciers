@@ -655,8 +655,8 @@ const SpeakerDetail = () => {
                           <div 
                             className="text-muted-foreground text-sm leading-relaxed prose prose-sm max-w-none
                               [&_p]:mb-3 [&_p:last-child]:mb-0
-                              [&_strong]:text-muted-foreground [&_strong]:font-semibold
-                              [&_b]:text-muted-foreground [&_b]:font-semibold
+                              [&_strong]:text-foreground [&_strong]:font-semibold
+                              [&_b]:text-foreground [&_b]:font-semibold
                               [&_ul]:my-3 [&_ul]:ml-1 [&_ul]:space-y-1.5
                               [&_ol]:my-3 [&_ol]:ml-1 [&_ol]:space-y-1.5
                               [&_li]:relative [&_li]:pl-5
