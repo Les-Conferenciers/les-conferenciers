@@ -55,7 +55,7 @@ STRUCTURE OBLIGATOIRE :
 RÈGLE ANTI-BLABLA (CRITIQUE) :
 - Chaque phrase DOIT contenir un fait vérifiable : une date, un chiffre, un nom d'institution, un titre, un lieu, un événement précis.
 - INTERDICTION ABSOLUE de phrases génériques du type : "sa trajectoire illustre...", "il développe une vision de...", "sa capacité à surmonter...", "ces conférences sont conçues pour inspirer...", "en s'appuyant sur des principes universels...", "il met en avant l'importance de...", "constitue des leviers de croissance...".
-- Tu DOIS produire une biographie d'au moins 400 mots. La cible est 500-700 mots. Pour atteindre cette longueur sans meubler, détaille les FAITS : contexte des victoires, circonstances des nominations, impact chiffré des actions, anecdotes factuelles connues, collaborations notables, institutions fréquentées, prix et distinctions reçus.
+- Tu DOIS produire une biographie d'au moins 300 mots et maximum 800 mots. La cible idéale est 500-600 mots. Pour atteindre cette longueur sans meubler, détaille les FAITS : contexte des victoires, circonstances des nominations, impact chiffré des actions, anecdotes factuelles connues, collaborations notables, institutions fréquentées, prix et distinctions reçus.
 - INTERDICTION de paraphraser les thématiques de conférence dans le corps de la bio. Les thèmes sont déjà affichés ailleurs sur la page.
 
 CONTRAINTES DE RÉDACTION :
