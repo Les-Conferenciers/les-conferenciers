@@ -247,6 +247,15 @@ Belle journée,`;
     }]);
   };
   const removeSpeaker = (speakerId: string) => setSelectedSpeakers(prev => prev.filter(s => s.speaker_id !== speakerId));
+  const moveSpeaker = (index: number, direction: "up" | "down") => {
+    setSelectedSpeakers(prev => {
+      const arr = [...prev];
+      const newIndex = direction === "up" ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= arr.length) return prev;
+      [arr[index], arr[newIndex]] = [arr[newIndex], arr[index]];
+      return arr.map((s, i) => ({ ...s, display_order: i }));
+    });
+  };
   const toggleConference = (speakerId: string, confId: string) => {
     setSelectedSpeakers(prev => prev.map(s => {
       if (s.speaker_id !== speakerId) return s;
