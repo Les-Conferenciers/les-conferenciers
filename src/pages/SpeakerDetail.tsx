@@ -521,7 +521,7 @@ const SpeakerDetail = () => {
                     className="w-full h-full object-cover"
                     style={{ objectPosition: speaker.image_position || 'center center' }}
                     fetchPriority="high"
-                    decoding="async"
+                    decoding="sync"
                     width={176} height={176}
                   />
                 ) : (
