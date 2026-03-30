@@ -268,25 +268,37 @@ async function synthesizeWithAI(name: string, sources: any[]): Promise<any> {
   });
   const uniqueImages = [...new Set(allImages)].slice(0, 6); // Max 6 images
 
-  // Extract only structured facts from sources — NEVER pass raw biographies to avoid plagiarism
+  // Extract ONLY atomic data points — NEVER pass sentences or phrases to avoid plagiarism
   const sourcesText = foundSources.map((s) => {
     let t = `\n=== SOURCE: ${s.source} ===\n`;
     if (s.role) t += `Rôle/Titre: ${s.role}\n`;
-    // Extract only key facts from biography (dates, numbers, institutions) — NOT the full text
+    // Extract ONLY atomic data points (no sentences, no phrases) from biography
     if (s.biography) {
-      const facts: string[] = [];
-      // Extract sentences with dates/years
-      const dateMatches = s.biography.match(/[^.]*\b(19|20)\d{2}\b[^.]*/g);
-      if (dateMatches) facts.push(...dateMatches.map((m: string) => m.trim()));
-      // Extract sentences with numbers/statistics
-      const numMatches = s.biography.match(/[^.]*\b\d+\s*(ans?|personnes?|opérations?|missions?|médailles?|titres?|livres?|ouvrages?|pays|entreprises?|millions?|milliards?)\b[^.]*/gi);
-      if (numMatches) facts.push(...numMatches.map((m: string) => m.trim()));
-      const uniqueFacts = [...new Set(facts)].slice(0, 15);
-      if (uniqueFacts.length > 0) t += `Faits biographiques clés:\n- ${uniqueFacts.join("\n- ")}\n`;
+      const dataPoints: string[] = [];
+      // Years only (e.g. "2005", "2007")
+      const years = s.biography.match(/\b(19|20)\d{2}\b/g);
+      if (years) dataPoints.push(`Années mentionnées: ${[...new Set(years)].join(", ")}`);
+      // Numbers with their immediate unit (e.g. "2500 heures", "3 championnats")
+      const numUnits = s.biography.match(/\b\d[\d\s]*(?:heures?|ans?|médailles?|titres?|livres?|pays|missions?|personnes?|opérations?|entreprises?|millions?|milliards?|championnats?|victoires?|records?)\b/gi);
+      if (numUnits) dataPoints.push(`Chiffres clés: ${[...new Set(numUnits)].join(", ")}`);
+      // Proper nouns (capitalized multi-word names likely being institutions/companies/competitions)
+      const properNouns = s.biography.match(/(?:(?:de |du |des |l'|la |le |au |aux )?[A-ZÀ-Ü][a-zà-ü]+(?:\s+[A-ZÀ-Ü][a-zà-ü]+)+)/g);
+      if (properNouns) {
+        const filtered = [...new Set(properNouns)].filter((n: string) => n.length > 4 && !n.match(/^(Il |Elle |Son |Sa |Ses |Dans |Pour |Avec |Après |Avant )/));
+        if (filtered.length > 0) dataPoints.push(`Noms propres: ${filtered.slice(0, 10).join(", ")}`);
+      }
+      if (dataPoints.length > 0) t += `Données factuelles extraites:\n- ${dataPoints.join("\n- ")}\n`;
     }
-    if (s.conferences?.length) t += `Conférences: ${s.conferences.join(" | ")}\n`;
+    if (s.conferences?.length) t += `Titres de conférences (pour inspiration thématique uniquement): ${s.conferences.join(" | ")}\n`;
     if (s.themes?.length) t += `Thèmes: ${s.themes.join(", ")}\n`;
-    if (s.faits?.length) t += `Faits marquants: ${s.faits.join(" | ")}\n`;
+    if (s.faits?.length) {
+      // Extract only the factual data from "faits marquants", not full phrases
+      const factData = s.faits.map((f: string) => {
+        const nums = f.match(/\d[\d\s]*[a-zà-üé]+/gi);
+        return nums ? nums.join(", ") : null;
+      }).filter(Boolean);
+      if (factData.length > 0) t += `Données chiffrées des faits marquants: ${factData.join(" | ")}\n`;
+    }
     if (s.languages?.length) t += `Langues: ${s.languages.join(", ")}\n`;
     return t;
   }).join("\n");
