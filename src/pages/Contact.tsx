@@ -269,7 +269,7 @@ const Contact = () => {
                 <img
                   src={nellyBuste}
                   alt="Nelly, fondatrice de l'agence"
-                  className="w-40 h-auto object-contain drop-shadow-xl py-[10px] pt-0"
+                  className="w-28 h-auto object-contain drop-shadow-xl py-[10px] pt-0"
                   style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.15))" }}
                 />
               </div>
