@@ -353,7 +353,7 @@ STYLE ET TON :
 - Rédaction à la 3e personne (Il/Elle)
 
 FORMATAGE HTML :
-- 5 à 7 paragraphes <p>...</p> séparés, chacun 2-3 phrases max
+- 5 à 8 paragraphes <p>...</p> séparés, chacun 3-5 phrases pour atteindre le minimum de 300 mots
 - <strong> sur : dates, chiffres clés, titres/prix, institutions, mots-clés importants
 - <ul><li> pour les énumérations (palmarès, domaines d'expertise, ouvrages)
 - AUCUN markdown (** ou *) — HTML exclusivement
