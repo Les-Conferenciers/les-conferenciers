@@ -548,8 +548,76 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Get the best photo URL
-    const bestPhoto = found.find((s) => s.photo_url)?.photo_url || null;
+    // Get the best photo URL — fallback to stock photo search if none found
+    let bestPhoto = found.find((s) => s.photo_url)?.photo_url || null;
+
+    if (!bestPhoto && firecrawlKey) {
+      console.log("No photo from competitors — searching for a stock portrait...");
+      try {
+        // Use Firecrawl search to find a portrait image
+        const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${firecrawlKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `${name.trim()} portrait photo conférencier`,
+            limit: 5,
+            scrapeOptions: { formats: ["html"] },
+          }),
+        });
+        const searchData = await searchResp.json();
+        const results = searchData?.data || [];
+        
+        // Look for a usable portrait image from search results
+        for (const result of results) {
+          if (!result.html) continue;
+          const imgs = extractImages(result.html);
+          // Find a large portrait-like image (not tiny icons)
+          const portrait = imgs.find((img: string) => 
+            (img.includes(slug) || img.includes(name.trim().split(" ").pop()?.toLowerCase() || "")) &&
+            !img.includes("logo") && !img.includes("icon") && !img.includes("avatar") &&
+            (img.endsWith(".jpg") || img.endsWith(".jpeg") || img.endsWith(".png") || img.endsWith(".webp") || img.includes("upload") || img.includes("image"))
+          );
+          if (portrait) {
+            bestPhoto = portrait.startsWith("http") ? portrait : `https:${portrait}`;
+            console.log(`  ✓ Found portrait from ${result.url}: ${bestPhoto}`);
+            break;
+          }
+        }
+        
+        // If still no photo, try scraping a Wikipedia image directly
+        if (!bestPhoto) {
+          const wikiUrl = `https://fr.wikipedia.org/wiki/${encodeURIComponent(name.trim().replace(/ /g, "_"))}`;
+          const wikiResp = await fetch("https://api.firecrawl.dev/v1/scrape", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${firecrawlKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ url: wikiUrl, formats: ["html"], onlyMainContent: true }),
+          });
+          const wikiData = await wikiResp.json();
+          const wikiHtml = wikiData?.data?.html || "";
+          if (wikiHtml) {
+            // Extract the infobox image (usually the main portrait)
+            const infoboxImg = wikiHtml.match(/class="[^"]*infobox[^"]*"[\s\S]*?<img[^>]+src="([^"]+)"/i);
+            if (infoboxImg?.[1]) {
+              bestPhoto = infoboxImg[1].startsWith("http") ? infoboxImg[1] : `https:${infoboxImg[1]}`;
+              console.log(`  ✓ Found Wikipedia portrait: ${bestPhoto}`);
+            } else {
+              // Try any large image from the wiki page
+              const wikiImgs = extractImages(wikiHtml).filter((img: string) => 
+                img.includes("upload.wikimedia") && !img.includes("logo") && !img.includes("icon") && !img.includes("Flag") && !img.includes("Pictogram")
+              );
+              if (wikiImgs.length > 0) {
+                bestPhoto = wikiImgs[0].startsWith("http") ? wikiImgs[0] : `https:${wikiImgs[0]}`;
+                console.log(`  ✓ Found Wikipedia image: ${bestPhoto}`);
+              }
+            }
+          }
+        }
+        
+        if (!bestPhoto) console.log("  ✗ No portrait found from search or Wikipedia");
+      } catch (e) {
+        console.error("Stock photo search error:", e);
+      }
+    }
 
     // Get video URL
     const videoUrl = found.find((s) => s.videos?.length)?.videos?.[0] || null;
