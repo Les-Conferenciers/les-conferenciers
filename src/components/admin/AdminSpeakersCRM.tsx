@@ -896,7 +896,7 @@ const AdminSpeakersCRM = () => {
         {showImport && (
           <div className="border border-border rounded-lg p-4 bg-card space-y-2">
             <p className="text-xs text-muted-foreground">
-              Recherchez un conférencier sur les sites concurrents et importez sa fiche automatiquement.
+              Recherchez un conférencier par nom et importez sa fiche automatiquement.
             </p>
             <div className="flex gap-2">
               <Input

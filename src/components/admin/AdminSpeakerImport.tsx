@@ -163,7 +163,7 @@ const AdminSpeakerImport = () => {
       <div className="border border-border rounded-xl p-6 bg-card">
         <h3 className="font-serif text-lg font-bold mb-1">Importer un conférencier</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Recherchez un conférencier sur les sites concurrents (Orators, WeChamp, Simone & Nelson) et importez sa fiche automatiquement.
+          Recherchez un conférencier par nom et importez sa fiche automatiquement.
         </p>
 
         <div className="flex gap-3">
