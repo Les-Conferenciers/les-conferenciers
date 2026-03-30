@@ -31,7 +31,7 @@ const LogoCarousel = () => {
       <div className="relative">
         <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-card to-transparent z-10" />
         <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-card to-transparent z-10" />
-        <div className="flex animate-scroll-logos gap-14 items-center w-max">
+        <div className="flex animate-scroll-logos gap-14 items-center w-max will-change-transform">
           {doubled.map((logo, i) => (
             <div
               key={`${logo.name}-${i}`}
