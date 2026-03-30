@@ -756,7 +756,7 @@ Belle journée,`;
                   </Button>
                 </div>
               )}
-              <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? "Création…" : "Créer la proposition"}</Button>
+              <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? (editingDraftId ? "Mise à jour…" : "Création…") : (editingDraftId ? "Mettre à jour la proposition" : "Créer la proposition")}</Button>
             </div>
           </DialogContent>
         </Dialog>
