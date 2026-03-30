@@ -533,9 +533,14 @@ Belle journée,`;
                 <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
               </Button>
               {tab === "drafts" && (
-                <Button variant="outline" size="sm" className="gap-1" onClick={() => handleSend(p)} disabled={sending === p.id}>
-                  <Send className="h-3 w-3" /> {sending === p.id ? "Envoi…" : "Envoyer"}
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => editDraft(p)} title="Modifier">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => handleSend(p)} disabled={sending === p.id}>
+                    <Send className="h-3 w-3" /> {sending === p.id ? "Envoi…" : "Envoyer"}
+                  </Button>
+                </div>
               )}
               {tab === "sent" && !accepted && (
                 <div className="flex gap-1">
