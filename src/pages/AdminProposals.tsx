@@ -118,7 +118,7 @@ const AdminProposals = () => {
   const [activeTab, setActiveTab] = useState("sent");
   const [stepFilter, setStepFilter] = useState<string | null>(null);
   const [saveTemplateName, setSaveTemplateName] = useState("");
-
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   // Form state
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
