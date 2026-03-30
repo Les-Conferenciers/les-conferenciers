@@ -331,7 +331,7 @@ ${sourcesText}
 CRÉE UNE FICHE COMPLÈTE en JSON.
 
 ═══════════════════════════════════════════
-STRUCTURE BIOGRAPHIE OBLIGATOIRE (500-700 mots) :
+STRUCTURE BIOGRAPHIE OBLIGATOIRE (300-800 mots, idéalement 500-600) :
 ═══════════════════════════════════════════
 
 1. L'AMORCE (Accroche) : Une phrase forte qui résume la singularité. NE commence JAMAIS par le prénom ou le nom. Ex: "Figure incontournable de...", "Ancien champion...", "Titulaire d'un..."
