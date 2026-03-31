@@ -790,7 +790,7 @@ const SpeakerDetail = () => {
                       <div className="mt-0.5 bg-accent/10 p-1.5 rounded-full flex-shrink-0">
                         <Check className="h-3.5 w-3.5 text-accent" />
                       </div>
-                      <span className="font-medium text-foreground text-sm">{point}</span>
+                      <span className="font-medium text-foreground text-sm">{point.replace(/<[^>]*>/g, '')}</span>
                     </div>
                   ))}
                 </div>
