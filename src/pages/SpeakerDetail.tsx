@@ -560,7 +560,7 @@ const SpeakerDetail = () => {
                   {speaker.key_points.slice(0, 4).map((point: string, idx: number) => (
                     <div key={idx} className="flex items-start gap-2.5 text-sm text-primary-foreground/80">
                       <img src={nuggetIcon} alt="" className="h-4 w-4 flex-shrink-0 object-contain mt-0.5" />
-                      <span>{point}</span>
+                      <span>{point.replace(/<[^>]*>/g, '')}</span>
                     </div>
                   ))}
                 </div>
