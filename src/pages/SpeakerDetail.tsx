@@ -521,7 +521,7 @@ const SpeakerDetail = () => {
                     className="w-full h-full object-cover"
                     style={{ objectPosition: speaker.image_position || 'center center' }}
                     fetchPriority="high"
-                    decoding="async"
+                    decoding="sync"
                     width={176} height={176}
                   />
                 ) : (
@@ -560,7 +560,7 @@ const SpeakerDetail = () => {
                   {speaker.key_points.slice(0, 4).map((point: string, idx: number) => (
                     <div key={idx} className="flex items-start gap-2.5 text-sm text-primary-foreground/80">
                       <img src={nuggetIcon} alt="" className="h-4 w-4 flex-shrink-0 object-contain mt-0.5" />
-                      <span>{point}</span>
+                      <span>{point.replace(/<[^>]*>/g, '')}</span>
                     </div>
                   ))}
                 </div>
@@ -790,7 +790,7 @@ const SpeakerDetail = () => {
                       <div className="mt-0.5 bg-accent/10 p-1.5 rounded-full flex-shrink-0">
                         <Check className="h-3.5 w-3.5 text-accent" />
                       </div>
-                      <span className="font-medium text-foreground text-sm">{point}</span>
+                      <span className="font-medium text-foreground text-sm">{point.replace(/<[^>]*>/g, '')}</span>
                     </div>
                   ))}
                 </div>

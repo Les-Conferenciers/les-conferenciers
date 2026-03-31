@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Send, Trash2, ExternalLink, Copy, Check, User, Filter, ChevronDown, ChevronRight, ChevronUp, X, Save, Pencil, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, Plus, Send, Trash2, ExternalLink, Copy, Check, User, Filter, ChevronDown, ChevronRight, ChevronUp, X, Save, Pencil, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import EventDossier from "@/components/admin/EventDossier";
 import { cn } from "@/lib/utils";
@@ -119,6 +119,8 @@ const AdminProposals = () => {
   const [stepFilter, setStepFilter] = useState<string | null>(null);
   const [saveTemplateName, setSaveTemplateName] = useState("");
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewTab, setPreviewTab] = useState<"email" | "proposal">("email");
   // Form state
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -756,8 +758,99 @@ Belle journée,`;
                   </Button>
                 </div>
               )}
-              <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? (editingDraftId ? "Mise à jour…" : "Création…") : (editingDraftId ? "Mettre à jour la proposition" : "Créer la proposition")}</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 gap-2" onClick={() => setPreviewOpen(true)} disabled={selectedSpeakers.length === 0}>
+                  <Eye className="h-4 w-4" /> Prévisualiser
+                </Button>
+                <Button className="flex-1" onClick={handleCreate} disabled={submitting}>{submitting ? (editingDraftId ? "Mise à jour…" : "Création…") : (editingDraftId ? "Mettre à jour la proposition" : "Créer la proposition")}</Button>
+              </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preview Dialog */}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-serif">Prévisualisation</DialogTitle>
+            </DialogHeader>
+            <Tabs value={previewTab} onValueChange={v => setPreviewTab(v as "email" | "proposal")}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="email">📧 Email</TabsTrigger>
+                <TabsTrigger value="proposal">📄 Proposition</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="email">
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className="bg-muted px-4 py-2 text-xs text-muted-foreground space-y-1">
+                    <p><strong>De :</strong> Les Conférenciers &lt;nellysabde@lesconferenciers.com&gt;</p>
+                    <p><strong>À :</strong> {clientEmail || "—"}</p>
+                    <p><strong>Objet :</strong> Votre sélection de conférenciers sur mesure — {clientName || "Client"}</p>
+                  </div>
+                  <div className="bg-white">
+                    <div style={{ background: '#1a2332', padding: '20px 30px', textAlign: 'center' }}>
+                      <span style={{ color: '#f5f0e8', fontSize: '20px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>Agence Les Conférenciers</span>
+                    </div>
+                    <div style={{ padding: '30px' }}>
+                      <div style={{ color: '#333', fontSize: '15px', lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: (message || "").replace(/\n/g, "<br>") }} />
+                      <div style={{ textAlign: 'center', margin: '30px 0' }}>
+                        <span style={{ display: 'inline-block', background: '#1a2332', color: '#f5f0e8', padding: '14px 32px', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold' }}>
+                          Consulter la proposition complète
+                        </span>
+                      </div>
+                      <div style={{ background: '#f0f7ff', border: '1px solid #d0e3f7', borderRadius: '8px', padding: '16px', margin: '20px 0' }}>
+                        <p style={{ color: '#1a5276', fontSize: '13px', margin: 0, textAlign: 'center' }}>
+                          📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ background: '#1a2332', padding: '16px', textAlign: 'center' }}>
+                      <p style={{ color: '#f5f0e8', opacity: 0.5, fontSize: '11px', margin: 0 }}>Proposition confidentielle — Les Conférenciers</p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="proposal">
+                <div className="border border-border rounded-lg p-6 space-y-6">
+                  <div className="text-center space-y-2">
+                    <h3 className="text-lg font-serif font-bold text-foreground">Votre proposition personnalisée</h3>
+                    {recipientName && <p className="text-sm text-muted-foreground">{recipientName} — {clientName}</p>}
+                  </div>
+                  {selectedSpeakers.sort((a, b) => a.display_order - b.display_order).map((ps) => {
+                    const sp = speakers.find(s => s.id === ps.speaker_id);
+                    if (!sp) return null;
+                    const speakerConfs = getConferencesForSpeaker(ps.speaker_id).filter(c => ps.selected_conference_ids.includes(c.id));
+                    return (
+                      <div key={ps.speaker_id} className="border border-border rounded-xl p-5 space-y-3">
+                        <div className="flex items-center gap-4">
+                          <div className="h-14 w-14 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                            {sp.image_url ? <img src={sp.image_url} alt={sp.name} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-6 w-6 text-muted-foreground" /></div>}
+                          </div>
+                          <div>
+                            <h4 className="font-serif font-bold text-foreground">{sp.name}</h4>
+                            {sp.role && <p className="text-sm text-muted-foreground">{sp.role}</p>}
+                          </div>
+                          {ps.total_price && (
+                            <div className="ml-auto text-right">
+                              <p className="text-lg font-bold text-foreground">{ps.total_price.toLocaleString("fr-FR")} € HT</p>
+                            </div>
+                          )}
+                        </div>
+                        {speakerConfs.length > 0 && (
+                          <div className="space-y-1 pt-2 border-t border-border/50">
+                            <p className="text-xs font-medium text-muted-foreground">Conférences proposées :</p>
+                            {speakerConfs.map(c => (
+                              <p key={c.id} className="text-sm text-foreground">• {c.title}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
       </header>
