@@ -758,7 +758,12 @@ Belle journée,`;
                   </Button>
                 </div>
               )}
-              <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? (editingDraftId ? "Mise à jour…" : "Création…") : (editingDraftId ? "Mettre à jour la proposition" : "Créer la proposition")}</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 gap-2" onClick={() => setPreviewOpen(true)} disabled={selectedSpeakers.length === 0}>
+                  <Eye className="h-4 w-4" /> Prévisualiser
+                </Button>
+                <Button className="flex-1" onClick={handleCreate} disabled={submitting}>{submitting ? (editingDraftId ? "Mise à jour…" : "Création…") : (editingDraftId ? "Mettre à jour la proposition" : "Créer la proposition")}</Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
