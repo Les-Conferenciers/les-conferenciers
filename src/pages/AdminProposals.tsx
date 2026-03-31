@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Send, Trash2, ExternalLink, Copy, Check, User, Filter, ChevronDown, ChevronRight, ChevronUp, X, Save, Pencil, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, Plus, Send, Trash2, ExternalLink, Copy, Check, User, Filter, ChevronDown, ChevronRight, ChevronUp, X, Save, Pencil, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import EventDossier from "@/components/admin/EventDossier";
 import { cn } from "@/lib/utils";
