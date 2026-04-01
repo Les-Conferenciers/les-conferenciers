@@ -115,7 +115,7 @@ const AdminProposals = () => {
   const [sending, setSending] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("sent");
+  const [activeTab, setActiveTab] = useState("drafts");
   const [stepFilter, setStepFilter] = useState<string | null>(null);
   const [saveTemplateName, setSaveTemplateName] = useState("");
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
@@ -536,8 +536,8 @@ Belle journée,`;
               </Button>
               {tab === "drafts" && (
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => editDraft(p)} title="Modifier">
-                    <Pencil className="h-3.5 w-3.5" />
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => editDraft(p)} title="Modifier le brouillon">
+                    <Pencil className="h-3.5 w-3.5" /> Éditer
                   </Button>
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => handleSend(p)} disabled={sending === p.id}>
                     <Send className="h-3 w-3" /> {sending === p.id ? "Envoi…" : "Envoyer"}
@@ -896,7 +896,14 @@ Belle journée,`;
             </div>
           )}
 
-          <TabsContent value="drafts"><ProposalTable items={drafts} tab="drafts" /></TabsContent>
+          <TabsContent value="drafts">
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Ouvrez un brouillon avec <span className="font-medium text-foreground">Éditer</span> pour modifier les conférenciers, conférences et tarifs avant envoi.
+              </p>
+              <ProposalTable items={drafts} tab="drafts" />
+            </div>
+          </TabsContent>
           {/* Envoyées et Terminées masquées temporairement */}
           <TabsContent value="refused"><ProposalTable items={refusedProposals} tab="refused" /></TabsContent>
         </Tabs>
