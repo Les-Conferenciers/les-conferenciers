@@ -176,6 +176,8 @@ type Proposal = {
     travel_costs: number | null;
     agency_commission: number | null;
     total_price: number | null;
+    display_order?: number | null;
+    selected_conference_ids?: string[] | null;
     speakers: { name: string; image_url: string | null; formal_address?: boolean; email?: string | null; phone?: string | null } | null;
   }[];
 };
@@ -326,6 +328,7 @@ const AdminProposalsContent = () => {
   const [editMessage, setEditMessage] = useState("");
   const [editEmailSubject, setEditEmailSubject] = useState("");
   const [editEmailBody, setEditEmailBody] = useState("");
+  const [editSelectedSpeakers, setEditSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
@@ -336,7 +339,7 @@ const AdminProposalsContent = () => {
     const [proposalsRes, contractsRes, invoicesRes] = await Promise.all([
       supabase
         .from("proposals")
-        .select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, speakers(name, image_url, formal_address, email, phone))")
+        .select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))")
         .order("created_at", { ascending: false }),
       supabase.from("contracts").select("id, proposal_id, status"),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at"),
@@ -381,30 +384,69 @@ const AdminProposalsContent = () => {
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter(c => c.speaker_id === speakerId);
 
-  const addSpeaker = (speaker: Speaker) => {
-    if (selectedSpeakers.find(s => s.speaker_id === speaker.id)) { toast.error("Déjà ajouté"); return; }
+  const createProposalSpeaker = (speaker: Speaker, displayOrder: number): ProposalSpeaker => {
     const baseFee = speaker.base_fee ?? 0;
-    setSelectedSpeakers(prev => [...prev, {
-      speaker_id: speaker.id, speaker_fee: baseFee || null, travel_costs: 0,
-      agency_commission: COMMISSION, total_price: (baseFee + COMMISSION) || null,
-      display_order: prev.length, selected_conference_ids: [],
-    }]);
+    return {
+      speaker_id: speaker.id,
+      speaker_fee: baseFee || null,
+      travel_costs: 0,
+      agency_commission: COMMISSION,
+      total_price: (baseFee + COMMISSION) || null,
+      display_order: displayOrder,
+      selected_conference_ids: [],
+    };
   };
 
-  const removeSpeaker = (speakerId: string) => setSelectedSpeakers(prev => prev.filter(s => s.speaker_id !== speakerId));
+  const normalizeSpeakerOrder = (items: ProposalSpeaker[]) =>
+    items.map((item, index) => ({ ...item, display_order: index }));
 
-  const toggleConference = (speakerId: string, confId: string) => {
-    setSelectedSpeakers(prev => prev.map(s => {
+  const buildProposalSpeakers = (items: Proposal["proposal_speakers"] = []): ProposalSpeaker[] =>
+    normalizeSpeakerOrder(
+      [...items]
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+        .map((ps) => ({
+          speaker_id: ps.speaker_id,
+          speaker_fee: ps.speaker_fee,
+          travel_costs: ps.travel_costs,
+          agency_commission: ps.agency_commission,
+          total_price: ps.total_price,
+          display_order: ps.display_order ?? 0,
+          selected_conference_ids: ps.selected_conference_ids || [],
+        }))
+    );
+
+  const addSpeakerToList = (items: ProposalSpeaker[], speaker: Speaker) => {
+    if (items.find(s => s.speaker_id === speaker.id)) {
+      toast.error("Déjà ajouté");
+      return items;
+    }
+
+    return [...items, createProposalSpeaker(speaker, items.length)];
+  };
+
+  const removeSpeakerFromList = (items: ProposalSpeaker[], speakerId: string) =>
+    normalizeSpeakerOrder(items.filter(s => s.speaker_id !== speakerId));
+
+  const moveSpeakerInList = (items: ProposalSpeaker[], index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return items;
+
+    const nextItems = [...items];
+    [nextItems[index], nextItems[targetIndex]] = [nextItems[targetIndex], nextItems[index]];
+    return normalizeSpeakerOrder(nextItems);
+  };
+
+  const toggleConferenceInList = (items: ProposalSpeaker[], speakerId: string, confId: string) =>
+    items.map(s => {
       if (s.speaker_id !== speakerId) return s;
       const ids = s.selected_conference_ids.includes(confId)
         ? s.selected_conference_ids.filter(id => id !== confId)
         : [...s.selected_conference_ids, confId];
       return { ...s, selected_conference_ids: ids };
-    }));
-  };
+    });
 
-  const updateSpeakerField = (speakerId: string, field: keyof ProposalSpeaker, value: number | null) => {
-    setSelectedSpeakers(prev => prev.map(s => {
+  const updateSpeakerFieldInList = (items: ProposalSpeaker[], speakerId: string, field: keyof ProposalSpeaker, value: number | null) =>
+    items.map(s => {
       if (s.speaker_id !== speakerId) return s;
       const updated = { ...s, [field]: value };
       if (field !== "total_price" && field !== "display_order" && field !== "selected_conference_ids") {
@@ -414,7 +456,20 @@ const AdminProposalsContent = () => {
         updated.total_price = (fee || 0) + (travel || 0) + (comm || 0) || null;
       }
       return updated;
-    }));
+    });
+
+  const addSpeaker = (speaker: Speaker) => {
+    setSelectedSpeakers(prev => addSpeakerToList(prev, speaker));
+  };
+
+  const removeSpeaker = (speakerId: string) => setSelectedSpeakers(prev => removeSpeakerFromList(prev, speakerId));
+
+  const toggleConference = (speakerId: string, confId: string) => {
+    setSelectedSpeakers(prev => toggleConferenceInList(prev, speakerId, confId));
+  };
+
+  const updateSpeakerField = (speakerId: string, field: keyof ProposalSpeaker, value: number | null) => {
+    setSelectedSpeakers(prev => updateSpeakerFieldInList(prev, speakerId, field, value));
   };
 
   const getSpeakerName = (id: string) => speakers.find(s => s.id === id)?.name || "—";
@@ -458,11 +513,16 @@ const AdminProposalsContent = () => {
     setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
     setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
     setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    setEditSelectedSpeakers(buildProposalSpeakers(p.proposal_speakers));
     setEditDialogOpen(true);
   };
 
   const handleSaveEdit = async () => {
     if (!editingProposal) return;
+    if (!editClientName || !editClientEmail || editSelectedSpeakers.length === 0) {
+      toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier");
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from("proposals").update({
       client_name: editClientName, client_email: editClientEmail,
@@ -470,8 +530,26 @@ const AdminProposalsContent = () => {
       email_subject: editEmailSubject || null, email_body: editEmailBody || null,
     } as any).eq("id", editingProposal.id);
     if (error) { toast.error("Erreur"); setSubmitting(false); return; }
+
+    const { error: deleteError } = await supabase.from("proposal_speakers").delete().eq("proposal_id", editingProposal.id);
+    if (deleteError) { toast.error("Erreur sur les conférenciers"); setSubmitting(false); return; }
+
+    const { error: insertError } = await supabase
+      .from("proposal_speakers")
+      .insert(editSelectedSpeakers.map((speaker, index) => ({
+        proposal_id: editingProposal.id,
+        speaker_id: speaker.speaker_id,
+        speaker_fee: speaker.speaker_fee,
+        travel_costs: speaker.travel_costs,
+        agency_commission: speaker.agency_commission,
+        total_price: speaker.total_price,
+        display_order: index,
+        selected_conference_ids: speaker.selected_conference_ids.length > 0 ? speaker.selected_conference_ids : null,
+      })));
+    if (insertError) { toast.error("Erreur sur les tarifs des conférenciers"); setSubmitting(false); return; }
+
     toast.success("Proposition mise à jour !");
-    setEditDialogOpen(false); setEditingProposal(null); fetchProposals(); setSubmitting(false);
+    setEditDialogOpen(false); setEditingProposal(null); setEditSelectedSpeakers([]); fetchProposals(); setSubmitting(false);
   };
 
   const handleSend = async (proposal: Proposal) => {
@@ -658,6 +736,96 @@ const AdminProposalsContent = () => {
       <Button className="w-full" onClick={handleCreate} disabled={submitting}>
         {submitting ? "Création…" : "Créer la proposition"}
       </Button>
+    </div>
+  );
+
+  const renderSpeakerSelectionEditor = (
+    items: ProposalSpeaker[],
+    setItems: React.Dispatch<React.SetStateAction<ProposalSpeaker[]>>,
+  ) => (
+    <div className="space-y-3">
+      <Label>Conférenciers ({items.length})</Label>
+      {items.map((ps, idx) => {
+        const city = getSpeakerCity(ps.speaker_id);
+        const imageUrl = getSpeakerImage(ps.speaker_id);
+        const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
+        return (
+          <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                  {imageUrl ? <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-5 w-5 text-muted-foreground" /></div>}
+                </div>
+                <div>
+                  <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
+                  {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" disabled={idx === 0} onClick={() => setItems(prev => moveSpeakerInList(prev, idx, "up"))}><ChevronUp className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="sm" disabled={idx === items.length - 1} onClick={() => setItems(prev => moveSpeakerInList(prev, idx, "down"))}><ChevronDown className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="sm" onClick={() => setItems(prev => removeSpeakerFromList(prev, ps.speaker_id))}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </div>
+            </div>
+            {speakerConfs.length > 0 && (
+              <div className="space-y-2 bg-muted/50 rounded-md p-3">
+                <Label className="text-xs text-muted-foreground">Conférences à inclure</Label>
+                {speakerConfs.map(conf => (
+                  <div key={conf.id} className="flex items-center gap-2">
+                    <Checkbox id={`edit-conf-${conf.id}-${ps.speaker_id}`} checked={ps.selected_conference_ids.includes(conf.id)} onCheckedChange={() => setItems(prev => toggleConferenceInList(prev, ps.speaker_id, conf.id))} />
+                    <label htmlFor={`edit-conf-${conf.id}-${ps.speaker_id}`} className="text-sm cursor-pointer leading-tight">{conf.title}</label>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
+                {(() => {
+                  const sp = speakers.find(s => s.id === ps.speaker_id);
+                  const feeDetails = sp?.fee_details;
+                  const altRates = parseAlternativeRates(feeDetails, sp?.base_fee ?? null);
+                  return (
+                    <div className="space-y-1">
+                      {sp?.base_fee && (
+                        <div className="text-xs font-medium text-accent mb-1">
+                          Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €
+                        </div>
+                      )}
+                      <Input type="number" value={ps.speaker_fee ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null))} />
+                      {altRates.length > 0 && (
+                        <select
+                          className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                          value={ps.speaker_fee?.toString() || ""}
+                          onChange={e => {
+                            if (e.target.value) setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "speaker_fee", Number(e.target.value)));
+                          }}
+                        >
+                          {sp?.base_fee && <option value={sp.base_fee.toString()}>Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €</option>}
+                          {altRates.map((r, i) => (
+                            <option key={i} value={r.value}>{r.label}</option>
+                          ))}
+                        </select>
+                      )}
+                      {feeDetails && (
+                        <p className="text-[10px] text-muted-foreground/70 italic leading-tight">{feeDetails}</p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" value={ps.travel_costs ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null))} /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="number" value={ps.agency_commission ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null))} /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label><Input type="number" value={ps.total_price ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null))} className="font-bold" /></div>
+            </div>
+          </div>
+        );
+      })}
+      <SpeakerSelector
+        speakers={speakers}
+        selectedSpeakers={items}
+        onSelect={(speaker) => setItems(prev => addSpeakerToList(prev, speaker))}
+      />
     </div>
   );
 
@@ -872,6 +1040,10 @@ const AdminProposalsContent = () => {
                 <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
                 <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><Textarea value={editEmailBody} onChange={e => setEditEmailBody(e.target.value)} rows={10} className="text-sm" /></div>
               </div>
+            </div>
+            <div className="border-t border-border pt-4">
+              <h3 className="font-medium text-sm mb-3">🎤 Conférenciers et tarifs</h3>
+              {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
             </div>
             <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
               {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
