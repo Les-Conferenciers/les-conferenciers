@@ -1123,7 +1123,7 @@ const AdminProposalsContent = () => {
             <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
             <div className="border-t border-border pt-4">
               <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition</h3>
-              <Textarea value={editMessage} onChange={e => setEditMessage(e.target.value)} rows={8} className="text-sm" />
+              <SimpleRichTextEditor value={editMessage} onChange={setEditMessage} rows={8} />
             </div>
             <div className="border-t border-border pt-4">
               <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
