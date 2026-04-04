@@ -461,16 +461,32 @@ const AdminProposalsContent = () => {
   const getSpeakerCity = (id: string) => speakers.find(s => s.id === id)?.city || null;
 
   const handleCreate = async () => {
-    if (!clientName || !clientEmail || selectedSpeakers.length === 0) {
-      toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier"); return;
+    if (!clientName || !clientEmail) {
+      toast.error("Remplissez le nom et l'email du client"); return;
+    }
+    if (proposalType === "classique" && selectedSpeakers.length === 0) {
+      toast.error("Ajoutez au moins 1 conférencier"); return;
+    }
+    if (proposalType === "unique" && selectedSpeakers.length === 0) {
+      toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
     const finalMessage = message || getDefaultMessage(recipientName, clientName);
     const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
-    const finalBody = emailBody || getDefaultEmailBody(recipientName, clientName);
+    let finalBody = emailBody;
+    if (!finalBody) {
+      if (proposalType === "unique" && selectedSpeakers.length > 0) {
+        const sp = speakers.find(s => s.id === selectedSpeakers[0].speaker_id);
+        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", (selectedSpeakers[0].speaker_fee || 0).toLocaleString("fr-FR"), (sp as any)?.slug || "");
+      } else if (proposalType === "info") {
+        finalBody = getInfoEmailBody(recipientName);
+      } else {
+        finalBody = getDefaultEmailBody(recipientName, clientName);
+      }
+    }
     const { data: proposal, error } = await supabase
       .from("proposals")
-      .insert({ client_name: clientName, client_email: clientEmail, message: finalMessage, recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody } as any)
+      .insert({ client_name: clientName, client_email: clientEmail, message: finalMessage, recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody, proposal_type: proposalType } as any)
       .select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     const { error: spError } = await supabase
