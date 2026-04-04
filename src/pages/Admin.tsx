@@ -623,8 +623,59 @@ const AdminProposalsContent = () => {
     return map[status] || { label: status, color: "bg-muted text-muted-foreground" };
   };
 
+  const noScrollWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
+
+  const handleProposalTypeChange = (type: ProposalType) => {
+    setProposalType(type);
+    setSelectedSpeakers([]);
+    if (type === "info") {
+      setEmailBody(getInfoEmailBody(recipientName));
+      setMessage("");
+      setEmailSubject(`Demande d'informations — ${clientName || "Les Conférenciers"}`);
+    } else if (type === "unique") {
+      setEmailBody("");
+      setMessage("");
+      setEmailSubject(`Votre conférencier sur mesure — ${clientName || "Les Conférenciers"}`);
+    } else {
+      setEmailBody(getDefaultEmailBody(recipientName, clientName));
+      setMessage(getDefaultMessage(recipientName, clientName));
+      setEmailSubject(getDefaultEmailSubject(clientName));
+    }
+  };
+
+  const applyGlobalCommission = (val: number) => {
+    setGlobalCommission(val);
+    setSelectedSpeakers(prev => prev.map(s => {
+      const updated = { ...s, agency_commission: val };
+      updated.total_price = (updated.speaker_fee || 0) + (updated.travel_costs || 0) + val || null;
+      return updated;
+    }));
+  };
+
   const renderSpeakerForm = () => (
     <div className="space-y-6 mt-4">
+      {/* Proposal type selector */}
+      <div className="space-y-2">
+        <Label>Type de proposition</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            { value: "classique" as ProposalType, label: "📋 Classique", desc: "Multi-conférenciers avec lien web" },
+            { value: "unique" as ProposalType, label: "🎤 Conférencier unique", desc: "Un seul profil, tout dans l'email" },
+            { value: "info" as ProposalType, label: "📝 Demande d'infos", desc: "Email simple sans conférencier" },
+          ]).map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => handleProposalTypeChange(opt.value)}
+              className={`border rounded-lg p-3 text-left transition-colors ${proposalType === opt.value ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:border-primary/50"}`}
+            >
+              <p className="text-sm font-medium">{opt.label}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" /></div>
         <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" /></div>
@@ -632,108 +683,147 @@ const AdminProposalsContent = () => {
       <div className="space-y-2">
         <Label>Prénom Nom du destinataire (optionnel)</Label>
         <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
-        <p className="text-[11px] text-muted-foreground">Affiché en titre : « {recipientName || "Prénom Nom"} pour {clientName || "Société"} »</p>
+      </div>
+
+      {/* Message & Email - depends on type */}
+      {proposalType === "classique" && (
+        <div className="space-y-2">
+          <Label>Message affiché dans la proposition</Label>
+          <SimpleRichTextEditor value={message} onChange={setMessage} placeholder="Bonjour, suite à notre échange..." rows={4} />
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label>✉️ Email d'envoi — Objet</Label>
+        <Input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Objet de l'email" />
       </div>
       <div className="space-y-2">
-        <Label>Message personnalisé (affiché sur la page proposition)</Label>
-        <Textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} className="text-sm" />
+        <Label>✉️ Email d'envoi — Corps</Label>
+        <SimpleRichTextEditor value={emailBody} onChange={setEmailBody} placeholder="Corps de l'email..." rows={8} />
       </div>
-      <div className="space-y-3">
-        <Label>Conférenciers ({selectedSpeakers.length})</Label>
-        {selectedSpeakers.map((ps, idx) => {
-          const city = getSpeakerCity(ps.speaker_id);
-          const imageUrl = getSpeakerImage(ps.speaker_id);
-          const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
-          return (
-            <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                    {imageUrl ? <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-5 w-5 text-muted-foreground" /></div>}
-                  </div>
-                  <div>
-                    <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
-                    {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" disabled={idx === 0} onClick={() => {
-                    setSelectedSpeakers(prev => {
-                      const arr = [...prev];
-                      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
-                      return arr;
-                    });
-                  }}><ChevronUp className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="sm" disabled={idx === selectedSpeakers.length - 1} onClick={() => {
-                    setSelectedSpeakers(prev => {
-                      const arr = [...prev];
-                      [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
-                      return arr;
-                    });
-                  }}><ChevronDown className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </div>
-              </div>
-              {speakerConfs.length > 0 && (
-                <div className="space-y-2 bg-muted/50 rounded-md p-3">
-                  <Label className="text-xs text-muted-foreground">Conférences à inclure</Label>
-                  {speakerConfs.map(conf => (
-                    <div key={conf.id} className="flex items-center gap-2">
-                      <Checkbox id={`conf-${conf.id}`} checked={ps.selected_conference_ids.includes(conf.id)} onCheckedChange={() => toggleConference(ps.speaker_id, conf.id)} />
-                      <label htmlFor={`conf-${conf.id}`} className="text-sm cursor-pointer leading-tight">{conf.title}</label>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
-                  {(() => {
-                    const sp = speakers.find(s => s.id === ps.speaker_id);
-                    const feeDetails = sp?.fee_details;
-                    const altRates = parseAlternativeRates(feeDetails, sp?.base_fee ?? null);
-                    return (
-                      <div className="space-y-1">
-                        {sp?.base_fee && (
-                          <div className="text-xs font-medium text-accent mb-1">
-                            Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €
-                          </div>
-                        )}
-                        <Input type="number" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
-                        {altRates.length > 0 && (
-                          <select
-                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
-                            value={ps.speaker_fee?.toString() || ""}
-                            onChange={e => {
-                              if (e.target.value) updateSpeakerField(ps.speaker_id, "speaker_fee", Number(e.target.value));
-                            }}
-                          >
-                            {sp?.base_fee && <option value={sp.base_fee.toString()}>Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €</option>}
-                            {altRates.map((r, i) => (
-                              <option key={i} value={r.value}>{r.label}</option>
-                            ))}
-                          </select>
-                        )}
-                        {feeDetails && (
-                          <p className="text-[10px] text-muted-foreground/70 italic leading-tight">{feeDetails}</p>
-                        )}
+
+      {/* Speakers section - not for "info" type */}
+      {proposalType !== "info" && (
+        <>
+          {/* Global commission */}
+          <div className="border border-border rounded-lg p-4 space-y-2 bg-muted/30">
+            <Label className="text-sm font-medium">Commission agence globale (€)</Label>
+            <p className="text-[11px] text-muted-foreground">Appliquée par défaut à chaque conférencier ajouté</p>
+            <Input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={globalCommission || ""}
+              onChange={e => {
+                const val = e.target.value ? Number(e.target.value) : 0;
+                applyGlobalCommission(val);
+              }}
+              onWheel={noScrollWheel}
+              placeholder="0"
+              className="max-w-xs"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <Label>Conférenciers ({selectedSpeakers.length}{proposalType === "unique" ? "/1" : ""})</Label>
+            {selectedSpeakers.map((ps, idx) => {
+              const city = getSpeakerCity(ps.speaker_id);
+              const imageUrl = getSpeakerImage(ps.speaker_id);
+              const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
+              return (
+                <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                        {imageUrl ? <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-5 w-5 text-muted-foreground" /></div>}
                       </div>
-                    );
-                  })()}
+                      <div>
+                        <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
+                        {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" disabled={idx === 0} onClick={() => {
+                        setSelectedSpeakers(prev => {
+                          const arr = [...prev];
+                          [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+                          return arr;
+                        });
+                      }}><ChevronUp className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" disabled={idx === selectedSpeakers.length - 1} onClick={() => {
+                        setSelectedSpeakers(prev => {
+                          const arr = [...prev];
+                          [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+                          return arr;
+                        });
+                      }}><ChevronDown className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  </div>
+                  {speakerConfs.length > 0 && (
+                    <div className="space-y-2 bg-muted/50 rounded-md p-3">
+                      <Label className="text-xs text-muted-foreground">Conférences à inclure</Label>
+                      {speakerConfs.map(conf => (
+                        <div key={conf.id} className="flex items-center gap-2">
+                          <Checkbox id={`conf-${conf.id}`} checked={ps.selected_conference_ids.includes(conf.id)} onCheckedChange={() => toggleConference(ps.speaker_id, conf.id)} />
+                          <label htmlFor={`conf-${conf.id}`} className="text-sm cursor-pointer leading-tight">{conf.title}</label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
+                      {(() => {
+                        const sp = speakers.find(s => s.id === ps.speaker_id);
+                        const feeDetails = sp?.fee_details;
+                        const altRates = parseAlternativeRates(feeDetails, sp?.base_fee ?? null);
+                        return (
+                          <div className="space-y-1">
+                            {sp?.base_fee && (
+                              <div className="text-xs font-medium text-accent mb-1">
+                                Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €
+                              </div>
+                            )}
+                            <Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} onWheel={noScrollWheel} />
+                            {altRates.length > 0 && (
+                              <select
+                                className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                                value={ps.speaker_fee?.toString() || ""}
+                                onChange={e => {
+                                  if (e.target.value) updateSpeakerField(ps.speaker_id, "speaker_fee", Number(e.target.value));
+                                }}
+                              >
+                                {sp?.base_fee && <option value={sp.base_fee.toString()}>Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €</option>}
+                                {altRates.map((r, i) => (
+                                  <option key={i} value={r.value}>{r.label}</option>
+                                ))}
+                              </select>
+                            )}
+                            {feeDetails && (
+                              <p className="text-[10px] text-muted-foreground/70 italic leading-tight">{feeDetails}</p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} onWheel={noScrollWheel} /></div>
+                    <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} onWheel={noScrollWheel} /></div>
+                    <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total HT (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} onWheel={noScrollWheel} className="font-bold" /></div>
+                  </div>
                 </div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="number" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label><Input type="number" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} className="font-bold" /></div>
-              </div>
-            </div>
-          );
-        })}
-        <SpeakerSelector
-          speakers={speakers}
-          selectedSpeakers={selectedSpeakers}
-          onSelect={addSpeaker}
-        />
-      </div>
+              );
+            })}
+            {(proposalType === "classique" || (proposalType === "unique" && selectedSpeakers.length === 0)) && (
+              <SpeakerSelector
+                speakers={speakers}
+                selectedSpeakers={selectedSpeakers}
+                onSelect={addSpeaker}
+              />
+            )}
+          </div>
+        </>
+      )}
       <Button className="w-full" onClick={handleCreate} disabled={submitting}>
         {submitting ? "Création…" : "Créer la proposition"}
       </Button>
