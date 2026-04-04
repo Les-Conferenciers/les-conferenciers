@@ -299,7 +299,8 @@ const ProposalView = () => {
 
         {/* Tariffs Section */}
         <div className="border border-border rounded-2xl bg-card p-6 md:p-8">
-          <h2 className="text-xl font-serif font-bold text-foreground mb-6">Tarifs proposés</h2>
+          <h2 className="text-xl font-serif font-bold text-foreground mb-4">Tarifs proposés</h2>
+          <p className="text-xs text-muted-foreground mb-6 italic">Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
