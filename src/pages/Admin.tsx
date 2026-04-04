@@ -374,8 +374,8 @@ const AdminProposalsContent = () => {
       speaker_id: speaker.id,
       speaker_fee: baseFee || null,
       travel_costs: 0,
-      agency_commission: COMMISSION,
-      total_price: (baseFee + COMMISSION) || null,
+      agency_commission: globalCommission,
+      total_price: (baseFee + globalCommission) || null,
       display_order: displayOrder,
       selected_conference_ids: [],
     };
