@@ -489,14 +489,16 @@ const AdminProposalsContent = () => {
       .insert({ client_name: clientName, client_email: clientEmail, message: finalMessage, recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody, proposal_type: proposalType } as any)
       .select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
-    const { error: spError } = await supabase
-      .from("proposal_speakers")
-      .insert(selectedSpeakers.map((s, i) => ({
-        proposal_id: proposal.id, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee,
-        travel_costs: s.travel_costs, agency_commission: s.agency_commission, total_price: s.total_price,
-        display_order: i, selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
-      })));
-    if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
+    if (selectedSpeakers.length > 0) {
+      const { error: spError } = await supabase
+        .from("proposal_speakers")
+        .insert(selectedSpeakers.map((s, i) => ({
+          proposal_id: proposal.id, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee,
+          travel_costs: s.travel_costs, agency_commission: s.agency_commission, total_price: s.total_price,
+          display_order: i, selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
+        })));
+      if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
+    }
     toast.success("Proposition créée !");
     setDialogOpen(false); resetForm(); fetchProposals(); setSubmitting(false);
   };
