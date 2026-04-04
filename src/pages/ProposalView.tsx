@@ -213,7 +213,7 @@ const ProposalView = () => {
             <p className="text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
               {proposal.message}
             </p>
-            <p className="text-xs text-muted-foreground mt-3">— Nelly de l'Agence Les Conférenciers</p>
+            
           </div>
         </div>
       )}
