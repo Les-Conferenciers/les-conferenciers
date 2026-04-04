@@ -311,6 +311,8 @@ const AdminProposalsContent = () => {
   const [editEmailSubject, setEditEmailSubject] = useState("");
   const [editEmailBody, setEditEmailBody] = useState("");
   const [editSelectedSpeakers, setEditSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
+  const [proposalType, setProposalType] = useState<ProposalType>("classique");
+  const [globalCommission, setGlobalCommission] = useState<number>(0);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
