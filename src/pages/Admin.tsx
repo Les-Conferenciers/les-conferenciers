@@ -443,7 +443,14 @@ const AdminProposalsContent = () => {
     });
 
   const addSpeaker = (speaker: Speaker) => {
+    if (proposalType === "unique" && selectedSpeakers.length >= 1) {
+      toast.error("Un seul conférencier pour ce type"); return;
+    }
     setSelectedSpeakers(prev => addSpeakerToList(prev, speaker));
+    if (proposalType === "unique") {
+      const fee = speaker.base_fee || 0;
+      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, fee.toLocaleString("fr-FR"), speaker.slug || ""));
+    }
   };
 
   const removeSpeaker = (speakerId: string) => setSelectedSpeakers(prev => removeSpeakerFromList(prev, speakerId));
