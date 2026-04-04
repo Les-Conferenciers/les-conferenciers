@@ -164,7 +164,7 @@ type Proposal = {
   }[];
 };
 
-const COMMISSION = 1300;
+const DEFAULT_COMMISSION = 0;
 
 /** Speaker selector with search and alphabetical sort by last name */
 const SpeakerSelector = ({ speakers, selectedSpeakers, onSelect }: {
