@@ -1129,7 +1129,7 @@ const AdminProposalsContent = () => {
               <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
               <div className="space-y-3">
                 <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
-                <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><Textarea value={editEmailBody} onChange={e => setEditEmailBody(e.target.value)} rows={10} className="text-sm" /></div>
+                <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
               </div>
             </div>
             <div className="border-t border-border pt-4">
