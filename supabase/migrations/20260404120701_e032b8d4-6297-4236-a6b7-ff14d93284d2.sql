@@ -1,0 +1,1 @@
+ALTER TABLE public.proposals ADD COLUMN proposal_type text NOT NULL DEFAULT 'classique';

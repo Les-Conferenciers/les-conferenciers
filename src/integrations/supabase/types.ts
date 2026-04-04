@@ -427,6 +427,7 @@ export type Database = {
           expires_at: string
           id: string
           message: string | null
+          proposal_type: string
           recipient_name: string | null
           reminder1_sent_at: string | null
           reminder2_sent_at: string | null
@@ -445,6 +446,7 @@ export type Database = {
           expires_at?: string
           id?: string
           message?: string | null
+          proposal_type?: string
           recipient_name?: string | null
           reminder1_sent_at?: string | null
           reminder2_sent_at?: string | null
@@ -463,6 +465,7 @@ export type Database = {
           expires_at?: string
           id?: string
           message?: string | null
+          proposal_type?: string
           recipient_name?: string | null
           reminder1_sent_at?: string | null
           reminder2_sent_at?: string | null
