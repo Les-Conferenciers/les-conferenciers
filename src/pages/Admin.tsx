@@ -126,7 +126,7 @@ const getInfoEmailBody = (recipientName: string) =>
 type ProposalType = "classique" | "unique" | "info";
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
-type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; fee_details: string | null; city: string | null; formal_address?: boolean; email?: string | null; phone?: string | null };
+type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; fee_details: string | null; city: string | null; formal_address?: boolean; email?: string | null; phone?: string | null; slug?: string };
 type ProposalSpeaker = {
   speaker_id: string;
   speaker_fee: number | null;
