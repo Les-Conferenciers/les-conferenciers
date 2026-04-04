@@ -905,9 +905,9 @@ const AdminProposalsContent = () => {
                   );
                 })()}
               </div>
-              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" value={ps.travel_costs ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null))} /></div>
-              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="number" value={ps.agency_commission ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null))} /></div>
-              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label><Input type="number" value={ps.total_price ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null))} className="font-bold" /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.travel_costs ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null))} onWheel={noScrollWheel} /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.agency_commission ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null))} onWheel={noScrollWheel} /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total HT (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.total_price ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null))} onWheel={noScrollWheel} className="font-bold" /></div>
             </div>
           </div>
         );
