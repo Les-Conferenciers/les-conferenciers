@@ -21,6 +21,28 @@ type SpeakerConference = {
   description: string | null;
 };
 
+const ConferenceAccordion = ({ conf }: { conf: SpeakerConference }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-border/50 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors text-left"
+      >
+        <p className="text-sm font-semibold text-foreground">« {conf.title} »</p>
+        <span className="text-xs text-accent ml-3 whitespace-nowrap">
+          {open ? "Masquer ▲" : "Voir le détail ▼"}
+        </span>
+      </button>
+      {open && conf.description && (
+        <div className="px-3 pb-3 pt-1 text-sm text-muted-foreground leading-relaxed border-t border-border/30">
+          <div dangerouslySetInnerHTML={{ __html: conf.description }} />
+        </div>
+      )}
+    </div>
+  );
+};
+
 type ProposalData = {
   id: string;
   client_name: string;
