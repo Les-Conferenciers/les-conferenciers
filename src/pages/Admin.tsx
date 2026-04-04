@@ -883,7 +883,7 @@ const AdminProposalsContent = () => {
                           Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €
                         </div>
                       )}
-                      <Input type="number" value={ps.speaker_fee ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null))} />
+                      <Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.speaker_fee ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null))} onWheel={noScrollWheel} />
                       {altRates.length > 0 && (
                         <select
                           className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
