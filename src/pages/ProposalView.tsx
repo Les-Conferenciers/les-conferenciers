@@ -288,19 +288,9 @@ const ProposalView = () => {
                       <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
                         {confsToShow.length > 1 ? "Conférences proposées" : "Conférence proposée"}
                       </h3>
-                      {confsToShow.map((conf: SpeakerConference, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-foreground">« {conf.title} »</p>
-                          <a
-                            href={`${window.location.origin}/conferencier/${speaker.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-accent hover:underline whitespace-nowrap ml-3"
-                          >
-                            Voir le détail →
-                          </a>
-                        </div>
-                      ))}
+                       {confsToShow.map((conf: SpeakerConference, idx: number) => (
+                          <ConferenceAccordion key={idx} conf={conf} />
+                        ))}
                     </div>
                   )}
 
