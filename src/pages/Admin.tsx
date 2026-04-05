@@ -981,8 +981,23 @@ const AdminProposalsContent = () => {
                   </div>
                 );
               })}
-              {(!p.proposal_speakers || p.proposal_speakers.length === 0) && "—"}
+              {(!p.proposal_speakers || p.proposal_speakers.length === 0) && (
+                <span className="text-xs text-muted-foreground italic">
+                  {(p as any).proposal_type === "info" ? "Demande d'infos" : "Aucun"}
+                </span>
+              )}
             </div>
+          </TableCell>
+          <TableCell>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+              (p as any).proposal_type === "unique" ? "bg-violet-100 text-violet-700" :
+              (p as any).proposal_type === "info" ? "bg-sky-100 text-sky-700" :
+              "bg-emerald-100 text-emerald-700"
+            }`}>
+              {(p as any).proposal_type === "unique" ? "🎤 Unique" :
+               (p as any).proposal_type === "info" ? "📝 Infos" :
+               "📋 Classique"}
+            </span>
           </TableCell>
           <TableCell>
             {mode === "draft" && <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Brouillon</span>}
