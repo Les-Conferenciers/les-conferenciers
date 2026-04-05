@@ -663,11 +663,11 @@ const AdminProposalsContent = () => {
     if (type === "info") {
       setEmailBody(getInfoEmailBody(recipientName));
       setMessage("");
-      setEmailSubject(`Demande d'informations — ${clientName || "Les Conférenciers"}`);
+      setEmailSubject(`Demande d'informations - ${clientName || "Les Conférenciers"}`);
     } else if (type === "unique") {
       setEmailBody("");
       setMessage("");
-      setEmailSubject(`Votre conférencier sur mesure — ${clientName || "Les Conférenciers"}`);
+      setEmailSubject(`Votre conférencier sur mesure - ${clientName || "Les Conférenciers"}`);
     } else {
       setEmailBody(getDefaultEmailBody(recipientName, clientName));
       setMessage(getDefaultMessage(recipientName, clientName));
