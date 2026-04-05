@@ -113,8 +113,8 @@ const SimpleRichTextEditor = ({ value, onChange, placeholder, rows = 6 }: Simple
         onInput={handleInput}
         onPaste={handlePaste}
         data-placeholder={placeholder}
-        className="px-3 py-2 text-sm outline-none overflow-y-auto bg-background"
-        style={{ minHeight }}
+        className="px-3 py-2 outline-none overflow-y-auto bg-background"
+        style={{ minHeight, fontFamily: "Arial, sans-serif", fontSize: "15px", lineHeight: "1.6", color: "#333" }}
       />
     </div>
   );
