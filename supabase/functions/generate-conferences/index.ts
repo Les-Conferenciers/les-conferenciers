@@ -107,9 +107,11 @@ Biographie : ${bioText.substring(0, 2000)}
 
 Règles :
 - Chaque conférence a un titre accrocheur et professionnel (pas générique)
-- La description fait 2-4 paragraphes en HTML (<p>, <strong>)
-- Mets en gras les termes clés, chiffres, concepts importants (5-8 mots/expressions en gras par description)
-- Ton premium, engageant, orienté bénéfices pour l'audience corporate
+- La description fait 2-4 paragraphes en HTML (<p>) uniquement
+- NE mets PAS de mise en gras (<strong>, <b>) dans les descriptions - texte brut uniquement dans les <p>
+- Ton formel, institutionnel, sobre et élégant - style agence haut de gamme
+- Privilégie un vocabulaire soutenu et des tournures élégantes
+- Évite le jargon marketing et les superlatifs excessifs
 - Ne mentionne AUCUN concurrent (Orators, WeChamp, Simone & Nelson)
 - Base-toi sur l'expertise réelle du conférencier, pas d'invention
 
