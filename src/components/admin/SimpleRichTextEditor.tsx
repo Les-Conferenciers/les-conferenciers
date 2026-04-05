@@ -111,6 +111,7 @@ const SimpleRichTextEditor = ({ value, onChange, placeholder, rows = 6 }: Simple
         ref={editorRef}
         contentEditable
         onInput={handleInput}
+        onPaste={handlePaste}
         data-placeholder={placeholder}
         className="px-3 py-2 text-sm outline-none overflow-y-auto bg-background"
         style={{ minHeight }}
