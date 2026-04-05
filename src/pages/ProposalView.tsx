@@ -392,7 +392,7 @@ const ProposalView = () => {
 
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Les Conférenciers — Proposition confidentielle
+        © {new Date().getFullYear()} Les Conférenciers - Proposition confidentielle
       </footer>
     </div>
   );
