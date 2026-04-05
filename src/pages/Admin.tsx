@@ -541,34 +541,45 @@ const AdminProposalsContent = () => {
 
   const handleSaveEdit = async () => {
     if (!editingProposal) return;
-    if (!editClientName || !editClientEmail || editSelectedSpeakers.length === 0) {
-      toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier");
-      return;
+    const pType = (editingProposal.proposal_type || "classique") as ProposalType;
+    if (!editClientName || !editClientEmail) {
+      toast.error("Remplissez le nom et email"); return;
+    }
+    if (pType === "classique" && editSelectedSpeakers.length === 0) {
+      toast.error("Ajoutez au moins 1 conférencier"); return;
+    }
+    if (pType === "unique" && editSelectedSpeakers.length === 0) {
+      toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
     const { error } = await supabase.from("proposals").update({
       client_name: editClientName, client_email: editClientEmail,
-      recipient_name: editRecipientName || null, message: editMessage || null,
+      recipient_name: editRecipientName || null,
+      message: pType === "classique" ? (editMessage || null) : null,
       email_subject: editEmailSubject || null, email_body: editEmailBody || null,
     } as any).eq("id", editingProposal.id);
     if (error) { toast.error("Erreur"); setSubmitting(false); return; }
 
-    const { error: deleteError } = await supabase.from("proposal_speakers").delete().eq("proposal_id", editingProposal.id);
-    if (deleteError) { toast.error("Erreur sur les conférenciers"); setSubmitting(false); return; }
+    if (pType !== "info") {
+      const { error: deleteError } = await supabase.from("proposal_speakers").delete().eq("proposal_id", editingProposal.id);
+      if (deleteError) { toast.error("Erreur sur les conférenciers"); setSubmitting(false); return; }
 
-    const { error: insertError } = await supabase
-      .from("proposal_speakers")
-      .insert(editSelectedSpeakers.map((speaker, index) => ({
-        proposal_id: editingProposal.id,
-        speaker_id: speaker.speaker_id,
-        speaker_fee: speaker.speaker_fee,
-        travel_costs: speaker.travel_costs,
-        agency_commission: speaker.agency_commission,
-        total_price: speaker.total_price,
-        display_order: index,
-        selected_conference_ids: speaker.selected_conference_ids.length > 0 ? speaker.selected_conference_ids : null,
-      })));
-    if (insertError) { toast.error("Erreur sur les tarifs des conférenciers"); setSubmitting(false); return; }
+      if (editSelectedSpeakers.length > 0) {
+        const { error: insertError } = await supabase
+          .from("proposal_speakers")
+          .insert(editSelectedSpeakers.map((speaker, index) => ({
+            proposal_id: editingProposal.id,
+            speaker_id: speaker.speaker_id,
+            speaker_fee: speaker.speaker_fee,
+            travel_costs: speaker.travel_costs,
+            agency_commission: speaker.agency_commission,
+            total_price: speaker.total_price,
+            display_order: index,
+            selected_conference_ids: speaker.selected_conference_ids.length > 0 ? speaker.selected_conference_ids : null,
+          })));
+        if (insertError) { toast.error("Erreur sur les tarifs des conférenciers"); setSubmitting(false); return; }
+      }
+    }
 
     toast.success("Proposition mise à jour !");
     setEditDialogOpen(false); setEditingProposal(null); setEditSelectedSpeakers([]); fetchProposals(); setSubmitting(false);
