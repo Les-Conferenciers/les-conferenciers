@@ -158,25 +158,26 @@ Réponds UNIQUEMENT en JSON valide (array), format :
 
         let reformulated = 0;
         for (const conf of conferences) {
-          const prompt = `Tu es un r\u00e9dacteur expert pour l'agence de conf\u00e9renciers premium lesconferenciers.com.
+          const prompt = `Tu es un rédacteur expert pour l'agence de conférenciers premium lesconferenciers.com.
 
-Reformule le titre et la description de cette conf\u00e9rence pour les rendre percutants et professionnels.
+Reformule le titre et la description de cette conférence pour les rendre percutants et professionnels.
 
-Conf\u00e9rencier : ${speaker.name} (${speaker.specialty || speaker.role || ""})
+Conférencier : ${speaker.name} (${speaker.specialty || speaker.role || ""})
 Titre actuel : ${conf.title}
 Description actuelle : ${(conf.description || "Aucune description").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}
 
-R\u00e8gles :
-- Si le titre est g\u00e9n\u00e9rique (ex: "Conf\u00e9rence"), cr\u00e9e un vrai titre accrocheur
-- Description en 2-4 paragraphes HTML (<p>, <strong>)
-- Mets en gras 5-8 termes cl\u00e9s/chiffres/concepts importants
-- Ton premium, engageant, orient\u00e9 b\u00e9n\u00e9fices pour l'audience corporate
-- Corrige la ponctuation (espaces apr\u00e8s les points, etc.)
-- V\u00e9rifie que le texte se termine par un point
+Règles :
+- Si le titre est générique (ex: "Conférence"), crée un vrai titre accrocheur
+- Description en 2-4 paragraphes HTML (<p>) uniquement
+- NE mets PAS de mise en gras (<strong>, <b>) - texte brut uniquement dans les <p>
+- Ton formel, institutionnel, sobre et élégant - style agence haut de gamme
+- Privilégie un vocabulaire soutenu et des tournures élégantes
+- Corrige la ponctuation (espaces après les points, etc.)
+- Vérifie que le texte se termine par un point
 - Ne mentionne AUCUN concurrent (Orators, WeChamp, Simone & Nelson)
-- Si des \u00e9num\u00e9rations existent, utilise des <br> pour les s\u00e9parer
+- Si des énumérations existent, utilise des <br> pour les séparer
 
-R\u00e9ponds UNIQUEMENT en JSON : {"title": "...", "description": "<p>...</p>"}`;
+Réponds UNIQUEMENT en JSON : {"title": "...", "description": "<p>...</p>"}`;
 
           try {
             const aiResult = await callAI(LOVABLE_API_KEY, prompt);
