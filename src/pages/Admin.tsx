@@ -1163,31 +1163,47 @@ const AdminProposalsContent = () => {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Éditer la proposition</DialogTitle></DialogHeader>
-          <div className="space-y-6 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={editClientName} onChange={e => setEditClientName(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} /></div>
-            </div>
-            <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition</h3>
-              <SimpleRichTextEditor value={editMessage} onChange={setEditMessage} rows={8} />
-            </div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
-              <div className="space-y-3">
-                <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
-                <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
+          {(() => {
+            const editType = (editingProposal?.proposal_type || "classique") as ProposalType;
+            return (
+              <div className="space-y-6 mt-4">
+                <div className="text-xs px-3 py-1.5 rounded-full bg-muted text-muted-foreground w-fit">
+                  {editType === "unique" ? "🎤 Conférencier unique" : editType === "info" ? "📝 Demande d'infos" : "📋 Classique"}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={editClientName} onChange={e => setEditClientName(e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} /></div>
+                </div>
+                <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
+                
+                {editType === "classique" && (
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition</h3>
+                    <SimpleRichTextEditor value={editMessage} onChange={setEditMessage} rows={8} />
+                  </div>
+                )}
+
+                <div className="border-t border-border pt-4">
+                  <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
+                  <div className="space-y-3">
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
+                  </div>
+                </div>
+
+                {editType !== "info" && (
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-medium text-sm mb-3">🎤 Conférenciers et tarifs</h3>
+                    {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
+                  </div>
+                )}
+
+                <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
+                  {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
+                </Button>
               </div>
-            </div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">🎤 Conférenciers et tarifs</h3>
-              {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
-            </div>
-            <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
-              {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
-            </Button>
-          </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
