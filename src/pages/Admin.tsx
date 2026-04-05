@@ -521,9 +521,20 @@ const AdminProposalsContent = () => {
     setEditingProposal(p);
     setEditClientName(p.client_name); setEditClientEmail(p.client_email);
     setEditRecipientName(p.recipient_name || "");
-    setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
-    setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
-    setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    const pType = (p.proposal_type || "classique") as ProposalType;
+    if (pType === "info") {
+      setEditMessage("");
+      setEditEmailSubject(p.email_subject || `Demande d'informations - ${p.client_name}`);
+      setEditEmailBody(p.email_body || getInfoEmailBody(p.recipient_name || ""));
+    } else if (pType === "unique") {
+      setEditMessage("");
+      setEditEmailSubject(p.email_subject || `Votre conférencier sur mesure - ${p.client_name}`);
+      setEditEmailBody(p.email_body || "");
+    } else {
+      setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
+      setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
+      setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    }
     setEditSelectedSpeakers(buildProposalSpeakers(p.proposal_speakers));
     setEditDialogOpen(true);
   };
