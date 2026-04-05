@@ -1094,6 +1094,7 @@ const AdminProposalsContent = () => {
             <TableHead>Date</TableHead>
             <TableHead>Client</TableHead>
             <TableHead>Conférenciers</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
