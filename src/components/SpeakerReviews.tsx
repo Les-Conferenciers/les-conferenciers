@@ -42,7 +42,7 @@ const SpeakerReviews = ({ speakerId, speakerName }: SpeakerReviewsProps) => {
     <section>
       <h2 className="text-2xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
         <span className="w-1 h-7 bg-accent rounded-full block"></span>
-        Ce qu'ils en pensent
+        Ce qu'en pensent nos clients
       </h2>
 
       {/* Summary */}

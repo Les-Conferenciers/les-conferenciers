@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     }
 
     // Use custom email subject/body or defaults
-    const emailSubject = proposal.email_subject || `Votre sélection de conférenciers sur mesure — ${proposal.client_name}`;
+    const emailSubject = proposal.email_subject || `Votre sélection de conférenciers sur mesure - ${proposal.client_name}`;
     
     // Build email body text - use custom or default
     const recipientFirstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
@@ -107,7 +107,7 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
     </div>
 
     <div style="background:#1a2332;padding:16px;text-align:center;">
-      <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Proposition confidentielle — Les Conférenciers</p>
+      <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Proposition confidentielle - Les Conférenciers</p>
     </div>
   </div>
 </body></html>`;

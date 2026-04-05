@@ -59,6 +59,29 @@ const SimpleRichTextEditor = ({ value, onChange, placeholder, rows = 6 }: Simple
     setEmojiOpen(false);
   };
 
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData("text/html");
+    const plain = e.clipboardData.getData("text/plain");
+    
+    if (html) {
+      const temp = document.createElement("div");
+      temp.innerHTML = html;
+      temp.querySelectorAll("script, style, meta, link, font").forEach((el) => el.remove());
+      temp.querySelectorAll("[style]").forEach((el) => el.removeAttribute("style"));
+      temp.querySelectorAll("[class]").forEach((el) => el.removeAttribute("class"));
+      temp.querySelectorAll("span").forEach((el) => {
+        const parent = el.parentNode;
+        while (el.firstChild) parent?.insertBefore(el.firstChild, el);
+        parent?.removeChild(el);
+      });
+      document.execCommand("insertHTML", false, temp.innerHTML);
+    } else {
+      document.execCommand("insertText", false, plain);
+    }
+    handleInput();
+  }, [handleInput]);
+
   const minHeight = `${Math.max(rows * 24, 100)}px`;
 
   return (
@@ -88,9 +111,10 @@ const SimpleRichTextEditor = ({ value, onChange, placeholder, rows = 6 }: Simple
         ref={editorRef}
         contentEditable
         onInput={handleInput}
+        onPaste={handlePaste}
         data-placeholder={placeholder}
-        className="px-3 py-2 text-sm outline-none overflow-y-auto bg-background"
-        style={{ minHeight }}
+        className="px-3 py-2 outline-none overflow-y-auto bg-background"
+        style={{ minHeight, fontFamily: "Arial, sans-serif", fontSize: "15px", lineHeight: "1.6", color: "#333" }}
       />
     </div>
   );

@@ -200,7 +200,7 @@ const ProposalView = () => {
       {/* Admin banner */}
       {isAdmin && isProposalExpired && (
         <div className="bg-amber-500/10 border-b border-amber-500/30 text-center py-2 text-xs text-amber-700 font-medium">
-          ⚠️ Cette proposition est expirée pour le client — visible uniquement en mode admin
+          ⚠️ Cette proposition est expirée pour le client - visible uniquement en mode admin
         </div>
       )}
 
@@ -392,7 +392,7 @@ const ProposalView = () => {
 
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Les Conférenciers — Proposition confidentielle
+        © {new Date().getFullYear()} Les Conférenciers - Proposition confidentielle
       </footer>
     </div>
   );

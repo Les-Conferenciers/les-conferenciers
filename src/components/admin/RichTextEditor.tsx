@@ -469,11 +469,35 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
-    const text = e.clipboardData.getData("text/html") || e.clipboardData.getData("text/plain");
-    const temp = document.createElement("div");
-    temp.innerHTML = text;
-    temp.querySelectorAll("script, style, meta, link").forEach((el) => el.remove());
-    document.execCommand("insertHTML", false, temp.innerHTML);
+    const html = e.clipboardData.getData("text/html");
+    const plain = e.clipboardData.getData("text/plain");
+    
+    if (html) {
+      const temp = document.createElement("div");
+      temp.innerHTML = html;
+      temp.querySelectorAll("script, style, meta, link").forEach((el) => el.remove());
+      
+      // Strip all inline styles to respect the site's design system
+      temp.querySelectorAll("[style]").forEach((el) => el.removeAttribute("style"));
+      // Strip classes
+      temp.querySelectorAll("[class]").forEach((el) => el.removeAttribute("class"));
+      // Remove font tags
+      temp.querySelectorAll("font").forEach((el) => {
+        const parent = el.parentNode;
+        while (el.firstChild) parent?.insertBefore(el.firstChild, el);
+        parent?.removeChild(el);
+      });
+      // Remove spans (they often carry external formatting)
+      temp.querySelectorAll("span").forEach((el) => {
+        const parent = el.parentNode;
+        while (el.firstChild) parent?.insertBefore(el.firstChild, el);
+        parent?.removeChild(el);
+      });
+      
+      document.execCommand("insertHTML", false, temp.innerHTML);
+    } else {
+      document.execCommand("insertText", false, plain);
+    }
     handleInput();
     setTimeout(setupImageHandlers, 100);
   }, [handleInput, setupImageHandlers]);

@@ -109,19 +109,19 @@ import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 
 const getDefaultMessage = (recipientName: string, clientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-joint un fichier PDF présentant une sélection de conférenciers, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde — Les Conférenciers`;
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-joint un fichier PDF présentant une sélection de conférenciers, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers`;
 
 const getDefaultEmailSubject = (clientName: string) =>
-  `Votre sélection de conférenciers sur mesure — ${clientName || "Les Conférenciers"}`;
+  `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
 
 const getDefaultEmailBody = (recipientName: string, clientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\n👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.\n\nJe reste bien entendu à votre disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde — Les Conférenciers\n📞 06 95 93 97 91`;
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\n👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.\n\nJe reste bien entendu à votre disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
 
 const getUniqueEmailBody = (recipientName: string, speakerName: string, speakerFee: string, speakerSlug: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nJe fais suite à votre mail et à ma tentative de vous joindre par téléphone.\n\nJe suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${speakerFee} € HT, hors frais VHR.\n\n👉 Découvrir le profil de ${speakerName} : ${window.location.origin}/conferencier/${speakerSlug}\n\nSi toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.\nÀ ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?\n\nJe reste bien entendu à votre entière disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde — Les Conférenciers\n📞 06 95 93 97 91`;
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nJe fais suite à votre mail et à ma tentative de vous joindre par téléphone.\n\nJe suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${speakerFee} € HT, hors frais VHR.\n\n👉 Découvrir le profil de ${speakerName} : ${window.location.origin}/conferencier/${speakerSlug}\n\nSi toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.\nÀ ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?\n\nJe reste bien entendu à votre entière disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
 
 const getInfoEmailBody = (recipientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n• Votre enveloppe budgétaire\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde — Les Conférenciers\n📞 06 95 93 97 91`;
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n• Votre enveloppe budgétaire\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
 
 type ProposalType = "classique" | "unique" | "info";
 
@@ -150,6 +150,7 @@ type Proposal = {
   sent_at: string | null;
   expires_at: string;
   created_at: string;
+  proposal_type?: string;
   reminder1_sent_at?: string | null;
   reminder2_sent_at?: string | null;
   proposal_speakers: {
@@ -520,43 +521,65 @@ const AdminProposalsContent = () => {
     setEditingProposal(p);
     setEditClientName(p.client_name); setEditClientEmail(p.client_email);
     setEditRecipientName(p.recipient_name || "");
-    setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
-    setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
-    setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    const pType = (p.proposal_type || "classique") as ProposalType;
+    if (pType === "info") {
+      setEditMessage("");
+      setEditEmailSubject(p.email_subject || `Demande d'informations - ${p.client_name}`);
+      setEditEmailBody(p.email_body || getInfoEmailBody(p.recipient_name || ""));
+    } else if (pType === "unique") {
+      setEditMessage("");
+      setEditEmailSubject(p.email_subject || `Votre conférencier sur mesure - ${p.client_name}`);
+      setEditEmailBody(p.email_body || "");
+    } else {
+      setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
+      setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
+      setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    }
     setEditSelectedSpeakers(buildProposalSpeakers(p.proposal_speakers));
     setEditDialogOpen(true);
   };
 
   const handleSaveEdit = async () => {
     if (!editingProposal) return;
-    if (!editClientName || !editClientEmail || editSelectedSpeakers.length === 0) {
-      toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier");
-      return;
+    const pType = (editingProposal.proposal_type || "classique") as ProposalType;
+    if (!editClientName || !editClientEmail) {
+      toast.error("Remplissez le nom et email"); return;
+    }
+    if (pType === "classique" && editSelectedSpeakers.length === 0) {
+      toast.error("Ajoutez au moins 1 conférencier"); return;
+    }
+    if (pType === "unique" && editSelectedSpeakers.length === 0) {
+      toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
     const { error } = await supabase.from("proposals").update({
       client_name: editClientName, client_email: editClientEmail,
-      recipient_name: editRecipientName || null, message: editMessage || null,
+      recipient_name: editRecipientName || null,
+      message: pType === "classique" ? (editMessage || null) : null,
       email_subject: editEmailSubject || null, email_body: editEmailBody || null,
     } as any).eq("id", editingProposal.id);
     if (error) { toast.error("Erreur"); setSubmitting(false); return; }
 
-    const { error: deleteError } = await supabase.from("proposal_speakers").delete().eq("proposal_id", editingProposal.id);
-    if (deleteError) { toast.error("Erreur sur les conférenciers"); setSubmitting(false); return; }
+    if (pType !== "info") {
+      const { error: deleteError } = await supabase.from("proposal_speakers").delete().eq("proposal_id", editingProposal.id);
+      if (deleteError) { toast.error("Erreur sur les conférenciers"); setSubmitting(false); return; }
 
-    const { error: insertError } = await supabase
-      .from("proposal_speakers")
-      .insert(editSelectedSpeakers.map((speaker, index) => ({
-        proposal_id: editingProposal.id,
-        speaker_id: speaker.speaker_id,
-        speaker_fee: speaker.speaker_fee,
-        travel_costs: speaker.travel_costs,
-        agency_commission: speaker.agency_commission,
-        total_price: speaker.total_price,
-        display_order: index,
-        selected_conference_ids: speaker.selected_conference_ids.length > 0 ? speaker.selected_conference_ids : null,
-      })));
-    if (insertError) { toast.error("Erreur sur les tarifs des conférenciers"); setSubmitting(false); return; }
+      if (editSelectedSpeakers.length > 0) {
+        const { error: insertError } = await supabase
+          .from("proposal_speakers")
+          .insert(editSelectedSpeakers.map((speaker, index) => ({
+            proposal_id: editingProposal.id,
+            speaker_id: speaker.speaker_id,
+            speaker_fee: speaker.speaker_fee,
+            travel_costs: speaker.travel_costs,
+            agency_commission: speaker.agency_commission,
+            total_price: speaker.total_price,
+            display_order: index,
+            selected_conference_ids: speaker.selected_conference_ids.length > 0 ? speaker.selected_conference_ids : null,
+          })));
+        if (insertError) { toast.error("Erreur sur les tarifs des conférenciers"); setSubmitting(false); return; }
+      }
+    }
 
     toast.success("Proposition mise à jour !");
     setEditDialogOpen(false); setEditingProposal(null); setEditSelectedSpeakers([]); fetchProposals(); setSubmitting(false);
@@ -640,11 +663,11 @@ const AdminProposalsContent = () => {
     if (type === "info") {
       setEmailBody(getInfoEmailBody(recipientName));
       setMessage("");
-      setEmailSubject(`Demande d'informations — ${clientName || "Les Conférenciers"}`);
+      setEmailSubject(`Demande d'informations - ${clientName || "Les Conférenciers"}`);
     } else if (type === "unique") {
       setEmailBody("");
       setMessage("");
-      setEmailSubject(`Votre conférencier sur mesure — ${clientName || "Les Conférenciers"}`);
+      setEmailSubject(`Votre conférencier sur mesure - ${clientName || "Les Conférenciers"}`);
     } else {
       setEmailBody(getDefaultEmailBody(recipientName, clientName));
       setMessage(getDefaultMessage(recipientName, clientName));
@@ -958,8 +981,23 @@ const AdminProposalsContent = () => {
                   </div>
                 );
               })}
-              {(!p.proposal_speakers || p.proposal_speakers.length === 0) && "—"}
+              {(!p.proposal_speakers || p.proposal_speakers.length === 0) && (
+                <span className="text-xs text-muted-foreground italic">
+                  {(p as any).proposal_type === "info" ? "Demande d'infos" : "Aucun"}
+                </span>
+              )}
             </div>
+          </TableCell>
+          <TableCell>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+              (p as any).proposal_type === "unique" ? "bg-violet-100 text-violet-700" :
+              (p as any).proposal_type === "info" ? "bg-sky-100 text-sky-700" :
+              "bg-emerald-100 text-emerald-700"
+            }`}>
+              {(p as any).proposal_type === "unique" ? "🎤 Unique" :
+               (p as any).proposal_type === "info" ? "📝 Infos" :
+               "📋 Classique"}
+            </span>
           </TableCell>
           <TableCell>
             {mode === "draft" && <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Brouillon</span>}
@@ -1027,7 +1065,7 @@ const AdminProposalsContent = () => {
         </TableRow>
         {expandedId === p.id && p.status === "accepted" && (
           <TableRow>
-            <TableCell colSpan={5} className="bg-muted/30 px-6 py-2">
+            <TableCell colSpan={6} className="bg-muted/30 px-6 py-2">
               <EventDossier
                 proposal={{
                   id: p.id, client_name: p.client_name, client_email: p.client_email,
@@ -1056,6 +1094,7 @@ const AdminProposalsContent = () => {
             <TableHead>Date</TableHead>
             <TableHead>Client</TableHead>
             <TableHead>Conférenciers</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -1064,7 +1103,7 @@ const AdminProposalsContent = () => {
           {items.map(p => renderProposalRow(p, mode))}
           {items.length === 0 && !loading && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                 {mode === "draft" && "Aucun brouillon."}
                 {mode === "sent" && "Aucune proposition envoyée."}
                 {mode === "completed" && "Aucune mission terminée."}
@@ -1124,31 +1163,47 @@ const AdminProposalsContent = () => {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Éditer la proposition</DialogTitle></DialogHeader>
-          <div className="space-y-6 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={editClientName} onChange={e => setEditClientName(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} /></div>
-            </div>
-            <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition</h3>
-              <SimpleRichTextEditor value={editMessage} onChange={setEditMessage} rows={8} />
-            </div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
-              <div className="space-y-3">
-                <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
-                <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
+          {(() => {
+            const editType = (editingProposal?.proposal_type || "classique") as ProposalType;
+            return (
+              <div className="space-y-6 mt-4">
+                <div className="text-xs px-3 py-1.5 rounded-full bg-muted text-muted-foreground w-fit">
+                  {editType === "unique" ? "🎤 Conférencier unique" : editType === "info" ? "📝 Demande d'infos" : "📋 Classique"}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={editClientName} onChange={e => setEditClientName(e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} /></div>
+                </div>
+                <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
+                
+                {editType === "classique" && (
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition</h3>
+                    <SimpleRichTextEditor value={editMessage} onChange={setEditMessage} rows={8} />
+                  </div>
+                )}
+
+                <div className="border-t border-border pt-4">
+                  <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
+                  <div className="space-y-3">
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
+                  </div>
+                </div>
+
+                {editType !== "info" && (
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-medium text-sm mb-3">🎤 Conférenciers et tarifs</h3>
+                    {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
+                  </div>
+                )}
+
+                <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
+                  {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
+                </Button>
               </div>
-            </div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">🎤 Conférenciers et tarifs</h3>
-              {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
-            </div>
-            <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
-              {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
-            </Button>
-          </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

@@ -27,7 +27,7 @@ const emailSignature = `
 
 const emailFooter = `
 <div style="background:#1a2332;padding:14px;text-align:center;">
-  <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Document confidentiel — Les Conférenciers</p>
+  <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Document confidentiel - Les Conférenciers</p>
 </div>`;
 
 Deno.serve(async (req) => {
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
 
     const invoiceUrl = `${SITE}/admin/facture/${invoice.id}`;
     const bodyHtml = (email_body || `Bonjour,\n\nVeuillez trouver votre facture ${invoice.invoice_number}.\n\nCordialement,\nLes Conférenciers`).replace(/\n/g, "<br>");
-    const subject = email_subject || `Facture ${invoice.invoice_number} — ${proposal.client_name}`;
+    const subject = email_subject || `Facture ${invoice.invoice_number} - ${proposal.client_name}`;
 
     const emailHtml = `
 <!DOCTYPE html>

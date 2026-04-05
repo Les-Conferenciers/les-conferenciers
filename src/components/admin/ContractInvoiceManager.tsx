@@ -294,7 +294,7 @@ Suite à votre accord, je vous transmets le contrat de prestation pour votre év
 N'hésitez pas à me contacter pour toute question.
 
 Bien cordialement,
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
     setContractEmailOpen(true);
   };
 
@@ -392,7 +392,7 @@ ${inv.due_date ? `• Échéance : ${new Date(inv.due_date).toLocaleDateString("
 👉 Cliquez sur le bouton ci-dessous pour consulter et télécharger votre facture.
 
 Bien cordialement,
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
     setInvoiceEmailOpen(true);
   };
 
