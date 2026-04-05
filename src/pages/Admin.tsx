@@ -1065,7 +1065,7 @@ const AdminProposalsContent = () => {
         </TableRow>
         {expandedId === p.id && p.status === "accepted" && (
           <TableRow>
-            <TableCell colSpan={5} className="bg-muted/30 px-6 py-2">
+            <TableCell colSpan={6} className="bg-muted/30 px-6 py-2">
               <EventDossier
                 proposal={{
                   id: p.id, client_name: p.client_name, client_email: p.client_email,
@@ -1103,7 +1103,7 @@ const AdminProposalsContent = () => {
           {items.map(p => renderProposalRow(p, mode))}
           {items.length === 0 && !loading && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                 {mode === "draft" && "Aucun brouillon."}
                 {mode === "sent" && "Aucune proposition envoyée."}
                 {mode === "completed" && "Aucune mission terminée."}
