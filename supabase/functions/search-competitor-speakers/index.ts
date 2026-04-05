@@ -346,24 +346,25 @@ STRUCTURE BIOGRAPHIE OBLIGATOIRE (300-800 mots, idéalement 500-600) :
 4. SIGNATURE : Conclusion brève sur l'impact humain + mention naturelle de son activité de conférencier/ère.
 
 STYLE ET TON :
-- Mélange d'objectivité journalistique (style Wikipédia pour les faits) et narration immersive (storytelling sur la mission/vision)
-- Accent sur l'authenticité comme levier de performance et d'impact
-- Éviter le jargon marketing creux, privilégier les résultats concrets
-- Verbes d'action puissants, paragraphes aérés
+- Ton formel, institutionnel, sobre et élégant - style agence haut de gamme
+- Objectivité journalistique (style Wikipédia pour les faits) avec narration immersive
+- Vocabulaire soutenu, tournures élégantes, jamais de jargon marketing creux
+- Privilégier les résultats concrets et les faits vérifiables
+- Verbes d'action précis, paragraphes aérés
 - Rédaction à la 3e personne (Il/Elle)
 
 FORMATAGE HTML :
 - 5 à 8 paragraphes <p>...</p> séparés, chacun 3-5 phrases pour atteindre le minimum de 300 mots
-- <strong> sur : dates, chiffres clés, titres/prix, institutions, mots-clés importants
+- NE PAS utiliser <strong> ni <b> dans la biographie - texte brut uniquement dans les <p>
 - <ul><li> pour les énumérations (palmarès, domaines d'expertise, ouvrages)
-- AUCUN markdown (** ou *) — HTML exclusivement
+- AUCUN markdown (** ou *) - HTML exclusivement
 - Chaque paragraphe sur une NOUVELLE LIGNE
 
-MAUVAIS EXEMPLE : "Ancienne journaliste et présentatrice sportive." → trop sec
-BON EXEMPLE : "Après <strong>10 ans</strong> comme journaliste sportive sur <strong>Canal+</strong> et <strong>France Télévisions</strong>, elle a couvert <strong>3 Coupes du Monde</strong> et interviewé les plus grands athlètes français." → riche et factuel
+MAUVAIS EXEMPLE : "Ancienne journaliste et présentatrice sportive." - trop sec
+BON EXEMPLE : "Après 10 ans comme journaliste sportive sur Canal+ et France Télévisions, elle a couvert 3 Coupes du Monde et interviewé les plus grands athlètes français." - riche et factuel
 
 ⚠️ RÈGLE ANTI-PLAGIAT ⚠️
-- REFORMULER INTÉGRALEMENT — AUCUNE phrase ne doit ressembler aux sources
+- REFORMULER INTÉGRALEMENT - AUCUNE phrase ne doit ressembler aux sources
 - CROISER les informations de TOUTES les sources pour vérifier les faits
 - Changer ORDRE, VERBES, ADJECTIFS, STRUCTURE des phrases
 - Ajouter CONTEXTE et TRANSITIONS narratives absents des sources
@@ -379,12 +380,13 @@ AUTRES CHAMPS :
 ═══════════════════════════════════════════
 
 RÈGLES SEO :
-- seo_title : "${name} — Conférencier [thème principal] | Les Conférenciers" (max 60 car., adapter Conférencier/Conférencière selon le genre)
+- seo_title : "${name} - Conférencier [thème principal] | Les Conférenciers" (max 60 car., adapter Conférencier/Conférencière selon le genre)
 - meta_description : 1 phrase fluide 140-155 car. avec "conférence" ou "conférencier/ère" + le nom
 
 CONFÉRENCES :
 - 1 à 3 conférences thématiques, titre accrocheur
-- Description HTML 3-4 paragraphes <p> avec <strong>, SANS images, SANS markdown
+- Description HTML 3-4 paragraphes <p> SANS <strong>, SANS <b>, SANS images, SANS markdown
+- Ton formel et institutionnel
 - REFORMULATION OBLIGATOIRE, 100% originale
 
 KEY_POINTS : 3-5 points forts factuels et percutants
@@ -397,9 +399,9 @@ JSON ATTENDU :
   "name": "Prénom Nom",
   "role": "Titre professionnel court",
   "specialty": "Phrase d'accroche courte (max 8 mots)",
-  "biography": "HTML riche — MINIMUM 300 mots, MAXIMUM 800 mots",
+  "biography": "HTML riche - MINIMUM 300 mots, MAXIMUM 800 mots, SANS balises strong/b",
   "themes": ["Thème 1", "Thème 2", "Thème 3"],
-  "conferences": [{"title": "Titre", "description": "HTML riche"}],
+  "conferences": [{"title": "Titre", "description": "HTML paragraphes <p> SANS strong/b"}],
   "languages": ["Français"],
   "gender": "male ou female",
   "key_points": ["Point fort 1", "Point fort 2"],
