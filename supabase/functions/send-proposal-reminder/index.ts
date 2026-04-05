@@ -22,7 +22,7 @@ const emailSignature = `
 
 const emailFooter = `
 <div style="background:#1a2332;padding:14px;text-align:center;">
-  <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Proposition confidentielle — Les Conférenciers</p>
+  <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Proposition confidentielle - Les Conférenciers</p>
 </div>`;
 
 Deno.serve(async (req) => {
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     let messageText: string;
 
     if (reminderNum === 1) {
-      emailSubject = `Votre sélection de conférenciers — ${proposal.client_name}`;
+      emailSubject = `Votre sélection de conférenciers - ${proposal.client_name}`;
       messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
 
 J'espère que vous allez bien !
@@ -105,7 +105,7 @@ Dans l'attente de votre retour.
 
 Très belle fin de journée à vous.`;
     } else {
-      emailSubject = `Rappel : votre recherche d'intervenants — ${proposal.client_name}`;
+      emailSubject = `Rappel : votre recherche d'intervenants - ${proposal.client_name}`;
       messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
 
 Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.

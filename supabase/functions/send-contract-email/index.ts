@@ -22,7 +22,7 @@ const emailSignature = `
 
 const emailFooter = `
 <div style="background:#1a2332;padding:14px;text-align:center;">
-  <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Document confidentiel — Les Conférenciers</p>
+  <p style="color:#f5f0e8;opacity:0.5;font-size:11px;margin:0;">Document confidentiel - Les Conférenciers</p>
 </div>`;
 
 Deno.serve(async (req) => {
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 
     const signUrl = `${SITE}/signer-contrat/${contract.token}`;
     const bodyHtml = (email_body || "").replace(/\n/g, "<br>");
-    const subject = email_subject || `Contrat de prestation — ${proposal.client_name} — Les Conférenciers`;
+    const subject = email_subject || `Contrat de prestation - ${proposal.client_name} - Les Conférenciers`;
 
     const emailHtml = `
 <!DOCTYPE html>

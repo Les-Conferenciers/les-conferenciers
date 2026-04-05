@@ -460,7 +460,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setSelectedClientId("");
     setShowCreateClient(false);
 
-    setContractEmailSubject(`Bon de commande — ${proposal.client_name} — Les Conférenciers`);
+    setContractEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
     setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
 Suite à votre accord, je vous transmets le bon de commande pour votre événement.
@@ -476,7 +476,7 @@ Suite à votre accord, je vous transmets le bon de commande pour votre événeme
 N'hésitez pas à me contacter pour toute question.
 
 Bien cordialement,
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
     setContractEmailOpen(true);
   };
 
@@ -556,7 +556,7 @@ Nelly Sabde — Les Conférenciers`);
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
 
     if (type === "info") {
-      setSpeakerEmailSubject(`Intervention — ${proposal.client_name}${event?.event_title ? ` — ${event.event_title}` : ""}`);
+      setSpeakerEmailSubject(`Intervention - ${proposal.client_name}${event?.event_title ? ` - ${event.event_title}` : ""}`);
       setSpeakerEmailBody(`${greeting}
 
 ${vouvoi ? "Voici comme convenu les informations concernant votre intervention :" : "Voici comme convenu les infos concernant ton intervention :"}
@@ -571,7 +571,7 @@ ${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
 🏢 Client : ${proposal.client_name}
 💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
 ${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
-${event?.contact_on_site_name ? `\n👤 Contact sur place : ${event.contact_on_site_name}${event?.contact_on_site_phone ? ` — ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` — ${event.contact_on_site_email}` : ""}` : ""}
+${event?.contact_on_site_name ? `\n👤 Contact sur place : ${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}` : ""}
 ${event?.arrival_info ? `🚗 Arrivée : ${event.arrival_info}` : ""}
 ${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
 ${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
@@ -581,9 +581,9 @@ ${event?.special_requests ? `\n📝 Remarques : ${event.special_requests}` : ""}
 
 ${vouvoi ? "À très bientôt et bonne journée !" : "A très vite et bonne journée !"}
 
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
     } else {
-      setSpeakerEmailSubject(`Bon de commande — ${proposal.client_name} — Les Conférenciers`);
+      setSpeakerEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
       setSpeakerEmailBody(`${greeting}
 
 ${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :" : "Voici le bon de commande pour ton intervention :"}
@@ -595,7 +595,7 @@ ${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention
 
 ${vouvoi ? "Restant à votre disposition." : "A très vite !"}
 
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
     }
     setSpeakerEmailOpen(true);
   };
@@ -649,7 +649,7 @@ Nelly Sabde — Les Conférenciers`);
     setLiaisonTab("client");
 
     // Client email template
-    setLiaisonClientSubject(`Feuille de liaison — ${speakerName} — ${proposal.client_name}`);
+    setLiaisonClientSubject(`Feuille de liaison - ${speakerName} - ${proposal.client_name}`);
     setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
 
 Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
@@ -660,17 +660,17 @@ Vous en souhaitant bonne réception et restant à votre disposition si besoin es
 
 Excellente fin de journée à vous !
 
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
 
     // Speaker email template
-    setLiaisonSpeakerSubject(`Feuille de liaison — ${proposal.client_name}`);
+    setLiaisonSpeakerSubject(`Feuille de liaison - ${proposal.client_name}`);
     setLiaisonSpeakerBody(`${speakerFirstName},
 
 ${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
 
 ${isFormal ? "À très bientôt !" : "A très vite !"}
 
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
 
     // Pre-fill CC: speaker email for client tab, client email for speaker tab
     const speakerEmail = speaker?.email || "";
@@ -707,8 +707,8 @@ ${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
 ${liaisonTechNeeds ? `- ${liaisonTechNeeds}` : ""}
 ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 
-👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` — ${event.contact_on_site_phone}` : ""} — ${event?.contact_on_site_email || proposal.client_email}
-🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` — ${speaker.phone}` : ""}
+👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""} - ${event?.contact_on_site_email || proposal.client_email}
+🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` - ${speaker.phone}` : ""}
 ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
@@ -867,7 +867,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     const typeLabel = inv.invoice_type === "acompte" ? "d'acompte" : inv.invoice_type === "solde" ? "de solde" : "";
     const isDepositInvoice = inv.invoice_type === "acompte";
     
-    setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} — ${proposal.client_name}`);
+    setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
     
     if (isDepositInvoice) {
       setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
@@ -883,7 +883,7 @@ Veuillez trouver ci-dessous votre facture ${typeLabel} pour la prestation de con
 👉 Cliquez sur le bouton ci-dessous pour consulter et télécharger votre facture.
 
 Bien cordialement,
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
     } else {
       setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
@@ -906,7 +906,7 @@ Je reste bien évidemment à votre disposition pour toute nouvelle recherche d'i
 Au plaisir de futurs échanges.
 
 Très belle journée à vous,
-Nelly Sabde — Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`);
     }
     setInvoiceEmailOpen(true);
   };
@@ -1182,7 +1182,7 @@ Nelly Sabde — Les Conférenciers`);
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Mail className="h-4 w-4" /> Communication conférencier
-          {speakerInfo && <span className="text-xs font-normal text-muted-foreground">— {speakerInfo.name}</span>}
+          {speakerInfo && <span className="text-xs font-normal text-muted-foreground">- {speakerInfo.name}</span>}
         </h3>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => openSpeakerEmail("info")}>
@@ -1319,7 +1319,7 @@ Nelly Sabde — Les Conférenciers`);
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif">
-              {editingContract ? "Modifier" : "Créer"} le contrat — {proposal.client_name}
+              {editingContract ? "Modifier" : "Créer"} le contrat - {proposal.client_name}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 mt-2">
@@ -1342,10 +1342,10 @@ Nelly Sabde — Les Conférenciers`);
                     }
                   }}
                 >
-                  <option value="">— Sélectionner un client —</option>
+                  <option value="">- Sélectionner un client -</option>
                   {clients.map(c => (
                     <option key={c.id} value={c.id}>
-                      {c.company_name}{c.contact_name ? ` — ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
+                      {c.company_name}{c.contact_name ? ` - ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
                     </option>
                   ))}
                   <option value="__new__">➕ Créer un nouveau client…</option>
@@ -1404,7 +1404,7 @@ Nelly Sabde — Les Conférenciers`);
                 const c = clients.find(cl => cl.id === contractClientId);
                 return c ? (
                   <div className="text-[10px] text-muted-foreground space-y-0.5 bg-background p-2 rounded border border-border/50">
-                    <p><strong>{c.company_name}</strong>{c.contact_name ? ` — ${c.contact_name}` : ""}</p>
+                    <p><strong>{c.company_name}</strong>{c.contact_name ? ` - ${c.contact_name}` : ""}</p>
                     {c.email && <p>📧 {c.email}</p>}
                     {c.siret && <p>🏢 SIRET : {c.siret}</p>}
                     {c.address && <p>📍 {c.address}{c.city ? `, ${c.city}` : ""}</p>}
@@ -1484,7 +1484,7 @@ Nelly Sabde — Les Conférenciers`);
       {/* Contract email dialog with client selector */}
       <Dialog open={contractEmailOpen} onOpenChange={setContractEmailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat — {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
 
             {/* Client contact selector */}
@@ -1509,10 +1509,10 @@ Nelly Sabde — Les Conférenciers`);
                     }
                   }}
                 >
-                  <option value="">— Utiliser les infos de la proposition —</option>
+                  <option value="">- Utiliser les infos de la proposition -</option>
                   {clients.map(c => (
                     <option key={c.id} value={c.id}>
-                      {c.company_name}{c.contact_name ? ` — ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
+                      {c.company_name}{c.contact_name ? ` - ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
                     </option>
                   ))}
                   <option value="__new__">➕ Créer un nouveau client…</option>
@@ -1606,7 +1606,7 @@ Nelly Sabde — Les Conférenciers`);
       {/* Liaison sheet dialog */}
       <Dialog open={liaisonDialogOpen} onOpenChange={setLiaisonDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Feuille de liaison — {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">Feuille de liaison - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-5 mt-2">
             {/* Liaison details - matching the DOCX template fields */}
             <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
@@ -1629,7 +1629,7 @@ Nelly Sabde — Les Conférenciers`);
                 <p>🚗 Arrivée : {liaisonArrival || "à confirmer"}</p>
                 <p>🔧 Technique : {liaisonTechNeeds || "—"}{liaisonSalleSetup ? `, ${liaisonSalleSetup}` : ""}</p>
                 <p>📞 Client : {proposal.recipient_name || proposal.client_name}</p>
-                <p>📞 Conférencier : {speakerInfo?.name || "—"}{speakerInfo?.phone ? ` — ${speakerInfo.phone}` : ""}</p>
+                <p>📞 Conférencier : {speakerInfo?.name || "—"}{speakerInfo?.phone ? ` - ${speakerInfo.phone}` : ""}</p>
               </div>
             </div>
 
@@ -1680,7 +1680,7 @@ Nelly Sabde — Les Conférenciers`);
       {/* Event edit dialog */}
       <Dialog open={eventEditOpen} onOpenChange={setEventEditOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Suivi du dossier — {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">Suivi du dossier - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-5 mt-2">
 
             {/* Section: Événement */}
@@ -1724,7 +1724,7 @@ Nelly Sabde — Les Conférenciers`);
                 <div className="space-y-1"><Label className="text-xs">Arrivée / accueil</Label><Input value={editArrivalInfo} onChange={e => setEditArrivalInfo(e.target.value)} placeholder="Accueil à 9h00 hall A" /></div>
                 <div className="space-y-1"><Label className="text-xs">Parking</Label><Input value={editParkingInfo} onChange={e => setEditParkingInfo(e.target.value)} placeholder="Parking souterrain, badge à l'accueil" /></div>
               </div>
-              <div className="space-y-1"><Label className="text-xs">Hôtel</Label><Input value={editHotelInfo} onChange={e => setEditHotelInfo(e.target.value)} placeholder="Hôtel Marriott — réservation confirmée" /></div>
+              <div className="space-y-1"><Label className="text-xs">Hôtel</Label><Input value={editHotelInfo} onChange={e => setEditHotelInfo(e.target.value)} placeholder="Hôtel Marriott - réservation confirmée" /></div>
             </div>
 
             {/* Section: Technique */}
@@ -1759,7 +1759,7 @@ Nelly Sabde — Les Conférenciers`);
       {/* Invoice creation dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="font-serif">Créer une facture — {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">Créer une facture - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-2">
               <Label className="text-xs">Type de facture</Label>
@@ -1810,7 +1810,7 @@ Nelly Sabde — Les Conférenciers`);
       {/* Invoice email dialog */}
       <Dialog open={invoiceEmailOpen} onOpenChange={setInvoiceEmailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Envoyer {emailInvoice?.invoice_number} — {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">Envoyer {emailInvoice?.invoice_number} - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={invoiceEmailSubject} onChange={e => setInvoiceEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={invoiceEmailBody} onChange={e => setInvoiceEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
