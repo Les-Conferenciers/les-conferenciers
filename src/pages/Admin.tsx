@@ -150,6 +150,7 @@ type Proposal = {
   sent_at: string | null;
   expires_at: string;
   created_at: string;
+  proposal_type?: string;
   reminder1_sent_at?: string | null;
   reminder2_sent_at?: string | null;
   proposal_speakers: {
