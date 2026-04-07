@@ -1101,26 +1101,39 @@ const AdminProposalsContent = () => {
             <div className="text-xs text-muted-foreground">{p.client_email}</div>
           </TableCell>
           <TableCell>
-            <div className="flex items-center gap-1.5">
-              {p.proposal_speakers?.map((ps, i) => {
-                const speaker = ps.speakers as any;
-                if (!speaker) return null;
-                return (
-                  <div key={i} className="flex items-center gap-1.5" title={speaker.name}>
-                    <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                      {speaker.image_url ? <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-3.5 w-3.5 text-muted-foreground" /></div>}
-                    </div>
-                    <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
-                    {i < (p.proposal_speakers?.length || 0) - 1 && <span className="text-muted-foreground text-xs">·</span>}
-                  </div>
-                );
-              })}
-              {(!p.proposal_speakers || p.proposal_speakers.length === 0) && (
-                <span className="text-xs text-muted-foreground italic">
-                  {(p as any).proposal_type === "info" ? "Demande d'infos" : "Aucun"}
-                </span>
-              )}
-            </div>
+            {(() => {
+              const speakersList = p.proposal_speakers || [];
+              const maxVisible = 3;
+              const visible = speakersList.slice(0, maxVisible);
+              const remaining = speakersList.length - maxVisible;
+              return (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {visible.map((ps, i) => {
+                    const speaker = ps.speakers as any;
+                    if (!speaker) return null;
+                    return (
+                      <div key={i} className="flex items-center gap-1" title={speaker.name}>
+                        <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                          {speaker.image_url ? <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-3.5 w-3.5 text-muted-foreground" /></div>}
+                        </div>
+                        <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
+                        {i < visible.length - 1 && <span className="text-muted-foreground text-xs">·</span>}
+                      </div>
+                    );
+                  })}
+                  {remaining > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground" title={speakersList.slice(maxVisible).map((ps: any) => ps.speakers?.name).filter(Boolean).join(", ")}>
+                      +{remaining}
+                    </span>
+                  )}
+                  {speakersList.length === 0 && (
+                    <span className="text-xs text-muted-foreground italic">
+                      {(p as any).proposal_type === "info" ? "Demande d'infos" : "Aucun"}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </TableCell>
           <TableCell>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${
