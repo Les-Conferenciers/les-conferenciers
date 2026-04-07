@@ -603,7 +603,7 @@ const AdminProposalsContent = () => {
       toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
-    const finalMessage = message || getDefaultMessage(recipientName, clientName);
+    const finalMessage = proposalType === "classique" ? (emailBody || getDefaultEmailBody(recipientName, clientName)) : "";
     const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
     let finalBody = emailBody;
     if (!finalBody) {
