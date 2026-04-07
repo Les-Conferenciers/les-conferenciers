@@ -228,20 +228,8 @@ const ProposalView = () => {
         </div>
       </header>
 
-      {/* Personalized message */}
-      {proposal.message && (
-        <div className="max-w-4xl mx-auto px-4 -mt-6">
-          <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-sm">
-            <p className="text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
-              {proposal.message}
-            </p>
-            
-          </div>
-        </div>
-      )}
-
       {/* Speaker Cards */}
-      <main className={`max-w-4xl mx-auto px-4 ${proposal.message ? 'pt-8' : 'pt-12'} pb-12 space-y-8`}>
+      <main className="max-w-4xl mx-auto px-4 pt-12 pb-12 space-y-8">
         {proposal.proposal_speakers.map((ps, i) => {
           const speaker = ps.speakers as any;
           if (!speaker) return null;
