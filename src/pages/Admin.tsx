@@ -97,54 +97,36 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import SimpleRichTextEditor from "@/components/admin/SimpleRichTextEditor";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 
 const getDefaultMessage = (recipientName: string, clientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},
-
-Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.
-
-Vous trouverez ci-joint un fichier PDF présentant une sélection de conférenciers, sous réserve de leur disponibilité.
-
-Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.
-
-Je reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.
-
-Dans l'attente de votre retour, je vous souhaite une très belle journée.
-
-Nelly Sabde — Les Conférenciers`;
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-joint un fichier PDF présentant une sélection de conférenciers, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers`;
 
 const getDefaultEmailSubject = (clientName: string) =>
-  `Votre sélection de conférenciers sur mesure — ${clientName || "Les Conférenciers"}`;
+  `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
 
 const getDefaultEmailBody = (recipientName: string, clientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\n👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.\n\nJe reste bien entendu à votre disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
 
-Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.
+const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string) =>
+  `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p><p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p><p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p><p><a href="${window.location.origin}/conferencier/${speakerSlug}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></p><p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p><p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p><p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p><p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 
-Vous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.
+const getInfoEmailBody = (recipientName: string) =>
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n• Votre enveloppe budgétaire\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
 
-Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.
-
-👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.
-
-Je reste bien entendu à votre disposition pour tout complément d'information.
-
-Dans l'attente de votre retour, je vous souhaite une très belle journée.
-
-Nelly Sabde — Les Conférenciers
-📞 06 95 93 97 91`;
+type ProposalType = "classique" | "unique" | "info";
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
-type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; fee_details: string | null; city: string | null; formal_address?: boolean; email?: string | null; phone?: string | null };
+type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; fee_details: string | null; city: string | null; formal_address?: boolean; email?: string | null; phone?: string | null; slug?: string };
 type ProposalSpeaker = {
   speaker_id: string;
   speaker_fee: number | null;
@@ -168,6 +150,7 @@ type Proposal = {
   sent_at: string | null;
   expires_at: string;
   created_at: string;
+  proposal_type?: string;
   reminder1_sent_at?: string | null;
   reminder2_sent_at?: string | null;
   proposal_speakers: {
@@ -182,7 +165,7 @@ type Proposal = {
   }[];
 };
 
-const COMMISSION = 1300;
+const DEFAULT_COMMISSION = 0;
 
 /** Speaker selector with search and alphabetical sort by last name */
 const SpeakerSelector = ({ speakers, selectedSpeakers, onSelect }: {
@@ -300,6 +283,116 @@ const parseAlternativeRates = (feeDetails: string | null | undefined, baseFee: n
 type ContractData = { id: string; proposal_id: string; status: string };
 type InvoiceData = { id: string; proposal_id: string; invoice_type: string; status: string; paid_at: string | null };
 
+const hasHtmlContent = (value: string) => /<\/?[a-z][\s\S]*>/i.test(value);
+const escapeEmailHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+const getProposalSpeakerTotal = (speaker?: Pick<ProposalSpeaker, "total_price" | "speaker_fee" | "travel_costs" | "agency_commission"> | null) =>
+  speaker?.total_price ?? ((speaker?.speaker_fee || 0) + (speaker?.travel_costs || 0) + (speaker?.agency_commission || 0));
+const toEmailBodyHtml = (value: string) => {
+  if (!value?.trim()) return "";
+  if (hasHtmlContent(value)) return value;
+
+  return escapeEmailHtml(value)
+    .replace(/👉\s*Découvrir le profil de ([^:\n]+)\s*:\s*(https?:\/\/[^\s<]+)/g, '👉 <a href="$2" target="_blank" rel="noopener noreferrer">Découvrir le profil de $1</a>')
+    .replace(/\n/g, "<br>");
+};
+
+const getResolvedEmailSubject = (type: ProposalType, subject: string, clientName: string) => {
+  if (subject?.trim()) return subject;
+  if (type === "info") return `Demande d'informations - ${clientName || "Les Conférenciers"}`;
+  if (type === "unique") return `Votre conférencier sur mesure - ${clientName || "Les Conférenciers"}`;
+  return getDefaultEmailSubject(clientName);
+};
+
+const getResolvedEmailBody = ({
+  type,
+  body,
+  recipientName,
+  clientName,
+  selectedSpeakers,
+  speakers,
+}: {
+  type: ProposalType;
+  body: string;
+  recipientName: string;
+  clientName: string;
+  selectedSpeakers: ProposalSpeaker[];
+  speakers: Speaker[];
+}) => {
+  if (body?.trim()) return body;
+  if (type === "info") return getInfoEmailBody(recipientName);
+  if (type === "unique") {
+    const proposalSpeaker = selectedSpeakers[0];
+    if (!proposalSpeaker) return "";
+    const speaker = speakers.find((item) => item.id === proposalSpeaker.speaker_id);
+    return getUniqueEmailBody(
+      recipientName,
+      speaker?.name || "",
+      getProposalSpeakerTotal(proposalSpeaker).toLocaleString("fr-FR"),
+      speaker?.slug || "",
+    );
+  }
+
+  return getDefaultEmailBody(recipientName, clientName);
+};
+
+const EmailPreviewCard = ({
+  to,
+  subject,
+  body,
+  showProposalButton,
+}: {
+  to: string;
+  subject: string;
+  body: string;
+  showProposalButton: boolean;
+}) => {
+  const bodyHtml = toEmailBodyHtml(body);
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="bg-muted px-4 py-2 text-xs text-muted-foreground space-y-1">
+        <p><strong>De :</strong> Les Conférenciers &lt;nellysabde@lesconferenciers.com&gt;</p>
+        <p><strong>À :</strong> {to || "-"}</p>
+        <p><strong>Objet :</strong> {subject || "-"}</p>
+      </div>
+      <div className="bg-white">
+        <div style={{ background: "#1a2332", padding: "20px 30px", textAlign: "center" }}>
+          <span style={{ color: "#f5f0e8", fontSize: "20px", fontWeight: "bold", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
+        </div>
+        <div style={{ padding: "30px 30px 20px" }}>
+          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} className="[&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+          {showProposalButton && (
+            <>
+              <div style={{ textAlign: "center", margin: "30px 0" }}>
+                <span style={{ display: "inline-block", background: "#1a2332", color: "#f5f0e8", padding: "14px 32px", borderRadius: "8px", fontSize: "15px", fontWeight: "bold" }}>
+                  Consulter la proposition complète
+                </span>
+              </div>
+              <div style={{ background: "#f0f7ff", border: "1px solid #d0e3f7", borderRadius: "8px", padding: "16px", margin: "20px 0" }}>
+                <p style={{ color: "#1a5276", fontSize: "13px", margin: 0, textAlign: "center" }}>
+                  📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+        <div style={{ padding: "0 30px 30px" }}>
+          <img src="https://les-conferenciers.netlify.app/images/les-conferenciers-signature.png" alt="Nelly SABDE | Agence Les Conférenciers" style={{ width: "100%", maxWidth: "500px", display: "block" }} />
+        </div>
+        <div style={{ background: "#1a2332", padding: "16px", textAlign: "center" }}>
+          <p style={{ color: "#f5f0e8", opacity: 0.5, fontSize: "11px", margin: 0 }}>Proposition confidentielle - Les Conférenciers</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminProposalsContent = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
@@ -329,6 +422,12 @@ const AdminProposalsContent = () => {
   const [editEmailSubject, setEditEmailSubject] = useState("");
   const [editEmailBody, setEditEmailBody] = useState("");
   const [editSelectedSpeakers, setEditSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
+  const [proposalType, setProposalType] = useState<ProposalType>("classique");
+  const [globalCommission, setGlobalCommission] = useState<number>(0);
+  const [typeFilter, setTypeFilter] = useState<"all" | ProposalType>("all");
+  const [dateSortAsc, setDateSortAsc] = useState(false);
+  const [showCreatePreview, setShowCreatePreview] = useState(false);
+  const [showEditPreview, setShowEditPreview] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
@@ -351,7 +450,7 @@ const AdminProposalsContent = () => {
   };
 
   const fetchSpeakers = async () => {
-    const { data } = await supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, fee_details, city, formal_address, email, phone").order("name");
+    const { data } = await supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, fee_details, city, formal_address, email, phone, slug").order("name");
     setSpeakers(data || []);
   };
 
@@ -377,10 +476,14 @@ const AdminProposalsContent = () => {
 
   const isFullyPaid = (p: Proposal) => getPipelineStatus(p) === "fully_paid";
 
-  const drafts = proposals.filter(p => p.status === "draft");
-  const sent = proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p));
-  const completed = proposals.filter(p => p.status === "accepted" && isFullyPaid(p));
-  const archived = proposals.filter(p => p.status === "archived");
+  const applyTypeFilter = (items: Proposal[]) => typeFilter === "all" ? items : items.filter(p => (p as any).proposal_type === typeFilter);
+  const applyDateSort = (items: Proposal[]) => dateSortAsc ? [...items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) : items;
+  const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(items));
+
+  const drafts = filterAndSort(proposals.filter(p => p.status === "draft"));
+  const sent = filterAndSort(proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p)));
+  const completed = filterAndSort(proposals.filter(p => p.status === "accepted" && isFullyPaid(p)));
+  const archived = filterAndSort(proposals.filter(p => p.status === "archived"));
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter(c => c.speaker_id === speakerId);
 
@@ -390,8 +493,8 @@ const AdminProposalsContent = () => {
       speaker_id: speaker.id,
       speaker_fee: baseFee || null,
       travel_costs: 0,
-      agency_commission: COMMISSION,
-      total_price: (baseFee + COMMISSION) || null,
+      agency_commission: globalCommission,
+      total_price: (baseFee + globalCommission) || null,
       display_order: displayOrder,
       selected_conference_ids: [],
     };
@@ -459,96 +562,179 @@ const AdminProposalsContent = () => {
     });
 
   const addSpeaker = (speaker: Speaker) => {
-    setSelectedSpeakers(prev => addSpeakerToList(prev, speaker));
+    if (proposalType === "unique" && selectedSpeakers.length >= 1) {
+      toast.error("Un seul conférencier pour ce type"); return;
+    }
+    const nextSpeakers = addSpeakerToList(selectedSpeakers, speaker);
+    setSelectedSpeakers(nextSpeakers);
+    if (proposalType === "unique") {
+      const total = getProposalSpeakerTotal(nextSpeakers[0]);
+      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, total.toLocaleString("fr-FR"), speaker.slug || ""));
+    }
   };
 
-  const removeSpeaker = (speakerId: string) => setSelectedSpeakers(prev => removeSpeakerFromList(prev, speakerId));
+  const removeSpeaker = (speakerId: string) => {
+    setSelectedSpeakers(prev => {
+      const next = removeSpeakerFromList(prev, speakerId);
+      if (proposalType === "unique") setEmailBody("");
+      return next;
+    });
+  };
 
   const toggleConference = (speakerId: string, confId: string) => {
     setSelectedSpeakers(prev => toggleConferenceInList(prev, speakerId, confId));
   };
 
   const updateSpeakerField = (speakerId: string, field: keyof ProposalSpeaker, value: number | null) => {
-    setSelectedSpeakers(prev => updateSpeakerFieldInList(prev, speakerId, field, value));
+    setSelectedSpeakers(prev => {
+      const next = updateSpeakerFieldInList(prev, speakerId, field, value);
+      if (proposalType === "unique" && next[0]) {
+        const speaker = speakers.find(s => s.id === next[0].speaker_id);
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(next[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+      }
+      return next;
+    });
   };
 
   const getSpeakerName = (id: string) => speakers.find(s => s.id === id)?.name || "—";
   const getSpeakerImage = (id: string) => speakers.find(s => s.id === id)?.image_url || null;
   const getSpeakerCity = (id: string) => speakers.find(s => s.id === id)?.city || null;
 
-  const handleCreate = async () => {
-    if (!clientName || !clientEmail || selectedSpeakers.length === 0) {
-      toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier"); return;
+  const handleCreate = async (andSend = false) => {
+    if (!clientName || !clientEmail) {
+      toast.error("Remplissez le nom et l'email du client"); return;
+    }
+    if (proposalType === "classique" && selectedSpeakers.length === 0) {
+      toast.error("Ajoutez au moins 1 conférencier"); return;
+    }
+    if (proposalType === "unique" && selectedSpeakers.length === 0) {
+      toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
-    const finalMessage = message || getDefaultMessage(recipientName, clientName);
+    const finalMessage = proposalType === "classique" ? (emailBody || getDefaultEmailBody(recipientName, clientName)) : "";
     const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
-    const finalBody = emailBody || getDefaultEmailBody(recipientName, clientName);
+    let finalBody = emailBody;
+    if (!finalBody) {
+      if (proposalType === "unique" && selectedSpeakers.length > 0) {
+        const sp = speakers.find(s => s.id === selectedSpeakers[0].speaker_id);
+        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "");
+      } else if (proposalType === "info") {
+        finalBody = getInfoEmailBody(recipientName);
+      } else {
+        finalBody = getDefaultEmailBody(recipientName, clientName);
+      }
+    }
     const { data: proposal, error } = await supabase
       .from("proposals")
-      .insert({ client_name: clientName, client_email: clientEmail, message: finalMessage, recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody } as any)
+      .insert({ client_name: clientName, client_email: clientEmail, message: finalMessage, recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody, proposal_type: proposalType } as any)
       .select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
-    const { error: spError } = await supabase
-      .from("proposal_speakers")
-      .insert(selectedSpeakers.map((s, i) => ({
-        proposal_id: proposal.id, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee,
-        travel_costs: s.travel_costs, agency_commission: s.agency_commission, total_price: s.total_price,
-        display_order: i, selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
-      })));
-    if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
-    toast.success("Proposition créée !");
+    if (selectedSpeakers.length > 0) {
+      const { error: spError } = await supabase
+        .from("proposal_speakers")
+        .insert(selectedSpeakers.map((s, i) => ({
+          proposal_id: proposal.id, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee,
+          travel_costs: s.travel_costs, agency_commission: s.agency_commission, total_price: s.total_price,
+          display_order: i, selected_conference_ids: s.selected_conference_ids.length > 0 ? s.selected_conference_ids : null,
+        })));
+      if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
+    }
+    if (andSend) {
+      try {
+        const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id } });
+        if (sendErr) throw sendErr;
+        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", proposal.id);
+        toast.success("Proposition créée et envoyée !");
+      } catch { toast.error("Proposition créée mais erreur d'envoi"); }
+    } else {
+      toast.success("Brouillon enregistré !");
+    }
     setDialogOpen(false); resetForm(); fetchProposals(); setSubmitting(false);
   };
 
   const resetForm = () => {
     setClientName(""); setClientEmail(""); setRecipientName(""); setSelectedSpeakers([]);
     setEmailSubject(""); setEmailBody(""); setMessage(getDefaultMessage("", ""));
+    setProposalType("classique"); setGlobalCommission(0);
   };
 
   const openEditDialog = (p: Proposal) => {
     setEditingProposal(p);
     setEditClientName(p.client_name); setEditClientEmail(p.client_email);
     setEditRecipientName(p.recipient_name || "");
-    setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
-    setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
-    setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
-    setEditSelectedSpeakers(buildProposalSpeakers(p.proposal_speakers));
+    const proposalSpeakers = buildProposalSpeakers(p.proposal_speakers);
+    const pType = (p.proposal_type || "classique") as ProposalType;
+    if (pType === "info") {
+      setEditMessage("");
+      setEditEmailSubject(p.email_subject || `Demande d'informations - ${p.client_name}`);
+      setEditEmailBody(p.email_body || getInfoEmailBody(p.recipient_name || ""));
+    } else if (pType === "unique") {
+      setEditMessage("");
+      setEditEmailSubject(p.email_subject || `Votre conférencier sur mesure - ${p.client_name}`);
+      const uniqueSpeaker = proposalSpeakers[0];
+      const speaker = speakers.find((item) => item.id === uniqueSpeaker?.speaker_id);
+      setEditEmailBody(p.email_body || getUniqueEmailBody(p.recipient_name || "", speaker?.name || "", getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR"), speaker?.slug || ""));
+    } else {
+      setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
+      setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
+      setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
+    }
+    setEditSelectedSpeakers(proposalSpeakers);
     setEditDialogOpen(true);
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (andSend = false) => {
     if (!editingProposal) return;
-    if (!editClientName || !editClientEmail || editSelectedSpeakers.length === 0) {
-      toast.error("Remplissez le nom, email et ajoutez au moins 1 conférencier");
-      return;
+    const pType = (editingProposal.proposal_type || "classique") as ProposalType;
+    if (!editClientName || !editClientEmail) {
+      toast.error("Remplissez le nom et email"); return;
+    }
+    if (pType === "classique" && editSelectedSpeakers.length === 0) {
+      toast.error("Ajoutez au moins 1 conférencier"); return;
+    }
+    if (pType === "unique" && editSelectedSpeakers.length === 0) {
+      toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
     const { error } = await supabase.from("proposals").update({
       client_name: editClientName, client_email: editClientEmail,
-      recipient_name: editRecipientName || null, message: editMessage || null,
+      recipient_name: editRecipientName || null,
+      message: pType === "classique" ? (editEmailBody || null) : null,
       email_subject: editEmailSubject || null, email_body: editEmailBody || null,
     } as any).eq("id", editingProposal.id);
     if (error) { toast.error("Erreur"); setSubmitting(false); return; }
 
-    const { error: deleteError } = await supabase.from("proposal_speakers").delete().eq("proposal_id", editingProposal.id);
-    if (deleteError) { toast.error("Erreur sur les conférenciers"); setSubmitting(false); return; }
+    if (pType !== "info") {
+      const { error: deleteError } = await supabase.from("proposal_speakers").delete().eq("proposal_id", editingProposal.id);
+      if (deleteError) { toast.error("Erreur sur les conférenciers"); setSubmitting(false); return; }
 
-    const { error: insertError } = await supabase
-      .from("proposal_speakers")
-      .insert(editSelectedSpeakers.map((speaker, index) => ({
-        proposal_id: editingProposal.id,
-        speaker_id: speaker.speaker_id,
-        speaker_fee: speaker.speaker_fee,
-        travel_costs: speaker.travel_costs,
-        agency_commission: speaker.agency_commission,
-        total_price: speaker.total_price,
-        display_order: index,
-        selected_conference_ids: speaker.selected_conference_ids.length > 0 ? speaker.selected_conference_ids : null,
-      })));
-    if (insertError) { toast.error("Erreur sur les tarifs des conférenciers"); setSubmitting(false); return; }
+      if (editSelectedSpeakers.length > 0) {
+        const { error: insertError } = await supabase
+          .from("proposal_speakers")
+          .insert(editSelectedSpeakers.map((speaker, index) => ({
+            proposal_id: editingProposal.id,
+            speaker_id: speaker.speaker_id,
+            speaker_fee: speaker.speaker_fee,
+            travel_costs: speaker.travel_costs,
+            agency_commission: speaker.agency_commission,
+            total_price: speaker.total_price,
+            display_order: index,
+            selected_conference_ids: speaker.selected_conference_ids.length > 0 ? speaker.selected_conference_ids : null,
+          })));
+        if (insertError) { toast.error("Erreur sur les tarifs des conférenciers"); setSubmitting(false); return; }
+      }
+    }
 
-    toast.success("Proposition mise à jour !");
+    if (andSend) {
+      try {
+        const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: editingProposal.id } });
+        if (sendErr) throw sendErr;
+        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", editingProposal.id);
+        toast.success("Proposition sauvegardée et envoyée !");
+      } catch { toast.error("Sauvegardée mais erreur d'envoi"); }
+    } else {
+      toast.success("Brouillon mis à jour !");
+    }
     setEditDialogOpen(false); setEditingProposal(null); setEditSelectedSpeakers([]); fetchProposals(); setSubmitting(false);
   };
 
@@ -622,8 +808,66 @@ const AdminProposalsContent = () => {
     return map[status] || { label: status, color: "bg-muted text-muted-foreground" };
   };
 
+  const noScrollWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
+
+  const handleProposalTypeChange = (type: ProposalType) => {
+    setProposalType(type);
+    setSelectedSpeakers([]);
+    if (type === "info") {
+      setEmailBody(getInfoEmailBody(recipientName));
+      setMessage("");
+      setEmailSubject(`Demande d'informations - ${clientName || "Les Conférenciers"}`);
+    } else if (type === "unique") {
+      setEmailBody("");
+      setMessage("");
+      setEmailSubject(`Votre conférencier sur mesure - ${clientName || "Les Conférenciers"}`);
+    } else {
+      setEmailBody(getDefaultEmailBody(recipientName, clientName));
+      setMessage(getDefaultMessage(recipientName, clientName));
+      setEmailSubject(getDefaultEmailSubject(clientName));
+    }
+  };
+
+  const applyGlobalCommission = (val: number) => {
+    setGlobalCommission(val);
+    setSelectedSpeakers(prev => {
+      const updated = prev.map(s => {
+        const u = { ...s, agency_commission: val };
+        u.total_price = (u.speaker_fee || 0) + (u.travel_costs || 0) + val || null;
+        return u;
+      });
+      if (proposalType === "unique" && updated[0]) {
+        const speaker = speakers.find(sp => sp.id === updated[0].speaker_id);
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(updated[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+      }
+      return updated;
+    });
+  };
+
   const renderSpeakerForm = () => (
     <div className="space-y-6 mt-4">
+      {/* Proposal type selector */}
+      <div className="space-y-2">
+        <Label>Type de proposition</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            { value: "classique" as ProposalType, label: "📋 Classique", desc: "Multi-conférenciers avec lien web" },
+            { value: "unique" as ProposalType, label: "🎤 Conférencier unique", desc: "Un seul profil, tout dans l'email" },
+            { value: "info" as ProposalType, label: "📝 Demande d'infos", desc: "Email simple sans conférencier" },
+          ]).map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => handleProposalTypeChange(opt.value)}
+              className={`border rounded-lg p-3 text-left transition-colors ${proposalType === opt.value ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:border-primary/50"}`}
+            >
+              <p className="text-sm font-medium">{opt.label}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" /></div>
         <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" /></div>
@@ -631,111 +875,174 @@ const AdminProposalsContent = () => {
       <div className="space-y-2">
         <Label>Prénom Nom du destinataire (optionnel)</Label>
         <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
-        <p className="text-[11px] text-muted-foreground">Affiché en titre : « {recipientName || "Prénom Nom"} pour {clientName || "Société"} »</p>
       </div>
-      <div className="space-y-2">
-        <Label>Message personnalisé (affiché sur la page proposition)</Label>
-        <Textarea value={message} onChange={e => setMessage(e.target.value)} rows={4} className="text-sm" />
-      </div>
-      <div className="space-y-3">
-        <Label>Conférenciers ({selectedSpeakers.length})</Label>
-        {selectedSpeakers.map((ps, idx) => {
-          const city = getSpeakerCity(ps.speaker_id);
-          const imageUrl = getSpeakerImage(ps.speaker_id);
-          const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
-          return (
-            <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                    {imageUrl ? <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-5 w-5 text-muted-foreground" /></div>}
-                  </div>
-                  <div>
-                    <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
-                    {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" disabled={idx === 0} onClick={() => {
-                    setSelectedSpeakers(prev => {
-                      const arr = [...prev];
-                      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
-                      return arr;
-                    });
-                  }}><ChevronUp className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="sm" disabled={idx === selectedSpeakers.length - 1} onClick={() => {
-                    setSelectedSpeakers(prev => {
-                      const arr = [...prev];
-                      [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
-                      return arr;
-                    });
-                  }}><ChevronDown className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </div>
-              </div>
-              {speakerConfs.length > 0 && (
-                <div className="space-y-2 bg-muted/50 rounded-md p-3">
-                  <Label className="text-xs text-muted-foreground">Conférences à inclure</Label>
-                  {speakerConfs.map(conf => (
-                    <div key={conf.id} className="flex items-center gap-2">
-                      <Checkbox id={`conf-${conf.id}`} checked={ps.selected_conference_ids.includes(conf.id)} onCheckedChange={() => toggleConference(ps.speaker_id, conf.id)} />
-                      <label htmlFor={`conf-${conf.id}`} className="text-sm cursor-pointer leading-tight">{conf.title}</label>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
-                  {(() => {
-                    const sp = speakers.find(s => s.id === ps.speaker_id);
-                    const feeDetails = sp?.fee_details;
-                    const altRates = parseAlternativeRates(feeDetails, sp?.base_fee ?? null);
-                    return (
-                      <div className="space-y-1">
-                        {sp?.base_fee && (
-                          <div className="text-xs font-medium text-accent mb-1">
-                            Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €
-                          </div>
-                        )}
-                        <Input type="number" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} />
-                        {altRates.length > 0 && (
-                          <select
-                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
-                            value={ps.speaker_fee?.toString() || ""}
-                            onChange={e => {
-                              if (e.target.value) updateSpeakerField(ps.speaker_id, "speaker_fee", Number(e.target.value));
-                            }}
-                          >
-                            {sp?.base_fee && <option value={sp.base_fee.toString()}>Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €</option>}
-                            {altRates.map((r, i) => (
-                              <option key={i} value={r.value}>{r.label}</option>
-                            ))}
-                          </select>
-                        )}
-                        {feeDetails && (
-                          <p className="text-[10px] text-muted-foreground/70 italic leading-tight">{feeDetails}</p>
-                        )}
+
+      {/* Speakers section - not for "info" type - BEFORE email */}
+      {proposalType !== "info" && (
+        <>
+          {/* Global commission */}
+          <div className="border border-border rounded-lg p-4 space-y-2 bg-muted/30">
+            <Label className="text-sm font-medium">Commission agence globale (€)</Label>
+            <p className="text-[11px] text-muted-foreground">Appliquée par défaut à chaque conférencier ajouté</p>
+            <Input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={globalCommission || ""}
+              onChange={e => {
+                const val = e.target.value ? Number(e.target.value) : 0;
+                applyGlobalCommission(val);
+              }}
+              onWheel={noScrollWheel}
+              placeholder="0"
+              className="max-w-xs"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <Label>Conférenciers ({selectedSpeakers.length}{proposalType === "unique" ? "/1" : ""})</Label>
+            {selectedSpeakers.map((ps, idx) => {
+              const city = getSpeakerCity(ps.speaker_id);
+              const imageUrl = getSpeakerImage(ps.speaker_id);
+              const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
+              return (
+                <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                        {imageUrl ? <img src={imageUrl} alt={getSpeakerName(ps.speaker_id)} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-5 w-5 text-muted-foreground" /></div>}
                       </div>
-                    );
-                  })()}
+                      <div>
+                        <span className="font-medium text-sm">{getSpeakerName(ps.speaker_id)}</span>
+                        {city && <span className="text-xs text-muted-foreground ml-2">📍 {city}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" disabled={idx === 0} onClick={() => {
+                        setSelectedSpeakers(prev => {
+                          const arr = [...prev];
+                          [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+                          return arr;
+                        });
+                      }}><ChevronUp className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" disabled={idx === selectedSpeakers.length - 1} onClick={() => {
+                        setSelectedSpeakers(prev => {
+                          const arr = [...prev];
+                          [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+                          return arr;
+                        });
+                      }}><ChevronDown className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => removeSpeaker(ps.speaker_id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  </div>
+                  {speakerConfs.length > 0 && (
+                    <div className="space-y-2 bg-muted/50 rounded-md p-3">
+                      <Label className="text-xs text-muted-foreground">Conférences à inclure</Label>
+                      {speakerConfs.map(conf => (
+                        <div key={conf.id} className="flex items-center gap-2">
+                          <Checkbox id={`conf-${conf.id}`} checked={ps.selected_conference_ids.includes(conf.id)} onCheckedChange={() => toggleConference(ps.speaker_id, conf.id)} />
+                          <label htmlFor={`conf-${conf.id}`} className="text-sm cursor-pointer leading-tight">{conf.title}</label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
+                      {(() => {
+                        const sp = speakers.find(s => s.id === ps.speaker_id);
+                        const feeDetails = sp?.fee_details;
+                        const altRates = parseAlternativeRates(feeDetails, sp?.base_fee ?? null);
+                        return (
+                          <div className="space-y-1">
+                            {sp?.base_fee && (
+                              <div className="text-xs font-medium text-accent mb-1">
+                                Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €
+                              </div>
+                            )}
+                            <Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.speaker_fee ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null)} onWheel={noScrollWheel} />
+                            {altRates.length > 0 && (
+                              <select
+                                className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                                value={ps.speaker_fee?.toString() || ""}
+                                onChange={e => {
+                                  if (e.target.value) updateSpeakerField(ps.speaker_id, "speaker_fee", Number(e.target.value));
+                                }}
+                              >
+                                {sp?.base_fee && <option value={sp.base_fee.toString()}>Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €</option>}
+                                {altRates.map((r, i) => (
+                                  <option key={i} value={r.value}>{r.label}</option>
+                                ))}
+                              </select>
+                            )}
+                            {feeDetails && (
+                              <p className="text-[10px] text-muted-foreground/70 italic leading-tight">{feeDetails}</p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} onWheel={noScrollWheel} /></div>
+                    <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} onWheel={noScrollWheel} /></div>
+                    <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total HT (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} onWheel={noScrollWheel} className="font-bold" /></div>
+                  </div>
                 </div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" value={ps.travel_costs ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null)} /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="number" value={ps.agency_commission ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null)} /></div>
-                <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label><Input type="number" value={ps.total_price ?? ""} onChange={e => updateSpeakerField(ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null)} className="font-bold" /></div>
-              </div>
-            </div>
-          );
-        })}
-        <SpeakerSelector
-          speakers={speakers}
-          selectedSpeakers={selectedSpeakers}
-          onSelect={addSpeaker}
+              );
+            })}
+            {(proposalType === "classique" || (proposalType === "unique" && selectedSpeakers.length === 0)) && (
+              <SpeakerSelector
+                speakers={speakers}
+                selectedSpeakers={selectedSpeakers}
+                onSelect={addSpeaker}
+              />
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Email section - AFTER speakers */}
+      <div className="space-y-2">
+        <Label>✉️ Email d'envoi - Objet</Label>
+        <Input
+          value={emailSubject || getResolvedEmailSubject(proposalType, "", clientName)}
+          onChange={e => setEmailSubject(e.target.value)}
+          placeholder="Objet de l'email"
         />
       </div>
-      <Button className="w-full" onClick={handleCreate} disabled={submitting}>
-        {submitting ? "Création…" : "Créer la proposition"}
-      </Button>
+      <div className="space-y-2">
+        <Label>✉️ Email d'envoi - Corps</Label>
+        <SimpleRichTextEditor
+          value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers })}
+          onChange={setEmailBody}
+          placeholder="Corps de l'email..."
+          rows={8}
+        />
+      </div>
+      <div className="space-y-2">
+        <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setShowCreatePreview(!showCreatePreview)}>
+          {showCreatePreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {showCreatePreview ? "Masquer l'aperçu" : "Aperçu réel de l'email envoyé"}
+        </Button>
+        {showCreatePreview && (
+          <EmailPreviewCard
+            to={clientEmail}
+            subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
+            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
+            showProposalButton={proposalType === "classique"}
+          />
+        )}
+      </div>
+
+      <div className="flex gap-3">
+        <Button className="flex-1 gap-2" onClick={() => handleCreate(true)} disabled={submitting}>
+          <Send className="h-4 w-4" />
+          {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
+        </Button>
+        <Button variant="outline" className="gap-2" onClick={() => handleCreate(false)} disabled={submitting}>
+          <Save className="h-4 w-4" />
+          {submitting ? "Création…" : "Enregistrer le brouillon"}
+        </Button>
+      </div>
     </div>
   );
 
@@ -792,7 +1099,7 @@ const AdminProposalsContent = () => {
                           Cachet de base : {sp.base_fee.toLocaleString("fr-FR")} €
                         </div>
                       )}
-                      <Input type="number" value={ps.speaker_fee ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null))} />
+                      <Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.speaker_fee ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "speaker_fee", e.target.value ? Number(e.target.value) : null))} onWheel={noScrollWheel} />
                       {altRates.length > 0 && (
                         <select
                           className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
@@ -814,9 +1121,9 @@ const AdminProposalsContent = () => {
                   );
                 })()}
               </div>
-              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="number" value={ps.travel_costs ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null))} /></div>
-              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="number" value={ps.agency_commission ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null))} /></div>
-              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total TTC (€)</Label><Input type="number" value={ps.total_price ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null))} className="font-bold" /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.travel_costs ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "travel_costs", e.target.value ? Number(e.target.value) : null))} onWheel={noScrollWheel} /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Commission agence (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.agency_commission ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "agency_commission", e.target.value ? Number(e.target.value) : null))} onWheel={noScrollWheel} /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Prix total HT (€)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={ps.total_price ?? ""} onChange={e => setItems(prev => updateSpeakerFieldInList(prev, ps.speaker_id, "total_price", e.target.value ? Number(e.target.value) : null))} onWheel={noScrollWheel} className="font-bold" /></div>
             </div>
           </div>
         );
@@ -844,22 +1151,50 @@ const AdminProposalsContent = () => {
             <div className="text-xs text-muted-foreground">{p.client_email}</div>
           </TableCell>
           <TableCell>
-            <div className="flex items-center gap-1.5">
-              {p.proposal_speakers?.map((ps, i) => {
-                const speaker = ps.speakers as any;
-                if (!speaker) return null;
-                return (
-                  <div key={i} className="flex items-center gap-1.5" title={speaker.name}>
-                    <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                      {speaker.image_url ? <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-3.5 w-3.5 text-muted-foreground" /></div>}
-                    </div>
-                    <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
-                    {i < (p.proposal_speakers?.length || 0) - 1 && <span className="text-muted-foreground text-xs">·</span>}
-                  </div>
-                );
-              })}
-              {(!p.proposal_speakers || p.proposal_speakers.length === 0) && "—"}
-            </div>
+            {(() => {
+              const speakersList = p.proposal_speakers || [];
+              const maxVisible = 3;
+              const visible = speakersList.slice(0, maxVisible);
+              const remaining = speakersList.length - maxVisible;
+              return (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {visible.map((ps, i) => {
+                    const speaker = ps.speakers as any;
+                    if (!speaker) return null;
+                    return (
+                      <div key={i} className="flex items-center gap-1" title={speaker.name}>
+                        <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                          {speaker.image_url ? <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-3.5 w-3.5 text-muted-foreground" /></div>}
+                        </div>
+                        <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
+                        {i < visible.length - 1 && <span className="text-muted-foreground text-xs">·</span>}
+                      </div>
+                    );
+                  })}
+                  {remaining > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground" title={speakersList.slice(maxVisible).map((ps: any) => ps.speakers?.name).filter(Boolean).join(", ")}>
+                      +{remaining}
+                    </span>
+                  )}
+                  {speakersList.length === 0 && (
+                    <span className="text-xs text-muted-foreground italic">
+                      {(p as any).proposal_type === "info" ? "Demande d'infos" : "Aucun"}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+          </TableCell>
+          <TableCell>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+              (p as any).proposal_type === "unique" ? "bg-violet-100 text-violet-700" :
+              (p as any).proposal_type === "info" ? "bg-sky-100 text-sky-700" :
+              "bg-emerald-100 text-emerald-700"
+            }`}>
+              {(p as any).proposal_type === "unique" ? "🎤 Unique" :
+               (p as any).proposal_type === "info" ? "📝 Infos" :
+               "📋 Classique"}
+            </span>
           </TableCell>
           <TableCell>
             {mode === "draft" && <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Brouillon</span>}
@@ -927,7 +1262,7 @@ const AdminProposalsContent = () => {
         </TableRow>
         {expandedId === p.id && p.status === "accepted" && (
           <TableRow>
-            <TableCell colSpan={5} className="bg-muted/30 px-6 py-2">
+            <TableCell colSpan={6} className="bg-muted/30 px-6 py-2">
               <EventDossier
                 proposal={{
                   id: p.id, client_name: p.client_name, client_email: p.client_email,
@@ -956,6 +1291,7 @@ const AdminProposalsContent = () => {
             <TableHead>Date</TableHead>
             <TableHead>Client</TableHead>
             <TableHead>Conférenciers</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -964,7 +1300,7 @@ const AdminProposalsContent = () => {
           {items.map(p => renderProposalRow(p, mode))}
           {items.length === 0 && !loading && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                 {mode === "draft" && "Aucun brouillon."}
                 {mode === "sent" && "Aucune proposition envoyée."}
                 {mode === "completed" && "Aucune mission terminée."}
@@ -979,7 +1315,22 @@ const AdminProposalsContent = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-muted-foreground text-sm">{proposals.length} proposition{proposals.length !== 1 ? "s" : ""}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-muted-foreground text-sm">{proposals.length} proposition{proposals.length !== 1 ? "s" : ""}</p>
+          <select
+            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value as any)}
+          >
+            <option value="all">Tous les types</option>
+            <option value="classique">📋 Classique</option>
+            <option value="unique">🎤 Unique</option>
+            <option value="info">📝 Infos</option>
+          </select>
+          <Button variant="ghost" size="sm" onClick={() => setDateSortAsc(prev => !prev)} className="gap-1 text-xs" title="Trier par date">
+            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes" : "Plus récentes"}
+          </Button>
+        </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={fetchProposals} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -1024,31 +1375,54 @@ const AdminProposalsContent = () => {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Éditer la proposition</DialogTitle></DialogHeader>
-          <div className="space-y-6 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={editClientName} onChange={e => setEditClientName(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} /></div>
-            </div>
-            <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition</h3>
-              <Textarea value={editMessage} onChange={e => setEditMessage(e.target.value)} rows={8} className="text-sm" />
-            </div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
-              <div className="space-y-3">
-                <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
-                <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><Textarea value={editEmailBody} onChange={e => setEditEmailBody(e.target.value)} rows={10} className="text-sm" /></div>
+          {(() => {
+            const editType = (editingProposal?.proposal_type || "classique") as ProposalType;
+            return (
+              <div className="space-y-6 mt-4">
+                <div className="text-xs px-3 py-1.5 rounded-full bg-muted text-muted-foreground w-fit">
+                  {editType === "unique" ? "🎤 Conférencier unique" : editType === "info" ? "📝 Demande d'infos" : "📋 Classique"}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={editClientName} onChange={e => setEditClientName(e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} /></div>
+                </div>
+                <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
+
+                {editType !== "info" && (
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-medium text-sm mb-3">🎤 Conférenciers et tarifs</h3>
+                    {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
+                  </div>
+                )}
+
+                <div className="border-t border-border pt-4">
+                  <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
+                  <div className="space-y-3">
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
+                     <div className="space-y-2">
+                       <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setShowEditPreview(!showEditPreview)}>
+                         {showEditPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                         {showEditPreview ? "Masquer l'aperçu" : "Aperçu réel de l'email envoyé"}
+                       </Button>
+                       {showEditPreview && <EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} />}
+                     </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button className="flex-1 gap-2" onClick={() => handleSaveEdit(true)} disabled={submitting}>
+                    <Send className="h-4 w-4" />
+                    {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
+                  </Button>
+                  <Button variant="outline" className="gap-2" onClick={() => handleSaveEdit(false)} disabled={submitting}>
+                    <Save className="h-4 w-4" />
+                    {submitting ? "Sauvegarde…" : "Enregistrer le brouillon"}
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-medium text-sm mb-3">🎤 Conférenciers et tarifs</h3>
-              {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
-            </div>
-            <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
-              {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
-            </Button>
-          </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

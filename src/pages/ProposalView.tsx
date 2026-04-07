@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock, Mail, User, ExternalLink, Phone, Send } from "lucide-react";
@@ -19,6 +19,28 @@ type SpeakerConference = {
   id: string;
   title: string;
   description: string | null;
+};
+
+const ConferenceAccordion = ({ conf }: { conf: SpeakerConference }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-border/50 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors text-left"
+      >
+        <p className="text-sm font-semibold text-foreground">« {conf.title} »</p>
+        <span className="text-xs text-accent ml-3 whitespace-nowrap">
+          {open ? "Masquer ▲" : "Voir le détail ▼"}
+        </span>
+      </button>
+      {open && conf.description && (
+        <div className="px-3 pb-3 pt-1 text-sm text-muted-foreground leading-relaxed border-t border-border/30">
+          <div dangerouslySetInnerHTML={{ __html: conf.description }} />
+        </div>
+      )}
+    </div>
+  );
 };
 
 type ProposalData = {
@@ -178,7 +200,7 @@ const ProposalView = () => {
       {/* Admin banner */}
       {isAdmin && isProposalExpired && (
         <div className="bg-amber-500/10 border-b border-amber-500/30 text-center py-2 text-xs text-amber-700 font-medium">
-          ⚠️ Cette proposition est expirée pour le client — visible uniquement en mode admin
+          ⚠️ Cette proposition est expirée pour le client - visible uniquement en mode admin
         </div>
       )}
 
@@ -206,20 +228,8 @@ const ProposalView = () => {
         </div>
       </header>
 
-      {/* Personalized message */}
-      {proposal.message && (
-        <div className="max-w-4xl mx-auto px-4 -mt-6">
-          <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-sm">
-            <p className="text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
-              {proposal.message}
-            </p>
-            <p className="text-xs text-muted-foreground mt-3">— Nelly de l'Agence Les Conférenciers</p>
-          </div>
-        </div>
-      )}
-
       {/* Speaker Cards */}
-      <main className={`max-w-4xl mx-auto px-4 ${proposal.message ? 'pt-8' : 'pt-12'} pb-12 space-y-8`}>
+      <main className="max-w-4xl mx-auto px-4 pt-12 pb-12 space-y-8">
         {proposal.proposal_speakers.map((ps, i) => {
           const speaker = ps.speakers as any;
           if (!speaker) return null;
@@ -266,19 +276,9 @@ const ProposalView = () => {
                       <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
                         {confsToShow.length > 1 ? "Conférences proposées" : "Conférence proposée"}
                       </h3>
-                      {confsToShow.map((conf: SpeakerConference, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-foreground">« {conf.title} »</p>
-                          <a
-                            href={`${window.location.origin}/conferencier/${speaker.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-accent hover:underline whitespace-nowrap ml-3"
-                          >
-                            Voir le détail →
-                          </a>
-                        </div>
-                      ))}
+                       {confsToShow.map((conf: SpeakerConference, idx: number) => (
+                          <ConferenceAccordion key={idx} conf={conf} />
+                        ))}
                     </div>
                   )}
 
@@ -299,7 +299,8 @@ const ProposalView = () => {
 
         {/* Tariffs Section */}
         <div className="border border-border rounded-2xl bg-card p-6 md:p-8">
-          <h2 className="text-xl font-serif font-bold text-foreground mb-6">Tarifs proposés</h2>
+          <h2 className="text-xl font-serif font-bold text-foreground mb-4">Tarifs proposés</h2>
+          <p className="text-xs text-muted-foreground mb-6 italic">Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -379,7 +380,7 @@ const ProposalView = () => {
 
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Les Conférenciers — Proposition confidentielle
+        © {new Date().getFullYear()} Les Conférenciers - Proposition confidentielle
       </footer>
     </div>
   );
