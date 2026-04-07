@@ -426,6 +426,8 @@ const AdminProposalsContent = () => {
   const [globalCommission, setGlobalCommission] = useState<number>(0);
   const [typeFilter, setTypeFilter] = useState<"all" | ProposalType>("all");
   const [dateSortAsc, setDateSortAsc] = useState(false);
+  const [showCreatePreview, setShowCreatePreview] = useState(false);
+  const [showEditPreview, setShowEditPreview] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
