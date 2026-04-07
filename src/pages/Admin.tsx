@@ -1001,18 +1001,30 @@ const AdminProposalsContent = () => {
         />
       </div>
       <div className="space-y-2">
-        <Label>👁️ Aperçu réel de l'email envoyé</Label>
-        <EmailPreviewCard
-          to={clientEmail}
-          subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
-          body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
-          showProposalButton={proposalType === "classique"}
-        />
+        <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setShowCreatePreview(!showCreatePreview)}>
+          {showCreatePreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {showCreatePreview ? "Masquer l'aperçu" : "Aperçu réel de l'email envoyé"}
+        </Button>
+        {showCreatePreview && (
+          <EmailPreviewCard
+            to={clientEmail}
+            subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
+            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
+            showProposalButton={proposalType === "classique"}
+          />
+        )}
       </div>
 
-      <Button className="w-full" onClick={handleCreate} disabled={submitting}>
-        {submitting ? "Création…" : "Créer la proposition"}
-      </Button>
+      <div className="flex gap-3">
+        <Button className="flex-1 gap-2" onClick={async () => { await handleCreate(); const created = proposals.find(p => p.client_email === clientEmail && p.status === "draft"); if (created) handleSend(created); }} disabled={submitting}>
+          <Send className="h-4 w-4" />
+          {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
+        </Button>
+        <Button variant="outline" className="gap-2" onClick={handleCreate} disabled={submitting}>
+          <Save className="h-4 w-4" />
+          {submitting ? "Création…" : "Enregistrer le brouillon"}
+        </Button>
+      </div>
     </div>
   );
 
