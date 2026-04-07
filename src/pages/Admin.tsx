@@ -1355,15 +1355,6 @@ const AdminProposalsContent = () => {
                   <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} /></div>
                 </div>
                 <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
-                
-                <div className="border-t border-border pt-4">
-                  <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
-                  <div className="space-y-3">
-                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
-                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
-                      <div className="space-y-2"><Label className="text-xs text-muted-foreground">Aperçu réel de l'email envoyé</Label><EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} /></div>
-                  </div>
-                </div>
 
                 {editType !== "info" && (
                   <div className="border-t border-border pt-4">
@@ -1371,6 +1362,15 @@ const AdminProposalsContent = () => {
                     {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
                   </div>
                 )}
+
+                <div className="border-t border-border pt-4">
+                  <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
+                  <div className="space-y-3">
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
+                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Aperçu réel de l'email envoyé</Label><EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} /></div>
+                  </div>
+                </div>
 
                 <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
                   {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
