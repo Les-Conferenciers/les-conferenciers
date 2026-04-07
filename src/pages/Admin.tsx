@@ -104,7 +104,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 
@@ -426,6 +426,8 @@ const AdminProposalsContent = () => {
   const [globalCommission, setGlobalCommission] = useState<number>(0);
   const [typeFilter, setTypeFilter] = useState<"all" | ProposalType>("all");
   const [dateSortAsc, setDateSortAsc] = useState(false);
+  const [showCreatePreview, setShowCreatePreview] = useState(false);
+  const [showEditPreview, setShowEditPreview] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
@@ -598,7 +600,7 @@ const AdminProposalsContent = () => {
   const getSpeakerImage = (id: string) => speakers.find(s => s.id === id)?.image_url || null;
   const getSpeakerCity = (id: string) => speakers.find(s => s.id === id)?.city || null;
 
-  const handleCreate = async () => {
+  const handleCreate = async (andSend = false) => {
     if (!clientName || !clientEmail) {
       toast.error("Remplissez le nom et l'email du client"); return;
     }
@@ -637,7 +639,16 @@ const AdminProposalsContent = () => {
         })));
       if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
     }
-    toast.success("Proposition créée !");
+    if (andSend) {
+      try {
+        const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id } });
+        if (sendErr) throw sendErr;
+        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", proposal.id);
+        toast.success("Proposition créée et envoyée !");
+      } catch { toast.error("Proposition créée mais erreur d'envoi"); }
+    } else {
+      toast.success("Brouillon enregistré !");
+    }
     setDialogOpen(false); resetForm(); fetchProposals(); setSubmitting(false);
   };
 
@@ -672,7 +683,7 @@ const AdminProposalsContent = () => {
     setEditDialogOpen(true);
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (andSend = false) => {
     if (!editingProposal) return;
     const pType = (editingProposal.proposal_type || "classique") as ProposalType;
     if (!editClientName || !editClientEmail) {
@@ -714,7 +725,16 @@ const AdminProposalsContent = () => {
       }
     }
 
-    toast.success("Proposition mise à jour !");
+    if (andSend) {
+      try {
+        const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: editingProposal.id } });
+        if (sendErr) throw sendErr;
+        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", editingProposal.id);
+        toast.success("Proposition sauvegardée et envoyée !");
+      } catch { toast.error("Sauvegardée mais erreur d'envoi"); }
+    } else {
+      toast.success("Brouillon mis à jour !");
+    }
     setEditDialogOpen(false); setEditingProposal(null); setEditSelectedSpeakers([]); fetchProposals(); setSubmitting(false);
   };
 
@@ -999,18 +1019,30 @@ const AdminProposalsContent = () => {
         />
       </div>
       <div className="space-y-2">
-        <Label>👁️ Aperçu réel de l'email envoyé</Label>
-        <EmailPreviewCard
-          to={clientEmail}
-          subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
-          body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
-          showProposalButton={proposalType === "classique"}
-        />
+        <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setShowCreatePreview(!showCreatePreview)}>
+          {showCreatePreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {showCreatePreview ? "Masquer l'aperçu" : "Aperçu réel de l'email envoyé"}
+        </Button>
+        {showCreatePreview && (
+          <EmailPreviewCard
+            to={clientEmail}
+            subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
+            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
+            showProposalButton={proposalType === "classique"}
+          />
+        )}
       </div>
 
-      <Button className="w-full" onClick={handleCreate} disabled={submitting}>
-        {submitting ? "Création…" : "Créer la proposition"}
-      </Button>
+      <div className="flex gap-3">
+        <Button className="flex-1 gap-2" onClick={() => handleCreate(true)} disabled={submitting}>
+          <Send className="h-4 w-4" />
+          {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
+        </Button>
+        <Button variant="outline" className="gap-2" onClick={() => handleCreate(false)} disabled={submitting}>
+          <Save className="h-4 w-4" />
+          {submitting ? "Création…" : "Enregistrer le brouillon"}
+        </Button>
+      </div>
     </div>
   );
 
@@ -1368,13 +1400,26 @@ const AdminProposalsContent = () => {
                   <div className="space-y-3">
                     <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
                     <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
-                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Aperçu réel de l'email envoyé</Label><EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} /></div>
+                     <div className="space-y-2">
+                       <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setShowEditPreview(!showEditPreview)}>
+                         {showEditPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                         {showEditPreview ? "Masquer l'aperçu" : "Aperçu réel de l'email envoyé"}
+                       </Button>
+                       {showEditPreview && <EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} />}
+                     </div>
                   </div>
                 </div>
 
-                <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
-                  {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
-                </Button>
+                <div className="flex gap-3">
+                  <Button className="flex-1 gap-2" onClick={() => handleSaveEdit(true)} disabled={submitting}>
+                    <Send className="h-4 w-4" />
+                    {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
+                  </Button>
+                  <Button variant="outline" className="gap-2" onClick={() => handleSaveEdit(false)} disabled={submitting}>
+                    <Save className="h-4 w-4" />
+                    {submitting ? "Sauvegarde…" : "Enregistrer le brouillon"}
+                  </Button>
+                </div>
               </div>
             );
           })()}
