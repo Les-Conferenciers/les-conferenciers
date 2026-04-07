@@ -850,25 +850,7 @@ const AdminProposalsContent = () => {
         <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
       </div>
 
-      <div className="space-y-2">
-        <Label>✉️ Email d'envoi - Objet</Label>
-        <Input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Objet de l'email" />
-      </div>
-      <div className="space-y-2">
-        <Label>✉️ Email d'envoi - Corps</Label>
-        <SimpleRichTextEditor value={emailBody} onChange={setEmailBody} placeholder="Corps de l'email..." rows={8} />
-      </div>
-      <div className="space-y-2">
-        <Label>👁️ Aperçu réel de l'email envoyé</Label>
-        <EmailPreviewCard
-          to={clientEmail}
-          subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
-          body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
-          showProposalButton={proposalType === "classique"}
-        />
-      </div>
-
-      {/* Speakers section - not for "info" type */}
+      {/* Speakers section - not for "info" type - BEFORE email */}
       {proposalType !== "info" && (
         <>
           {/* Global commission */}
@@ -990,6 +972,35 @@ const AdminProposalsContent = () => {
           </div>
         </>
       )}
+
+      {/* Email section - AFTER speakers */}
+      <div className="space-y-2">
+        <Label>✉️ Email d'envoi - Objet</Label>
+        <Input
+          value={emailSubject || getResolvedEmailSubject(proposalType, "", clientName)}
+          onChange={e => setEmailSubject(e.target.value)}
+          placeholder="Objet de l'email"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>✉️ Email d'envoi - Corps</Label>
+        <SimpleRichTextEditor
+          value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers })}
+          onChange={setEmailBody}
+          placeholder="Corps de l'email..."
+          rows={8}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>👁️ Aperçu réel de l'email envoyé</Label>
+        <EmailPreviewCard
+          to={clientEmail}
+          subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
+          body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
+          showProposalButton={proposalType === "classique"}
+        />
+      </div>
+
       <Button className="w-full" onClick={handleCreate} disabled={submitting}>
         {submitting ? "Création…" : "Créer la proposition"}
       </Button>
