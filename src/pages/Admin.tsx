@@ -844,20 +844,12 @@ const AdminProposalsContent = () => {
         <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
       </div>
 
-      {/* Message & Email - depends on type */}
-      {proposalType === "classique" && (
-        <div className="space-y-2">
-          <Label>Message affiché dans la proposition</Label>
-          <SimpleRichTextEditor value={message} onChange={setMessage} placeholder="Bonjour, suite à notre échange..." rows={4} />
-        </div>
-      )}
-
       <div className="space-y-2">
-        <Label>✉️ Email d'envoi — Objet</Label>
+        <Label>✉️ Email d'envoi - Objet</Label>
         <Input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Objet de l'email" />
       </div>
       <div className="space-y-2">
-        <Label>✉️ Email d'envoi — Corps</Label>
+        <Label>✉️ Email d'envoi - Corps</Label>
         <SimpleRichTextEditor value={emailBody} onChange={setEmailBody} placeholder="Corps de l'email..." rows={8} />
       </div>
       <div className="space-y-2">
