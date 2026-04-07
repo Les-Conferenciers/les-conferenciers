@@ -683,7 +683,7 @@ const AdminProposalsContent = () => {
     setEditDialogOpen(true);
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (andSend = false) => {
     if (!editingProposal) return;
     const pType = (editingProposal.proposal_type || "classique") as ProposalType;
     if (!editClientName || !editClientEmail) {
@@ -725,7 +725,16 @@ const AdminProposalsContent = () => {
       }
     }
 
-    toast.success("Proposition mise à jour !");
+    if (andSend) {
+      try {
+        const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: editingProposal.id } });
+        if (sendErr) throw sendErr;
+        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", editingProposal.id);
+        toast.success("Proposition sauvegardée et envoyée !");
+      } catch { toast.error("Sauvegardée mais erreur d'envoi"); }
+    } else {
+      toast.success("Brouillon mis à jour !");
+    }
     setEditDialogOpen(false); setEditingProposal(null); setEditSelectedSpeakers([]); fetchProposals(); setSubmitting(false);
   };
 
