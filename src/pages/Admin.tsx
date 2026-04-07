@@ -424,6 +424,8 @@ const AdminProposalsContent = () => {
   const [editSelectedSpeakers, setEditSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [proposalType, setProposalType] = useState<ProposalType>("classique");
   const [globalCommission, setGlobalCommission] = useState<number>(0);
+  const [typeFilter, setTypeFilter] = useState<"all" | ProposalType>("all");
+  const [dateSortAsc, setDateSortAsc] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
