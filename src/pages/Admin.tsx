@@ -1382,13 +1382,26 @@ const AdminProposalsContent = () => {
                   <div className="space-y-3">
                     <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
                     <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
-                    <div className="space-y-2"><Label className="text-xs text-muted-foreground">Aperçu réel de l'email envoyé</Label><EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} /></div>
+                     <div className="space-y-2">
+                       <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setShowEditPreview(!showEditPreview)}>
+                         {showEditPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                         {showEditPreview ? "Masquer l'aperçu" : "Aperçu réel de l'email envoyé"}
+                       </Button>
+                       {showEditPreview && <EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} />}
+                     </div>
                   </div>
                 </div>
 
-                <Button className="w-full" onClick={handleSaveEdit} disabled={submitting}>
-                  {submitting ? "Sauvegarde…" : "Enregistrer les modifications"}
-                </Button>
+                <div className="flex gap-3">
+                  <Button className="flex-1 gap-2" onClick={async () => { await handleSaveEdit(); if (editingProposal) handleSend(editingProposal); }} disabled={submitting}>
+                    <Send className="h-4 w-4" />
+                    {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
+                  </Button>
+                  <Button variant="outline" className="gap-2" onClick={handleSaveEdit} disabled={submitting}>
+                    <Save className="h-4 w-4" />
+                    {submitting ? "Sauvegarde…" : "Enregistrer le brouillon"}
+                  </Button>
+                </div>
               </div>
             );
           })()}
