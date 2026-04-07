@@ -1025,11 +1025,11 @@ const AdminProposalsContent = () => {
       </div>
 
       <div className="flex gap-3">
-        <Button className="flex-1 gap-2" onClick={async () => { await handleCreate(); const created = proposals.find(p => p.client_email === clientEmail && p.status === "draft"); if (created) handleSend(created); }} disabled={submitting}>
+        <Button className="flex-1 gap-2" onClick={() => handleCreate(true)} disabled={submitting}>
           <Send className="h-4 w-4" />
           {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
         </Button>
-        <Button variant="outline" className="gap-2" onClick={handleCreate} disabled={submitting}>
+        <Button variant="outline" className="gap-2" onClick={() => handleCreate(false)} disabled={submitting}>
           <Save className="h-4 w-4" />
           {submitting ? "Création…" : "Enregistrer le brouillon"}
         </Button>
