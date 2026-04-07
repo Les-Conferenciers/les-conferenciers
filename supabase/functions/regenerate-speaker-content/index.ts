@@ -63,8 +63,9 @@ CONTRAINTES DE RÉDACTION :
 - Utilise des verbes d'action. Sois factuel et concis.
 - 5 à 8 paragraphes. Chaque paragraphe fait 3 à 5 phrases. C'est ESSENTIEL pour atteindre le minimum de 300 mots.
 - Longueur cible : 500 à 600 mots. MINIMUM ABSOLU : 300 mots. MAXIMUM : 800 mots.
-- HTML sémantique : uniquement <p> pour les paragraphes et <strong> pour les éléments importants (dates, chiffres, institutions, prix).
-- PAS de <ul>, <li>, <h2>, <h3>, ni de sous-titres en <strong> seul sur une ligne.
+ - HTML sémantique : uniquement <p> pour les paragraphes.
+ - INTERDICTION d'utiliser <strong>, <b>, <em> ou toute autre mise en relief automatique.
+ - PAS de <ul>, <li>, <h2>, <h3>, ni de sous-titres.
 - REFORMULATION 100% originale, anti-plagiat.
 - AUCUN markdown (** ou *), uniquement du HTML.
 - Évite les phrases creuses, les superlatifs, et le ton publicitaire.`;

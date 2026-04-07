@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     const { data: proposal, error: pErr } = await adminClient
       .from("proposals")
-      .select("*, proposal_speakers(total_price, speaker_fee, agency_commission, travel_costs, display_order, speakers(name, role))")
+      .select("*, proposal_speakers(total_price, speaker_fee, agency_commission, travel_costs, display_order, speakers(name, role, slug))")
       .eq("id", proposal_id)
       .single();
 
@@ -60,20 +60,75 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
-    // Use custom email subject/body or defaults
-    const emailSubject = proposal.email_subject || `Votre sélection de conférenciers sur mesure - ${proposal.client_name}`;
-    
-    // Build email body text - use custom or default
     const recipientFirstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
-    const defaultBody = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
+    const escapeHtml = (value: string) => value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+    const hasHtmlContent = (value: string) => /<\/?[a-z][\s\S]*>/i.test(value);
+    const getProposalSpeakerTotal = (speaker: any) => speaker?.total_price ?? ((speaker?.speaker_fee || 0) + (speaker?.travel_costs || 0) + (speaker?.agency_commission || 0));
+    const uniqueSpeaker = (proposal.proposal_speakers || []).sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0))[0];
+    const uniqueSpeakerName = uniqueSpeaker?.speakers?.name || "ce conférencier";
+    const uniqueSpeakerSlug = uniqueSpeaker?.speakers?.slug || "";
+    const uniqueSpeakerTotal = getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR");
+    const uniqueProfileUrl = uniqueSpeakerSlug ? `${siteOrigin}/conferencier/${uniqueSpeakerSlug}` : "";
+    const normalizeEmailBodyHtml = (value: string) => {
+      if (!value?.trim()) return "";
+      if (hasHtmlContent(value)) return value;
 
-Comme convenu, je vous transmets votre proposition personnalisée de conférenciers pour ${proposal.client_name}.
+      return escapeHtml(value)
+        .replace(/👉\s*Découvrir le profil de ([^:\n]+)\s*:\s*(https?:\/\/[^\s<]+)/g, '👉 <a href="$2" target="_blank" rel="noopener noreferrer">Découvrir le profil de $1</a>')
+        .replace(/\n/g, "<br>");
+    };
 
-Vous y trouverez le profil complet de chaque intervenant, ses thématiques et les conditions d'intervention.`;
+    const defaultClassicBody = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
 
-    const bodyText = proposal.email_body || defaultBody;
-    // Convert newlines to <br> for HTML
-    const bodyHtml = bodyText.replace(/\n/g, "<br>");
+Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.
+
+Vous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${proposal.client_name || "votre événement"}, sous réserve de leur disponibilité.
+
+Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.
+
+👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.
+
+Je reste bien entendu à votre disposition pour tout complément d'information.
+
+Dans l'attente de votre retour, je vous souhaite une très belle journée.
+
+Nelly Sabde - Les Conférenciers
+📞 06 95 93 97 91`;
+    const defaultUniqueBody = `<p>Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},</p><p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p><p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${uniqueSpeakerName}. Le tarif de son intervention est de ${uniqueSpeakerTotal} € HT, hors frais VHR.</p>${uniqueProfileUrl ? `<p><a href="${uniqueProfileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${uniqueSpeakerName}</a></p>` : ""}<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p><p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p><p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p><p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+    const defaultInfoBody = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
+
+Merci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.
+
+Je serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :
+
+• La taille de l'auditoire
+• Le profil des participants (commerciaux, managers, experts, etc.)
+• La durée souhaitée pour l'intervention
+• La thématique à aborder
+• Votre enveloppe budgétaire
+
+Ces informations me permettront de cibler au mieux les conférenciers à vous suggérer.
+
+Je reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.
+
+Dans l'attente de votre retour, je vous souhaite une très belle journée.
+
+Nelly Sabde - Les Conférenciers
+📞 06 95 93 97 91`;
+
+    const emailSubject = proposal.email_subject || `Votre sélection de conférenciers sur mesure - ${proposal.client_name}`;
+    const defaultBody = proposal.proposal_type === "unique"
+      ? defaultUniqueBody
+      : proposal.proposal_type === "info"
+        ? defaultInfoBody
+        : defaultClassicBody;
+    const bodyHtml = normalizeEmailBodyHtml(proposal.email_body || defaultBody);
+    const showProposalButton = proposal.proposal_type !== "unique" && proposal.proposal_type !== "info";
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -88,8 +143,7 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
     
     <div style="padding:30px 30px 20px;">
       <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
-
-      <div style="text-align:center;margin:30px 0;">
+      ${showProposalButton ? `<div style="text-align:center;margin:30px 0;">
         <a href="${proposalUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
           Consulter la proposition complète
         </a>
@@ -98,7 +152,7 @@ Vous y trouverez le profil complet de chaque intervenant, ses thématiques et le
         <p style="color:#1a5276;font-size:13px;margin:0;text-align:center;">
           📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
         </p>
-      </div>
+      </div>` : ""}
     </div>
 
     <!-- Signature -->
