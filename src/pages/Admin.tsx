@@ -1265,7 +1265,22 @@ const AdminProposalsContent = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-muted-foreground text-sm">{proposals.length} proposition{proposals.length !== 1 ? "s" : ""}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-muted-foreground text-sm">{proposals.length} proposition{proposals.length !== 1 ? "s" : ""}</p>
+          <select
+            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value as any)}
+          >
+            <option value="all">Tous les types</option>
+            <option value="classique">📋 Classique</option>
+            <option value="unique">🎤 Unique</option>
+            <option value="info">📝 Infos</option>
+          </select>
+          <Button variant="ghost" size="sm" onClick={() => setDateSortAsc(prev => !prev)} className="gap-1 text-xs" title="Trier par date">
+            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes" : "Plus récentes"}
+          </Button>
+        </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={fetchProposals} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
