@@ -117,8 +117,8 @@ const getDefaultEmailSubject = (clientName: string) =>
 const getDefaultEmailBody = (recipientName: string, clientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\n👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.\n\nJe reste bien entendu à votre disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
 
-const getUniqueEmailBody = (recipientName: string, speakerName: string, speakerFee: string, speakerSlug: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nJe fais suite à votre mail et à ma tentative de vous joindre par téléphone.\n\nJe suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${speakerFee} € HT, hors frais VHR.\n\n👉 Découvrir le profil de ${speakerName} : ${window.location.origin}/conferencier/${speakerSlug}\n\nSi toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.\nÀ ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?\n\nJe reste bien entendu à votre entière disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
+const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string) =>
+  `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p><p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p><p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p><p><a href="${window.location.origin}/conferencier/${speakerSlug}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></p><p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p><p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p><p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p><p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 
 const getInfoEmailBody = (recipientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n• Votre enveloppe budgétaire\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
@@ -282,6 +282,77 @@ const parseAlternativeRates = (feeDetails: string | null | undefined, baseFee: n
 
 type ContractData = { id: string; proposal_id: string; status: string };
 type InvoiceData = { id: string; proposal_id: string; invoice_type: string; status: string; paid_at: string | null };
+
+const hasHtmlContent = (value: string) => /<\/?[a-z][\s\S]*>/i.test(value);
+const escapeEmailHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+const getProposalSpeakerTotal = (speaker?: Pick<ProposalSpeaker, "total_price" | "speaker_fee" | "travel_costs" | "agency_commission"> | null) =>
+  speaker?.total_price ?? ((speaker?.speaker_fee || 0) + (speaker?.travel_costs || 0) + (speaker?.agency_commission || 0));
+const toEmailBodyHtml = (value: string) => {
+  if (!value?.trim()) return "";
+  if (hasHtmlContent(value)) return value;
+
+  return escapeEmailHtml(value)
+    .replace(/👉\s*Découvrir le profil de ([^:\n]+)\s*:\s*(https?:\/\/[^\s<]+)/g, '👉 <a href="$2" target="_blank" rel="noopener noreferrer">Découvrir le profil de $1</a>')
+    .replace(/\n/g, "<br>");
+};
+
+const EmailPreviewCard = ({
+  to,
+  subject,
+  body,
+  showProposalButton,
+}: {
+  to: string;
+  subject: string;
+  body: string;
+  showProposalButton: boolean;
+}) => {
+  const bodyHtml = toEmailBodyHtml(body);
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="bg-muted px-4 py-2 text-xs text-muted-foreground space-y-1">
+        <p><strong>De :</strong> Les Conférenciers &lt;nellysabde@lesconferenciers.com&gt;</p>
+        <p><strong>À :</strong> {to || "-"}</p>
+        <p><strong>Objet :</strong> {subject || "-"}</p>
+      </div>
+      <div className="bg-white">
+        <div style={{ background: "#1a2332", padding: "20px 30px", textAlign: "center" }}>
+          <span style={{ color: "#f5f0e8", fontSize: "20px", fontWeight: "bold", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
+        </div>
+        <div style={{ padding: "30px 30px 20px" }}>
+          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+          {showProposalButton && (
+            <>
+              <div style={{ textAlign: "center", margin: "30px 0" }}>
+                <span style={{ display: "inline-block", background: "#1a2332", color: "#f5f0e8", padding: "14px 32px", borderRadius: "8px", fontSize: "15px", fontWeight: "bold" }}>
+                  Consulter la proposition complète
+                </span>
+              </div>
+              <div style={{ background: "#f0f7ff", border: "1px solid #d0e3f7", borderRadius: "8px", padding: "16px", margin: "20px 0" }}>
+                <p style={{ color: "#1a5276", fontSize: "13px", margin: 0, textAlign: "center" }}>
+                  📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+        <div style={{ padding: "0 30px 30px" }}>
+          <img src="https://les-conferenciers.netlify.app/images/les-conferenciers-signature.png" alt="Nelly SABDE | Agence Les Conférenciers" style={{ width: "100%", maxWidth: "500px", display: "block" }} />
+        </div>
+        <div style={{ background: "#1a2332", padding: "16px", textAlign: "center" }}>
+          <p style={{ color: "#f5f0e8", opacity: 0.5, fontSize: "11px", margin: 0 }}>Proposition confidentielle - Les Conférenciers</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AdminProposalsContent = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -447,21 +518,35 @@ const AdminProposalsContent = () => {
     if (proposalType === "unique" && selectedSpeakers.length >= 1) {
       toast.error("Un seul conférencier pour ce type"); return;
     }
-    setSelectedSpeakers(prev => addSpeakerToList(prev, speaker));
+    const nextSpeakers = addSpeakerToList(selectedSpeakers, speaker);
+    setSelectedSpeakers(nextSpeakers);
     if (proposalType === "unique") {
-      const fee = speaker.base_fee || 0;
-      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, fee.toLocaleString("fr-FR"), speaker.slug || ""));
+      const total = getProposalSpeakerTotal(nextSpeakers[0]);
+      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, total.toLocaleString("fr-FR"), speaker.slug || ""));
     }
   };
 
-  const removeSpeaker = (speakerId: string) => setSelectedSpeakers(prev => removeSpeakerFromList(prev, speakerId));
+  const removeSpeaker = (speakerId: string) => {
+    setSelectedSpeakers(prev => {
+      const next = removeSpeakerFromList(prev, speakerId);
+      if (proposalType === "unique") setEmailBody("");
+      return next;
+    });
+  };
 
   const toggleConference = (speakerId: string, confId: string) => {
     setSelectedSpeakers(prev => toggleConferenceInList(prev, speakerId, confId));
   };
 
   const updateSpeakerField = (speakerId: string, field: keyof ProposalSpeaker, value: number | null) => {
-    setSelectedSpeakers(prev => updateSpeakerFieldInList(prev, speakerId, field, value));
+    setSelectedSpeakers(prev => {
+      const next = updateSpeakerFieldInList(prev, speakerId, field, value);
+      if (proposalType === "unique" && next[0]) {
+        const speaker = speakers.find(s => s.id === next[0].speaker_id);
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(next[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+      }
+      return next;
+    });
   };
 
   const getSpeakerName = (id: string) => speakers.find(s => s.id === id)?.name || "—";
@@ -732,6 +817,15 @@ const AdminProposalsContent = () => {
       <div className="space-y-2">
         <Label>✉️ Email d'envoi — Corps</Label>
         <SimpleRichTextEditor value={emailBody} onChange={setEmailBody} placeholder="Corps de l'email..." rows={8} />
+      </div>
+      <div className="space-y-2">
+        <Label>👁️ Aperçu réel de l'email envoyé</Label>
+        <EmailPreviewCard
+          to={clientEmail}
+          subject={emailSubject}
+          body={emailBody}
+          showProposalButton={proposalType === "classique"}
+        />
       </div>
 
       {/* Speakers section - not for "info" type */}
@@ -1188,6 +1282,7 @@ const AdminProposalsContent = () => {
                   <div className="space-y-3">
                     <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
                     <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
+                      <div className="space-y-2"><Label className="text-xs text-muted-foreground">Aperçu réel de l'email envoyé</Label><EmailPreviewCard to={editClientEmail} subject={editEmailSubject} body={editEmailBody} showProposalButton={editType === "classique"} /></div>
                   </div>
                 </div>
 
