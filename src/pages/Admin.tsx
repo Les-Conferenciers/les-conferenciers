@@ -104,7 +104,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 
@@ -366,7 +366,7 @@ const EmailPreviewCard = ({
           <span style={{ color: "#f5f0e8", fontSize: "20px", fontWeight: "bold", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
         </div>
         <div style={{ padding: "30px 30px 20px" }}>
-          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} className="[&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           {showProposalButton && (
             <>
               <div style={{ textAlign: "center", margin: "30px 0" }}>
@@ -424,6 +424,8 @@ const AdminProposalsContent = () => {
   const [editSelectedSpeakers, setEditSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [proposalType, setProposalType] = useState<ProposalType>("classique");
   const [globalCommission, setGlobalCommission] = useState<number>(0);
+  const [typeFilter, setTypeFilter] = useState<"all" | ProposalType>("all");
+  const [dateSortAsc, setDateSortAsc] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
@@ -472,10 +474,14 @@ const AdminProposalsContent = () => {
 
   const isFullyPaid = (p: Proposal) => getPipelineStatus(p) === "fully_paid";
 
-  const drafts = proposals.filter(p => p.status === "draft");
-  const sent = proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p));
-  const completed = proposals.filter(p => p.status === "accepted" && isFullyPaid(p));
-  const archived = proposals.filter(p => p.status === "archived");
+  const applyTypeFilter = (items: Proposal[]) => typeFilter === "all" ? items : items.filter(p => (p as any).proposal_type === typeFilter);
+  const applyDateSort = (items: Proposal[]) => dateSortAsc ? [...items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) : items;
+  const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(items));
+
+  const drafts = filterAndSort(proposals.filter(p => p.status === "draft"));
+  const sent = filterAndSort(proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p)));
+  const completed = filterAndSort(proposals.filter(p => p.status === "accepted" && isFullyPaid(p)));
+  const archived = filterAndSort(proposals.filter(p => p.status === "archived"));
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter(c => c.speaker_id === speakerId);
 
@@ -603,13 +609,13 @@ const AdminProposalsContent = () => {
       toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
-    const finalMessage = message || getDefaultMessage(recipientName, clientName);
+    const finalMessage = proposalType === "classique" ? (emailBody || getDefaultEmailBody(recipientName, clientName)) : "";
     const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
     let finalBody = emailBody;
     if (!finalBody) {
       if (proposalType === "unique" && selectedSpeakers.length > 0) {
         const sp = speakers.find(s => s.id === selectedSpeakers[0].speaker_id);
-        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", (selectedSpeakers[0].speaker_fee || 0).toLocaleString("fr-FR"), (sp as any)?.slug || "");
+        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "");
       } else if (proposalType === "info") {
         finalBody = getInfoEmailBody(recipientName);
       } else {
@@ -682,7 +688,7 @@ const AdminProposalsContent = () => {
     const { error } = await supabase.from("proposals").update({
       client_name: editClientName, client_email: editClientEmail,
       recipient_name: editRecipientName || null,
-      message: pType === "classique" ? (editMessage || null) : null,
+      message: pType === "classique" ? (editEmailBody || null) : null,
       email_subject: editEmailSubject || null, email_body: editEmailBody || null,
     } as any).eq("id", editingProposal.id);
     if (error) { toast.error("Erreur"); setSubmitting(false); return; }
@@ -844,20 +850,12 @@ const AdminProposalsContent = () => {
         <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
       </div>
 
-      {/* Message & Email - depends on type */}
-      {proposalType === "classique" && (
-        <div className="space-y-2">
-          <Label>Message affiché dans la proposition</Label>
-          <SimpleRichTextEditor value={message} onChange={setMessage} placeholder="Bonjour, suite à notre échange..." rows={4} />
-        </div>
-      )}
-
       <div className="space-y-2">
-        <Label>✉️ Email d'envoi — Objet</Label>
+        <Label>✉️ Email d'envoi - Objet</Label>
         <Input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Objet de l'email" />
       </div>
       <div className="space-y-2">
-        <Label>✉️ Email d'envoi — Corps</Label>
+        <Label>✉️ Email d'envoi - Corps</Label>
         <SimpleRichTextEditor value={emailBody} onChange={setEmailBody} placeholder="Corps de l'email..." rows={8} />
       </div>
       <div className="space-y-2">
@@ -1103,26 +1101,39 @@ const AdminProposalsContent = () => {
             <div className="text-xs text-muted-foreground">{p.client_email}</div>
           </TableCell>
           <TableCell>
-            <div className="flex items-center gap-1.5">
-              {p.proposal_speakers?.map((ps, i) => {
-                const speaker = ps.speakers as any;
-                if (!speaker) return null;
-                return (
-                  <div key={i} className="flex items-center gap-1.5" title={speaker.name}>
-                    <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                      {speaker.image_url ? <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-3.5 w-3.5 text-muted-foreground" /></div>}
-                    </div>
-                    <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
-                    {i < (p.proposal_speakers?.length || 0) - 1 && <span className="text-muted-foreground text-xs">·</span>}
-                  </div>
-                );
-              })}
-              {(!p.proposal_speakers || p.proposal_speakers.length === 0) && (
-                <span className="text-xs text-muted-foreground italic">
-                  {(p as any).proposal_type === "info" ? "Demande d'infos" : "Aucun"}
-                </span>
-              )}
-            </div>
+            {(() => {
+              const speakersList = p.proposal_speakers || [];
+              const maxVisible = 3;
+              const visible = speakersList.slice(0, maxVisible);
+              const remaining = speakersList.length - maxVisible;
+              return (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {visible.map((ps, i) => {
+                    const speaker = ps.speakers as any;
+                    if (!speaker) return null;
+                    return (
+                      <div key={i} className="flex items-center gap-1" title={speaker.name}>
+                        <div className="h-7 w-7 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                          {speaker.image_url ? <img src={speaker.image_url} alt={speaker.name} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center"><User className="h-3.5 w-3.5 text-muted-foreground" /></div>}
+                        </div>
+                        <span className="text-xs text-foreground whitespace-nowrap">{speaker.name}</span>
+                        {i < visible.length - 1 && <span className="text-muted-foreground text-xs">·</span>}
+                      </div>
+                    );
+                  })}
+                  {remaining > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground" title={speakersList.slice(maxVisible).map((ps: any) => ps.speakers?.name).filter(Boolean).join(", ")}>
+                      +{remaining}
+                    </span>
+                  )}
+                  {speakersList.length === 0 && (
+                    <span className="text-xs text-muted-foreground italic">
+                      {(p as any).proposal_type === "info" ? "Demande d'infos" : "Aucun"}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </TableCell>
           <TableCell>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${
@@ -1254,7 +1265,22 @@ const AdminProposalsContent = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-muted-foreground text-sm">{proposals.length} proposition{proposals.length !== 1 ? "s" : ""}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-muted-foreground text-sm">{proposals.length} proposition{proposals.length !== 1 ? "s" : ""}</p>
+          <select
+            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value as any)}
+          >
+            <option value="all">Tous les types</option>
+            <option value="classique">📋 Classique</option>
+            <option value="unique">🎤 Unique</option>
+            <option value="info">📝 Infos</option>
+          </select>
+          <Button variant="ghost" size="sm" onClick={() => setDateSortAsc(prev => !prev)} className="gap-1 text-xs" title="Trier par date">
+            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes" : "Plus récentes"}
+          </Button>
+        </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={fetchProposals} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -1312,13 +1338,6 @@ const AdminProposalsContent = () => {
                 </div>
                 <div className="space-y-2"><Label>Prénom Nom du destinataire</Label><Input value={editRecipientName} onChange={e => setEditRecipientName(e.target.value)} /></div>
                 
-                {editType === "classique" && (
-                  <div className="border-t border-border pt-4">
-                    <h3 className="font-medium text-sm mb-3">📄 Message affiché dans la proposition</h3>
-                    <SimpleRichTextEditor value={editMessage} onChange={setEditMessage} rows={8} />
-                  </div>
-                )}
-
                 <div className="border-t border-border pt-4">
                   <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
                   <div className="space-y-3">
