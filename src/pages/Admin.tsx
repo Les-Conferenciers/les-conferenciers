@@ -600,7 +600,7 @@ const AdminProposalsContent = () => {
   const getSpeakerImage = (id: string) => speakers.find(s => s.id === id)?.image_url || null;
   const getSpeakerCity = (id: string) => speakers.find(s => s.id === id)?.city || null;
 
-  const handleCreate = async () => {
+  const handleCreate = async (andSend = false) => {
     if (!clientName || !clientEmail) {
       toast.error("Remplissez le nom et l'email du client"); return;
     }
@@ -639,7 +639,16 @@ const AdminProposalsContent = () => {
         })));
       if (spError) { toast.error("Erreur ajout speakers"); setSubmitting(false); return; }
     }
-    toast.success("Proposition créée !");
+    if (andSend) {
+      try {
+        const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id } });
+        if (sendErr) throw sendErr;
+        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", proposal.id);
+        toast.success("Proposition créée et envoyée !");
+      } catch { toast.error("Proposition créée mais erreur d'envoi"); }
+    } else {
+      toast.success("Brouillon enregistré !");
+    }
     setDialogOpen(false); resetForm(); fetchProposals(); setSubmitting(false);
   };
 
