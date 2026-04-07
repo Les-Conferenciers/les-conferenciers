@@ -85,9 +85,20 @@ Deno.serve(async (req) => {
 
     const defaultClassicBody = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
 
-Comme convenu, je vous transmets votre proposition personnalisée de conférenciers pour ${proposal.client_name}.
+Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.
 
-Vous y trouverez le profil complet de chaque intervenant, ses thématiques et les conditions d'intervention.`;
+Vous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${proposal.client_name || "votre événement"}, sous réserve de leur disponibilité.
+
+Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.
+
+👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.
+
+Je reste bien entendu à votre disposition pour tout complément d'information.
+
+Dans l'attente de votre retour, je vous souhaite une très belle journée.
+
+Nelly Sabde - Les Conférenciers
+📞 06 95 93 97 91`;
     const defaultUniqueBody = `<p>Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},</p><p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p><p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${uniqueSpeakerName}. Le tarif de son intervention est de ${uniqueSpeakerTotal} € HT, hors frais VHR.</p>${uniqueProfileUrl ? `<p><a href="${uniqueProfileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${uniqueSpeakerName}</a></p>` : ""}<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p><p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p><p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p><p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
     const defaultInfoBody = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
 

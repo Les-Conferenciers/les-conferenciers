@@ -302,6 +302,45 @@ const toEmailBodyHtml = (value: string) => {
     .replace(/\n/g, "<br>");
 };
 
+const getResolvedEmailSubject = (type: ProposalType, subject: string, clientName: string) => {
+  if (subject?.trim()) return subject;
+  if (type === "info") return `Demande d'informations - ${clientName || "Les Conférenciers"}`;
+  if (type === "unique") return `Votre conférencier sur mesure - ${clientName || "Les Conférenciers"}`;
+  return getDefaultEmailSubject(clientName);
+};
+
+const getResolvedEmailBody = ({
+  type,
+  body,
+  recipientName,
+  clientName,
+  selectedSpeakers,
+  speakers,
+}: {
+  type: ProposalType;
+  body: string;
+  recipientName: string;
+  clientName: string;
+  selectedSpeakers: ProposalSpeaker[];
+  speakers: Speaker[];
+}) => {
+  if (body?.trim()) return body;
+  if (type === "info") return getInfoEmailBody(recipientName);
+  if (type === "unique") {
+    const proposalSpeaker = selectedSpeakers[0];
+    if (!proposalSpeaker) return "";
+    const speaker = speakers.find((item) => item.id === proposalSpeaker.speaker_id);
+    return getUniqueEmailBody(
+      recipientName,
+      speaker?.name || "",
+      getProposalSpeakerTotal(proposalSpeaker).toLocaleString("fr-FR"),
+      speaker?.slug || "",
+    );
+  }
+
+  return getDefaultEmailBody(recipientName, clientName);
+};
+
 const EmailPreviewCard = ({
   to,
   subject,
@@ -606,6 +645,7 @@ const AdminProposalsContent = () => {
     setEditingProposal(p);
     setEditClientName(p.client_name); setEditClientEmail(p.client_email);
     setEditRecipientName(p.recipient_name || "");
+    const proposalSpeakers = buildProposalSpeakers(p.proposal_speakers);
     const pType = (p.proposal_type || "classique") as ProposalType;
     if (pType === "info") {
       setEditMessage("");
@@ -614,13 +654,15 @@ const AdminProposalsContent = () => {
     } else if (pType === "unique") {
       setEditMessage("");
       setEditEmailSubject(p.email_subject || `Votre conférencier sur mesure - ${p.client_name}`);
-      setEditEmailBody(p.email_body || "");
+      const uniqueSpeaker = proposalSpeakers[0];
+      const speaker = speakers.find((item) => item.id === uniqueSpeaker?.speaker_id);
+      setEditEmailBody(p.email_body || getUniqueEmailBody(p.recipient_name || "", speaker?.name || "", getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR"), speaker?.slug || ""));
     } else {
       setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
       setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
       setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
     }
-    setEditSelectedSpeakers(buildProposalSpeakers(p.proposal_speakers));
+    setEditSelectedSpeakers(proposalSpeakers);
     setEditDialogOpen(true);
   };
 
@@ -822,8 +864,8 @@ const AdminProposalsContent = () => {
         <Label>👁️ Aperçu réel de l'email envoyé</Label>
         <EmailPreviewCard
           to={clientEmail}
-          subject={emailSubject}
-          body={emailBody}
+          subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
+          body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
           showProposalButton={proposalType === "classique"}
         />
       </div>
@@ -1282,7 +1324,7 @@ const AdminProposalsContent = () => {
                   <div className="space-y-3">
                     <div className="space-y-2"><Label className="text-xs text-muted-foreground">Objet</Label><Input value={editEmailSubject} onChange={e => setEditEmailSubject(e.target.value)} /></div>
                     <div className="space-y-2"><Label className="text-xs text-muted-foreground">Corps du mail</Label><SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} /></div>
-                      <div className="space-y-2"><Label className="text-xs text-muted-foreground">Aperçu réel de l'email envoyé</Label><EmailPreviewCard to={editClientEmail} subject={editEmailSubject} body={editEmailBody} showProposalButton={editType === "classique"} /></div>
+                      <div className="space-y-2"><Label className="text-xs text-muted-foreground">Aperçu réel de l'email envoyé</Label><EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} /></div>
                   </div>
                 </div>
 
