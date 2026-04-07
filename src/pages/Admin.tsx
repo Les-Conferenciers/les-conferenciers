@@ -609,7 +609,7 @@ const AdminProposalsContent = () => {
     if (!finalBody) {
       if (proposalType === "unique" && selectedSpeakers.length > 0) {
         const sp = speakers.find(s => s.id === selectedSpeakers[0].speaker_id);
-        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", (selectedSpeakers[0].speaker_fee || 0).toLocaleString("fr-FR"), (sp as any)?.slug || "");
+        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "");
       } else if (proposalType === "info") {
         finalBody = getInfoEmailBody(recipientName);
       } else {
