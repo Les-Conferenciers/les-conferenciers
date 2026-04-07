@@ -474,10 +474,14 @@ const AdminProposalsContent = () => {
 
   const isFullyPaid = (p: Proposal) => getPipelineStatus(p) === "fully_paid";
 
-  const drafts = proposals.filter(p => p.status === "draft");
-  const sent = proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p));
-  const completed = proposals.filter(p => p.status === "accepted" && isFullyPaid(p));
-  const archived = proposals.filter(p => p.status === "archived");
+  const applyTypeFilter = (items: Proposal[]) => typeFilter === "all" ? items : items.filter(p => (p as any).proposal_type === typeFilter);
+  const applyDateSort = (items: Proposal[]) => dateSortAsc ? [...items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) : items;
+  const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(items));
+
+  const drafts = filterAndSort(proposals.filter(p => p.status === "draft"));
+  const sent = filterAndSort(proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p)));
+  const completed = filterAndSort(proposals.filter(p => p.status === "accepted" && isFullyPaid(p)));
+  const archived = filterAndSort(proposals.filter(p => p.status === "archived"));
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter(c => c.speaker_id === speakerId);
 
