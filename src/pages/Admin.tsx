@@ -810,11 +810,18 @@ const AdminProposalsContent = () => {
 
   const applyGlobalCommission = (val: number) => {
     setGlobalCommission(val);
-    setSelectedSpeakers(prev => prev.map(s => {
-      const updated = { ...s, agency_commission: val };
-      updated.total_price = (updated.speaker_fee || 0) + (updated.travel_costs || 0) + val || null;
+    setSelectedSpeakers(prev => {
+      const updated = prev.map(s => {
+        const u = { ...s, agency_commission: val };
+        u.total_price = (u.speaker_fee || 0) + (u.travel_costs || 0) + val || null;
+        return u;
+      });
+      if (proposalType === "unique" && updated[0]) {
+        const speaker = speakers.find(sp => sp.id === updated[0].speaker_id);
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(updated[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+      }
       return updated;
-    }));
+    });
   };
 
   const renderSpeakerForm = () => (
