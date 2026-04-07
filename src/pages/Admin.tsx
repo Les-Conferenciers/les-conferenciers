@@ -1411,11 +1411,11 @@ const AdminProposalsContent = () => {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button className="flex-1 gap-2" onClick={async () => { await handleSaveEdit(); if (editingProposal) handleSend(editingProposal); }} disabled={submitting}>
+                  <Button className="flex-1 gap-2" onClick={() => handleSaveEdit(true)} disabled={submitting}>
                     <Send className="h-4 w-4" />
                     {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
                   </Button>
-                  <Button variant="outline" className="gap-2" onClick={handleSaveEdit} disabled={submitting}>
+                  <Button variant="outline" className="gap-2" onClick={() => handleSaveEdit(false)} disabled={submitting}>
                     <Save className="h-4 w-4" />
                     {submitting ? "Sauvegarde…" : "Enregistrer le brouillon"}
                   </Button>
