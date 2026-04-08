@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE = "https://les-conferenciers.netlify.app";
+const SITE = "https://www.lesconferenciers.com";
 const NUGGET = `${SITE}/favicon.png`;
 
 const emailHeader = `
