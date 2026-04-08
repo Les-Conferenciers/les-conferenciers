@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Proposal not found" }), { status: 404, headers: corsHeaders });
     }
 
-    const siteOrigin = "https://les-conferenciers.netlify.app";
+    const siteOrigin = "https://www.lesconferenciers.com";
     const proposalUrl = `${siteOrigin}/proposition/${proposal.token}`;
     const nuggetUrl = `${siteOrigin}/favicon.png`;
     const signatureUrl = `${siteOrigin}/images/les-conferenciers-signature.png`;
