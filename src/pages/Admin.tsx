@@ -383,7 +383,7 @@ const EmailPreviewCard = ({
           )}
         </div>
         <div style={{ padding: "0 30px 30px" }}>
-          <img src="https://les-conferenciers.netlify.app/images/les-conferenciers-signature.png" alt="Nelly SABDE | Agence Les Conférenciers" style={{ width: "100%", maxWidth: "500px", display: "block" }} />
+          <img src="https://www.lesconferenciers.com/images/les-conferenciers-signature.png" alt="Nelly SABDE | Agence Les Conférenciers" style={{ width: "100%", maxWidth: "500px", display: "block" }} />
         </div>
         <div style={{ background: "#1a2332", padding: "16px", textAlign: "center" }}>
           <p style={{ color: "#f5f0e8", opacity: 0.5, fontSize: "11px", margin: 0 }}>Proposition confidentielle - Les Conférenciers</p>
