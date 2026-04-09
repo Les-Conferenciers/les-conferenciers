@@ -394,13 +394,16 @@ KEY_POINTS : 3-5 points forts factuels et percutants
 WHY_EXPERTISE : phrase UNIQUE et SPÉCIFIQUE sur l'expertise (domaines précis, réalisations concrètes, PAS générique)
 WHY_IMPACT : phrase UNIQUE et SPÉCIFIQUE sur l'impact concret des interventions
 
+THÉMATIQUES AUTORISÉES (choisis UNIQUEMENT parmi cette liste, 3 à 5 thèmes) :
+Adaptabilité, Audace, Bien-être au travail, Bienveillance, Cohésion d'équipe, Collectif, Communication, Conduite du changement, Confiance, Confiance en soi, Créativité, Cybersécurité, Dépassement de soi, Diversité et handicap, Droit à l'erreur, Économie, Empowerment, Engagement, Entrepreneuriat, Environnement, Esprit d'équipe, Expérience client, Expérience collaborateur, Facteur humain, Géopolitique, Gestion de crise, Gestion de l'échec, Gestion des conflits, Gestion des émotions, Gestion des risques, Gestion du stress, Handicap, Innovation, Intelligence artificielle, Intelligence collective, Intelligence émotionnelle, Intelligence relationnelle, Jeunes générations, Leadership, Maîtrise des risques, Management, Marketing, Motivation, Négociation, Neurosciences, Optimisme, Parité, Performance, Performance collective, Prise de décision, Prise de parole, Résilience, Storytelling, Stratégie, Transformation, Transformation digitale
+
 JSON ATTENDU :
 {
   "name": "Prénom Nom",
   "role": "Titre professionnel court",
   "specialty": "Phrase d'accroche courte (max 8 mots)",
   "biography": "HTML riche - MINIMUM 300 mots, MAXIMUM 800 mots, SANS balises strong/b",
-  "themes": ["Thème 1", "Thème 2", "Thème 3"],
+  "themes": ["Thème exact de la liste ci-dessus", "Thème 2", "Thème 3"],
   "conferences": [{"title": "Titre", "description": "HTML paragraphes <p> SANS strong/b"}],
   "languages": ["Français"],
   "gender": "male ou female",
