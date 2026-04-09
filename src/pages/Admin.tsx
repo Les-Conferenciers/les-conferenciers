@@ -555,6 +555,7 @@ const AdminProposalsContent = () => {
     return () => clearTimeout(timer);
   }, [clientEmail, proposals]);
 
+  const fetchProposals = async () => {
     setLoading(true);
     const [proposalsRes, contractsRes, invoicesRes] = await Promise.all([
       supabase
