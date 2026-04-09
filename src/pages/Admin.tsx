@@ -1177,7 +1177,7 @@ const AdminProposalsContent = () => {
       <div className="space-y-2">
         <Label>✉️ Email d'envoi - Corps</Label>
         <SimpleRichTextEditor
-          value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers })}
+          value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers, eventContext })}
           onChange={setEmailBody}
           placeholder="Corps de l'email..."
           rows={8}
@@ -1192,7 +1192,7 @@ const AdminProposalsContent = () => {
           <EmailPreviewCard
             to={clientEmail}
             subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
-            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
+            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers, eventContext })}
             showProposalButton={proposalType === "classique"}
           />
         )}
