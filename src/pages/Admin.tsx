@@ -123,14 +123,24 @@ const buildEventContextLine = (eventLocation: string, eventDateText: string, aud
   return `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${parts.join(", ")}.`;
 };
 
-const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string) =>
-  `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
+const TEMPLATE_EMAIL_PHRASES: Record<string, string> = {
+  "Chefs d'orchestre": "une sélection de chefs d'orchestre et directeurs musicaux, conférenciers d'exception, soigneusement choisis",
+  "GIGN / RAID": "une sélection de conférenciers issus des unités d'élite (GIGN, RAID), soigneusement choisis",
+  "Patrouille de France": "une sélection de pilotes et anciens membres de la Patrouille de France, conférenciers d'exception, soigneusement choisis",
+};
+
+const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string, templateName?: string) => {
+  const selectionPhrase = templateName && TEMPLATE_EMAIL_PHRASES[templateName]
+    ? `${TEMPLATE_EMAIL_PHRASES[templateName]} pour ${clientName || "votre événement"}`
+    : `une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}`;
+
+  return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
 
 ${eventContext ? `<p>${eventContext}</p>
 
-` : ""}<p>Vous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.</p>
+` : ""}<p>Vous trouverez ci-dessous ${selectionPhrase}, sous réserve de leur disponibilité.</p>
 
 <p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
@@ -141,6 +151,7 @@ ${eventContext ? `<p>${eventContext}</p>
 <p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
 
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+};
 
 const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string) =>
   `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
