@@ -543,6 +543,9 @@ const AdminProposalsContent = () => {
       })
       .filter(Boolean) as ProposalSpeaker[];
     setSelectedSpeakers(newSpeakers);
+    // Update email body with template-specific phrase
+    const evtCtx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+    setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx, tpl.name));
     toast.success(`Template "${tpl.name}" appliqué (${newSpeakers.length} conférenciers)`);
   };
 
