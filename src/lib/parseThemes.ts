@@ -277,6 +277,15 @@ export const parseThemes = (themes: string[] | null): string[] => {
   return [...new Set(parsed)]; // deduplicate after normalization
 };
 
+/**
+ * Filter themes to only keep canonical ones. Used for AI imports.
+ * Themes not in the canonical list are dropped.
+ */
+export const filterToCanonicalThemes = (themes: string[]): string[] => {
+  const normalized = themes.map(t => normalizeTheme(t)).filter(Boolean);
+  return [...new Set(normalized.filter(t => CANONICAL_THEMES.includes(t)))];
+};
+
 // Deterministic color palette for theme badges
 const THEME_COLORS = [
   "bg-amber-100 text-amber-800 border-amber-200",
