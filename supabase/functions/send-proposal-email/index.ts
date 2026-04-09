@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
 
 <p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
-<p>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</p>
+<p><strong>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</strong></p>
 
 <p>Je reste bien entendu à votre disposition pour tout complément d'information.</p>
 
