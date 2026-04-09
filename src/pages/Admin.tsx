@@ -514,6 +514,7 @@ const AdminProposalsContent = () => {
   const [allClients, setAllClients] = useState<any[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
