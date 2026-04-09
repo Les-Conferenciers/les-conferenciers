@@ -54,6 +54,8 @@ const AdminClients = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form
   const [companyName, setCompanyName] = useState("");
