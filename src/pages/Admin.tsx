@@ -665,7 +665,27 @@ const AdminProposalsContent = () => {
       toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
-    const finalMessage = proposalType === "classique" ? (emailBody || getDefaultEmailBody(recipientName, clientName)) : "";
+
+    // Auto-create or link client
+    let clientId = selectedClientId;
+    if (!clientId) {
+      const { data: existingClients } = await supabase.from("clients").select("id").eq("email", clientEmail).limit(1);
+      if (existingClients && existingClients.length > 0) {
+        clientId = existingClients[0].id;
+      } else {
+        const { data: newClient } = await supabase.from("clients").insert({
+          company_name: clientName,
+          contact_name: recipientName || null,
+          email: clientEmail,
+          phone: clientPhone || null,
+          status: "prospect",
+        }).select("id").single();
+        if (newClient) clientId = newClient.id;
+      }
+    }
+
+    const eventContext = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+    const finalMessage = proposalType === "classique" ? (emailBody || getDefaultEmailBody(recipientName, clientName, eventContext)) : "";
     const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
     let finalBody = emailBody;
     if (!finalBody) {
@@ -675,12 +695,18 @@ const AdminProposalsContent = () => {
       } else if (proposalType === "info") {
         finalBody = getInfoEmailBody(recipientName);
       } else {
-        finalBody = getDefaultEmailBody(recipientName, clientName);
+        finalBody = getDefaultEmailBody(recipientName, clientName, eventContext);
       }
     }
     const { data: proposal, error } = await supabase
       .from("proposals")
-      .insert({ client_name: clientName, client_email: clientEmail, message: finalMessage, recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody, proposal_type: proposalType } as any)
+      .insert({
+        client_name: clientName, client_email: clientEmail, message: finalMessage,
+        recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody,
+        proposal_type: proposalType, client_id: clientId,
+        event_location: eventLocation || null, event_date_text: eventDateText || null,
+        audience_size: audienceSize || null, client_phone: clientPhone || null,
+      } as any)
       .select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     if (selectedSpeakers.length > 0) {
@@ -703,13 +729,15 @@ const AdminProposalsContent = () => {
     } else {
       toast.success("Brouillon enregistré !");
     }
-    setDialogOpen(false); resetForm(); fetchProposals(); setSubmitting(false);
+    setDialogOpen(false); resetForm(); fetchProposals(); fetchClients(); setSubmitting(false);
   };
 
   const resetForm = () => {
     setClientName(""); setClientEmail(""); setRecipientName(""); setSelectedSpeakers([]);
     setEmailSubject(""); setEmailBody(""); setMessage(getDefaultMessage("", ""));
     setProposalType("classique"); setGlobalCommission(0);
+    setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
+    setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("search");
   };
 
   const openEditDialog = (p: Proposal) => {
