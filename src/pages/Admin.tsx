@@ -354,6 +354,7 @@ const getResolvedEmailBody = ({
   clientName,
   selectedSpeakers,
   speakers,
+  eventContext,
 }: {
   type: ProposalType;
   body: string;
@@ -361,6 +362,7 @@ const getResolvedEmailBody = ({
   clientName: string;
   selectedSpeakers: ProposalSpeaker[];
   speakers: Speaker[];
+  eventContext?: string;
 }) => {
   if (body?.trim()) return body;
   if (type === "info") return getInfoEmailBody(recipientName);
@@ -376,7 +378,7 @@ const getResolvedEmailBody = ({
     );
   }
 
-  return getDefaultEmailBody(recipientName, clientName);
+  return getDefaultEmailBody(recipientName, clientName, eventContext);
 };
 
 const EmailPreviewCard = ({
