@@ -479,7 +479,7 @@ const AdminProposalsContent = () => {
   const [allClients, setAllClients] = useState<any[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
+    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients()]);
   }, []);
 
   const fetchProposals = async () => {
