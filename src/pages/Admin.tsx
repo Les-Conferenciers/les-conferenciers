@@ -1121,11 +1121,18 @@ const AdminProposalsContent = () => {
           <div className="space-y-1"><Label className="text-xs">Lieu d'intervention</Label><Input value={eventLocation} onChange={e => setEventLocation(e.target.value)} placeholder="Paris" /></div>
           <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input value={audienceSize} onChange={e => setAudienceSize(e.target.value)} placeholder="200" /></div>
         </div>
-        {eventContext && (
-          <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic">
-            {eventContext}
-          </div>
-        )}
+        {(eventDateText || eventLocation || audienceSize) && (() => {
+          const contextParts: string[] = [];
+          if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+          if (eventLocation) contextParts.push(`à <strong>${eventLocation}</strong>`);
+          if (audienceSize) contextParts.push(`pour <strong>${audienceSize} personnes</strong>`);
+          const previewText = proposalType === "unique"
+            ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants ${contextParts.join(" ")}...`
+            : `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${contextParts.join(", ")}.`;
+          return (
+            <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic" dangerouslySetInnerHTML={{ __html: previewText }} />
+          );
+        })()}
       </div>
 
       {/* Speakers section - not for "info" type - BEFORE email */}
