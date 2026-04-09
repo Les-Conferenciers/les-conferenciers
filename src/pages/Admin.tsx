@@ -514,6 +514,7 @@ const AdminProposalsContent = () => {
   const [allClients, setAllClients] = useState<any[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
@@ -534,6 +535,25 @@ const AdminProposalsContent = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventDateText, eventLocation, audienceSize]);
+
+  // Check if client email already exists in proposals
+  useEffect(() => {
+    if (!clientEmail || clientEmail.length < 5 || !clientEmail.includes("@")) {
+      setEmailExistsWarning(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const existing = proposals.filter(p => p.client_email?.toLowerCase() === clientEmail.toLowerCase());
+      if (existing.length > 0) {
+        const latest = existing[0];
+        const dateStr = new Date(latest.created_at).toLocaleDateString("fr-FR");
+        setEmailExistsWarning(`⚠️ ${existing.length} proposition(s) existante(s) pour cet email (dernière : ${dateStr}, statut : ${latest.status})`);
+      } else {
+        setEmailExistsWarning(null);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [clientEmail, proposals]);
 
   const fetchProposals = async () => {
     setLoading(true);
@@ -1121,6 +1141,11 @@ const AdminProposalsContent = () => {
               <div className="space-y-1"><Label className="text-xs">Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" disabled={!!selectedClientId} /></div>
               <div className="space-y-1"><Label className="text-xs">Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" disabled={!!selectedClientId} /></div>
             </div>
+            {emailExistsWarning && (
+              <div className="bg-amber-50 border border-amber-300 rounded-md px-3 py-1.5 text-xs text-amber-800">
+                {emailExistsWarning}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label className="text-xs">Prénom Nom du destinataire</Label><Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" /></div>
               <div className="space-y-1"><Label className="text-xs">Téléphone client</Label><Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="06 12 34 56 78" /></div>
