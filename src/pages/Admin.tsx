@@ -926,6 +926,25 @@ const AdminProposalsContent = () => {
     });
   };
 
+  const selectExistingClient = (client: any) => {
+    setSelectedClientId(client.id);
+    setClientName(client.company_name);
+    setClientEmail(client.email || "");
+    setRecipientName(client.contact_name || "");
+    setClientPhone(client.phone || "");
+    setClientMode("search");
+  };
+
+  const filteredClients = clientSearchQuery.trim()
+    ? allClients.filter(c =>
+        c.company_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+        c.contact_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+        c.email?.toLowerCase().includes(clientSearchQuery.toLowerCase())
+      )
+    : [];
+
+  const eventContext = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+
   const renderSpeakerForm = () => (
     <div className="space-y-6 mt-4">
       {/* Proposal type selector */}
@@ -950,13 +969,77 @@ const AdminProposalsContent = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" /></div>
-        <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" /></div>
+      {/* Client search/create section */}
+      <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
+        <Label className="text-sm font-medium">👤 Client</Label>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => { setClientMode("search"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "search" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+            Rechercher un client existant
+          </button>
+          <button type="button" onClick={() => { setClientMode("new"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "new" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+            Nouveau client
+          </button>
+        </div>
+
+        {clientMode === "search" && !selectedClientId && (
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input value={clientSearchQuery} onChange={e => setClientSearchQuery(e.target.value)} placeholder="Rechercher par nom, contact ou email…" className="pl-8 text-sm" />
+            </div>
+            {clientSearchQuery.trim() && (
+              <div className="max-h-40 overflow-y-auto border border-input rounded-md">
+                {filteredClients.map(c => (
+                  <button key={c.id} type="button" onClick={() => selectExistingClient(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between border-b border-border last:border-0">
+                    <div>
+                      <span className="font-medium">{c.company_name}</span>
+                      {c.contact_name && <span className="text-muted-foreground ml-2">({c.contact_name})</span>}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{c.email}</span>
+                  </button>
+                ))}
+                {filteredClients.length === 0 && <div className="px-3 py-3 text-sm text-muted-foreground text-center">Aucun résultat — <button type="button" onClick={() => setClientMode("new")} className="text-primary underline">créer un nouveau client</button></div>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {selectedClientId && clientMode === "search" && (
+          <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-md px-3 py-2">
+            <Check className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">{clientName}</span>
+            <span className="text-xs text-muted-foreground">{clientEmail}</span>
+            <button type="button" onClick={() => { setSelectedClientId(null); setClientName(""); setClientEmail(""); setRecipientName(""); setClientPhone(""); }} className="ml-auto text-xs text-muted-foreground hover:text-foreground">Changer</button>
+          </div>
+        )}
+
+        {(clientMode === "new" || selectedClientId) && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" disabled={!!selectedClientId} /></div>
+              <div className="space-y-1"><Label className="text-xs">Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" disabled={!!selectedClientId} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Prénom Nom du destinataire</Label><Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" /></div>
+              <div className="space-y-1"><Label className="text-xs">Téléphone client</Label><Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="06 12 34 56 78" /></div>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="space-y-2">
-        <Label>Prénom Nom du destinataire (optionnel)</Label>
-        <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
+
+      {/* Event details */}
+      <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
+        <Label className="text-sm font-medium">📍 Détails de l'événement (optionnel)</Label>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1"><Label className="text-xs">Date de l'événement</Label><Input value={eventDateText} onChange={e => setEventDateText(e.target.value)} placeholder="15 mars 2026" /></div>
+          <div className="space-y-1"><Label className="text-xs">Lieu d'intervention</Label><Input value={eventLocation} onChange={e => setEventLocation(e.target.value)} placeholder="Paris" /></div>
+          <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input value={audienceSize} onChange={e => setAudienceSize(e.target.value)} placeholder="200" /></div>
+        </div>
+        {eventContext && (
+          <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic">
+            {eventContext}
+          </div>
+        )}
       </div>
 
       {/* Speakers section - not for "info" type - BEFORE email */}
