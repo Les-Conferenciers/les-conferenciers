@@ -381,6 +381,9 @@ const getResolvedEmailBody = ({
   selectedSpeakers,
   speakers,
   eventContext,
+  eventDateText,
+  eventLocation,
+  audienceSize,
 }: {
   type: ProposalType;
   body: string;
@@ -389,6 +392,9 @@ const getResolvedEmailBody = ({
   selectedSpeakers: ProposalSpeaker[];
   speakers: Speaker[];
   eventContext?: string;
+  eventDateText?: string;
+  eventLocation?: string;
+  audienceSize?: string;
 }) => {
   if (body?.trim()) return body;
   if (type === "info") return getInfoEmailBody(recipientName);
@@ -401,6 +407,9 @@ const getResolvedEmailBody = ({
       speaker?.name || "",
       getProposalSpeakerTotal(proposalSpeaker).toLocaleString("fr-FR"),
       speaker?.slug || "",
+      eventDateText,
+      eventLocation,
+      audienceSize,
     );
   }
 
