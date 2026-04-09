@@ -153,22 +153,37 @@ ${eventContext ? `<p>${eventContext}</p>
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 };
 
-const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string) =>
-  `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
+const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string, eventDateText?: string, eventLocation?: string, audienceSize?: string) => {
+  const hasEventContext = eventDateText || eventLocation || audienceSize;
+  const contextParts: string[] = [];
+  if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+  if (eventLocation) contextParts.push(`à <strong>${eventLocation}</strong>`);
+  if (audienceSize) contextParts.push(`pour <strong>${audienceSize} personnes</strong>`);
+  
+  const introPhrase = hasEventContext
+    ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants ${contextParts.join(" ")} et vous adresse, comme convenu, le profil de ${speakerName}.`
+    : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}.`;
+
+  const alternativePhrase = hasEventContext
+    ? `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>`
+    : `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>`;
+
+  return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p>
 
-<p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p>
+<p>${introPhrase} Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p>
 
 <p><strong>👉 <a href="https://www.lesconferenciers.com/conferencier/${speakerSlug}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></strong> (sous réserve de sa disponibilité)</p>
 
-<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>
+${alternativePhrase}
 
 <p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p>
 
 <p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
 
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+};
 
 const getInfoEmailBody = (recipientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n• Votre enveloppe budgétaire\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
@@ -366,6 +381,9 @@ const getResolvedEmailBody = ({
   selectedSpeakers,
   speakers,
   eventContext,
+  eventDateText,
+  eventLocation,
+  audienceSize,
 }: {
   type: ProposalType;
   body: string;
@@ -374,6 +392,9 @@ const getResolvedEmailBody = ({
   selectedSpeakers: ProposalSpeaker[];
   speakers: Speaker[];
   eventContext?: string;
+  eventDateText?: string;
+  eventLocation?: string;
+  audienceSize?: string;
 }) => {
   if (body?.trim()) return body;
   if (type === "info") return getInfoEmailBody(recipientName);
@@ -386,6 +407,9 @@ const getResolvedEmailBody = ({
       speaker?.name || "",
       getProposalSpeakerTotal(proposalSpeaker).toLocaleString("fr-FR"),
       speaker?.slug || "",
+      eventDateText,
+      eventLocation,
+      audienceSize,
     );
   }
 
@@ -659,7 +683,7 @@ const AdminProposalsContent = () => {
     setSelectedSpeakers(nextSpeakers);
     if (proposalType === "unique") {
       const total = getProposalSpeakerTotal(nextSpeakers[0]);
-      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, total.toLocaleString("fr-FR"), speaker.slug || ""));
+      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, total.toLocaleString("fr-FR"), speaker.slug || "", eventDateText, eventLocation, audienceSize));
     }
   };
 
@@ -680,7 +704,7 @@ const AdminProposalsContent = () => {
       const next = updateSpeakerFieldInList(prev, speakerId, field, value);
       if (proposalType === "unique" && next[0]) {
         const speaker = speakers.find(s => s.id === next[0].speaker_id);
-        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(next[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(next[0]).toLocaleString("fr-FR"), speaker?.slug || "", eventDateText, eventLocation, audienceSize));
       }
       return next;
     });
@@ -732,7 +756,7 @@ const AdminProposalsContent = () => {
     if (!finalBody) {
       if (proposalType === "unique" && selectedSpeakers.length > 0) {
         const sp = speakers.find(s => s.id === selectedSpeakers[0].speaker_id);
-        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "");
+        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "", eventDateText, eventLocation, audienceSize);
       } else if (proposalType === "info") {
         finalBody = getInfoEmailBody(recipientName);
       } else {
@@ -796,7 +820,7 @@ const AdminProposalsContent = () => {
       setEditEmailSubject(p.email_subject || `Votre conférencier sur mesure - ${p.client_name}`);
       const uniqueSpeaker = proposalSpeakers[0];
       const speaker = speakers.find((item) => item.id === uniqueSpeaker?.speaker_id);
-      setEditEmailBody(p.email_body || getUniqueEmailBody(p.recipient_name || "", speaker?.name || "", getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR"), speaker?.slug || ""));
+      setEditEmailBody(p.email_body || getUniqueEmailBody(p.recipient_name || "", speaker?.name || "", getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR"), speaker?.slug || "", (p as any).event_date_text, (p as any).event_location, (p as any).audience_size));
     } else {
       setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
       setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
@@ -962,7 +986,7 @@ const AdminProposalsContent = () => {
       });
       if (proposalType === "unique" && updated[0]) {
         const speaker = speakers.find(sp => sp.id === updated[0].speaker_id);
-        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(updated[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(updated[0]).toLocaleString("fr-FR"), speaker?.slug || "", eventDateText, eventLocation, audienceSize));
       }
       return updated;
     });
