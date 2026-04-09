@@ -1149,7 +1149,7 @@ const AdminProposalsContent = () => {
             <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic" dangerouslySetInnerHTML={{ __html: previewText }} />
           );
         })()}
-      </div>
+      </div>}
 
       {/* Speakers section - not for "info" type - BEFORE email */}
       {proposalType !== "info" && (
