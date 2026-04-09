@@ -337,7 +337,6 @@ const toEmailBodyHtml = (value: string) => {
   if (hasHtmlContent(value)) return value;
 
   return escapeEmailHtml(value)
-    .replace(/👉\s*Découvrir le profil de ([^:\n]+)\s*:\s*(https?:\/\/[^\s<]+)/g, '👉 <a href="$2" target="_blank" rel="noopener noreferrer">Découvrir le profil de $1</a>')
     .replace(/\n/g, "<br>");
 };
 
