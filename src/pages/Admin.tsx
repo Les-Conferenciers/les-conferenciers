@@ -519,6 +519,22 @@ const AdminProposalsContent = () => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
   }, []);
 
+  // Auto-update email body when event details change
+  useEffect(() => {
+    if (proposalType === "unique") {
+      const ps = selectedSpeakers[0];
+      if (!ps) return;
+      const speaker = speakers.find(s => s.id === ps.speaker_id);
+      if (!speaker) return;
+      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, getProposalSpeakerTotal(ps).toLocaleString("fr-FR"), speaker.slug || "", eventDateText, eventLocation, audienceSize));
+    } else if (proposalType === "classique") {
+      const evtCtx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+      const tpl = selectedTemplateId ? templates.find(t => t.id === selectedTemplateId) : null;
+      setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx, tpl?.name));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventDateText, eventLocation, audienceSize]);
+
   const fetchProposals = async () => {
     setLoading(true);
     const [proposalsRes, contractsRes, invoicesRes] = await Promise.all([
