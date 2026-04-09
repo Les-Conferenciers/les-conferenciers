@@ -447,6 +447,10 @@ const AdminProposalsContent = () => {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
+  const [eventDateText, setEventDateText] = useState("");
+  const [audienceSize, setAudienceSize] = useState("");
   const [message, setMessage] = useState(getDefaultMessage("", ""));
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
@@ -468,6 +472,11 @@ const AdminProposalsContent = () => {
   const [dateSortAsc, setDateSortAsc] = useState(false);
   const [showCreatePreview, setShowCreatePreview] = useState(false);
   const [showEditPreview, setShowEditPreview] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [clientSearchResults, setClientSearchResults] = useState<any[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientMode, setClientMode] = useState<"search" | "new">("search");
+  const [allClients, setAllClients] = useState<any[]>([]);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
