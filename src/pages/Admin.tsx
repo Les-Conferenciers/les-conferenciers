@@ -1278,7 +1278,7 @@ const AdminProposalsContent = () => {
           <EmailPreviewCard
             to={clientEmail}
             subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
-            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers, eventContext })}
+            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers, eventContext, eventDateText, eventLocation, audienceSize })}
             showProposalButton={proposalType === "classique"}
           />
         )}
@@ -1656,7 +1656,7 @@ const AdminProposalsContent = () => {
                          {showEditPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                          {showEditPreview ? "Masquer l'aperçu" : "Aperçu réel de l'email envoyé"}
                        </Button>
-                       {showEditPreview && <EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} />}
+                       {showEditPreview && <EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers, eventDateText: (editingProposal as any)?.event_date_text, eventLocation: (editingProposal as any)?.event_location, audienceSize: (editingProposal as any)?.audience_size })} showProposalButton={editType === "classique"} />}
                      </div>
                   </div>
                 </div>
