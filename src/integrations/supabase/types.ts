@@ -418,12 +418,16 @@ export type Database = {
       proposals: {
         Row: {
           accepted_at: string | null
+          audience_size: string | null
           client_email: string
           client_id: string | null
           client_name: string
+          client_phone: string | null
           created_at: string
           email_body: string | null
           email_subject: string | null
+          event_date_text: string | null
+          event_location: string | null
           expires_at: string
           id: string
           message: string | null
@@ -437,12 +441,16 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          audience_size?: string | null
           client_email: string
           client_id?: string | null
           client_name: string
+          client_phone?: string | null
           created_at?: string
           email_body?: string | null
           email_subject?: string | null
+          event_date_text?: string | null
+          event_location?: string | null
           expires_at?: string
           id?: string
           message?: string | null
@@ -456,12 +464,16 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          audience_size?: string | null
           client_email?: string
           client_id?: string | null
           client_name?: string
+          client_phone?: string | null
           created_at?: string
           email_body?: string | null
           email_subject?: string | null
+          event_date_text?: string | null
+          event_location?: string | null
           expires_at?: string
           id?: string
           message?: string | null
