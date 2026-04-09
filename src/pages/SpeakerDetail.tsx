@@ -21,6 +21,13 @@ import SpeakerReviews from "@/components/SpeakerReviews";
 
 const DEFAULT_IMAGE = null;
 
+// Strip inline styles and unwanted span wrappers from HTML to ensure consistent typography
+const sanitizeConferenceHtml = (html: string): string => {
+  return html
+    .replace(/\s*style="[^"]*"/gi, '')
+    .replace(/<span>(.*?)<\/span>/gi, '$1');
+};
+
 // Gender helpers
 const isFemale = (speaker: any) => speaker.gender === "female";
 const pronoun = (speaker: any) => isFemale(speaker) ? "elle" : "il";
@@ -664,7 +671,7 @@ const SpeakerDetail = () => {
                               [&_ol]:list-decimal [&_ol]:pl-5
                               [&_em]:italic
                               [&_img]:rounded-xl [&_img]:shadow-sm [&_img]:my-4 [&_img]:w-full [&_img]:max-w-full"
-                            dangerouslySetInnerHTML={{ __html: conf.description }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeConferenceHtml(conf.description) }}
                           />
                         )}
                         {conf.bullet_points && conf.bullet_points.length > 0 && (

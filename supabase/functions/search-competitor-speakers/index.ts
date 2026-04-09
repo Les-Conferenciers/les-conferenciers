@@ -394,13 +394,16 @@ KEY_POINTS : 3-5 points forts factuels et percutants
 WHY_EXPERTISE : phrase UNIQUE et SPÉCIFIQUE sur l'expertise (domaines précis, réalisations concrètes, PAS générique)
 WHY_IMPACT : phrase UNIQUE et SPÉCIFIQUE sur l'impact concret des interventions
 
+THÉMATIQUES AUTORISÉES (choisis UNIQUEMENT parmi cette liste, 3 à 5 thèmes) :
+Adaptabilité, Audace, Bien-être au travail, Bienveillance, Cohésion d'équipe, Collectif, Communication, Conduite du changement, Confiance, Confiance en soi, Créativité, Cybersécurité, Dépassement de soi, Diversité et handicap, Droit à l'erreur, Économie, Empowerment, Engagement, Entrepreneuriat, Environnement, Esprit d'équipe, Expérience client, Expérience collaborateur, Facteur humain, Géopolitique, Gestion de crise, Gestion de l'échec, Gestion des conflits, Gestion des émotions, Gestion des risques, Gestion du stress, Handicap, Innovation, Intelligence artificielle, Intelligence collective, Intelligence émotionnelle, Intelligence relationnelle, Jeunes générations, Leadership, Maîtrise des risques, Management, Marketing, Motivation, Négociation, Neurosciences, Optimisme, Parité, Performance, Performance collective, Prise de décision, Prise de parole, Résilience, Storytelling, Stratégie, Transformation, Transformation digitale
+
 JSON ATTENDU :
 {
   "name": "Prénom Nom",
   "role": "Titre professionnel court",
   "specialty": "Phrase d'accroche courte (max 8 mots)",
   "biography": "HTML riche - MINIMUM 300 mots, MAXIMUM 800 mots, SANS balises strong/b",
-  "themes": ["Thème 1", "Thème 2", "Thème 3"],
+  "themes": ["Thème exact de la liste ci-dessus", "Thème 2", "Thème 3"],
   "conferences": [{"title": "Titre", "description": "HTML paragraphes <p> SANS strong/b"}],
   "languages": ["Français"],
   "gender": "male ou female",
@@ -634,14 +637,47 @@ Deno.serve(async (req) => {
       console.log("AI synthesis failed, using raw data");
     }
 
+    // Canonical themes list — AI themes MUST be filtered to this list
+    const CANONICAL_THEMES = [
+      "Adaptabilité", "Audace", "Bien-être au travail", "Bienveillance", "Cohésion d'équipe", "Collectif", "Communication",
+      "Conduite du changement", "Confiance", "Confiance en soi", "Créativité", "Cybersécurité", "Dépassement de soi",
+      "Diversité et handicap", "Droit à l'erreur", "Économie", "Empowerment", "Engagement", "Entrepreneuriat", "Environnement",
+      "Esprit d'équipe", "Expérience client", "Expérience collaborateur", "Facteur humain", "Géopolitique", "Gestion de crise",
+      "Gestion de l'échec", "Gestion des conflits", "Gestion des émotions", "Gestion des risques", "Gestion du stress",
+      "Handicap", "Innovation", "Intelligence artificielle", "Intelligence collective", "Intelligence émotionnelle",
+      "Intelligence relationnelle", "Jeunes générations", "Leadership", "Maîtrise des risques", "Management", "Marketing",
+      "Motivation", "Négociation", "Neurosciences", "Optimisme", "Parité", "Performance", "Performance collective",
+      "Prise de décision", "Prise de parole", "Résilience", "Storytelling", "Stratégie", "Transformation", "Transformation digitale",
+    ];
+
+    const filterThemes = (themes: string[]): string[] => {
+      return [...new Set(themes.map(t => {
+        // Exact match
+        if (CANONICAL_THEMES.includes(t)) return t;
+        // Case-insensitive match
+        const lower = t.toLowerCase();
+        const match = CANONICAL_THEMES.find(c => c.toLowerCase() === lower);
+        if (match) return match;
+        // Partial match for common variants
+        if (lower.includes("vente")) return "Négociation";
+        if (lower.includes("rse") || lower.includes("écolog") || lower.includes("ecolog")) return "Environnement";
+        if (lower.includes("digital")) return "Transformation digitale";
+        if (lower.includes("parité") || lower.includes("égalité") || lower.includes("sexism")) return "Parité";
+        if (lower.includes("diversité")) return "Diversité et handicap";
+        if (lower.includes("résilience") || lower.includes("resilience")) return "Résilience";
+        return null;
+      }).filter(Boolean) as string[])];
+    };
+
     // Build final profile
+    const rawThemes = aiProfile?.themes?.length ? aiProfile.themes : [...new Set(found.flatMap((s) => s.themes || []))];
     const profile = {
       name: aiProfile?.name || name.trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "),
       slug,
       role: aiProfile?.role || found.find((s) => s.role)?.role || null,
       specialty: aiProfile?.specialty || null,
       biography: aiProfile?.biography || found.find((s) => s.biography)?.biography || null,
-      themes: aiProfile?.themes?.length ? aiProfile.themes : [...new Set(found.flatMap((s) => s.themes || []))],
+      themes: filterThemes(rawThemes),
       conferences: aiProfile?.conferences || [],
       languages: aiProfile?.languages || found.find((s) => s.languages)?.languages || ["Français"],
       gender: aiProfile?.gender || "male",

@@ -12,7 +12,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic, Eye, EyeOff, User, Diamond } from "lucide-react";
-import { parseThemes } from "@/lib/parseThemes";
+import { parseThemes, CANONICAL_THEMES } from "@/lib/parseThemes";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 
@@ -187,7 +187,7 @@ const AdminSpeakersCRM = () => {
   }, [editSpeaker?.id]);
 
   const allThemes = useMemo(() => {
-    const themeSet = new Set<string>();
+    const themeSet = new Set<string>(CANONICAL_THEMES);
     speakers.forEach(s => parseThemes(s.themes).forEach(t => themeSet.add(t)));
     return Array.from(themeSet).sort();
   }, [speakers]);

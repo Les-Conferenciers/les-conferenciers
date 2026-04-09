@@ -1,26 +1,89 @@
 /**
+ * Master list of canonical themes. AI imports MUST only use themes from this list.
+ * Manual creation in admin is still allowed.
+ */
+export const CANONICAL_THEMES: string[] = [
+  "Adaptabilité",
+  "Audace",
+  "Bien-être au travail",
+  "Bienveillance",
+  "Cohésion d'équipe",
+  "Collectif",
+  "Communication",
+  "Conduite du changement",
+  "Confiance",
+  "Confiance en soi",
+  "Créativité",
+  "Cybersécurité",
+  "Dépassement de soi",
+  "Diversité et handicap",
+  "Droit à l'erreur",
+  "Économie",
+  "Empowerment",
+  "Engagement",
+  "Entrepreneuriat",
+  "Environnement",
+  "Esprit d'équipe",
+  "Expérience client",
+  "Expérience collaborateur",
+  "Facteur humain",
+  "Géopolitique",
+  "Gestion de crise",
+  "Gestion de l'échec",
+  "Gestion des conflits",
+  "Gestion des émotions",
+  "Gestion des risques",
+  "Gestion du stress",
+  "Handicap",
+  "Innovation",
+  "Intelligence artificielle",
+  "Intelligence collective",
+  "Intelligence émotionnelle",
+  "Intelligence relationnelle",
+  "Jeunes générations",
+  "Leadership",
+  "Maîtrise des risques",
+  "Management",
+  "Marketing",
+  "Motivation",
+  "Négociation",
+  "Neurosciences",
+  "Optimisme",
+  "Parité",
+  "Performance",
+  "Performance collective",
+  "Prise de décision",
+  "Prise de parole",
+  "Résilience",
+  "Storytelling",
+  "Stratégie",
+  "Transformation",
+  "Transformation digitale",
+];
+
+/**
  * Canonical theme mappings: normalize duplicates caused by casing, hyphens,
  * accents, plural forms, etc.
  * Key = lowercased version, Value = canonical display form.
  */
 const THEME_ALIASES: Record<string, string> = {
   // Bien-être
-  "bien etre": "Bien-être",
-  "bien-etre": "Bien-être",
-  "bien être": "Bien-être",
-  "bien-être": "Bien-être",
+  "bien etre": "Bien-être au travail",
+  "bien-etre": "Bien-être au travail",
+  "bien être": "Bien-être au travail",
+  "bien-être": "Bien-être au travail",
   "bien-être au travail": "Bien-être au travail",
   "bien etre au travail": "Bien-être au travail",
 
   // Cohésion
-  "cohesion de groupe": "Cohésion de groupe",
-  "cohésion de groupe": "Cohésion de groupe",
+  "cohesion de groupe": "Cohésion d'équipe",
+  "cohésion de groupe": "Cohésion d'équipe",
   "cohesion d'equipe": "Cohésion d'équipe",
   "cohésion d'equipe": "Cohésion d'équipe",
   "cohésion d'équipe": "Cohésion d'équipe",
   "cohesion d'équipe": "Cohésion d'équipe",
-  "cohesion": "Cohésion",
-  "cohésion": "Cohésion",
+  "cohesion": "Cohésion d'équipe",
+  "cohésion": "Cohésion d'équipe",
 
   // Intelligence
   "intelligence artificielle": "Intelligence artificielle",
@@ -42,7 +105,7 @@ const THEME_ALIASES: Record<string, string> = {
   "gestion des conflit": "Gestion des conflits",
   "gestion des conflits": "Gestion des conflits",
   "gestion des risques": "Gestion des risques",
-  "gestion du temps": "Gestion du temps",
+  "gestion du temps": "Gestion du stress",
 
   // Conduite du changement
   "conduite du changement": "Conduite du changement",
@@ -74,8 +137,8 @@ const THEME_ALIASES: Record<string, string> = {
   "économie": "Économie",
 
   // Éloquence / Prise de parole
-  "eloquence": "Éloquence",
-  "éloquence": "Éloquence",
+  "eloquence": "Prise de parole",
+  "éloquence": "Prise de parole",
   "prise de parole": "Prise de parole",
   "prise de parole en public": "Prise de parole",
 
@@ -92,15 +155,19 @@ const THEME_ALIASES: Record<string, string> = {
   "strategie digitale": "Transformation digitale",
 
   // Diversité
-  "diversité": "Diversité",
-  "la diversité": "Diversité",
+  "diversité": "Diversité et handicap",
+  "la diversité": "Diversité et handicap",
   "diversité et handicap": "Diversité et handicap",
+  "diversité & inclusion": "Diversité et handicap",
+  "diversité et inclusion": "Diversité et handicap",
 
   // Parité
   "egalité homme femme": "Parité",
   "égalité homme femme": "Parité",
   "parité homme-femme": "Parité",
   "lutte contre le sexisme": "Parité",
+  "égalité & parité": "Parité",
+  "parité": "Parité",
 
   // Résilience
   "résilience": "Résilience",
@@ -108,9 +175,10 @@ const THEME_ALIASES: Record<string, string> = {
   "rebond": "Résilience",
   "rebondir après un échec": "Résilience",
 
-  // Échec
-  "echec": "Échec",
-  "succès et échecs": "Échec",
+  // Échec → Gestion de l'échec
+  "echec": "Gestion de l'échec",
+  "échec": "Gestion de l'échec",
+  "succès et échecs": "Gestion de l'échec",
 
   // Stratégie
   "strategie": "Stratégie",
@@ -142,7 +210,7 @@ const THEME_ALIASES: Record<string, string> = {
 
   // Others kept consistent
   "bienveillance": "Bienveillance",
-  "bonheur": "Bonheur",
+  "bonheur": "Bien-être au travail",
   "changement climatique": "Environnement",
   "transition écologique": "Environnement",
   "sobriété énergétique": "Environnement",
@@ -155,7 +223,7 @@ const THEME_ALIASES: Record<string, string> = {
   "motivation": "Motivation",
   "neurosciences": "Neurosciences",
   "optimisme": "Optimisme",
-  "qualité de vie au travail": "Qualité de vie au travail",
+  "qualité de vie au travail": "Bien-être au travail",
   "storytelling": "Storytelling",
   "transformation": "Transformation",
   
@@ -167,6 +235,10 @@ const THEME_ALIASES: Record<string, string> = {
   "maîtrise des risques": "Maîtrise des risques",
   "droit à l'erreur": "Droit à l'erreur",
   "expérience collaborateur": "Expérience collaborateur",
+  "apprentissage": "Innovation",
+  "cybersécurité": "Cybersécurité",
+  "géopolitique": "Géopolitique",
+  "prise de décision": "Prise de décision",
 };
 
 /** Normalize a single theme string to its canonical form */
@@ -203,6 +275,15 @@ export const parseThemes = (themes: string[] | null): string[] => {
     parsed.push(...parts);
   }
   return [...new Set(parsed)]; // deduplicate after normalization
+};
+
+/**
+ * Filter themes to only keep canonical ones. Used for AI imports.
+ * Themes not in the canonical list are dropped.
+ */
+export const filterToCanonicalThemes = (themes: string[]): string[] => {
+  const normalized = themes.map(t => normalizeTheme(t)).filter(Boolean);
+  return [...new Set(normalized.filter(t => CANONICAL_THEMES.includes(t)))];
 };
 
 // Deterministic color palette for theme badges

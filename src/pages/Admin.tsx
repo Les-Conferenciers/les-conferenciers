@@ -114,11 +114,76 @@ const getDefaultMessage = (recipientName: string, clientName: string) =>
 const getDefaultEmailSubject = (clientName: string) =>
   `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
 
-const getDefaultEmailBody = (recipientName: string, clientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\n👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.\n\nJe reste bien entendu à votre disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
+const buildEventContextLine = (eventLocation: string, eventDateText: string, audienceSize: string) => {
+  if (!eventLocation && !eventDateText && !audienceSize) return "";
+  const parts: string[] = [];
+  if (eventDateText) parts.push(`du <strong>${eventDateText}</strong>`);
+  if (eventLocation) parts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
+  if (audienceSize) parts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
+  return `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${parts.join(", ")}.`;
+};
 
-const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string) =>
-  `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p><p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p><p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p><p><a href="https://www.lesconferenciers.com/conferencier/${speakerSlug}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></p><p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p><p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p><p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p><p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+const TEMPLATE_EMAIL_PHRASES: Record<string, string> = {
+  "Chefs d'orchestre": "une sélection de chefs d'orchestre et directeurs musicaux, conférenciers d'exception, soigneusement choisis",
+  "GIGN / RAID": "une sélection de conférenciers issus des unités d'élite (GIGN, RAID), soigneusement choisis",
+  "Patrouille de France": "une sélection de pilotes et anciens membres de la Patrouille de France, conférenciers d'exception, soigneusement choisis",
+};
+
+const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string, templateName?: string) => {
+  const selectionPhrase = templateName && TEMPLATE_EMAIL_PHRASES[templateName]
+    ? `${TEMPLATE_EMAIL_PHRASES[templateName]} pour ${clientName || "votre événement"}`
+    : `une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}`;
+
+  return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
+
+<p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
+
+${eventContext ? `<p>${eventContext}</p>
+
+` : ""}<p>Vous trouverez ci-dessous ${selectionPhrase}, sous réserve de leur disponibilité.</p>
+
+<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
+
+<p><strong>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</strong></p>
+
+<p>Je reste bien entendu à votre disposition pour tout complément d'information.</p>
+
+<p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+};
+
+const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string, eventDateText?: string, eventLocation?: string, audienceSize?: string) => {
+  const hasEventContext = eventDateText || eventLocation || audienceSize;
+  const contextParts: string[] = [];
+  if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+  if (eventLocation) contextParts.push(`à <strong>${eventLocation}</strong>`);
+  if (audienceSize) contextParts.push(`pour <strong>${audienceSize} personnes</strong>`);
+  
+  const introPhrase = hasEventContext
+    ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants ${contextParts.join(" ")} et vous adresse, comme convenu, le profil de ${speakerName}.`
+    : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}.`;
+
+  const alternativePhrase = hasEventContext
+    ? `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>`
+    : `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>`;
+
+  return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
+
+<p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p>
+
+<p>${introPhrase} Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p>
+
+<p><strong>👉 <a href="https://www.lesconferenciers.com/conferencier/${speakerSlug}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></strong> (sous réserve de sa disponibilité)</p>
+
+${alternativePhrase}
+
+<p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p>
+
+<p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+};
 
 const getInfoEmailBody = (recipientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n• Votre enveloppe budgétaire\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
@@ -298,7 +363,6 @@ const toEmailBodyHtml = (value: string) => {
   if (hasHtmlContent(value)) return value;
 
   return escapeEmailHtml(value)
-    .replace(/👉\s*Découvrir le profil de ([^:\n]+)\s*:\s*(https?:\/\/[^\s<]+)/g, '👉 <a href="$2" target="_blank" rel="noopener noreferrer">Découvrir le profil de $1</a>')
     .replace(/\n/g, "<br>");
 };
 
@@ -316,6 +380,10 @@ const getResolvedEmailBody = ({
   clientName,
   selectedSpeakers,
   speakers,
+  eventContext,
+  eventDateText,
+  eventLocation,
+  audienceSize,
 }: {
   type: ProposalType;
   body: string;
@@ -323,6 +391,10 @@ const getResolvedEmailBody = ({
   clientName: string;
   selectedSpeakers: ProposalSpeaker[];
   speakers: Speaker[];
+  eventContext?: string;
+  eventDateText?: string;
+  eventLocation?: string;
+  audienceSize?: string;
 }) => {
   if (body?.trim()) return body;
   if (type === "info") return getInfoEmailBody(recipientName);
@@ -335,10 +407,13 @@ const getResolvedEmailBody = ({
       speaker?.name || "",
       getProposalSpeakerTotal(proposalSpeaker).toLocaleString("fr-FR"),
       speaker?.slug || "",
+      eventDateText,
+      eventLocation,
+      audienceSize,
     );
   }
 
-  return getDefaultEmailBody(recipientName, clientName);
+  return getDefaultEmailBody(recipientName, clientName, eventContext);
 };
 
 const EmailPreviewCard = ({
@@ -407,6 +482,10 @@ const AdminProposalsContent = () => {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [recipientName, setRecipientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
+  const [eventDateText, setEventDateText] = useState("");
+  const [audienceSize, setAudienceSize] = useState("");
   const [message, setMessage] = useState(getDefaultMessage("", ""));
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
@@ -428,10 +507,61 @@ const AdminProposalsContent = () => {
   const [dateSortAsc, setDateSortAsc] = useState(false);
   const [showCreatePreview, setShowCreatePreview] = useState(false);
   const [showEditPreview, setShowEditPreview] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [clientSearchResults, setClientSearchResults] = useState<any[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientMode, setClientMode] = useState<"search" | "new">("search");
+  const [allClients, setAllClients] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences()]);
+    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
   }, []);
+
+  // Auto-update email body when event details change
+  useEffect(() => {
+    if (proposalType === "unique") {
+      const ps = selectedSpeakers[0];
+      if (!ps) return;
+      const speaker = speakers.find(s => s.id === ps.speaker_id);
+      if (!speaker) return;
+      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, getProposalSpeakerTotal(ps).toLocaleString("fr-FR"), speaker.slug || "", eventDateText, eventLocation, audienceSize));
+    } else if (proposalType === "classique") {
+      const evtCtx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+      const tpl = selectedTemplateId ? templates.find(t => t.id === selectedTemplateId) : null;
+      setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx, tpl?.name));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventDateText, eventLocation, audienceSize]);
+
+  // Check if client email already exists in proposals or clients CRM
+  useEffect(() => {
+    if (!clientEmail || clientEmail.length < 5 || !clientEmail.includes("@")) {
+      setEmailExistsWarning(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const warnings: string[] = [];
+      const existingProposals = proposals.filter(p => p.client_email?.toLowerCase() === clientEmail.toLowerCase());
+      if (existingProposals.length > 0) {
+        const latest = existingProposals[0];
+        const dateStr = new Date(latest.created_at).toLocaleDateString("fr-FR");
+        warnings.push(`${existingProposals.length} proposition(s) (dernière : ${dateStr}, statut : ${latest.status})`);
+      }
+      const existingClient = allClients.find(c => c.email?.toLowerCase() === clientEmail.toLowerCase());
+      if (existingClient) {
+        warnings.push(`client existant : ${existingClient.company_name}${existingClient.contact_name ? ` (${existingClient.contact_name})` : ""}`);
+      }
+      if (warnings.length > 0) {
+        setEmailExistsWarning(`⚠️ Email déjà connu — ${warnings.join(" • ")}`);
+      } else {
+        setEmailExistsWarning(null);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [clientEmail, proposals, allClients]);
 
   const fetchProposals = async () => {
     setLoading(true);
@@ -457,6 +587,34 @@ const AdminProposalsContent = () => {
   const fetchConferences = async () => {
     const { data } = await supabase.from("speaker_conferences").select("id, title, speaker_id").order("display_order");
     setConferences(data || []);
+  };
+
+  const fetchClients = async () => {
+    const { data } = await supabase.from("clients").select("id, company_name, contact_name, email, phone, status").order("company_name");
+    setAllClients(data || []);
+  };
+
+  const fetchTemplates = async () => {
+    const { data } = await supabase.from("proposal_templates").select("id, name, speaker_ids, is_preset").order("name");
+    setTemplates((data as any) || []);
+  };
+
+  const applyTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    const tpl = templates.find(t => t.id === templateId);
+    if (!tpl) return;
+    const newSpeakers: ProposalSpeaker[] = tpl.speaker_ids
+      .map((sid, idx) => {
+        const sp = speakers.find(s => s.id === sid);
+        if (!sp) return null;
+        return createProposalSpeaker(sp, idx);
+      })
+      .filter(Boolean) as ProposalSpeaker[];
+    setSelectedSpeakers(newSpeakers);
+    // Update email body with template-specific phrase
+    const evtCtx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+    setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx, tpl.name));
+    toast.success(`Template "${tpl.name}" appliqué (${newSpeakers.length} conférenciers)`);
   };
 
   const getPipelineStatus = (p: Proposal) => {
@@ -569,7 +727,7 @@ const AdminProposalsContent = () => {
     setSelectedSpeakers(nextSpeakers);
     if (proposalType === "unique") {
       const total = getProposalSpeakerTotal(nextSpeakers[0]);
-      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, total.toLocaleString("fr-FR"), speaker.slug || ""));
+      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, total.toLocaleString("fr-FR"), speaker.slug || "", eventDateText, eventLocation, audienceSize));
     }
   };
 
@@ -590,7 +748,7 @@ const AdminProposalsContent = () => {
       const next = updateSpeakerFieldInList(prev, speakerId, field, value);
       if (proposalType === "unique" && next[0]) {
         const speaker = speakers.find(s => s.id === next[0].speaker_id);
-        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(next[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(next[0]).toLocaleString("fr-FR"), speaker?.slug || "", eventDateText, eventLocation, audienceSize));
       }
       return next;
     });
@@ -611,22 +769,53 @@ const AdminProposalsContent = () => {
       toast.error("Sélectionnez un conférencier"); return;
     }
     setSubmitting(true);
-    const finalMessage = proposalType === "classique" ? (emailBody || getDefaultEmailBody(recipientName, clientName)) : "";
+
+    // Auto-create or link client
+    let clientId = selectedClientId;
+    if (!clientId) {
+      const { data: existingClients } = await supabase.from("clients").select("id, company_name").eq("email", clientEmail).limit(1);
+      if (existingClients && existingClients.length > 0) {
+        if (clientMode === "new") {
+          toast.error(`Ce client existe déjà en base : "${existingClients[0].company_name}". Utilisez la recherche pour le sélectionner.`);
+          setSubmitting(false);
+          return;
+        }
+        clientId = existingClients[0].id;
+      } else {
+        const { data: newClient } = await supabase.from("clients").insert({
+          company_name: clientName,
+          contact_name: recipientName || null,
+          email: clientEmail,
+          phone: clientPhone || null,
+          status: "prospect",
+        }).select("id").single();
+        if (newClient) clientId = newClient.id;
+      }
+    }
+
+    const eventContext = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+    const finalMessage = proposalType === "classique" ? (emailBody || getDefaultEmailBody(recipientName, clientName, eventContext)) : "";
     const finalSubject = emailSubject || getDefaultEmailSubject(clientName);
     let finalBody = emailBody;
     if (!finalBody) {
       if (proposalType === "unique" && selectedSpeakers.length > 0) {
         const sp = speakers.find(s => s.id === selectedSpeakers[0].speaker_id);
-        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "");
+        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "", eventDateText, eventLocation, audienceSize);
       } else if (proposalType === "info") {
         finalBody = getInfoEmailBody(recipientName);
       } else {
-        finalBody = getDefaultEmailBody(recipientName, clientName);
+        finalBody = getDefaultEmailBody(recipientName, clientName, eventContext);
       }
     }
     const { data: proposal, error } = await supabase
       .from("proposals")
-      .insert({ client_name: clientName, client_email: clientEmail, message: finalMessage, recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody, proposal_type: proposalType } as any)
+      .insert({
+        client_name: clientName, client_email: clientEmail, message: finalMessage,
+        recipient_name: recipientName || null, email_subject: finalSubject, email_body: finalBody,
+        proposal_type: proposalType, client_id: clientId,
+        event_location: eventLocation || null, event_date_text: eventDateText || null,
+        audience_size: audienceSize || null, client_phone: clientPhone || null,
+      } as any)
       .select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     if (selectedSpeakers.length > 0) {
@@ -649,13 +838,15 @@ const AdminProposalsContent = () => {
     } else {
       toast.success("Brouillon enregistré !");
     }
-    setDialogOpen(false); resetForm(); fetchProposals(); setSubmitting(false);
+    setDialogOpen(false); resetForm(); fetchProposals(); fetchClients(); setSubmitting(false);
   };
 
   const resetForm = () => {
     setClientName(""); setClientEmail(""); setRecipientName(""); setSelectedSpeakers([]);
     setEmailSubject(""); setEmailBody(""); setMessage(getDefaultMessage("", ""));
     setProposalType("classique"); setGlobalCommission(0);
+    setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
+    setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("search");
   };
 
   const openEditDialog = (p: Proposal) => {
@@ -673,7 +864,7 @@ const AdminProposalsContent = () => {
       setEditEmailSubject(p.email_subject || `Votre conférencier sur mesure - ${p.client_name}`);
       const uniqueSpeaker = proposalSpeakers[0];
       const speaker = speakers.find((item) => item.id === uniqueSpeaker?.speaker_id);
-      setEditEmailBody(p.email_body || getUniqueEmailBody(p.recipient_name || "", speaker?.name || "", getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR"), speaker?.slug || ""));
+      setEditEmailBody(p.email_body || getUniqueEmailBody(p.recipient_name || "", speaker?.name || "", getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR"), speaker?.slug || "", (p as any).event_date_text, (p as any).event_location, (p as any).audience_size));
     } else {
       setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
       setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
@@ -813,6 +1004,7 @@ const AdminProposalsContent = () => {
   const handleProposalTypeChange = (type: ProposalType) => {
     setProposalType(type);
     setSelectedSpeakers([]);
+    setSelectedTemplateId(null);
     if (type === "info") {
       setEmailBody(getInfoEmailBody(recipientName));
       setMessage("");
@@ -838,11 +1030,30 @@ const AdminProposalsContent = () => {
       });
       if (proposalType === "unique" && updated[0]) {
         const speaker = speakers.find(sp => sp.id === updated[0].speaker_id);
-        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(updated[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(updated[0]).toLocaleString("fr-FR"), speaker?.slug || "", eventDateText, eventLocation, audienceSize));
       }
       return updated;
     });
   };
+
+  const selectExistingClient = (client: any) => {
+    setSelectedClientId(client.id);
+    setClientName(client.company_name);
+    setClientEmail(client.email || "");
+    setRecipientName(client.contact_name || "");
+    setClientPhone(client.phone || "");
+    setClientMode("search");
+  };
+
+  const filteredClients = clientSearchQuery.trim()
+    ? allClients.filter(c =>
+        c.company_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+        c.contact_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+        c.email?.toLowerCase().includes(clientSearchQuery.toLowerCase())
+      )
+    : [];
+
+  const eventContext = buildEventContextLine(eventLocation, eventDateText, audienceSize);
 
   const renderSpeakerForm = () => (
     <div className="space-y-6 mt-4">
@@ -866,16 +1077,112 @@ const AdminProposalsContent = () => {
             </button>
           ))}
         </div>
+
+        {/* Template selector for classique */}
+        {proposalType === "classique" && templates.length > 0 && (
+          <div className="mt-3">
+            <Label className="text-xs text-muted-foreground mb-1 block">📁 Appliquer un template</Label>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={selectedTemplateId || ""}
+              onChange={e => {
+                if (e.target.value) applyTemplate(e.target.value);
+                else { setSelectedTemplateId(null); }
+              }}
+            >
+              <option value="">— Sélection libre —</option>
+              {templates.map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({t.speaker_ids.length} conférenciers)</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" /></div>
-        <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" /></div>
+      {/* Client search/create section */}
+      <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
+        <Label className="text-sm font-medium">👤 Client</Label>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => { setClientMode("search"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "search" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+            Rechercher un client existant
+          </button>
+          <button type="button" onClick={() => { setClientMode("new"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "new" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+            Nouveau client
+          </button>
+        </div>
+
+        {clientMode === "search" && !selectedClientId && (
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input value={clientSearchQuery} onChange={e => setClientSearchQuery(e.target.value)} placeholder="Rechercher par nom, contact ou email…" className="pl-8 text-sm" />
+            </div>
+            {clientSearchQuery.trim() && (
+              <div className="max-h-40 overflow-y-auto border border-input rounded-md">
+                {filteredClients.map(c => (
+                  <button key={c.id} type="button" onClick={() => selectExistingClient(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between border-b border-border last:border-0">
+                    <div>
+                      <span className="font-medium">{c.company_name}</span>
+                      {c.contact_name && <span className="text-muted-foreground ml-2">({c.contact_name})</span>}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{c.email}</span>
+                  </button>
+                ))}
+                {filteredClients.length === 0 && <div className="px-3 py-3 text-sm text-muted-foreground text-center">Aucun résultat — <button type="button" onClick={() => setClientMode("new")} className="text-primary underline">créer un nouveau client</button></div>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {selectedClientId && clientMode === "search" && (
+          <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-md px-3 py-2">
+            <Check className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">{clientName}</span>
+            <span className="text-xs text-muted-foreground">{clientEmail}</span>
+            <button type="button" onClick={() => { setSelectedClientId(null); setClientName(""); setClientEmail(""); setRecipientName(""); setClientPhone(""); }} className="ml-auto text-xs text-muted-foreground hover:text-foreground">Changer</button>
+          </div>
+        )}
+
+        {(clientMode === "new" || selectedClientId) && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" disabled={!!selectedClientId} /></div>
+              <div className="space-y-1"><Label className="text-xs">Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" disabled={!!selectedClientId} /></div>
+            </div>
+            {emailExistsWarning && (
+              <div className="bg-amber-50 border border-amber-300 rounded-md px-3 py-1.5 text-xs text-amber-800">
+                {emailExistsWarning}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Prénom Nom du destinataire</Label><Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" /></div>
+              <div className="space-y-1"><Label className="text-xs">Téléphone client</Label><Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="06 12 34 56 78" /></div>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="space-y-2">
-        <Label>Prénom Nom du destinataire (optionnel)</Label>
-        <Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" />
-      </div>
+
+      {/* Event details - hidden for info type */}
+      {proposalType !== "info" && <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
+        <Label className="text-sm font-medium">📍 Détails de l'événement (optionnel)</Label>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1"><Label className="text-xs">Date de l'événement</Label><Input value={eventDateText} onChange={e => setEventDateText(e.target.value)} placeholder="15 mars 2026" /></div>
+          <div className="space-y-1"><Label className="text-xs">Lieu d'intervention</Label><Input value={eventLocation} onChange={e => setEventLocation(e.target.value)} placeholder="Paris" /></div>
+          <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input value={audienceSize} onChange={e => setAudienceSize(e.target.value)} placeholder="200" /></div>
+        </div>
+        {(eventDateText || eventLocation || audienceSize) && (() => {
+          const contextParts: string[] = [];
+          if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+          if (eventLocation) contextParts.push(`à <strong>${eventLocation}</strong>`);
+          if (audienceSize) contextParts.push(`pour <strong>${audienceSize} personnes</strong>`);
+          const previewText = proposalType === "unique"
+            ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants ${contextParts.join(" ")}...`
+            : `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${contextParts.join(", ")}.`;
+          return (
+            <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic" dangerouslySetInnerHTML={{ __html: previewText }} />
+          );
+        })()}
+      </div>}
 
       {/* Speakers section - not for "info" type - BEFORE email */}
       {proposalType !== "info" && (
@@ -1012,7 +1319,7 @@ const AdminProposalsContent = () => {
       <div className="space-y-2">
         <Label>✉️ Email d'envoi - Corps</Label>
         <SimpleRichTextEditor
-          value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers })}
+          value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers, eventContext })}
           onChange={setEmailBody}
           placeholder="Corps de l'email..."
           rows={8}
@@ -1027,7 +1334,7 @@ const AdminProposalsContent = () => {
           <EmailPreviewCard
             to={clientEmail}
             subject={getResolvedEmailSubject(proposalType, emailSubject, clientName)}
-            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers })}
+            body={getResolvedEmailBody({ type: proposalType, body: emailBody, recipientName, clientName, selectedSpeakers, speakers, eventContext, eventDateText, eventLocation, audienceSize })}
             showProposalButton={proposalType === "classique"}
           />
         )}
@@ -1405,7 +1712,7 @@ const AdminProposalsContent = () => {
                          {showEditPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                          {showEditPreview ? "Masquer l'aperçu" : "Aperçu réel de l'email envoyé"}
                        </Button>
-                       {showEditPreview && <EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers })} showProposalButton={editType === "classique"} />}
+                       {showEditPreview && <EmailPreviewCard to={editClientEmail} subject={getResolvedEmailSubject(editType, editEmailSubject, editClientName)} body={getResolvedEmailBody({ type: editType, body: editEmailBody, recipientName: editRecipientName, clientName: editClientName, selectedSpeakers: editSelectedSpeakers, speakers, eventDateText: (editingProposal as any)?.event_date_text, eventLocation: (editingProposal as any)?.event_location, audienceSize: (editingProposal as any)?.audience_size })} showProposalButton={editType === "classique"} />}
                      </div>
                   </div>
                 </div>
