@@ -811,7 +811,7 @@ const AdminProposalsContent = () => {
       setEditEmailSubject(p.email_subject || `Votre conférencier sur mesure - ${p.client_name}`);
       const uniqueSpeaker = proposalSpeakers[0];
       const speaker = speakers.find((item) => item.id === uniqueSpeaker?.speaker_id);
-      setEditEmailBody(p.email_body || getUniqueEmailBody(p.recipient_name || "", speaker?.name || "", getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR"), speaker?.slug || ""));
+      setEditEmailBody(p.email_body || getUniqueEmailBody(p.recipient_name || "", speaker?.name || "", getProposalSpeakerTotal(uniqueSpeaker).toLocaleString("fr-FR"), speaker?.slug || "", (p as any).event_date_text, (p as any).event_location, (p as any).audience_size));
     } else {
       setEditMessage(p.message || getDefaultMessage(p.recipient_name || "", p.client_name));
       setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
