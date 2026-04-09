@@ -10,7 +10,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Pencil, Trash2, Building2, Mail, Phone } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Building2, Mail, Phone, ExternalLink, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 type Client = {
@@ -27,16 +27,27 @@ type Client = {
   created_at: string;
 };
 
-type ProposalSummary = {
+type ProposalDetail = {
   id: string;
+  token: string;
   client_name: string;
+  client_email: string;
+  client_id: string | null;
+  proposal_type: string;
   status: string;
   created_at: string;
+  sent_at: string | null;
+  accepted_at: string | null;
+  event_date_text: string | null;
+  event_location: string | null;
+  audience_size: string | null;
+  proposal_speakers: { speakers: { name: string } | null }[];
+  contracts: { id: string; status: string; signed_at: string | null }[];
 };
 
 const AdminClients = () => {
   const [clients, setClients] = useState<Client[]>([]);
-  const [proposals, setProposals] = useState<ProposalSummary[]>([]);
+  const [proposals, setProposals] = useState<ProposalDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "prospect" | "client">("all");
@@ -73,7 +84,7 @@ const AdminClients = () => {
   const fetchProposals = async () => {
     const { data } = await supabase
       .from("proposals")
-      .select("id, client_name, client_email, status, created_at")
+      .select("id, token, client_name, client_email, client_id, proposal_type, status, created_at, sent_at, accepted_at, event_date_text, event_location, audience_size, proposal_speakers(speakers(name)), contracts(id, status, signed_at)")
       .order("created_at", { ascending: false });
     setProposals((data as any) || []);
   };
@@ -84,10 +95,7 @@ const AdminClients = () => {
     setEditing(null);
   };
 
-  const openCreate = () => {
-    resetForm();
-    setDialogOpen(true);
-  };
+  const openCreate = () => { resetForm(); setDialogOpen(true); };
 
   const openEdit = (c: Client) => {
     setEditing(c);
@@ -99,7 +107,7 @@ const AdminClients = () => {
     setCity(c.city || "");
     setSiret(c.siret || "");
     setNotes(c.notes || "");
-    setFormStatus((c as any).status || "prospect");
+    setFormStatus(c.status || "prospect");
     setDialogOpen(true);
   };
 
@@ -137,10 +145,10 @@ const AdminClients = () => {
     fetchClients();
   };
 
-  const getClientProposals = (client: Client) => {
+  const getClientProposals = (client: Client): ProposalDetail[] => {
     return proposals.filter(p =>
-      p.client_name?.toLowerCase().includes(client.company_name.toLowerCase()) ||
-      (client.email && (p as any).client_email?.toLowerCase() === client.email.toLowerCase())
+      p.client_id === client.id ||
+      (client.email && p.client_email?.toLowerCase() === client.email.toLowerCase())
     );
   };
 
@@ -151,27 +159,34 @@ const AdminClients = () => {
       c.contact_name?.toLowerCase().includes(q) ||
       c.email?.toLowerCase().includes(q) ||
       c.phone?.includes(q);
-    const matchesStatus = statusFilter === "all" || (c as any).status === statusFilter;
+    const matchesStatus = statusFilter === "all" || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
 
-  const statusLabel = (s: string) => {
-    const map: Record<string, { label: string; cls: string }> = {
-      draft: { label: "Brouillon", cls: "bg-muted text-muted-foreground" },
-      sent: { label: "Envoyée", cls: "bg-amber-100 text-amber-700" },
-      accepted: { label: "Acceptée", cls: "bg-green-100 text-green-700" },
-      archived: { label: "Archivée", cls: "bg-muted text-muted-foreground" },
-    };
-    return map[s] || { label: s, cls: "bg-muted text-muted-foreground" };
+  const proposalTypeLabel = (t: string) => {
+    const map: Record<string, string> = { classique: "📋 Classique", unique: "🎤 Unique", info: "📝 Infos" };
+    return map[t] || t;
+  };
+
+  const getLifecycleStage = (p: ProposalDetail): { label: string; cls: string; icon: string } => {
+    const contract = p.contracts?.[0];
+    if (contract?.signed_at) return { label: "Contrat signé", cls: "bg-emerald-100 text-emerald-800", icon: "✅" };
+    if (contract) return { label: "Contrat envoyé", cls: "bg-teal-100 text-teal-700", icon: "📝" };
+    if (p.accepted_at) return { label: "Acceptée", cls: "bg-green-100 text-green-700", icon: "🤝" };
+    if (p.status === "sent") return { label: "Envoyée", cls: "bg-amber-100 text-amber-700", icon: "📤" };
+    if (p.status === "archived") return { label: "Archivée", cls: "bg-muted text-muted-foreground", icon: "📁" };
+    return { label: "Brouillon", cls: "bg-muted text-muted-foreground", icon: "✏️" };
   };
 
   const clientStatusBadge = (status: string) => {
     if (status === "client") return <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Client</span>;
     return <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">Prospect</span>;
   };
+
+  const siteOrigin = "https://www.lesconferenciers.com";
 
   return (
     <div>
@@ -205,11 +220,13 @@ const AdminClients = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-8"></TableHead>
               <TableHead>Société</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Téléphone</TableHead>
               <TableHead>Ville</TableHead>
+              <TableHead>Propositions</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -217,56 +234,147 @@ const AdminClients = () => {
           <TableBody>
             {filtered.map(c => {
               const clientProposals = getClientProposals(c);
+              const isExpanded = expandedId === c.id;
               return (
-                <TableRow
-                  key={c.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div>
-                        <div className="font-medium text-sm">{c.company_name}</div>
-                        {c.siret && <div className="text-[10px] text-muted-foreground">SIRET: {c.siret}</div>}
+                <>
+                  <TableRow
+                    key={c.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setExpandedId(isExpanded ? null : c.id)}
+                  >
+                    <TableCell className="w-8 px-2">
+                      {clientProposals.length > 0 ? (
+                        isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div>
+                          <div className="font-medium text-sm">{c.company_name}</div>
+                          {c.siret && <div className="text-[10px] text-muted-foreground">SIRET: {c.siret}</div>}
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{c.contact_name || "—"}</TableCell>
-                  <TableCell>
-                    {c.email ? (
-                      <div className="flex items-center gap-1 text-sm">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        {c.email}
+                    </TableCell>
+                    <TableCell className="text-sm">{c.contact_name || "—"}</TableCell>
+                    <TableCell>
+                      {c.email ? (
+                        <div className="flex items-center gap-1 text-sm">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          {c.email}
+                        </div>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {c.phone ? (
+                        <div className="flex items-center gap-1 text-sm">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          {c.phone}
+                        </div>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm">{c.city || "—"}</TableCell>
+                    <TableCell>
+                      {clientProposals.length > 0 ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">{clientProposals.length}</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{clientStatusBadge(c.status || "prospect")}</TableCell>
+                    <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
                       </div>
-                    ) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {c.phone ? (
-                      <div className="flex items-center gap-1 text-sm">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        {c.phone}
-                      </div>
-                    ) : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">{c.city || "—"}</TableCell>
-                  <TableCell>{clientStatusBadge((c as any).status || "prospect")}</TableCell>
-                  <TableCell className="text-right" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)}>
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Expanded proposals history */}
+                  {isExpanded && (
+                    <TableRow key={`${c.id}-history`}>
+                      <TableCell colSpan={9} className="bg-muted/30 p-0">
+                        <div className="px-6 py-4">
+                          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            Historique des propositions — {c.company_name}
+                          </h4>
+                          {c.notes && (
+                            <p className="text-xs text-muted-foreground mb-3 italic border-l-2 border-primary/30 pl-3">{c.notes}</p>
+                          )}
+                          {clientProposals.length > 0 ? (
+                            <div className="space-y-2">
+                              {clientProposals.map(p => {
+                                const stage = getLifecycleStage(p);
+                                const speakerNames = (p.proposal_speakers || [])
+                                  .map((ps: any) => ps.speakers?.name)
+                                  .filter(Boolean);
+                                const proposalLink = `${siteOrigin}/proposition/${p.token}`;
+                                return (
+                                  <div key={p.id} className="flex items-center gap-3 bg-background rounded-lg px-4 py-3 border border-border/50">
+                                    <div className="text-sm font-medium text-muted-foreground w-24 shrink-0">
+                                      {formatDate(p.created_at)}
+                                    </div>
+                                    <div className="text-xs shrink-0">
+                                      {proposalTypeLabel(p.proposal_type)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      {speakerNames.length > 0 ? (
+                                        <span className="text-sm truncate block">
+                                          {speakerNames.slice(0, 3).join(", ")}
+                                          {speakerNames.length > 3 && <span className="text-muted-foreground"> +{speakerNames.length - 3}</span>}
+                                        </span>
+                                      ) : (
+                                        <span className="text-sm text-muted-foreground italic">Demande d'infos</span>
+                                      )}
+                                      {(p.event_date_text || p.event_location) && (
+                                        <span className="text-[11px] text-muted-foreground block">
+                                          {[p.event_date_text, p.event_location].filter(Boolean).join(" · ")}
+                                          {p.audience_size && ` · ${p.audience_size} pers.`}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium shrink-0 ${stage.cls}`}>
+                                      {stage.icon} {stage.label}
+                                    </span>
+                                    {p.sent_at && (
+                                      <span className="text-[10px] text-muted-foreground shrink-0">
+                                        Envoyée le {formatDate(p.sent_at)}
+                                      </span>
+                                    )}
+                                    {p.proposal_type !== "info" && (
+                                      <a
+                                        href={proposalLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="shrink-0 text-primary hover:text-primary/80"
+                                        onClick={e => e.stopPropagation()}
+                                        title="Voir la proposition"
+                                      >
+                                        <ExternalLink className="h-4 w-4" />
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Aucune proposition envoyée à ce client.</p>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
               );
             })}
             {filtered.length === 0 && !loading && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-12">
                   {search ? "Aucun client trouvé" : "Aucun client. Créez votre premier contact !"}
                 </TableCell>
               </TableRow>
@@ -274,38 +382,6 @@ const AdminClients = () => {
           </TableBody>
         </Table>
       </div>
-
-      {/* Client detail expanded (proposals history) */}
-      {expandedId && (() => {
-        const c = clients.find(cl => cl.id === expandedId);
-        if (!c) return null;
-        const clientProposals = getClientProposals(c);
-        return (
-          <div className="mt-4 border border-border rounded-xl p-4 bg-muted/20">
-            <h3 className="font-semibold text-sm mb-3">
-              Historique — {c.company_name}
-            </h3>
-            {c.notes && (
-              <p className="text-sm text-muted-foreground mb-3 italic">{c.notes}</p>
-            )}
-            {clientProposals.length > 0 ? (
-              <div className="space-y-2">
-                {clientProposals.map(p => {
-                  const s = statusLabel(p.status);
-                  return (
-                    <div key={p.id} className="flex items-center justify-between bg-background rounded-lg px-3 py-2 border border-border/50">
-                      <div className="text-sm">{formatDate(p.created_at)}</div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">Aucune proposition trouvée pour ce client.</p>
-            )}
-          </div>
-        );
-      })()}
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
