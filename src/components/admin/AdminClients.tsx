@@ -5,12 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Pencil, Trash2, Building2, Mail, Phone, ExternalLink, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Building2, Mail, Phone, ExternalLink, FileText, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 type Client = {
@@ -54,6 +54,8 @@ const AdminClients = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form
   const [companyName, setCompanyName] = useState("");
@@ -138,11 +140,31 @@ const AdminClients = () => {
     fetchClients();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer ce client ?")) return;
-    await supabase.from("clients").delete().eq("id", id);
-    toast.success("Client supprimé");
-    fetchClients();
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      // Find linked proposals
+      const linkedProposals = getClientProposals(deleteTarget);
+      
+      // Detach client_id from all linked proposals
+      if (linkedProposals.length > 0) {
+        const proposalIds = linkedProposals.map(p => p.id);
+        await supabase.from("proposals").update({ client_id: null }).in("id", proposalIds);
+      }
+      
+      // Delete the client
+      const { error } = await supabase.from("clients").delete().eq("id", deleteTarget.id);
+      if (error) { toast.error("Erreur lors de la suppression"); return; }
+      toast.success("Client supprimé");
+      setDeleteTarget(null);
+      fetchClients();
+      fetchProposals();
+    } catch {
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getClientProposals = (client: Client): ProposalDetail[] => {
@@ -287,7 +309,7 @@ const AdminClients = () => {
                         <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)}>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(c)}>
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                       </div>
@@ -445,6 +467,52 @@ const AdminClients = () => {
               {editing ? "Enregistrer" : "Créer le client"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Supprimer ce client ?
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                <p className="text-sm">
+                  Vous êtes sur le point de supprimer <strong>{deleteTarget?.company_name}</strong>.
+                </p>
+                {deleteTarget && getClientProposals(deleteTarget).length > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                    <p className="font-medium mb-1">⚠️ Ce client est rattaché à {getClientProposals(deleteTarget).length} proposition(s)</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-xs">
+                      {getClientProposals(deleteTarget).slice(0, 5).map(p => {
+                        const stage = getLifecycleStage(p);
+                        return (
+                          <li key={p.id}>
+                            {proposalTypeLabel(p.proposal_type)} — {stage.icon} {stage.label} — {formatDate(p.created_at)}
+                          </li>
+                        );
+                      })}
+                      {getClientProposals(deleteTarget).length > 5 && (
+                        <li className="text-muted-foreground">… et {getClientProposals(deleteTarget).length - 5} autre(s)</li>
+                      )}
+                    </ul>
+                    <p className="mt-2 text-xs">Les propositions ne seront pas supprimées mais ne seront plus rattachées à ce client.</p>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Toutes les données du client (coordonnées, notes, SIRET…) seront définitivement supprimées. Cette action est irréversible.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Annuler</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Suppression…" : "Supprimer définitivement"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
