@@ -117,9 +117,9 @@ const getDefaultEmailSubject = (clientName: string) =>
 const buildEventContextLine = (eventLocation: string, eventDateText: string, audienceSize: string) => {
   if (!eventLocation && !eventDateText && !audienceSize) return "";
   const parts: string[] = [];
-  if (eventDateText) parts.push(`du ${eventDateText}`);
-  if (eventLocation) parts.push(`qui se tiendra à ${eventLocation}`);
-  if (audienceSize) parts.push(`devant un auditoire d'environ ${audienceSize} personnes`);
+  if (eventDateText) parts.push(`du <strong>${eventDateText}</strong>`);
+  if (eventLocation) parts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
+  if (audienceSize) parts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
   return `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${parts.join(", ")}.`;
 };
 
@@ -134,7 +134,7 @@ ${eventContext ? `<p>${eventContext}</p>
 
 <p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
-<p>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</p>
+<p><strong>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</strong></p>
 
 <p>Je reste bien entendu à votre disposition pour tout complément d'information.</p>
 
@@ -669,8 +669,13 @@ const AdminProposalsContent = () => {
     // Auto-create or link client
     let clientId = selectedClientId;
     if (!clientId) {
-      const { data: existingClients } = await supabase.from("clients").select("id").eq("email", clientEmail).limit(1);
+      const { data: existingClients } = await supabase.from("clients").select("id, company_name").eq("email", clientEmail).limit(1);
       if (existingClients && existingClients.length > 0) {
+        if (clientMode === "new") {
+          toast.error(`Ce client existe déjà en base : "${existingClients[0].company_name}". Utilisez la recherche pour le sélectionner.`);
+          setSubmitting(false);
+          return;
+        }
         clientId = existingClients[0].id;
       } else {
         const { data: newClient } = await supabase.from("clients").insert({
