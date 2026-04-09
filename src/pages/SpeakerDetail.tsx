@@ -21,6 +21,13 @@ import SpeakerReviews from "@/components/SpeakerReviews";
 
 const DEFAULT_IMAGE = null;
 
+// Strip inline styles and unwanted span wrappers from HTML to ensure consistent typography
+const sanitizeConferenceHtml = (html: string): string => {
+  return html
+    .replace(/\s*style="[^"]*"/gi, '')
+    .replace(/<span>(.*?)<\/span>/gi, '$1');
+};
+
 // Gender helpers
 const isFemale = (speaker: any) => speaker.gender === "female";
 const pronoun = (speaker: any) => isFemale(speaker) ? "elle" : "il";
