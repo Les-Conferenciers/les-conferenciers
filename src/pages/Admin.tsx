@@ -669,8 +669,13 @@ const AdminProposalsContent = () => {
     // Auto-create or link client
     let clientId = selectedClientId;
     if (!clientId) {
-      const { data: existingClients } = await supabase.from("clients").select("id").eq("email", clientEmail).limit(1);
+      const { data: existingClients } = await supabase.from("clients").select("id, company_name").eq("email", clientEmail).limit(1);
       if (existingClients && existingClients.length > 0) {
+        if (clientMode === "new") {
+          toast.error(`Ce client existe déjà en base : "${existingClients[0].company_name}". Utilisez la recherche pour le sélectionner.`);
+          setSubmitting(false);
+          return;
+        }
         clientId = existingClients[0].id;
       } else {
         const { data: newClient } = await supabase.from("clients").insert({
