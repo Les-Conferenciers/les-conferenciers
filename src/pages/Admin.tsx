@@ -114,11 +114,50 @@ const getDefaultMessage = (recipientName: string, clientName: string) =>
 const getDefaultEmailSubject = (clientName: string) =>
   `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
 
-const getDefaultEmailBody = (recipientName: string, clientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\n👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.\n\nJe reste bien entendu à votre disposition pour tout complément d'information.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
+const buildEventContextLine = (eventLocation: string, eventDateText: string, audienceSize: string) => {
+  if (!eventLocation && !eventDateText && !audienceSize) return "";
+  const parts: string[] = [];
+  if (eventDateText) parts.push(`du ${eventDateText}`);
+  if (eventLocation) parts.push(`qui se tiendra à ${eventLocation}`);
+  if (audienceSize) parts.push(`devant un auditoire d'environ ${audienceSize} personnes`);
+  return `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${parts.join(", ")}.`;
+};
+
+const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string) =>
+  `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
+
+<p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
+
+${eventContext ? `<p>${eventContext}</p>
+
+` : ""}<p>Vous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}, sous réserve de leur disponibilité.</p>
+
+<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
+
+<p>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</p>
+
+<p>Je reste bien entendu à votre disposition pour tout complément d'information.</p>
+
+<p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 
 const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string) =>
-  `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p><p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p><p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p><p><a href="https://www.lesconferenciers.com/conferencier/${speakerSlug}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></p><p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p><p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p><p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p><p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+  `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
+
+<p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p>
+
+<p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}. Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p>
+
+<p><strong>👉 <a href="https://www.lesconferenciers.com/conferencier/${speakerSlug}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></strong> (sous réserve de sa disponibilité)</p>
+
+<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>
+
+<p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p>
+
+<p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 
 const getInfoEmailBody = (recipientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n• Votre enveloppe budgétaire\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
