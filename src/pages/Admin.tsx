@@ -1141,6 +1141,11 @@ const AdminProposalsContent = () => {
               <div className="space-y-1"><Label className="text-xs">Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" disabled={!!selectedClientId} /></div>
               <div className="space-y-1"><Label className="text-xs">Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" disabled={!!selectedClientId} /></div>
             </div>
+            {emailExistsWarning && (
+              <div className="bg-amber-50 border border-amber-300 rounded-md px-3 py-1.5 text-xs text-amber-800">
+                {emailExistsWarning}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label className="text-xs">Prénom Nom du destinataire</Label><Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Pascal DUPONT" /></div>
               <div className="space-y-1"><Label className="text-xs">Téléphone client</Label><Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="06 12 34 56 78" /></div>
