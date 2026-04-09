@@ -309,7 +309,7 @@ const AdminClients = () => {
                         <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)}>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(c)}>
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                       </div>
