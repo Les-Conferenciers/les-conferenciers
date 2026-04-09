@@ -140,11 +140,31 @@ const AdminClients = () => {
     fetchClients();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer ce client ?")) return;
-    await supabase.from("clients").delete().eq("id", id);
-    toast.success("Client supprimé");
-    fetchClients();
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      // Find linked proposals
+      const linkedProposals = getClientProposals(deleteTarget);
+      
+      // Detach client_id from all linked proposals
+      if (linkedProposals.length > 0) {
+        const proposalIds = linkedProposals.map(p => p.id);
+        await supabase.from("proposals").update({ client_id: null }).in("id", proposalIds);
+      }
+      
+      // Delete the client
+      const { error } = await supabase.from("clients").delete().eq("id", deleteTarget.id);
+      if (error) { toast.error("Erreur lors de la suppression"); return; }
+      toast.success("Client supprimé");
+      setDeleteTarget(null);
+      fetchClients();
+      fetchProposals();
+    } catch {
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getClientProposals = (client: Client): ProposalDetail[] => {
