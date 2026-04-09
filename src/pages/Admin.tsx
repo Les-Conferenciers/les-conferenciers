@@ -477,9 +477,11 @@ const AdminProposalsContent = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [clientMode, setClientMode] = useState<"search" | "new">("search");
   const [allClients, setAllClients] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients()]);
+    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
   }, []);
 
   const fetchProposals = async () => {
@@ -511,6 +513,26 @@ const AdminProposalsContent = () => {
   const fetchClients = async () => {
     const { data } = await supabase.from("clients").select("id, company_name, contact_name, email, phone, status").order("company_name");
     setAllClients(data || []);
+  };
+
+  const fetchTemplates = async () => {
+    const { data } = await supabase.from("proposal_templates").select("id, name, speaker_ids, is_preset").order("name");
+    setTemplates((data as any) || []);
+  };
+
+  const applyTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    const tpl = templates.find(t => t.id === templateId);
+    if (!tpl) return;
+    const newSpeakers: ProposalSpeaker[] = tpl.speaker_ids
+      .map((sid, idx) => {
+        const sp = speakers.find(s => s.id === sid);
+        if (!sp) return null;
+        return createProposalSpeaker(sp, idx);
+      })
+      .filter(Boolean) as ProposalSpeaker[];
+    setSelectedSpeakers(newSpeakers);
+    toast.success(`Template "${tpl.name}" appliqué (${newSpeakers.length} conférenciers)`);
   };
 
   const getPipelineStatus = (p: Proposal) => {
@@ -900,6 +922,7 @@ const AdminProposalsContent = () => {
   const handleProposalTypeChange = (type: ProposalType) => {
     setProposalType(type);
     setSelectedSpeakers([]);
+    setSelectedTemplateId(null);
     if (type === "info") {
       setEmailBody(getInfoEmailBody(recipientName));
       setMessage("");
@@ -972,6 +995,26 @@ const AdminProposalsContent = () => {
             </button>
           ))}
         </div>
+
+        {/* Template selector for classique */}
+        {proposalType === "classique" && templates.length > 0 && (
+          <div className="mt-3">
+            <Label className="text-xs text-muted-foreground mb-1 block">📁 Appliquer un template</Label>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={selectedTemplateId || ""}
+              onChange={e => {
+                if (e.target.value) applyTemplate(e.target.value);
+                else { setSelectedTemplateId(null); }
+              }}
+            >
+              <option value="">— Sélection libre —</option>
+              {templates.map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({t.speaker_ids.length} conférenciers)</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Client search/create section */}
