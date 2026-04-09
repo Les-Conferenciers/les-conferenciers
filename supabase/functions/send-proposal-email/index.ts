@@ -98,7 +98,21 @@ Deno.serve(async (req) => {
 <p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
 
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
-    const defaultUniqueBody = `<p>Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},</p><p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p><p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${uniqueSpeakerName}. Le tarif de son intervention est de ${uniqueSpeakerTotal} € HT, hors frais VHR.</p>${uniqueProfileUrl ? `<p><a href="${uniqueProfileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${uniqueSpeakerName}</a></p>` : ""}<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p><p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p><p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p><p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+    const defaultUniqueBody = `<p>Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},</p>
+
+<p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p>
+
+<p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${uniqueSpeakerName}. Le tarif de son intervention est de ${uniqueSpeakerTotal} € HT, hors frais VHR.</p>
+
+${uniqueProfileUrl ? `<p><strong>👉 <a href="${uniqueProfileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${uniqueSpeakerName}</a></strong> (sous réserve de sa disponibilité)</p>` : ""}
+
+<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>
+
+<p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p>
+
+<p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
     const defaultInfoBody = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
 
 Merci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.
