@@ -535,7 +535,7 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
         .from("speaker-photos")
         .getPublicUrl(fileName);
 
-      const imgTag = `<figure style="text-align:center;margin:16px 0"><img src="${urlData.publicUrl}" alt="Image" style="max-width:100%;width:100%;border-radius:8px;cursor:pointer;" /></figure>`;
+      const imgTag = `<figure style="text-align:center;margin:16px 0"><img src="${urlData.publicUrl}" alt="Image" style="max-width:100%;width:300px;border-radius:8px;cursor:pointer;" /></figure>`;
       
       if (editorRef.current) {
         editorRef.current.focus();
