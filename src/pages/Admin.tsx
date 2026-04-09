@@ -536,24 +536,32 @@ const AdminProposalsContent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventDateText, eventLocation, audienceSize]);
 
-  // Check if client email already exists in proposals
+  // Check if client email already exists in proposals or clients CRM
   useEffect(() => {
     if (!clientEmail || clientEmail.length < 5 || !clientEmail.includes("@")) {
       setEmailExistsWarning(null);
       return;
     }
     const timer = setTimeout(() => {
-      const existing = proposals.filter(p => p.client_email?.toLowerCase() === clientEmail.toLowerCase());
-      if (existing.length > 0) {
-        const latest = existing[0];
+      const warnings: string[] = [];
+      const existingProposals = proposals.filter(p => p.client_email?.toLowerCase() === clientEmail.toLowerCase());
+      if (existingProposals.length > 0) {
+        const latest = existingProposals[0];
         const dateStr = new Date(latest.created_at).toLocaleDateString("fr-FR");
-        setEmailExistsWarning(`⚠️ ${existing.length} proposition(s) existante(s) pour cet email (dernière : ${dateStr}, statut : ${latest.status})`);
+        warnings.push(`${existingProposals.length} proposition(s) (dernière : ${dateStr}, statut : ${latest.status})`);
+      }
+      const existingClient = allClients.find(c => c.email?.toLowerCase() === clientEmail.toLowerCase());
+      if (existingClient) {
+        warnings.push(`client existant : ${existingClient.company_name}${existingClient.contact_name ? ` (${existingClient.contact_name})` : ""}`);
+      }
+      if (warnings.length > 0) {
+        setEmailExistsWarning(`⚠️ Email déjà connu — ${warnings.join(" • ")}`);
       } else {
         setEmailExistsWarning(null);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [clientEmail, proposals]);
+  }, [clientEmail, proposals, allClients]);
 
   const fetchProposals = async () => {
     setLoading(true);
