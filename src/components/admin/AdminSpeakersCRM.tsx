@@ -187,7 +187,7 @@ const AdminSpeakersCRM = () => {
   }, [editSpeaker?.id]);
 
   const allThemes = useMemo(() => {
-    const themeSet = new Set<string>();
+    const themeSet = new Set<string>(CANONICAL_THEMES);
     speakers.forEach(s => parseThemes(s.themes).forEach(t => themeSet.add(t)));
     return Array.from(themeSet).sort();
   }, [speakers]);
