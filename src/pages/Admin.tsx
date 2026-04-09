@@ -1129,8 +1129,8 @@ const AdminProposalsContent = () => {
         )}
       </div>
 
-      {/* Event details */}
-      <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
+      {/* Event details - hidden for info type */}
+      {proposalType !== "info" && <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
         <Label className="text-sm font-medium">📍 Détails de l'événement (optionnel)</Label>
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1"><Label className="text-xs">Date de l'événement</Label><Input value={eventDateText} onChange={e => setEventDateText(e.target.value)} placeholder="15 mars 2026" /></div>
@@ -1149,7 +1149,7 @@ const AdminProposalsContent = () => {
             <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic" dangerouslySetInnerHTML={{ __html: previewText }} />
           );
         })()}
-      </div>
+      </div>}
 
       {/* Speakers section - not for "info" type - BEFORE email */}
       {proposalType !== "info" && (
