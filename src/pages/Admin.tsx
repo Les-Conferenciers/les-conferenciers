@@ -508,6 +508,11 @@ const AdminProposalsContent = () => {
     setConferences(data || []);
   };
 
+  const fetchClients = async () => {
+    const { data } = await supabase.from("clients").select("id, company_name, contact_name, email, phone, status").order("company_name");
+    setAllClients(data || []);
+  };
+
   const getPipelineStatus = (p: Proposal) => {
     const pInvoices = allInvoices.filter(i => i.proposal_id === p.id);
     const pContract = contracts.find(c => c.proposal_id === p.id);
