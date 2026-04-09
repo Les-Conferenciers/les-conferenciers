@@ -674,7 +674,7 @@ const AdminProposalsContent = () => {
     setSelectedSpeakers(nextSpeakers);
     if (proposalType === "unique") {
       const total = getProposalSpeakerTotal(nextSpeakers[0]);
-      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, total.toLocaleString("fr-FR"), speaker.slug || ""));
+      setEmailBody(getUniqueEmailBody(recipientName, speaker.name, total.toLocaleString("fr-FR"), speaker.slug || "", eventDateText, eventLocation, audienceSize));
     }
   };
 
@@ -695,7 +695,7 @@ const AdminProposalsContent = () => {
       const next = updateSpeakerFieldInList(prev, speakerId, field, value);
       if (proposalType === "unique" && next[0]) {
         const speaker = speakers.find(s => s.id === next[0].speaker_id);
-        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(next[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(next[0]).toLocaleString("fr-FR"), speaker?.slug || "", eventDateText, eventLocation, audienceSize));
       }
       return next;
     });
@@ -747,7 +747,7 @@ const AdminProposalsContent = () => {
     if (!finalBody) {
       if (proposalType === "unique" && selectedSpeakers.length > 0) {
         const sp = speakers.find(s => s.id === selectedSpeakers[0].speaker_id);
-        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "");
+        finalBody = getUniqueEmailBody(recipientName, sp?.name || "", getProposalSpeakerTotal(selectedSpeakers[0]).toLocaleString("fr-FR"), (sp as any)?.slug || "", eventDateText, eventLocation, audienceSize);
       } else if (proposalType === "info") {
         finalBody = getInfoEmailBody(recipientName);
       } else {
@@ -977,7 +977,7 @@ const AdminProposalsContent = () => {
       });
       if (proposalType === "unique" && updated[0]) {
         const speaker = speakers.find(sp => sp.id === updated[0].speaker_id);
-        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(updated[0]).toLocaleString("fr-FR"), speaker?.slug || ""));
+        setEmailBody(getUniqueEmailBody(recipientName, speaker?.name || "", getProposalSpeakerTotal(updated[0]).toLocaleString("fr-FR"), speaker?.slug || "", eventDateText, eventLocation, audienceSize));
       }
       return updated;
     });
