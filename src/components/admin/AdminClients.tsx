@@ -469,6 +469,52 @@ const AdminClients = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Supprimer ce client ?
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                <p className="text-sm">
+                  Vous êtes sur le point de supprimer <strong>{deleteTarget?.company_name}</strong>.
+                </p>
+                {deleteTarget && getClientProposals(deleteTarget).length > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                    <p className="font-medium mb-1">⚠️ Ce client est rattaché à {getClientProposals(deleteTarget).length} proposition(s)</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-xs">
+                      {getClientProposals(deleteTarget).slice(0, 5).map(p => {
+                        const stage = getLifecycleStage(p);
+                        return (
+                          <li key={p.id}>
+                            {proposalTypeLabel(p.proposal_type)} — {stage.icon} {stage.label} — {formatDate(p.created_at)}
+                          </li>
+                        );
+                      })}
+                      {getClientProposals(deleteTarget).length > 5 && (
+                        <li className="text-muted-foreground">… et {getClientProposals(deleteTarget).length - 5} autre(s)</li>
+                      )}
+                    </ul>
+                    <p className="mt-2 text-xs">Les propositions ne seront pas supprimées mais ne seront plus rattachées à ce client.</p>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Toutes les données du client (coordonnées, notes, SIRET…) seront définitivement supprimées. Cette action est irréversible.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Annuler</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Suppression…" : "Supprimer définitivement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
