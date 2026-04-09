@@ -1014,6 +1014,7 @@ const AdminProposalsContent = () => {
             </select>
           </div>
         )}
+      </div>
 
       {/* Client search/create section */}
       <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
