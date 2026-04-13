@@ -52,12 +52,13 @@ const AdminLeads = () => {
       day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
     });
 
-  const isTestLead = (lead: Lead) =>
-    lead.first_name?.toLowerCase().includes("test quotidien") ||
-    lead.last_name?.toLowerCase().includes("test quotidien") ||
-    lead.email?.toLowerCase().includes("test quotidien") ||
-    lead.company?.toLowerCase().includes("test quotidien") ||
-    lead.additional_info?.toLowerCase().includes("[test quotidien]");
+  const isTestLead = (lead: Lead) => {
+    const full = `${lead.first_name} ${lead.last_name}`.toLowerCase();
+    return full.includes("test") && full.includes("quotidien") ||
+      lead.email?.toLowerCase().includes("test@lesconferenciers") ||
+      lead.company?.toLowerCase() === "test automatique" ||
+      lead.additional_info?.toLowerCase().includes("test automatique quotidien");
+  };
 
   const filteredLeads = hideTest ? leads.filter(l => !isTestLead(l)) : leads;
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
