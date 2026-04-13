@@ -5,12 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Pencil, Trash2, Building2, Mail, Phone, ExternalLink, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Building2, Mail, Phone, ExternalLink, FileText, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 type Client = {
@@ -41,7 +41,7 @@ type ProposalDetail = {
   event_date_text: string | null;
   event_location: string | null;
   audience_size: string | null;
-  proposal_speakers: { speakers: { name: string } | null }[];
+  proposal_speakers: { speaker_fee: number | null; travel_costs: number | null; agency_commission: number | null; total_price: number | null; speakers: { name: string } | null }[];
   contracts: { id: string; status: string; signed_at: string | null }[];
 };
 
@@ -54,6 +54,8 @@ const AdminClients = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form
   const [companyName, setCompanyName] = useState("");
@@ -84,7 +86,7 @@ const AdminClients = () => {
   const fetchProposals = async () => {
     const { data } = await supabase
       .from("proposals")
-      .select("id, token, client_name, client_email, client_id, proposal_type, status, created_at, sent_at, accepted_at, event_date_text, event_location, audience_size, proposal_speakers(speakers(name)), contracts(id, status, signed_at)")
+      .select("id, token, client_name, client_email, client_id, proposal_type, status, created_at, sent_at, accepted_at, event_date_text, event_location, audience_size, proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(name)), contracts(id, status, signed_at)")
       .order("created_at", { ascending: false });
     setProposals((data as any) || []);
   };
@@ -138,11 +140,31 @@ const AdminClients = () => {
     fetchClients();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer ce client ?")) return;
-    await supabase.from("clients").delete().eq("id", id);
-    toast.success("Client supprimé");
-    fetchClients();
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      // Find linked proposals
+      const linkedProposals = getClientProposals(deleteTarget);
+      
+      // Detach client_id from all linked proposals
+      if (linkedProposals.length > 0) {
+        const proposalIds = linkedProposals.map(p => p.id);
+        await supabase.from("proposals").update({ client_id: null }).in("id", proposalIds);
+      }
+      
+      // Delete the client
+      const { error } = await supabase.from("clients").delete().eq("id", deleteTarget.id);
+      if (error) { toast.error("Erreur lors de la suppression"); return; }
+      toast.success("Client supprimé");
+      setDeleteTarget(null);
+      fetchClients();
+      fetchProposals();
+    } catch {
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getClientProposals = (client: Client): ProposalDetail[] => {
@@ -287,7 +309,7 @@ const AdminClients = () => {
                         <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)}>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(c)}>
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                       </div>
@@ -310,53 +332,72 @@ const AdminClients = () => {
                             <div className="space-y-2">
                               {clientProposals.map(p => {
                                 const stage = getLifecycleStage(p);
-                                const speakerNames = (p.proposal_speakers || [])
-                                  .map((ps: any) => ps.speakers?.name)
-                                  .filter(Boolean);
+                                const speakerDetails = (p.proposal_speakers || []).map((ps: any) => ({
+                                  name: ps.speakers?.name,
+                                  speaker_fee: ps.speaker_fee,
+                                  travel_costs: ps.travel_costs,
+                                  agency_commission: ps.agency_commission,
+                                  total_price: ps.total_price,
+                                })).filter((s: any) => s.name);
                                 const proposalLink = `${siteOrigin}/proposition/${p.token}`;
                                 return (
-                                  <div key={p.id} className="flex items-center gap-3 bg-background rounded-lg px-4 py-3 border border-border/50">
-                                    <div className="text-sm font-medium text-muted-foreground w-24 shrink-0">
-                                      {formatDate(p.created_at)}
-                                    </div>
-                                    <div className="text-xs shrink-0">
-                                      {proposalTypeLabel(p.proposal_type)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      {speakerNames.length > 0 ? (
-                                        <span className="text-sm truncate block">
-                                          {speakerNames.slice(0, 3).join(", ")}
-                                          {speakerNames.length > 3 && <span className="text-muted-foreground"> +{speakerNames.length - 3}</span>}
-                                        </span>
-                                      ) : (
-                                        <span className="text-sm text-muted-foreground italic">Demande d'infos</span>
-                                      )}
-                                      {(p.event_date_text || p.event_location) && (
-                                        <span className="text-[11px] text-muted-foreground block">
-                                          {[p.event_date_text, p.event_location].filter(Boolean).join(" · ")}
-                                          {p.audience_size && ` · ${p.audience_size} pers.`}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium shrink-0 ${stage.cls}`}>
-                                      {stage.icon} {stage.label}
-                                    </span>
-                                    {p.sent_at && (
-                                      <span className="text-[10px] text-muted-foreground shrink-0">
-                                        Envoyée le {formatDate(p.sent_at)}
+                                  <div key={p.id} className="bg-background rounded-lg px-4 py-3 border border-border/50 space-y-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className="text-sm font-medium text-muted-foreground w-24 shrink-0">
+                                        {formatDate(p.created_at)}
+                                      </div>
+                                      <div className="text-xs shrink-0">
+                                        {proposalTypeLabel(p.proposal_type)}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        {speakerDetails.length > 0 ? (
+                                          <span className="text-sm truncate block">
+                                            {speakerDetails.slice(0, 3).map((s: any) => s.name).join(", ")}
+                                            {speakerDetails.length > 3 && <span className="text-muted-foreground"> +{speakerDetails.length - 3}</span>}
+                                          </span>
+                                        ) : (
+                                          <span className="text-sm text-muted-foreground italic">Demande d'infos</span>
+                                        )}
+                                        {(p.event_date_text || p.event_location) && (
+                                          <span className="text-[11px] text-muted-foreground block">
+                                            {[p.event_date_text, p.event_location].filter(Boolean).join(" · ")}
+                                            {p.audience_size && ` · ${p.audience_size} pers.`}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium shrink-0 ${stage.cls}`}>
+                                        {stage.icon} {stage.label}
                                       </span>
-                                    )}
-                                    {p.proposal_type !== "info" && (
-                                      <a
-                                        href={proposalLink}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="shrink-0 text-primary hover:text-primary/80"
-                                        onClick={e => e.stopPropagation()}
-                                        title="Voir la proposition"
-                                      >
-                                        <ExternalLink className="h-4 w-4" />
-                                      </a>
+                                      {p.sent_at && (
+                                        <span className="text-[10px] text-muted-foreground shrink-0">
+                                          Envoyée le {formatDate(p.sent_at)}
+                                        </span>
+                                      )}
+                                      {p.proposal_type !== "info" && (
+                                        <a
+                                          href={proposalLink}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="shrink-0 text-primary hover:text-primary/80"
+                                          onClick={e => e.stopPropagation()}
+                                          title="Voir la proposition"
+                                        >
+                                          <ExternalLink className="h-4 w-4" />
+                                        </a>
+                                      )}
+                                    </div>
+                                    {speakerDetails.length > 0 && (
+                                      <div className="ml-24 pl-2 border-l-2 border-primary/20">
+                                        {speakerDetails.map((s: any, i: number) => (
+                                          <div key={i} className="flex items-center gap-3 text-[11px] py-0.5">
+                                            <span className="font-medium text-foreground w-36 truncate">{s.name}</span>
+                                            {s.speaker_fee != null && <span className="text-muted-foreground">Cachet: {s.speaker_fee.toLocaleString("fr-FR")} €</span>}
+                                            {s.agency_commission != null && s.agency_commission > 0 && <span className="text-muted-foreground">Com: {s.agency_commission.toLocaleString("fr-FR")} €</span>}
+                                            {s.travel_costs != null && s.travel_costs > 0 && <span className="text-muted-foreground">Frais: {s.travel_costs.toLocaleString("fr-FR")} €</span>}
+                                            {s.total_price != null && <span className="font-semibold text-foreground">Total: {s.total_price.toLocaleString("fr-FR")} € HT</span>}
+                                          </div>
+                                        ))}
+                                      </div>
                                     )}
                                   </div>
                                 );
@@ -445,6 +486,52 @@ const AdminClients = () => {
               {editing ? "Enregistrer" : "Créer le client"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Supprimer ce client ?
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                <p className="text-sm">
+                  Vous êtes sur le point de supprimer <strong>{deleteTarget?.company_name}</strong>.
+                </p>
+                {deleteTarget && getClientProposals(deleteTarget).length > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                    <p className="font-medium mb-1">⚠️ Ce client est rattaché à {getClientProposals(deleteTarget).length} proposition(s)</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-xs">
+                      {getClientProposals(deleteTarget).slice(0, 5).map(p => {
+                        const stage = getLifecycleStage(p);
+                        return (
+                          <li key={p.id}>
+                            {proposalTypeLabel(p.proposal_type)} — {stage.icon} {stage.label} — {formatDate(p.created_at)}
+                          </li>
+                        );
+                      })}
+                      {getClientProposals(deleteTarget).length > 5 && (
+                        <li className="text-muted-foreground">… et {getClientProposals(deleteTarget).length - 5} autre(s)</li>
+                      )}
+                    </ul>
+                    <p className="mt-2 text-xs">Les propositions ne seront pas supprimées mais ne seront plus rattachées à ce client.</p>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Toutes les données du client (coordonnées, notes, SIRET…) seront définitivement supprimées. Cette action est irréversible.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Annuler</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Suppression…" : "Supprimer définitivement"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
