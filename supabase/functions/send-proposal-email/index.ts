@@ -28,10 +28,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { proposal_id } = await req.json();
+    const { proposal_id, cc } = await req.json();
     if (!proposal_id) {
       return new Response(JSON.stringify({ error: "proposal_id required" }), { status: 400, headers: corsHeaders });
     }
+    const ccList = Array.isArray(cc) ? cc.filter((e: string) => e && e.includes("@")) : [];
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -179,15 +180,20 @@ Nelly Sabde - Les Conférenciers
   </div>
 </body></html>`;
 
+    const emailPayload: any = {
+      from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
+      to: [proposal.client_email],
+      subject: emailSubject,
+      html: emailHtml,
+    };
+    if (ccList.length > 0) {
+      emailPayload.cc = ccList;
+    }
+
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
-        to: [proposal.client_email],
-        subject: emailSubject,
-        html: emailHtml,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     if (!resendRes.ok) {

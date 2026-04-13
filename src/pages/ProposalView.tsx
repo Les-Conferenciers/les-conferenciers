@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock, Mail, User, ExternalLink, Phone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,8 @@ type ProposalData = {
 
 const ProposalView = () => {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  const isPrintMode = searchParams.get("print") === "true";
   const [proposal, setProposal] = useState<ProposalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [expired, setExpired] = useState(false);
@@ -123,9 +125,14 @@ const ProposalView = () => {
       setFormMessage("Bonjour, je suis intéressé par cette proposition, merci de me recontacter.");
 
       setLoading(false);
+
+      // Auto-print if print mode
+      if (isPrintMode) {
+        setTimeout(() => window.print(), 800);
+      }
     };
     init();
-  }, [token]);
+  }, [token, isPrintMode]);
 
   const handleSubmitResponse = async () => {
     if (!formCompany || !formName || !formEmail || !formMessage) {
