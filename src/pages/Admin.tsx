@@ -1684,6 +1684,12 @@ const AdminProposalsContent = () => {
           <Button variant="ghost" size="sm" onClick={() => setDateSortAsc(prev => !prev)} className="gap-1 text-xs" title="Trier par date">
             <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes" : "Plus récentes"}
           </Button>
+          {testProposalCount > 0 && (
+            <Button variant={hideTestProposals ? "outline" : "secondary"} size="sm" onClick={() => setHideTestProposals(prev => !prev)} className="gap-1 text-xs">
+              {hideTestProposals ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              {hideTestProposals ? `Afficher les tests (${testProposalCount})` : "Masquer les tests"}
+            </Button>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={fetchProposals} disabled={loading}>
