@@ -517,6 +517,7 @@ const AdminProposalsContent = () => {
   const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
   const [proposalSearch, setProposalSearch] = useState("");
   const [ccEmails, setCcEmails] = useState("");
+  const [hideTestProposals, setHideTestProposals] = useState(true);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
