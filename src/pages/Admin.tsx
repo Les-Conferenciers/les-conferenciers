@@ -104,7 +104,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save, FileText } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 
@@ -515,6 +515,8 @@ const AdminProposalsContent = () => {
   const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
+  const [proposalSearch, setProposalSearch] = useState("");
+  const [ccEmails, setCcEmails] = useState("");
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
@@ -636,7 +638,18 @@ const AdminProposalsContent = () => {
 
   const applyTypeFilter = (items: Proposal[]) => typeFilter === "all" ? items : items.filter(p => (p as any).proposal_type === typeFilter);
   const applyDateSort = (items: Proposal[]) => dateSortAsc ? [...items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) : items;
-  const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(items));
+  const applySearch = (items: Proposal[]) => {
+    const q = proposalSearch.toLowerCase().trim();
+    if (!q) return items;
+    return items.filter(p => {
+      const speakerNames = (p.proposal_speakers || []).map((ps: any) => ps.speakers?.name || "").join(" ").toLowerCase();
+      return p.client_name.toLowerCase().includes(q) ||
+        p.client_email.toLowerCase().includes(q) ||
+        (p.recipient_name || "").toLowerCase().includes(q) ||
+        speakerNames.includes(q);
+    });
+  };
+  const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(applySearch(items)));
 
   const drafts = filterAndSort(proposals.filter(p => p.status === "draft"));
   const sent = filterAndSort(proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p)));
@@ -830,7 +843,8 @@ const AdminProposalsContent = () => {
     }
     if (andSend) {
       try {
-        const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id } });
+        const ccList = ccEmails.split(",").map(e => e.trim()).filter(e => e.includes("@"));
+        const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id, cc: ccList.length > 0 ? ccList : undefined } });
         if (sendErr) throw sendErr;
         await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", proposal.id);
         toast.success("Proposition créée et envoyée !");
@@ -847,6 +861,7 @@ const AdminProposalsContent = () => {
     setProposalType("classique"); setGlobalCommission(0);
     setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
     setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("search");
+    setCcEmails("");
   };
 
   const openEditDialog = (p: Proposal) => {
@@ -1317,6 +1332,15 @@ const AdminProposalsContent = () => {
         />
       </div>
       <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Adresses en copie (CC)</Label>
+        <Input
+          value={ccEmails}
+          onChange={e => setCcEmails(e.target.value)}
+          placeholder="email1@example.com, email2@example.com"
+        />
+        <p className="text-[10px] text-muted-foreground">Séparez les adresses par des virgules. Ces adresses ne seront pas ajoutées au CRM.</p>
+      </div>
+      <div className="space-y-2">
         <Label>✉️ Email d'envoi - Corps</Label>
         <SimpleRichTextEditor
           value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers, eventContext })}
@@ -1533,6 +1557,16 @@ const AdminProposalsContent = () => {
               <Button variant="ghost" size="sm" asChild title="Voir en ligne">
                 <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
               </Button>
+              {p.status !== "draft" && (p as any).proposal_type !== "info" && (
+                <Button variant="ghost" size="sm" onClick={() => {
+                  const printWindow = window.open(getProposalUrl(p.token) + "?print=true", "_blank");
+                  if (printWindow) {
+                    printWindow.addEventListener("afterprint", () => printWindow.close());
+                  }
+                }} title="Télécharger en PDF">
+                  <FileText className="h-4 w-4" />
+                </Button>
+              )}
               {(mode === "draft" || (mode === "sent" && p.status === "sent")) && (
                 <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)} title="Éditer"><Pencil className="h-4 w-4" /></Button>
               )}
@@ -1621,8 +1655,17 @@ const AdminProposalsContent = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-shrink-0" style={{ minWidth: 220 }}>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom, email, speaker…"
+              value={proposalSearch}
+              onChange={e => setProposalSearch(e.target.value)}
+              className="pl-10 text-sm"
+            />
+          </div>
           <p className="text-muted-foreground text-sm">{proposals.length} proposition{proposals.length !== 1 ? "s" : ""}</p>
           <select
             className="rounded-md border border-input bg-background px-2 py-1 text-xs"
