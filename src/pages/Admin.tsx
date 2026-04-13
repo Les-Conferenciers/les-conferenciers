@@ -639,6 +639,9 @@ const AdminProposalsContent = () => {
 
   const applyTypeFilter = (items: Proposal[]) => typeFilter === "all" ? items : items.filter(p => (p as any).proposal_type === typeFilter);
   const applyDateSort = (items: Proposal[]) => dateSortAsc ? [...items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) : items;
+  const isTestProposal = (p: Proposal) => p.client_name.toLowerCase().includes("test quotidien") || p.client_email.toLowerCase().includes("test quotidien");
+  const applyHideTest = (items: Proposal[]) => hideTestProposals ? items.filter(p => !isTestProposal(p)) : items;
+  const testProposalCount = proposals.filter(isTestProposal).length;
   const applySearch = (items: Proposal[]) => {
     const q = proposalSearch.toLowerCase().trim();
     if (!q) return items;
@@ -650,7 +653,7 @@ const AdminProposalsContent = () => {
         speakerNames.includes(q);
     });
   };
-  const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(applySearch(items)));
+  const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(applySearch(applyHideTest(items))));
 
   const drafts = filterAndSort(proposals.filter(p => p.status === "draft"));
   const sent = filterAndSort(proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p)));
