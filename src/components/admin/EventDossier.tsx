@@ -335,7 +335,11 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     if (contract?.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0) {
       return contract.contract_lines as ContractLine[];
     }
-    return proposal.proposal_speakers.map((ps, i) => ({
+    // For multiple proposals with a selected speaker, only show the selected one
+    const speakersForContract = event?.selected_speaker_id
+      ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
+      : proposal.proposal_speakers;
+    return speakersForContract.map((ps, i) => ({
       id: generateId(),
       label: ps.speakers?.name || `Conférencier ${i + 1}`,
       amount_ht: ps.total_price || 0,
