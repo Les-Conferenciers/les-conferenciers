@@ -606,6 +606,45 @@ const AdminProposalsContent = () => {
     setTemplates((data as any) || []);
   };
 
+  const fetchTasks = async () => {
+    const { data } = await supabase.from("proposal_tasks").select("*").order("due_date");
+    setProposalTasks((data as any) || []);
+  };
+
+  const createTasksForProposal = async (proposalId: string, sentAt: string) => {
+    const sentDate = new Date(sentAt);
+    const relance1Date = new Date(sentDate);
+    relance1Date.setDate(relance1Date.getDate() + 7);
+    const relance2Date = new Date(sentDate);
+    relance2Date.setDate(relance2Date.getDate() + 15);
+    
+    await supabase.from("proposal_tasks").insert([
+      { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
+      { proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] },
+    ] as any);
+    fetchTasks();
+  };
+
+  const getTasksForProposal = (proposalId: string) => proposalTasks.filter((t: any) => t.proposal_id === proposalId);
+
+  const openReminderDialog = (p: Proposal) => {
+    const tasks = getTasksForProposal(p.id);
+    setReminderProposal(p);
+    setEditingTasks(tasks.map((t: any) => ({ ...t })));
+    setReminderDialogOpen(true);
+  };
+
+  const saveTaskEdits = async () => {
+    for (const task of editingTasks) {
+      await supabase.from("proposal_tasks").update({
+        due_date: task.due_date,
+        note: task.note || null,
+      } as any).eq("id", task.id);
+    }
+    toast.success("Tâches mises à jour");
+    fetchTasks();
+  };
+
   const applyTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
     const tpl = templates.find(t => t.id === templateId);
