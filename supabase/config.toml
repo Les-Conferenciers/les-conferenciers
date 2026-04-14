@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.resync-bios-from-site]
 verify_jwt = false
+
+[functions.daily-task-recap]
+verify_jwt = false
