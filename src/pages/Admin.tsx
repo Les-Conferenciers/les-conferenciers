@@ -996,7 +996,9 @@ const AdminProposalsContent = () => {
     try {
       const { error } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id } });
       if (error) throw error;
-      await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", proposal.id);
+      const sentAt = new Date().toISOString();
+      await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
+      await createTasksForProposal(proposal.id, sentAt);
       toast.success("Email envoyé !"); fetchProposals();
     } catch { toast.error("Erreur d'envoi"); }
     setSending(null);
