@@ -413,6 +413,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventDate(contract.event_date || ""); setEventLocation(contract.event_location || "");
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
+    setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
+    setContractBdcNumber(event?.bdc_number || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
