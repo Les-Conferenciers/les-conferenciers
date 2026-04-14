@@ -1589,9 +1589,26 @@ const AdminProposalsContent = () => {
                 <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">En attente</span>
                 {!expired && <div className="text-[10px] text-muted-foreground">{remaining}j restants</div>}
                 {expired && <span className="text-[10px] text-destructive font-medium">Expiré</span>}
-                {/* Reminder badges */}
                 {(p as any).reminder1_sent_at && <div className="text-[10px] text-blue-600">Relance 1 ✓</div>}
                 {(p as any).reminder2_sent_at && <div className="text-[10px] text-blue-600">Relance 2 ✓</div>}
+                {(() => {
+                  const tasks = getTasksForProposal(p.id);
+                  const pendingTasks = tasks.filter((t: any) => t.status === "pending");
+                  if (pendingTasks.length === 0) return null;
+                  const nextTask = pendingTasks.sort((a: any, b: any) => a.due_date.localeCompare(b.due_date))[0];
+                  const dueDate = new Date(nextTask.due_date);
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  const isOverdue = dueDate < today;
+                  const isToday = dueDate.toDateString() === today.toDateString();
+                  return (
+                    <div className={`text-[10px] flex items-center gap-1 ${isOverdue ? "text-destructive font-medium" : isToday ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>
+                      <CalendarDays className="h-3 w-3" />
+                      {nextTask.task_type === "relance_1" ? "R1" : "R2"}: {dueDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                      {isOverdue && " ⚠️"}
+                      {isToday && " 📌"}
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {mode === "sent" && p.status === "accepted" && pipelineInfo && (
