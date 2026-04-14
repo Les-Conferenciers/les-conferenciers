@@ -1173,11 +1173,11 @@ const AdminProposalsContent = () => {
       <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
         <Label className="text-sm font-medium">👤 Client</Label>
         <div className="flex gap-2">
-          <button type="button" onClick={() => { setClientMode("search"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "search" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-            Rechercher un client existant
-          </button>
           <button type="button" onClick={() => { setClientMode("new"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "new" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
             Nouveau client
+          </button>
+          <button type="button" onClick={() => { setClientMode("search"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "search" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+            Rechercher un client existant
           </button>
         </div>
 
