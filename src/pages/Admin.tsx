@@ -939,7 +939,7 @@ const AdminProposalsContent = () => {
     setEmailSubject(""); setEmailBody(""); setMessage(getDefaultMessage("", ""));
     setProposalType("classique"); setGlobalCommission(0);
     setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
-    setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("search");
+    setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("new");
     setCcEmails("");
   };
 
