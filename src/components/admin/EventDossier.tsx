@@ -390,7 +390,14 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   // ─── Contract CRUD ───
   const openCreateContract = () => {
     setEditingContract(false);
-    setEventDate(""); setEventLocation(""); setEventTime(""); setEventFormat("Conférence"); setEventDescription("");
+    // Auto-fill from proposal data
+    setEventDate(""); 
+    setEventLocation(proposal.event_location || ""); 
+    setEventTime(""); 
+    setEventFormat("Conférence"); 
+    setEventDescription("");
+    setContractAudienceSize(proposal.audience_size || "");
+    setContractBdcNumber("");
     setContractLines(buildInitialLines()); setDiscountPercent(0);
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
