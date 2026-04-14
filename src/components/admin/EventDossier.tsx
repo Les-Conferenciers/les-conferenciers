@@ -286,7 +286,10 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   // ─── Auto-create event if missing ───
   useEffect(() => {
     if (!loading && !event) {
-      supabase.from("events").insert({ proposal_id: proposal.id } as any).then(() => fetchData());
+      supabase.from("events").insert({ 
+        proposal_id: proposal.id,
+        audience_size: proposal.audience_size || null,
+      } as any).then(() => fetchData());
     }
   }, [loading, event]);
 
