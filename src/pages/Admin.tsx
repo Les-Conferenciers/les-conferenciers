@@ -522,6 +522,9 @@ const AdminProposalsContent = () => {
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
   const [reminderProposal, setReminderProposal] = useState<Proposal | null>(null);
   const [editingTasks, setEditingTasks] = useState<any[]>([]);
+  const [reminderSubject, setReminderSubject] = useState("");
+  const [reminderBody, setReminderBody] = useState("");
+  const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks()]);
