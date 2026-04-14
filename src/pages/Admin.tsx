@@ -524,7 +524,7 @@ const AdminProposalsContent = () => {
   const [editingTasks, setEditingTasks] = useState<any[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
+    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks()]);
   }, []);
 
   // Auto-update email body when event details change
