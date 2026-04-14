@@ -192,8 +192,7 @@ const Index = () => {
         <div className="absolute inset-0 bg-primary/80" />
         <div className="container mx-auto relative z-10 text-center max-w-4xl">
           <h1
-            className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight animate-fade-in"
-            style={{ animationDelay: "0.1s" }}
+            className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight"
           >
             Agence de conférenciers
             <br />
@@ -201,8 +200,7 @@ const Index = () => {
           </h1>
 
           <h2
-            className="text-lg md:text-2xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto font-normal animate-fade-in"
-            style={{ animationDelay: "0.2s" }}
+            className="text-lg md:text-2xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto font-normal"
           >
             Gagnez du temps, trouvez le conférencier idéal pour vos événements professionnels.
           </h2>
