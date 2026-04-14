@@ -18,7 +18,7 @@ const FeaturedSpeakers = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("speakers")
-        .select("*")
+        .select("id, name, slug, role, themes, image_url, image_position, specialty")
         .eq("featured", true)
         .eq("archived", false)
         .order("featured_order", { ascending: true });
