@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import nugget from "@/assets/nugget.png";
+import nugget from "@/assets/nugget.webp";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
