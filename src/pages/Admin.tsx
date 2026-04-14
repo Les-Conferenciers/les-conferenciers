@@ -893,7 +893,9 @@ const AdminProposalsContent = () => {
         const ccList = ccEmails.split(",").map(e => e.trim()).filter(e => e.includes("@"));
         const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id, cc: ccList.length > 0 ? ccList : undefined } });
         if (sendErr) throw sendErr;
-        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", proposal.id);
+        const sentAt = new Date().toISOString();
+        await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
+        await createTasksForProposal(proposal.id, sentAt);
         toast.success("Proposition créée et envoyée !");
       } catch { toast.error("Proposition créée mais erreur d'envoi"); }
     } else {
