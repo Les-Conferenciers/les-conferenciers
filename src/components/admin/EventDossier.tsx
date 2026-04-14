@@ -31,6 +31,10 @@ type Proposal = {
   recipient_name: string | null;
   client_id: string | null;
   status: string;
+  proposal_type?: string;
+  event_date_text?: string | null;
+  event_location?: string | null;
+  audience_size?: string | null;
   proposal_speakers: {
     id?: string;
     speaker_id?: string;
