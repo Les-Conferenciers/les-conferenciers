@@ -510,7 +510,7 @@ const AdminProposalsContent = () => {
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const [clientSearchResults, setClientSearchResults] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [clientMode, setClientMode] = useState<"search" | "new">("search");
+  const [clientMode, setClientMode] = useState<"search" | "new">("new");
   const [allClients, setAllClients] = useState<any[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
