@@ -31,6 +31,10 @@ type Proposal = {
   recipient_name: string | null;
   client_id: string | null;
   status: string;
+  proposal_type?: string;
+  event_date_text?: string | null;
+  event_location?: string | null;
+  audience_size?: string | null;
   proposal_speakers: {
     id?: string;
     speaker_id?: string;
@@ -152,6 +156,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [eventTime, setEventTime] = useState("");
   const [eventFormat, setEventFormat] = useState("Conférence");
   const [eventDescription, setEventDescription] = useState("");
+  const [contractAudienceSize, setContractAudienceSize] = useState("");
+  const [contractBdcNumber, setContractBdcNumber] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -280,7 +286,10 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   // ─── Auto-create event if missing ───
   useEffect(() => {
     if (!loading && !event) {
-      supabase.from("events").insert({ proposal_id: proposal.id } as any).then(() => fetchData());
+      supabase.from("events").insert({ 
+        proposal_id: proposal.id,
+        audience_size: proposal.audience_size || null,
+      } as any).then(() => fetchData());
     }
   }, [loading, event]);
 
@@ -331,7 +340,11 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     if (contract?.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0) {
       return contract.contract_lines as ContractLine[];
     }
-    return proposal.proposal_speakers.map((ps, i) => ({
+    // For multiple proposals with a selected speaker, only show the selected one
+    const speakersForContract = event?.selected_speaker_id
+      ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
+      : proposal.proposal_speakers;
+    return speakersForContract.map((ps, i) => ({
       id: generateId(),
       label: ps.speakers?.name || `Conférencier ${i + 1}`,
       amount_ht: ps.total_price || 0,
@@ -355,7 +368,11 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     if (contract?.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0) {
       return contract.contract_lines as ContractLine[];
     }
-    return proposal.proposal_speakers.map((ps, i) => ({
+    // For multiple proposals with a selected speaker, only show the selected one
+    const speakersForContract = event?.selected_speaker_id
+      ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
+      : proposal.proposal_speakers;
+    return speakersForContract.map((ps, i) => ({
       id: generateId(),
       label: ps.speakers?.name || `Conférencier ${i + 1}`,
       amount_ht: ps.total_price || 0,
@@ -376,7 +393,14 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   // ─── Contract CRUD ───
   const openCreateContract = () => {
     setEditingContract(false);
-    setEventDate(""); setEventLocation(""); setEventTime(""); setEventFormat("Conférence"); setEventDescription("");
+    // Auto-fill from proposal data
+    setEventDate(""); 
+    setEventLocation(proposal.event_location || ""); 
+    setEventTime(""); 
+    setEventFormat("Conférence"); 
+    setEventDescription("");
+    setContractAudienceSize(proposal.audience_size || "");
+    setContractBdcNumber("");
     setContractLines(buildInitialLines()); setDiscountPercent(0);
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
@@ -392,6 +416,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventDate(contract.event_date || ""); setEventLocation(contract.event_location || "");
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
+    setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
+    setContractBdcNumber(event?.bdc_number || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
@@ -438,6 +464,13 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     };
     // Link client to proposal
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
+    // Also update event with audience_size and bdc_number
+    if (event) {
+      await supabase.from("events").update({ 
+        audience_size: contractAudienceSize || null,
+        bdc_number: contractBdcNumber || null,
+      } as any).eq("id", event.id);
+    }
     if (editingContract && contract) {
       const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
       if (error) toast.error("Erreur mise à jour"); else toast.success("Contrat mis à jour !");
@@ -1418,6 +1451,10 @@ Nelly Sabde - Les Conférenciers`);
               <div className="space-y-1"><Label className="text-xs">Horaires</Label><Input placeholder="14h00 - 15h30" value={eventTime} onChange={e => setEventTime(e.target.value)} /></div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Lieu</Label><Input placeholder="Hôtel Marriott, Paris" value={eventLocation} onChange={e => setEventLocation(e.target.value)} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input placeholder="200 personnes" value={contractAudienceSize} onChange={e => setContractAudienceSize(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">N° Bon de commande</Label><Input placeholder="BDC-001" value={contractBdcNumber} onChange={e => setContractBdcNumber(e.target.value)} /></div>
+            </div>
             <div className="space-y-1"><Label className="text-xs">Format</Label><Input placeholder="Conférence, Table ronde..." value={eventFormat} onChange={e => setEventFormat(e.target.value)} /></div>
             <div className="space-y-1"><Label className="text-xs">Détails</Label><Textarea placeholder="Infos complémentaires..." value={eventDescription} onChange={e => setEventDescription(e.target.value)} rows={2} /></div>
 

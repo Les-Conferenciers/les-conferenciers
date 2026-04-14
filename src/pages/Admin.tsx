@@ -525,6 +525,8 @@ const AdminProposalsContent = () => {
   const [reminderSubject, setReminderSubject] = useState("");
   const [reminderBody, setReminderBody] = useState("");
   const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
+  const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
+  const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks()]);
@@ -939,7 +941,7 @@ const AdminProposalsContent = () => {
     setEmailSubject(""); setEmailBody(""); setMessage(getDefaultMessage("", ""));
     setProposalType("classique"); setGlobalCommission(0);
     setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
-    setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("search");
+    setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("new");
     setCcEmails("");
   };
 
@@ -1060,9 +1062,43 @@ const AdminProposalsContent = () => {
     setSending(null);
   };
 
+
   const handleAccept = async (id: string) => {
+    // Check if it's a "demande d'info" proposal
+    const proposal = proposals.find(p => p.id === id);
+    if ((proposal as any)?.proposal_type === "info") {
+      // Instead of accepting directly, open dialog to create a real proposal
+      setInfoAcceptProposalId(id);
+      setInfoAcceptDialogOpen(true);
+      return;
+    }
     await supabase.from("proposals").update({ status: "accepted" }).eq("id", id);
     toast.success("Proposition passée en « Accepté »"); fetchProposals();
+  };
+
+  const handleInfoAcceptConvert = async (newType: "classique" | "unique") => {
+    if (!infoAcceptProposalId) return;
+    const original = proposals.find(p => p.id === infoAcceptProposalId);
+    if (!original) return;
+    // Pre-fill a new proposal creation form with the client info
+    resetForm();
+    setClientName(original.client_name);
+    setClientEmail(original.client_email);
+    setRecipientName(original.recipient_name || "");
+    setClientPhone((original as any).client_phone || "");
+    setProposalType(newType);
+    // Set email defaults
+    if (newType === "classique") {
+      setEmailSubject(getDefaultEmailSubject(original.client_name));
+      setEmailBody(getDefaultEmailBody(original.recipient_name || "", original.client_name));
+    }
+    setClientMode("new");
+    setInfoAcceptDialogOpen(false);
+    setDialogOpen(true);
+    // Mark the info proposal as archived
+    await supabase.from("proposals").update({ status: "archived" }).eq("id", infoAcceptProposalId);
+    fetchProposals();
+    toast.info("Créez la proposition à partir des informations du client");
   };
 
   const handleArchive = async (id: string) => {
@@ -1710,6 +1746,10 @@ const AdminProposalsContent = () => {
                 proposal={{
                   id: p.id, client_name: p.client_name, client_email: p.client_email,
                   recipient_name: p.recipient_name, client_id: p.client_id || null, status: p.status,
+                  proposal_type: (p as any).proposal_type || "classique",
+                  event_date_text: (p as any).event_date_text || null,
+                  event_location: (p as any).event_location || null,
+                  audience_size: (p as any).audience_size || null,
                   proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
                     speaker_id: ps.speaker_id,
                     speaker_fee: ps.speaker_fee, travel_costs: ps.travel_costs,
@@ -2021,6 +2061,38 @@ const AdminProposalsContent = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Info accept → new proposal dialog */}
+      <Dialog open={infoAcceptDialogOpen} onOpenChange={setInfoAcceptDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Convertir la demande d'infos</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Cette demande d'informations a été acceptée. Quel type de proposition souhaitez-vous créer ?
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleInfoAcceptConvert("classique")}
+                className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center space-y-2"
+              >
+                <div className="text-2xl">📋</div>
+                <div className="text-sm font-medium">Proposition multiple</div>
+                <div className="text-[10px] text-muted-foreground">Sélection de plusieurs conférenciers</div>
+              </button>
+              <button
+                onClick={() => handleInfoAcceptConvert("unique")}
+                className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center space-y-2"
+              >
+                <div className="text-2xl">🎤</div>
+                <div className="text-sm font-medium">Proposition unique</div>
+                <div className="text-[10px] text-muted-foreground">Un seul conférencier proposé</div>
+              </button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
