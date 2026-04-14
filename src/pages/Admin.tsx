@@ -518,6 +518,10 @@ const AdminProposalsContent = () => {
   const [proposalSearch, setProposalSearch] = useState("");
   const [ccEmails, setCcEmails] = useState("");
   const [hideTestProposals, setHideTestProposals] = useState(true);
+  const [proposalTasks, setProposalTasks] = useState<any[]>([]);
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
+  const [reminderProposal, setReminderProposal] = useState<Proposal | null>(null);
+  const [editingTasks, setEditingTasks] = useState<any[]>([]);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
