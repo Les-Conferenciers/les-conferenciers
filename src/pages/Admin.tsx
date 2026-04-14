@@ -1848,6 +1848,123 @@ const AdminProposalsContent = () => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Reminder Dialog */}
+      <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-serif">🔔 Relances — {reminderProposal?.client_name}</DialogTitle></DialogHeader>
+          {reminderProposal && (
+            <div className="space-y-6 mt-4">
+              {/* Client info */}
+              <div className="bg-muted/30 rounded-lg p-3 text-sm space-y-1">
+                <p><strong>Client :</strong> {reminderProposal.client_name}</p>
+                <p><strong>Email :</strong> {reminderProposal.client_email}</p>
+                {reminderProposal.recipient_name && <p><strong>Destinataire :</strong> {reminderProposal.recipient_name}</p>}
+                {(reminderProposal as any).client_phone && <p><strong>Tél :</strong> {(reminderProposal as any).client_phone}</p>}
+              </div>
+
+              {/* Tasks */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-sm flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Tâches de relance</h3>
+                {editingTasks.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">Aucune tâche créée pour cette proposition.</p>
+                )}
+                {editingTasks.map((task: any, idx: number) => (
+                  <div key={task.id} className={`border rounded-lg p-4 space-y-3 ${task.status === "completed" ? "border-green-200 bg-green-50/50" : "border-border"}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${task.task_type === "relance_1" ? "bg-amber-100 text-amber-700" : "bg-orange-100 text-orange-700"}`}>
+                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2 (J+15)"}
+                        </span>
+                        {task.status === "completed" && <span className="text-xs text-green-600">✓ Envoyée</span>}
+                        {(reminderProposal as any)[task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"] && (
+                          <span className="text-[10px] text-blue-600">
+                            Envoyée le {new Date((reminderProposal as any)[task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"]).toLocaleDateString("fr-FR")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                        <Input
+                          type="date"
+                          value={task.due_date}
+                          onChange={e => {
+                            const updated = [...editingTasks];
+                            updated[idx] = { ...updated[idx], due_date: e.target.value };
+                            setEditingTasks(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Note</Label>
+                        <Input
+                          value={task.note || ""}
+                          onChange={e => {
+                            const updated = [...editingTasks];
+                            updated[idx] = { ...updated[idx], note: e.target.value };
+                            setEditingTasks(updated);
+                          }}
+                          placeholder="Ajouter une note…"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {editingTasks.length > 0 && (
+                  <Button variant="outline" size="sm" className="gap-1" onClick={saveTaskEdits}>
+                    <Save className="h-3 w-3" /> Sauvegarder les modifications
+                  </Button>
+                )}
+              </div>
+
+              {/* Send reminders */}
+              <div className="border-t border-border pt-4 space-y-3">
+                <h3 className="font-medium text-sm">📧 Envoyer une relance</h3>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 text-amber-600 border-amber-200 hover:bg-amber-50"
+                    disabled={!!(reminderProposal as any).reminder1_sent_at || sending === reminderProposal.id}
+                    onClick={async () => {
+                      await handleReminder(reminderProposal, 1);
+                      // Mark task as completed
+                      const task1 = editingTasks.find((t: any) => t.task_type === "relance_1");
+                      if (task1) {
+                        await supabase.from("proposal_tasks").update({ status: "completed", completed_at: new Date().toISOString() } as any).eq("id", task1.id);
+                        fetchTasks();
+                      }
+                      setReminderDialogOpen(false);
+                    }}
+                  >
+                    <Send className="h-4 w-4" />
+                    {(reminderProposal as any).reminder1_sent_at ? "Relance 1 déjà envoyée ✓" : sending === reminderProposal.id ? "Envoi…" : "Envoyer Relance 1"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
+                    disabled={!!(reminderProposal as any).reminder2_sent_at || sending === reminderProposal.id}
+                    onClick={async () => {
+                      await handleReminder(reminderProposal, 2);
+                      const task2 = editingTasks.find((t: any) => t.task_type === "relance_2");
+                      if (task2) {
+                        await supabase.from("proposal_tasks").update({ status: "completed", completed_at: new Date().toISOString() } as any).eq("id", task2.id);
+                        fetchTasks();
+                      }
+                      setReminderDialogOpen(false);
+                    }}
+                  >
+                    <Send className="h-4 w-4" />
+                    {(reminderProposal as any).reminder2_sent_at ? "Relance 2 déjà envoyée ✓" : sending === reminderProposal.id ? "Envoi…" : "Envoyer Relance 2"}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">L'email de relance sera envoyé au client avec le lien vers la proposition.</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
