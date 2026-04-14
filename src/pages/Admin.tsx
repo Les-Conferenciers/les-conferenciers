@@ -1746,6 +1746,10 @@ const AdminProposalsContent = () => {
                 proposal={{
                   id: p.id, client_name: p.client_name, client_email: p.client_email,
                   recipient_name: p.recipient_name, client_id: p.client_id || null, status: p.status,
+                  proposal_type: (p as any).proposal_type || "classique",
+                  event_date_text: (p as any).event_date_text || null,
+                  event_location: (p as any).event_location || null,
+                  audience_size: (p as any).audience_size || null,
                   proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
                     speaker_id: ps.speaker_id,
                     speaker_fee: ps.speaker_fee, travel_costs: ps.travel_costs,
