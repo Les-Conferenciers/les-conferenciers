@@ -126,8 +126,16 @@ const ProposalView = () => {
 
       setLoading(false);
 
-      // Auto-print if print mode
+      // Auto-print if print mode — add print styles dynamically
       if (isPrintMode) {
+        const style = document.createElement('style');
+        style.textContent = `
+          @media print {
+            @page { margin: 20mm 15mm; }
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          }
+        `;
+        document.head.appendChild(style);
         setTimeout(() => window.print(), 800);
       }
     };

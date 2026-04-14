@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { proposal_id, reminder_number } = await req.json();
+    const { proposal_id, reminder_number, custom_subject, custom_html_body } = await req.json();
     if (!proposal_id) {
       return new Response(JSON.stringify({ error: "proposal_id required" }), { status: 400, headers: corsHeaders });
     }
@@ -71,6 +71,7 @@ Deno.serve(async (req) => {
     const proposalUrl = `${SITE}/proposition/${proposal.token}`;
     const recipientFirstName = proposal.recipient_name?.split(" ")[0] || "";
     const reminderNum = reminder_number || 1;
+    const proposalType = proposal.proposal_type || "classique";
 
     const expiresAt = new Date(proposal.expires_at);
     const now = new Date();
@@ -86,41 +87,55 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
+    // Use custom subject/body if provided, otherwise use defaults
     let emailSubject: string;
-    let messageText: string;
+    let bodyHtml: string;
 
-    if (reminderNum === 1) {
-      emailSubject = `Votre sélection de conférenciers - ${proposal.client_name}`;
-      messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
-
-J'espère que vous allez bien !
-
-Je me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.
-
-Je souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.
-
-Je reste bien évidemment à votre disposition si besoin est.
-
-Dans l'attente de votre retour.
-
-Très belle fin de journée à vous.`;
+    if (custom_subject) {
+      emailSubject = custom_subject;
     } else {
-      emailSubject = `Rappel : votre recherche d'intervenants - ${proposal.client_name}`;
-      messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
+      emailSubject = reminderNum === 1
+        ? `Votre sélection de conférenciers - ${proposal.client_name}`
+        : `Rappel : votre recherche d'intervenants - ${proposal.client_name}`;
+    }
 
-Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.
-
-Je souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.
-
-Je reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.
-
-Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.`;
+    if (custom_html_body) {
+      // Use the custom HTML body directly
+      bodyHtml = custom_html_body;
+    } else {
+      // Default templates
+      let messageText: string;
+      if (reminderNum === 1) {
+        messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJ'espère que vous allez bien !\n\nJe me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂\n\nJe souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.\n\nJe reste bien évidemment à votre disposition si besoin est.\n\nDans l'attente de votre retour.\n\nTrès belle fin de journée à vous.`;
+      } else {
+        messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJe reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂\n\nJe souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.\n\nJe reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.\n\nDans l'attente de votre retour, je vous souhaite une très belle fin de journée.`;
+      }
+      bodyHtml = `<div style="color:#333;font-size:14px;line-height:1.7;white-space:pre-wrap;">${messageText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
     }
 
     const urgencyColor = remainingDays <= 7 ? "#dc2626" : "#f59e0b";
     const urgencyText = remainingDays <= 3
       ? `⚠️ Attention : votre proposition expire dans ${remainingDays} jour${remainingDays > 1 ? "s" : ""} !`
       : `Votre proposition est encore disponible pendant ${remainingDays} jours.`;
+
+    // Only show speaker list and proposal button for "classique" proposals
+    const speakerBlock = proposalType === "classique" ? `
+      <div style="background:#f8f6f1;padding:20px;border-radius:8px;margin:20px 0;">
+        <p style="font-size:13px;color:#666;margin:0 0 8px 0;font-weight:bold;">Votre sélection :</p>
+        <pre style="font-family:Arial,sans-serif;color:#333;font-size:14px;white-space:pre-wrap;margin:0;">${speakerLines}</pre>
+      </div>` : "";
+
+    const urgencyBlock = proposalType === "classique" ? `
+      <div style="background:${urgencyColor}15;border-left:4px solid ${urgencyColor};padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
+        <p style="color:${urgencyColor};font-size:14px;font-weight:bold;margin:0;">${urgencyText}</p>
+      </div>` : "";
+
+    const proposalButton = proposalType === "classique" ? `
+      <div style="text-align:center;margin:30px 0;">
+        <a href="${proposalUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
+          Consulter la proposition
+        </a>
+      </div>` : "";
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -129,19 +144,10 @@ Dans l'attente de votre retour, je vous souhaite une très belle fin de journée
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
     ${emailHeader}
     <div style="padding:30px;">
-      <div style="color:#333;font-size:14px;line-height:1.7;white-space:pre-wrap;">${messageText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-      <div style="background:#f8f6f1;padding:20px;border-radius:8px;margin:20px 0;">
-        <p style="font-size:13px;color:#666;margin:0 0 8px 0;font-weight:bold;">Votre sélection :</p>
-        <pre style="font-family:Arial,sans-serif;color:#333;font-size:14px;white-space:pre-wrap;margin:0;">${speakerLines}</pre>
-      </div>
-      <div style="background:${urgencyColor}15;border-left:4px solid ${urgencyColor};padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
-        <p style="color:${urgencyColor};font-size:14px;font-weight:bold;margin:0;">${urgencyText}</p>
-      </div>
-      <div style="text-align:center;margin:30px 0;">
-        <a href="${proposalUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
-          Consulter la proposition
-        </a>
-      </div>
+      ${bodyHtml}
+      ${speakerBlock}
+      ${urgencyBlock}
+      ${proposalButton}
     </div>
     ${emailSignature}
     ${emailFooter}

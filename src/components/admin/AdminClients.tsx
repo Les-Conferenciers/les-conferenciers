@@ -247,7 +247,6 @@ const AdminClients = () => {
               <TableHead>Contact</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Téléphone</TableHead>
-              <TableHead>Ville</TableHead>
               <TableHead>Propositions</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -295,7 +294,7 @@ const AdminClients = () => {
                         </div>
                       ) : "—"}
                     </TableCell>
-                    <TableCell className="text-sm">{c.city || "—"}</TableCell>
+                    
                     <TableCell>
                       {clientProposals.length > 0 ? (
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">{clientProposals.length}</span>
@@ -319,7 +318,7 @@ const AdminClients = () => {
                   {/* Expanded proposals history */}
                   {isExpanded && (
                     <TableRow key={`${c.id}-history`}>
-                      <TableCell colSpan={9} className="bg-muted/30 p-0">
+                      <TableCell colSpan={8} className="bg-muted/30 p-0">
                         <div className="px-6 py-4">
                           <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />

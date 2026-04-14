@@ -104,7 +104,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save, FileText } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save, FileText, Bell, CalendarDays } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 
@@ -510,7 +510,7 @@ const AdminProposalsContent = () => {
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const [clientSearchResults, setClientSearchResults] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [clientMode, setClientMode] = useState<"search" | "new">("search");
+  const [clientMode, setClientMode] = useState<"search" | "new">("new");
   const [allClients, setAllClients] = useState<any[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
@@ -518,9 +518,18 @@ const AdminProposalsContent = () => {
   const [proposalSearch, setProposalSearch] = useState("");
   const [ccEmails, setCcEmails] = useState("");
   const [hideTestProposals, setHideTestProposals] = useState(true);
+  const [proposalTasks, setProposalTasks] = useState<any[]>([]);
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
+  const [reminderProposal, setReminderProposal] = useState<Proposal | null>(null);
+  const [editingTasks, setEditingTasks] = useState<any[]>([]);
+  const [reminderSubject, setReminderSubject] = useState("");
+  const [reminderBody, setReminderBody] = useState("");
+  const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
+  const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
+  const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates()]);
+    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks()]);
   }, []);
 
   // Auto-update email body when event details change
@@ -600,6 +609,72 @@ const AdminProposalsContent = () => {
   const fetchTemplates = async () => {
     const { data } = await supabase.from("proposal_templates").select("id, name, speaker_ids, is_preset").order("name");
     setTemplates((data as any) || []);
+  };
+
+  const fetchTasks = async () => {
+    const { data } = await supabase.from("proposal_tasks").select("*").order("due_date");
+    setProposalTasks((data as any) || []);
+  };
+
+  const createTasksForProposal = async (proposalId: string, sentAt: string) => {
+    const sentDate = new Date(sentAt);
+    const relance1Date = new Date(sentDate);
+    relance1Date.setDate(relance1Date.getDate() + 7);
+    const relance2Date = new Date(sentDate);
+    relance2Date.setDate(relance2Date.getDate() + 15);
+    
+    await supabase.from("proposal_tasks").insert([
+      { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
+      { proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] },
+    ] as any);
+    fetchTasks();
+  };
+
+  const getTasksForProposal = (proposalId: string) => proposalTasks.filter((t: any) => t.proposal_id === proposalId);
+
+  const getReminderDefaultBody = (p: Proposal, num: 1 | 2) => {
+    const firstName = p.recipient_name?.split(" ")[0] || "";
+    if (num === 1) {
+      return `<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
+<p>J'espère que vous allez bien !</p>
+<p>Je me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂</p>
+<p>Je souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.</p>
+<p>Je reste bien évidemment à votre disposition si besoin est.</p>
+<p>Dans l'attente de votre retour.</p>
+<p>Très belle fin de journée à vous.</p>`;
+    }
+    return `<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
+<p>Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂</p>
+<p>Je souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.</p>
+<p>Je reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.</p>
+<p>Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.</p>`;
+  };
+
+  const getReminderDefaultSubject = (p: Proposal, num: 1 | 2) => {
+    return num === 1
+      ? `Votre sélection de conférenciers - ${p.client_name}`
+      : `Rappel : votre recherche d'intervenants - ${p.client_name}`;
+  };
+
+  const openReminderDialog = (p: Proposal) => {
+    const tasks = getTasksForProposal(p.id);
+    setReminderProposal(p);
+    setEditingTasks(tasks.map((t: any) => ({ ...t })));
+    setActiveReminderNum(1);
+    setReminderSubject(getReminderDefaultSubject(p, 1));
+    setReminderBody(getReminderDefaultBody(p, 1));
+    setReminderDialogOpen(true);
+  };
+
+  const saveTaskEdits = async () => {
+    for (const task of editingTasks) {
+      await supabase.from("proposal_tasks").update({
+        due_date: task.due_date,
+        note: task.note || null,
+      } as any).eq("id", task.id);
+    }
+    toast.success("Tâches mises à jour");
+    fetchTasks();
   };
 
   const applyTemplate = (templateId: string) => {
@@ -850,7 +925,9 @@ const AdminProposalsContent = () => {
         const ccList = ccEmails.split(",").map(e => e.trim()).filter(e => e.includes("@"));
         const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id, cc: ccList.length > 0 ? ccList : undefined } });
         if (sendErr) throw sendErr;
-        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", proposal.id);
+        const sentAt = new Date().toISOString();
+        await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
+        await createTasksForProposal(proposal.id, sentAt);
         toast.success("Proposition créée et envoyée !");
       } catch { toast.error("Proposition créée mais erreur d'envoi"); }
     } else {
@@ -864,7 +941,7 @@ const AdminProposalsContent = () => {
     setEmailSubject(""); setEmailBody(""); setMessage(getDefaultMessage("", ""));
     setProposalType("classique"); setGlobalCommission(0);
     setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
-    setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("search");
+    setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("new");
     setCcEmails("");
   };
 
@@ -939,7 +1016,11 @@ const AdminProposalsContent = () => {
       try {
         const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: editingProposal.id } });
         if (sendErr) throw sendErr;
-        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", editingProposal.id);
+        const sentAt = new Date().toISOString();
+        await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", editingProposal.id);
+        // Create tasks if not yet existing
+        const existingTasks = getTasksForProposal(editingProposal.id);
+        if (existingTasks.length === 0) await createTasksForProposal(editingProposal.id, sentAt);
         toast.success("Proposition sauvegardée et envoyée !");
       } catch { toast.error("Sauvegardée mais erreur d'envoi"); }
     } else {
@@ -953,17 +1034,24 @@ const AdminProposalsContent = () => {
     try {
       const { error } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: proposal.id } });
       if (error) throw error;
-      await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", proposal.id);
+      const sentAt = new Date().toISOString();
+      await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
+      await createTasksForProposal(proposal.id, sentAt);
       toast.success("Email envoyé !"); fetchProposals();
     } catch { toast.error("Erreur d'envoi"); }
     setSending(null);
   };
 
-  const handleReminder = async (proposal: Proposal, reminderNum: 1 | 2) => {
+  const handleReminder = async (proposal: Proposal, reminderNum: 1 | 2, customSubject?: string, customBody?: string) => {
     setSending(proposal.id);
     try {
       const { error } = await supabase.functions.invoke("send-proposal-reminder", {
-        body: { proposal_id: proposal.id, reminder_number: reminderNum },
+        body: {
+          proposal_id: proposal.id,
+          reminder_number: reminderNum,
+          custom_subject: customSubject || undefined,
+          custom_html_body: customBody || undefined,
+        },
       });
       if (error) throw error;
       const field = reminderNum === 1 ? "reminder1_sent_at" : "reminder2_sent_at";
@@ -974,9 +1062,43 @@ const AdminProposalsContent = () => {
     setSending(null);
   };
 
+
   const handleAccept = async (id: string) => {
+    // Check if it's a "demande d'info" proposal
+    const proposal = proposals.find(p => p.id === id);
+    if ((proposal as any)?.proposal_type === "info") {
+      // Instead of accepting directly, open dialog to create a real proposal
+      setInfoAcceptProposalId(id);
+      setInfoAcceptDialogOpen(true);
+      return;
+    }
     await supabase.from("proposals").update({ status: "accepted" }).eq("id", id);
     toast.success("Proposition passée en « Accepté »"); fetchProposals();
+  };
+
+  const handleInfoAcceptConvert = async (newType: "classique" | "unique") => {
+    if (!infoAcceptProposalId) return;
+    const original = proposals.find(p => p.id === infoAcceptProposalId);
+    if (!original) return;
+    // Pre-fill a new proposal creation form with the client info
+    resetForm();
+    setClientName(original.client_name);
+    setClientEmail(original.client_email);
+    setRecipientName(original.recipient_name || "");
+    setClientPhone((original as any).client_phone || "");
+    setProposalType(newType);
+    // Set email defaults
+    if (newType === "classique") {
+      setEmailSubject(getDefaultEmailSubject(original.client_name));
+      setEmailBody(getDefaultEmailBody(original.recipient_name || "", original.client_name));
+    }
+    setClientMode("new");
+    setInfoAcceptDialogOpen(false);
+    setDialogOpen(true);
+    // Mark the info proposal as archived
+    await supabase.from("proposals").update({ status: "archived" }).eq("id", infoAcceptProposalId);
+    fetchProposals();
+    toast.info("Créez la proposition à partir des informations du client");
   };
 
   const handleArchive = async (id: string) => {
@@ -1122,11 +1244,11 @@ const AdminProposalsContent = () => {
       <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
         <Label className="text-sm font-medium">👤 Client</Label>
         <div className="flex gap-2">
-          <button type="button" onClick={() => { setClientMode("search"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "search" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-            Rechercher un client existant
-          </button>
           <button type="button" onClick={() => { setClientMode("new"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "new" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
             Nouveau client
+          </button>
+          <button type="button" onClick={() => { setClientMode("search"); setSelectedClientId(null); }} className={`text-xs px-3 py-1.5 rounded-full transition-colors ${clientMode === "search" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+            Rechercher un client existant
           </button>
         </div>
 
@@ -1538,9 +1660,26 @@ const AdminProposalsContent = () => {
                 <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">En attente</span>
                 {!expired && <div className="text-[10px] text-muted-foreground">{remaining}j restants</div>}
                 {expired && <span className="text-[10px] text-destructive font-medium">Expiré</span>}
-                {/* Reminder badges */}
                 {(p as any).reminder1_sent_at && <div className="text-[10px] text-blue-600">Relance 1 ✓</div>}
                 {(p as any).reminder2_sent_at && <div className="text-[10px] text-blue-600">Relance 2 ✓</div>}
+                {(() => {
+                  const tasks = getTasksForProposal(p.id);
+                  const pendingTasks = tasks.filter((t: any) => t.status === "pending");
+                  if (pendingTasks.length === 0) return null;
+                  const nextTask = pendingTasks.sort((a: any, b: any) => a.due_date.localeCompare(b.due_date))[0];
+                  const dueDate = new Date(nextTask.due_date);
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  const isOverdue = dueDate < today;
+                  const isToday = dueDate.toDateString() === today.toDateString();
+                  return (
+                    <div className={`text-[10px] flex items-center gap-1 ${isOverdue ? "text-destructive font-medium" : isToday ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>
+                      <CalendarDays className="h-3 w-3" />
+                      {nextTask.task_type === "relance_1" ? "R1" : "R2"}: {dueDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                      {isOverdue && " ⚠️"}
+                      {isToday && " 📌"}
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {mode === "sent" && p.status === "accepted" && pipelineInfo && (
@@ -1581,14 +1720,9 @@ const AdminProposalsContent = () => {
               )}
               {mode === "sent" && p.status === "sent" && (
                 <>
-                  {!expired && !(p as any).reminder1_sent_at && (
-                    <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => handleReminder(p, 1)} disabled={sending === p.id} title="Relance 1">
-                      <RefreshCw className="h-3 w-3" /> Relance 1
-                    </Button>
-                  )}
-                  {!expired && (p as any).reminder1_sent_at && !(p as any).reminder2_sent_at && (
-                    <Button variant="outline" size="sm" className="gap-1 text-orange-600 border-orange-200 hover:bg-orange-50" onClick={() => handleReminder(p, 2)} disabled={sending === p.id} title="Relance 2">
-                      <RefreshCw className="h-3 w-3" /> Relance 2
+                  {!expired && (
+                    <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => openReminderDialog(p)} title="Relances">
+                      <Bell className="h-3 w-3" /> Relances
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => handleAccept(p.id)} title="Accepter">
@@ -1612,6 +1746,10 @@ const AdminProposalsContent = () => {
                 proposal={{
                   id: p.id, client_name: p.client_name, client_email: p.client_email,
                   recipient_name: p.recipient_name, client_id: p.client_id || null, status: p.status,
+                  proposal_type: (p as any).proposal_type || "classique",
+                  event_date_text: (p as any).event_date_text || null,
+                  event_location: (p as any).event_location || null,
+                  audience_size: (p as any).audience_size || null,
                   proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
                     speaker_id: ps.speaker_id,
                     speaker_fee: ps.speaker_fee, travel_costs: ps.travel_costs,
@@ -1783,6 +1921,178 @@ const AdminProposalsContent = () => {
               </div>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reminder Dialog */}
+      <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-serif">🔔 Relances — {reminderProposal?.client_name}</DialogTitle></DialogHeader>
+          {reminderProposal && (
+            <div className="space-y-6 mt-4">
+              {/* Client info */}
+              <div className="bg-muted/30 rounded-lg p-3 text-sm space-y-1">
+                <p><strong>Client :</strong> {reminderProposal.client_name}</p>
+                <p><strong>Email :</strong> {reminderProposal.client_email}</p>
+                {reminderProposal.recipient_name && <p><strong>Destinataire :</strong> {reminderProposal.recipient_name}</p>}
+                {(reminderProposal as any).client_phone && <p><strong>Tél :</strong> {(reminderProposal as any).client_phone}</p>}
+              </div>
+
+              {/* Tasks */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-sm flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Tâches de relance</h3>
+                {editingTasks.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">Aucune tâche créée pour cette proposition.</p>
+                )}
+                {editingTasks.map((task: any, idx: number) => (
+                  <div key={task.id} className={`border rounded-lg p-4 space-y-3 ${task.status === "completed" ? "border-green-200 bg-green-50/50" : "border-border"}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${task.task_type === "relance_1" ? "bg-amber-100 text-amber-700" : "bg-orange-100 text-orange-700"}`}>
+                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2 (J+15)"}
+                        </span>
+                        {task.status === "completed" && <span className="text-xs text-green-600">✓ Envoyée</span>}
+                        {(reminderProposal as any)[task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"] && (
+                          <span className="text-[10px] text-blue-600">
+                            Envoyée le {new Date((reminderProposal as any)[task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"]).toLocaleDateString("fr-FR")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                        <Input
+                          type="date"
+                          value={task.due_date}
+                          onChange={e => {
+                            const updated = [...editingTasks];
+                            updated[idx] = { ...updated[idx], due_date: e.target.value };
+                            setEditingTasks(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Note</Label>
+                        <Input
+                          value={task.note || ""}
+                          onChange={e => {
+                            const updated = [...editingTasks];
+                            updated[idx] = { ...updated[idx], note: e.target.value };
+                            setEditingTasks(updated);
+                          }}
+                          placeholder="Ajouter une note…"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {editingTasks.length > 0 && (
+                  <Button variant="outline" size="sm" className="gap-1" onClick={saveTaskEdits}>
+                    <Save className="h-3 w-3" /> Sauvegarder les modifications
+                  </Button>
+                )}
+              </div>
+
+              {/* Email template editor */}
+              <div className="border-t border-border pt-4 space-y-4">
+                <h3 className="font-medium text-sm">📧 Envoyer une relance</h3>
+                
+                {/* Toggle between Relance 1 and 2 */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveReminderNum(1);
+                      setReminderSubject(getReminderDefaultSubject(reminderProposal, 1));
+                      setReminderBody(getReminderDefaultBody(reminderProposal, 1));
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-full transition-colors ${activeReminderNum === 1 ? "bg-amber-100 text-amber-700 font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  >
+                    Relance 1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveReminderNum(2);
+                      setReminderSubject(getReminderDefaultSubject(reminderProposal, 2));
+                      setReminderBody(getReminderDefaultBody(reminderProposal, 2));
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-full transition-colors ${activeReminderNum === 2 ? "bg-orange-100 text-orange-700 font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  >
+                    Relance 2
+                  </button>
+                </div>
+
+                {/* Already sent warning */}
+                {(reminderProposal as any)[activeReminderNum === 1 ? "reminder1_sent_at" : "reminder2_sent_at"] && (
+                  <div className="bg-blue-50 text-blue-700 text-xs p-2 rounded">
+                    ✓ Déjà envoyée le {new Date((reminderProposal as any)[activeReminderNum === 1 ? "reminder1_sent_at" : "reminder2_sent_at"]).toLocaleDateString("fr-FR")}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Objet</Label>
+                  <Input value={reminderSubject} onChange={e => setReminderSubject(e.target.value)} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Corps du mail</Label>
+                  <SimpleRichTextEditor value={reminderBody} onChange={setReminderBody} />
+                </div>
+
+                <Button
+                  className="w-full gap-2"
+                  disabled={!!(reminderProposal as any)[activeReminderNum === 1 ? "reminder1_sent_at" : "reminder2_sent_at"] || sending === reminderProposal.id}
+                  onClick={async () => {
+                    await handleReminder(reminderProposal, activeReminderNum, reminderSubject, reminderBody);
+                    const taskType = activeReminderNum === 1 ? "relance_1" : "relance_2";
+                    const task = editingTasks.find((t: any) => t.task_type === taskType);
+                    if (task) {
+                      await supabase.from("proposal_tasks").update({ status: "completed", completed_at: new Date().toISOString() } as any).eq("id", task.id);
+                      fetchTasks();
+                    }
+                    setReminderDialogOpen(false);
+                  }}
+                >
+                  <Send className="h-4 w-4" />
+                  {sending === reminderProposal.id ? "Envoi…" : `Envoyer Relance ${activeReminderNum}`}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Info accept → new proposal dialog */}
+      <Dialog open={infoAcceptDialogOpen} onOpenChange={setInfoAcceptDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Convertir la demande d'infos</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Cette demande d'informations a été acceptée. Quel type de proposition souhaitez-vous créer ?
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleInfoAcceptConvert("classique")}
+                className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center space-y-2"
+              >
+                <div className="text-2xl">📋</div>
+                <div className="text-sm font-medium">Proposition multiple</div>
+                <div className="text-[10px] text-muted-foreground">Sélection de plusieurs conférenciers</div>
+              </button>
+              <button
+                onClick={() => handleInfoAcceptConvert("unique")}
+                className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center space-y-2"
+              >
+                <div className="text-2xl">🎤</div>
+                <div className="text-sm font-medium">Proposition unique</div>
+                <div className="text-[10px] text-muted-foreground">Un seul conférencier proposé</div>
+              </button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

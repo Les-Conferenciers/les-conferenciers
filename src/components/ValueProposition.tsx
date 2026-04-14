@@ -1,9 +1,9 @@
-import stepEcoute from "@/assets/step-ecoute.jpg";
-import stepDevis from "@/assets/step-devis.jpg";
-import stepSelection from "@/assets/step-selection.jpg";
-import stepValidation from "@/assets/step-validation.jpg";
-import stepCoordination from "@/assets/step-coordination.jpg";
-import stepEvenement from "@/assets/step-evenement.jpg";
+import stepEcoute from "@/assets/step-ecoute.webp";
+import stepDevis from "@/assets/step-devis.webp";
+import stepSelection from "@/assets/step-selection.webp";
+import stepValidation from "@/assets/step-validation.webp";
+import stepCoordination from "@/assets/step-coordination.webp";
+import stepEvenement from "@/assets/step-evenement.webp";
 
 const STEPS = [
   {

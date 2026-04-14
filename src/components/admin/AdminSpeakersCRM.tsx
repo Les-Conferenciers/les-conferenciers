@@ -1189,28 +1189,45 @@ const AdminSpeakersCRM = () => {
                     </div>
                   </div>
                 </div>
-                {editForm.image_url && (
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Repositionner l'image (vertical)</Label>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] text-muted-foreground">Haut</span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={parseInt(((editForm as any).image_position || 'center center').replace(/center\s*/i, '').replace('%', '') || '50')}
-                        onChange={e => setEditForm(p => ({ ...p, image_position: `center ${e.target.value}%` }))}
-                        className="flex-grow h-2 accent-primary"
-                      />
-                      <span className="text-[10px] text-muted-foreground">Bas</span>
-                    </div>
-                    <div className="flex justify-center">
-                      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
-                        <img src={editForm.image_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: (editForm as any).image_position || 'center center' }} />
+                {editForm.image_url && (() => {
+                  // Parse current position: "X% Y%" or "center center" etc.
+                  const pos = (editForm as any).image_position || 'center center';
+                  const parts = pos.split(/\s+/);
+                  const parseVal = (v: string) => v === 'center' ? 50 : v === 'left' || v === 'top' ? 0 : v === 'right' || v === 'bottom' ? 100 : parseInt(v.replace('%', '')) || 50;
+                  const xVal = parseVal(parts[0] || 'center');
+                  const yVal = parseVal(parts[1] || 'center');
+                  // Zoom stored as scale in a data attribute, default 1
+                  const zoomKey = '__zoom';
+                  const currentZoom = (editForm as any)[zoomKey] || 1;
+                  const setPos = (x: number, y: number) => setEditForm(p => ({ ...p, image_position: `${x}% ${y}%` }));
+                  return (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Repositionner et zoomer l'image</Label>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-muted-foreground w-8">Gauche</span>
+                        <input type="range" min="0" max="100" value={xVal} onChange={e => setPos(Number(e.target.value), yVal)} className="flex-grow h-2 accent-primary" />
+                        <span className="text-[10px] text-muted-foreground w-8">Droite</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-muted-foreground w-8">Haut</span>
+                        <input type="range" min="0" max="100" value={yVal} onChange={e => setPos(xVal, Number(e.target.value))} className="flex-grow h-2 accent-primary" />
+                        <span className="text-[10px] text-muted-foreground w-8">Bas</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-muted-foreground w-8">Zoom</span>
+                        <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setEditForm(p => ({ ...p, [zoomKey]: Math.max(1, (p as any)[zoomKey] || 1) - 0.1 }))} disabled={currentZoom <= 1}>−</Button>
+                        <input type="range" min="100" max="300" value={Math.round(currentZoom * 100)} onChange={e => setEditForm(p => ({ ...p, [zoomKey]: Number(e.target.value) / 100 }))} className="flex-grow h-2 accent-primary" />
+                        <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setEditForm(p => ({ ...p, [zoomKey]: Math.min(3, ((p as any)[zoomKey] || 1) + 0.1) }))}>+</Button>
+                        <span className="text-[10px] text-muted-foreground w-10">{Math.round(currentZoom * 100)}%</span>
+                      </div>
+                      <div className="flex justify-center">
+                        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
+                          <img src={editForm.image_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: `${xVal}% ${yVal}%`, transform: `scale(${currentZoom})` }} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

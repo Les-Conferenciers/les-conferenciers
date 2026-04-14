@@ -1,6 +1,6 @@
-import speakersCollage1 from "@/assets/speakers-collage-1.png";
-import speakersCollage2 from "@/assets/speakers-collage-2.png";
-import nellySelfies from "@/assets/nelly-selfies.png";
+import speakersCollage1 from "@/assets/speakers-collage-1.webp";
+import speakersCollage2 from "@/assets/speakers-collage-2.webp";
+import nellySelfies from "@/assets/nelly-selfies.webp";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FeaturedSpeakers from "@/components/FeaturedSpeakers";
@@ -192,8 +192,7 @@ const Index = () => {
         <div className="absolute inset-0 bg-primary/80" />
         <div className="container mx-auto relative z-10 text-center max-w-4xl">
           <h1
-            className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight animate-fade-in"
-            style={{ animationDelay: "0.1s" }}
+            className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight"
           >
             Agence de conférenciers
             <br />
@@ -201,8 +200,7 @@ const Index = () => {
           </h1>
 
           <h2
-            className="text-lg md:text-2xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto font-normal animate-fade-in"
-            style={{ animationDelay: "0.2s" }}
+            className="text-lg md:text-2xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto font-normal"
           >
             Gagnez du temps, trouvez le conférencier idéal pour vos événements professionnels.
           </h2>
