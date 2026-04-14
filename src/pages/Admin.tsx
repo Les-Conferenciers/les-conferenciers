@@ -984,7 +984,11 @@ const AdminProposalsContent = () => {
       try {
         const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", { body: { proposal_id: editingProposal.id } });
         if (sendErr) throw sendErr;
-        await supabase.from("proposals").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", editingProposal.id);
+        const sentAt = new Date().toISOString();
+        await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", editingProposal.id);
+        // Create tasks if not yet existing
+        const existingTasks = getTasksForProposal(editingProposal.id);
+        if (existingTasks.length === 0) await createTasksForProposal(editingProposal.id, sentAt);
         toast.success("Proposition sauvegardée et envoyée !");
       } catch { toast.error("Sauvegardée mais erreur d'envoi"); }
     } else {
