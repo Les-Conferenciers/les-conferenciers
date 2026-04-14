@@ -461,6 +461,13 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     };
     // Link client to proposal
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
+    // Also update event with audience_size and bdc_number
+    if (event) {
+      await supabase.from("events").update({ 
+        audience_size: contractAudienceSize || null,
+        bdc_number: contractBdcNumber || null,
+      } as any).eq("id", event.id);
+    }
     if (editingContract && contract) {
       const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
       if (error) toast.error("Erreur mise à jour"); else toast.success("Contrat mis à jour !");
