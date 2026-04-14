@@ -1060,9 +1060,45 @@ const AdminProposalsContent = () => {
     setSending(null);
   };
 
+  const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
+  const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
+
   const handleAccept = async (id: string) => {
+    // Check if it's a "demande d'info" proposal
+    const proposal = proposals.find(p => p.id === id);
+    if ((proposal as any)?.proposal_type === "info") {
+      // Instead of accepting directly, open dialog to create a real proposal
+      setInfoAcceptProposalId(id);
+      setInfoAcceptDialogOpen(true);
+      return;
+    }
     await supabase.from("proposals").update({ status: "accepted" }).eq("id", id);
     toast.success("Proposition passée en « Accepté »"); fetchProposals();
+  };
+
+  const handleInfoAcceptConvert = async (newType: "classique" | "unique") => {
+    if (!infoAcceptProposalId) return;
+    const original = proposals.find(p => p.id === infoAcceptProposalId);
+    if (!original) return;
+    // Pre-fill a new proposal creation form with the client info
+    resetForm();
+    setClientName(original.client_name);
+    setClientEmail(original.client_email);
+    setRecipientName(original.recipient_name || "");
+    setClientPhone((original as any).client_phone || "");
+    setProposalType(newType);
+    // Set email defaults
+    if (newType === "classique") {
+      setEmailSubject(getDefaultEmailSubject(original.client_name));
+      setEmailBody(getDefaultEmailBody(original.recipient_name || "", original.client_name));
+    }
+    setClientMode("new");
+    setInfoAcceptDialogOpen(false);
+    setDialogOpen(true);
+    // Mark the info proposal as archived
+    await supabase.from("proposals").update({ status: "archived" }).eq("id", infoAcceptProposalId);
+    fetchProposals();
+    toast.info("Créez la proposition à partir des informations du client");
   };
 
   const handleArchive = async (id: string) => {
