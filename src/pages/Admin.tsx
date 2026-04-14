@@ -630,10 +630,37 @@ const AdminProposalsContent = () => {
 
   const getTasksForProposal = (proposalId: string) => proposalTasks.filter((t: any) => t.proposal_id === proposalId);
 
+  const getReminderDefaultBody = (p: Proposal, num: 1 | 2) => {
+    const firstName = p.recipient_name?.split(" ")[0] || "";
+    if (num === 1) {
+      return `<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
+<p>J'espère que vous allez bien !</p>
+<p>Je me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂</p>
+<p>Je souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.</p>
+<p>Je reste bien évidemment à votre disposition si besoin est.</p>
+<p>Dans l'attente de votre retour.</p>
+<p>Très belle fin de journée à vous.</p>`;
+    }
+    return `<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
+<p>Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂</p>
+<p>Je souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.</p>
+<p>Je reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.</p>
+<p>Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.</p>`;
+  };
+
+  const getReminderDefaultSubject = (p: Proposal, num: 1 | 2) => {
+    return num === 1
+      ? `Votre sélection de conférenciers - ${p.client_name}`
+      : `Rappel : votre recherche d'intervenants - ${p.client_name}`;
+  };
+
   const openReminderDialog = (p: Proposal) => {
     const tasks = getTasksForProposal(p.id);
     setReminderProposal(p);
     setEditingTasks(tasks.map((t: any) => ({ ...t })));
+    setActiveReminderNum(1);
+    setReminderSubject(getReminderDefaultSubject(p, 1));
+    setReminderBody(getReminderDefaultBody(p, 1));
     setReminderDialogOpen(true);
   };
 
