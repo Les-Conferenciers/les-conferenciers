@@ -1632,14 +1632,9 @@ const AdminProposalsContent = () => {
               )}
               {mode === "sent" && p.status === "sent" && (
                 <>
-                  {!expired && !(p as any).reminder1_sent_at && (
-                    <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => handleReminder(p, 1)} disabled={sending === p.id} title="Relance 1">
-                      <RefreshCw className="h-3 w-3" /> Relance 1
-                    </Button>
-                  )}
-                  {!expired && (p as any).reminder1_sent_at && !(p as any).reminder2_sent_at && (
-                    <Button variant="outline" size="sm" className="gap-1 text-orange-600 border-orange-200 hover:bg-orange-50" onClick={() => handleReminder(p, 2)} disabled={sending === p.id} title="Relance 2">
-                      <RefreshCw className="h-3 w-3" /> Relance 2
+                  {!expired && (
+                    <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => openReminderDialog(p)} title="Relances">
+                      <Bell className="h-3 w-3" /> Relances
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => handleAccept(p.id)} title="Accepter">
