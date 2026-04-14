@@ -1040,11 +1040,16 @@ const AdminProposalsContent = () => {
     setSending(null);
   };
 
-  const handleReminder = async (proposal: Proposal, reminderNum: 1 | 2) => {
+  const handleReminder = async (proposal: Proposal, reminderNum: 1 | 2, customSubject?: string, customBody?: string) => {
     setSending(proposal.id);
     try {
       const { error } = await supabase.functions.invoke("send-proposal-reminder", {
-        body: { proposal_id: proposal.id, reminder_number: reminderNum },
+        body: {
+          proposal_id: proposal.id,
+          reminder_number: reminderNum,
+          custom_subject: customSubject || undefined,
+          custom_html_body: customBody || undefined,
+        },
       });
       if (error) throw error;
       const field = reminderNum === 1 ? "reminder1_sent_at" : "reminder2_sent_at";
