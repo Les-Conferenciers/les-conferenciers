@@ -525,6 +525,8 @@ const AdminProposalsContent = () => {
   const [reminderSubject, setReminderSubject] = useState("");
   const [reminderBody, setReminderBody] = useState("");
   const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
+  const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
+  const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks()]);
@@ -1060,8 +1062,6 @@ const AdminProposalsContent = () => {
     setSending(null);
   };
 
-  const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
-  const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
 
   const handleAccept = async (id: string) => {
     // Check if it's a "demande d'info" proposal
