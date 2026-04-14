@@ -2059,6 +2059,38 @@ const AdminProposalsContent = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Info accept → new proposal dialog */}
+      <Dialog open={infoAcceptDialogOpen} onOpenChange={setInfoAcceptDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Convertir la demande d'infos</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Cette demande d'informations a été acceptée. Quel type de proposition souhaitez-vous créer ?
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleInfoAcceptConvert("classique")}
+                className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center space-y-2"
+              >
+                <div className="text-2xl">📋</div>
+                <div className="text-sm font-medium">Proposition multiple</div>
+                <div className="text-[10px] text-muted-foreground">Sélection de plusieurs conférenciers</div>
+              </button>
+              <button
+                onClick={() => handleInfoAcceptConvert("unique")}
+                className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-center space-y-2"
+              >
+                <div className="text-2xl">🎤</div>
+                <div className="text-sm font-medium">Proposition unique</div>
+                <div className="text-[10px] text-muted-foreground">Un seul conférencier proposé</div>
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
