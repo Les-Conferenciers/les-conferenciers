@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
 
 J'espère que vous allez bien !
 
-Je me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.
+Je me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂
 
 Je souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.
 
@@ -108,7 +108,7 @@ Très belle fin de journée à vous.`;
       emailSubject = `Rappel : votre recherche d'intervenants - ${proposal.client_name}`;
       messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},
 
-Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.
+Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂
 
 Je souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.
 
