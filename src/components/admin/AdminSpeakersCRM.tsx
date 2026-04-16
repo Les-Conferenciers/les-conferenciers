@@ -1248,7 +1248,7 @@ const AdminSpeakersCRM = () => {
                       <div className="flex items-start gap-4">
                         {/* Drag area - rectangle preview */}
                         <div
-                          className="w-48 h-48 rounded-xl overflow-hidden border-2 border-primary/30 bg-muted cursor-grab active:cursor-grabbing relative select-none"
+                          className="w-48 h-48 rounded-xl overflow-hidden border-2 border-primary/30 bg-muted cursor-grab active:cursor-grabbing relative select-none touch-none"
                           onMouseDown={handleDragStart}
                           onTouchStart={handleDragStart}
                           onWheel={handleWheel}
