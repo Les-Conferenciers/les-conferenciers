@@ -775,8 +775,8 @@ const AdminProposalsContent = () => {
   const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(applySearch(applyHideTest(items))));
 
   const drafts = filterAndSort(proposals.filter(p => p.status === "draft"));
-  const sent = filterAndSort(proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p)));
-  const completed = filterAndSort(proposals.filter(p => p.status === "accepted" && isFullyPaid(p)));
+  const sent = filterAndSort(proposals.filter(p => p.status === "sent"));
+  const accepted = filterAndSort(proposals.filter(p => p.status === "accepted"));
   const archived = filterAndSort(proposals.filter(p => p.status === "archived"));
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter(c => c.speaker_id === speakerId);
