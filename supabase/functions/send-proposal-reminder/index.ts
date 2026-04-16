@@ -103,12 +103,25 @@ Deno.serve(async (req) => {
       // Use the custom HTML body directly
       bodyHtml = custom_html_body;
     } else {
-      // Default templates
+      // Default templates per type
+      const speakerName = (proposal.proposal_speakers || [])?.[0]?.speakers?.name || "l'intervenant";
       let messageText: string;
-      if (reminderNum === 1) {
-        messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJ'espère que vous allez bien !\n\nJe me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂\n\nJe souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.\n\nJe reste bien évidemment à votre disposition si besoin est.\n\nDans l'attente de votre retour.\n\nTrès belle fin de journée à vous.`;
+
+      if (proposalType === "unique") {
+        if (reminderNum === 1) {
+          messageText = `Bonjour,\n\nJ'espère que vous allez bien ! 🙂\n\nJe me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.\n\nJe souhaitais savoir si le profil de ${speakerName} avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.\n\nJe reste bien évidemment à votre disposition si besoin est.\n\nDans l'attente de votre retour.\n\nTrès belle fin de journée à vous.`;
+        } else {
+          messageText = `Bonjour,\n\nJe reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants. 🙂\n\nJe souhaitais savoir si l'intervention de ${speakerName} était toujours d'actualité.\n\nJe reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.\n\nDans l'attente de votre retour, je vous souhaite une très belle fin de journée.\n\nBien à vous,`;
+        }
+      } else if (proposalType === "info") {
+        messageText = `Bonjour,\n\nJe reviens vers vous suite à votre retour et je me réjouis de notre future collaboration.\n\nAfin d'avancer sur l'organisation de la venue de ${speakerName}, pouvez-vous me communiquer le numéro de RCS de l'entité à facturer, la taille de l'auditoire et les horaires souhaités.\n\nNous pourrons dans un second temps prévoir un échange avec l'intervenant.\n\nRestant à votre écoute et dans l'attente de votre retour, je vous souhaite une excellente journée.`;
       } else {
-        messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJe reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂\n\nJe souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.\n\nJe reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.\n\nDans l'attente de votre retour, je vous souhaite une très belle fin de journée.`;
+        // classique
+        if (reminderNum === 1) {
+          messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJ'espère que vous allez bien !\n\nJe me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂\n\nJe souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.\n\nJe reste bien évidemment à votre disposition si besoin est.\n\nDans l'attente de votre retour.\n\nTrès belle fin de journée à vous.`;
+        } else {
+          messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJe reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂\n\nJe souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.\n\nJe reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.\n\nDans l'attente de votre retour, je vous souhaite une très belle fin de journée.`;
+        }
       }
       bodyHtml = `<div style="color:#333;font-size:14px;line-height:1.7;white-space:pre-wrap;">${messageText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
     }
