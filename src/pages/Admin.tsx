@@ -2138,4 +2138,183 @@ const AdminProposalsContent = () => {
   );
 };
 
+// ── Contracts tab content ──
+const AdminContractsContent = () => {
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [contractSubTab, setContractSubTab] = useState<"en_cours" | "termines">("en_cours");
+  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [pRes, cRes, iRes, eRes] = await Promise.all([
+      supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))").eq("status", "accepted").order("created_at", { ascending: false }),
+      supabase.from("contracts").select("id, proposal_id, status, signed_at"),
+      supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at"),
+      supabase.from("events").select("id, proposal_id, selected_speaker_id, info_sent_speaker_at, contract_sent_speaker_at, liaison_sheet_sent_at, speaker_paid_at"),
+    ]);
+    setProposals((pRes.data as any) || []);
+    setContracts((cRes.data as any) || []);
+    setInvoices((iRes.data as any) || []);
+    setEvents((eRes.data as any) || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const getStage = (p: any) => {
+    const pInvoices = invoices.filter((i: any) => i.proposal_id === p.id);
+    const pContract = contracts.find((c: any) => c.proposal_id === p.id);
+    const pEvent = events.find((e: any) => e.proposal_id === p.id);
+    const allPaid = pInvoices.length > 0 && pInvoices.every((i: any) => i.status === "paid");
+    if (allPaid && pInvoices.length > 0) return "termine";
+    if (pEvent?.speaker_paid_at) return "speaker_paye";
+    if (pInvoices.some((i: any) => i.invoice_type === "solde" && i.status === "sent")) return "facture_solde";
+    if (pEvent?.liaison_sheet_sent_at) return "fiche_liaison";
+    if (pInvoices.some((i: any) => i.invoice_type === "acompte" && (i.status === "paid"))) return "acompte_paye";
+    if (pInvoices.some((i: any) => i.invoice_type === "acompte" && (i.status === "sent"))) return "acompte_envoye";
+    if (pContract?.signed_at) return "contrat_signe";
+    if (pEvent?.info_sent_speaker_at) return "info_conferencier";
+    if (pContract) return "contrat_client";
+    return "accepte";
+  };
+
+  const stageLabels: Record<string, string> = {
+    accepte: "📋 Acceptée",
+    contrat_client: "📝 Contrat client",
+    info_conferencier: "📧 Info conférencier",
+    contrat_signe: "✅ Contrat signé",
+    acompte_envoye: "💰 Acompte envoyé",
+    acompte_paye: "💵 Acompte payé",
+    fiche_liaison: "📋 Fiche liaison",
+    facture_solde: "🧾 Facture solde",
+    speaker_paye: "🎤 Speaker payé",
+    termine: "✅ Terminé",
+  };
+
+  const isTermine = (p: any) => getStage(p) === "termine";
+
+  const enCours = proposals.filter(p => !isTermine(p));
+  const termines = proposals.filter(p => isTermine(p));
+
+  const currentList = contractSubTab === "en_cours" ? enCours : termines;
+  const filtered = stageFilter === "all" ? currentList : currentList.filter(p => getStage(p) === stageFilter);
+
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+
+  if (loading) return <div className="text-center py-12 text-muted-foreground">Chargement…</div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-serif font-bold">Contrats & Dossiers</h2>
+        <Button variant="ghost" size="sm" onClick={fetchData}>
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Tabs value={contractSubTab} onValueChange={(v) => setContractSubTab(v as any)}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="en_cours" className="gap-1.5 text-xs">
+            📂 En cours {enCours.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{enCours.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="termines" className="gap-1.5 text-xs">
+            ✅ Terminés {termines.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{termines.length}</span>}
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <select
+            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+            value={stageFilter}
+            onChange={e => setStageFilter(e.target.value)}
+          >
+            <option value="all">Toutes les étapes</option>
+            {Object.entries(stageLabels).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+        </div>
+
+        {["en_cours", "termines"].map(subTab => (
+          <TabsContent key={subTab} value={subTab}>
+            {filtered.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">Aucun dossier</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[200px]">Client</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Étape</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((p: any) => {
+                    const stage = getStage(p);
+                    return (
+                      <React.Fragment key={p.id}>
+                        <TableRow
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                        >
+                          <TableCell>
+                            <div className="font-medium text-sm">{p.client_name}</div>
+                            <div className="text-xs text-muted-foreground">{p.client_email}</div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs">{p.proposal_type === "unique" ? "🎤 Unique" : p.proposal_type === "info" ? "📝 Infos" : "📋 Classique"}</span>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{formatDate(p.created_at)}</TableCell>
+                          <TableCell>
+                            <span className="text-xs px-2 py-1 rounded-full bg-muted">{stageLabels[stage] || stage}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm">
+                              {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        {expandedId === p.id && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="bg-muted/30 px-6 py-2">
+                              <EventDossier
+                                proposal={{
+                                  id: p.id, client_name: p.client_name, client_email: p.client_email,
+                                  recipient_name: p.recipient_name, client_id: p.client_id || null, status: p.status,
+                                  proposal_type: p.proposal_type || "classique",
+                                  event_date_text: p.event_date_text || null,
+                                  event_location: p.event_location || null,
+                                  audience_size: p.audience_size || null,
+                                  proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
+                                    speaker_id: ps.speaker_id,
+                                    speaker_fee: ps.speaker_fee, travel_costs: ps.travel_costs,
+                                    agency_commission: ps.agency_commission, total_price: ps.total_price,
+                                    speakers: ps.speakers,
+                                  })),
+                                }}
+                                onUpdate={fetchData}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+};
+
 export default Admin;
