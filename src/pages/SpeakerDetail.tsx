@@ -22,9 +22,17 @@ import SpeakerReviews from "@/components/SpeakerReviews";
 const DEFAULT_IMAGE = null;
 
 // Strip inline styles and unwanted span wrappers from HTML to ensure consistent typography
+// Preserve width/height on images so they render at their intended size
 const sanitizeConferenceHtml = (html: string): string => {
   return html
-    .replace(/\s*style="[^"]*"/gi, '')
+    .replace(/<img([^>]*)style="([^"]*)"/gi, (match, before, style) => {
+      // Keep only width and height from the style
+      const widthMatch = style.match(/width\s*:\s*[^;]+/i);
+      const heightMatch = style.match(/height\s*:\s*[^;]+/i);
+      const kept = [widthMatch?.[0], heightMatch?.[0]].filter(Boolean).join(';');
+      return kept ? `<img${before}style="${kept}"` : `<img${before}`;
+    })
+    .replace(/<(?!img)([^>]*)\s*style="[^"]*"/gi, '<$1')
     .replace(/<span>(.*?)<\/span>/gi, '$1');
 };
 
@@ -670,7 +678,7 @@ const SpeakerDetail = () => {
                               [&_ul>li]:before:content-[''] [&_ul>li]:before:absolute [&_ul>li]:before:left-0 [&_ul>li]:before:top-[0.6em] [&_ul>li]:before:w-1.5 [&_ul>li]:before:h-1.5 [&_ul>li]:before:rounded-full [&_ul>li]:before:bg-accent/60
                               [&_ol]:list-decimal [&_ol]:pl-5
                               [&_em]:italic
-                              [&_img]:rounded-xl [&_img]:shadow-sm [&_img]:my-4 [&_img]:w-full [&_img]:max-w-full"
+                              [&_img]:rounded-xl [&_img]:shadow-sm [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto"
                             dangerouslySetInnerHTML={{ __html: sanitizeConferenceHtml(conf.description) }}
                           />
                         )}
