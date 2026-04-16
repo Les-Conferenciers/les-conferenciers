@@ -476,6 +476,7 @@ const EmailPreviewCard = ({
 };
 
 const AdminProposalsContent = () => {
+  const [, setSearchParams] = useSearchParams();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [conferences, setConferences] = useState<SpeakerConference[]>([]);
