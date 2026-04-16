@@ -964,7 +964,7 @@ const AdminProposalsContent = () => {
         if (sendErr) throw sendErr;
         const sentAt = new Date().toISOString();
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
-        await createTasksForProposal(proposal.id, sentAt);
+        await createTasksForProposal(proposal.id, sentAt, proposalType);
         toast.success("Proposition créée et envoyée !");
       } catch { toast.error("Proposition créée mais erreur d'envoi"); }
     } else {
@@ -1057,7 +1057,7 @@ const AdminProposalsContent = () => {
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", editingProposal.id);
         // Create tasks if not yet existing
         const existingTasks = getTasksForProposal(editingProposal.id);
-        if (existingTasks.length === 0) await createTasksForProposal(editingProposal.id, sentAt);
+        if (existingTasks.length === 0) await createTasksForProposal(editingProposal.id, sentAt, (editingProposal as any).proposal_type);
         toast.success("Proposition sauvegardée et envoyée !");
       } catch { toast.error("Sauvegardée mais erreur d'envoi"); }
     } else {
@@ -1073,7 +1073,7 @@ const AdminProposalsContent = () => {
       if (error) throw error;
       const sentAt = new Date().toISOString();
       await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
-      await createTasksForProposal(proposal.id, sentAt);
+      await createTasksForProposal(proposal.id, sentAt, (proposal as any).proposal_type);
       toast.success("Email envoyé !"); fetchProposals();
     } catch { toast.error("Erreur d'envoi"); }
     setSending(null);
