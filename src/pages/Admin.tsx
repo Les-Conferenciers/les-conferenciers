@@ -616,17 +616,23 @@ const AdminProposalsContent = () => {
     setProposalTasks((data as any) || []);
   };
 
-  const createTasksForProposal = async (proposalId: string, sentAt: string) => {
+  const createTasksForProposal = async (proposalId: string, sentAt: string, pType?: string) => {
     const sentDate = new Date(sentAt);
     const relance1Date = new Date(sentDate);
     relance1Date.setDate(relance1Date.getDate() + 7);
-    const relance2Date = new Date(sentDate);
-    relance2Date.setDate(relance2Date.getDate() + 15);
     
-    await supabase.from("proposal_tasks").insert([
+    const tasks: any[] = [
       { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
-      { proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] },
-    ] as any);
+    ];
+    
+    // No relance 2 for "info" type
+    if (pType !== "info") {
+      const relance2Date = new Date(sentDate);
+      relance2Date.setDate(relance2Date.getDate() + 15);
+      tasks.push({ proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] });
+    }
+    
+    await supabase.from("proposal_tasks").insert(tasks as any);
     fetchTasks();
   };
 
@@ -2042,17 +2048,19 @@ const AdminProposalsContent = () => {
                   >
                     Relance 1
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveReminderNum(2);
-                      setReminderSubject(getReminderDefaultSubject(reminderProposal, 2));
-                      setReminderBody(getReminderDefaultBody(reminderProposal, 2));
-                    }}
-                    className={`text-xs px-3 py-1.5 rounded-full transition-colors ${activeReminderNum === 2 ? "bg-orange-100 text-orange-700 font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                  >
-                    Relance 2
-                  </button>
+                  {(reminderProposal as any).proposal_type !== "info" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveReminderNum(2);
+                        setReminderSubject(getReminderDefaultSubject(reminderProposal, 2));
+                        setReminderBody(getReminderDefaultBody(reminderProposal, 2));
+                      }}
+                      className={`text-xs px-3 py-1.5 rounded-full transition-colors ${activeReminderNum === 2 ? "bg-orange-100 text-orange-700 font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                    >
+                      Relance 2
+                    </button>
+                  )}
                 </div>
 
                 {/* Already sent warning */}
