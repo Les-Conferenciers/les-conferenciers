@@ -2145,9 +2145,12 @@ const AdminContractsContent = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [contractSubTab, setContractSubTab] = useState<"en_cours" | "termines">("en_cours");
+  const [contractSubTab, setContractSubTab] = useState<"en_cours" | "gagnes" | "perdus">("en_cours");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [lostDialogId, setLostDialogId] = useState<string | null>(null);
+  const [lostReason, setLostReason] = useState("");
+  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -2197,14 +2200,48 @@ const AdminContractsContent = () => {
   };
 
   const isTermine = (p: any) => getStage(p) === "termine";
+  const isLost = (p: any) => !!p.lost_at;
 
-  const enCours = proposals.filter(p => !isTermine(p));
-  const termines = proposals.filter(p => isTermine(p));
+  const enCours = proposals.filter(p => !isTermine(p) && !isLost(p));
+  const gagnes = proposals.filter(p => isTermine(p) && !isLost(p));
+  const perdus = proposals.filter(p => isLost(p));
 
-  const currentList = contractSubTab === "en_cours" ? enCours : termines;
+  const currentList = contractSubTab === "en_cours" ? enCours : contractSubTab === "gagnes" ? gagnes : perdus;
   const filtered = stageFilter === "all" ? currentList : currentList.filter(p => getStage(p) === stageFilter);
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+
+  const handleMarkLost = async () => {
+    if (!lostDialogId) return;
+    const { error } = await supabase.from("proposals").update({ lost_at: new Date().toISOString(), lost_reason: lostReason || null } as any).eq("id", lostDialogId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Contrat marqué comme perdu");
+    setLostDialogId(null);
+    setLostReason("");
+    fetchData();
+  };
+
+  const handleRestoreFromLost = async (id: string) => {
+    const { error } = await supabase.from("proposals").update({ lost_at: null, lost_reason: null } as any).eq("id", id);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Contrat restauré");
+    fetchData();
+  };
+
+  const handleDeleteContract = async () => {
+    if (!deleteDialogId) return;
+    // Delete related data in order
+    await supabase.from("invoices").delete().eq("proposal_id", deleteDialogId);
+    await supabase.from("events").delete().eq("proposal_id", deleteDialogId);
+    await supabase.from("contracts").delete().eq("proposal_id", deleteDialogId);
+    await supabase.from("proposal_tasks").delete().eq("proposal_id", deleteDialogId);
+    await supabase.from("proposal_speakers").delete().eq("proposal_id", deleteDialogId);
+    const { error } = await supabase.from("proposals").delete().eq("id", deleteDialogId);
+    if (error) { toast.error("Erreur de suppression"); return; }
+    toast.success("Contrat supprimé définitivement");
+    setDeleteDialogId(null);
+    fetchData();
+  };
 
   if (loading) return <div className="text-center py-12 text-muted-foreground">Chargement…</div>;
 
@@ -2222,25 +2259,30 @@ const AdminContractsContent = () => {
           <TabsTrigger value="en_cours" className="gap-1.5 text-xs">
             📂 En cours {enCours.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{enCours.length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="termines" className="gap-1.5 text-xs">
-            ✅ Terminés {termines.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{termines.length}</span>}
+          <TabsTrigger value="gagnes" className="gap-1.5 text-xs">
+            🏆 Gagnés {gagnes.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{gagnes.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="perdus" className="gap-1.5 text-xs">
+            ❌ Perdus {perdus.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{perdus.length}</span>}
           </TabsTrigger>
         </TabsList>
 
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <select
-            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
-            value={stageFilter}
-            onChange={e => setStageFilter(e.target.value)}
-          >
-            <option value="all">Toutes les étapes</option>
-            {Object.entries(stageLabels).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
-        </div>
+        {contractSubTab !== "perdus" && (
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <select
+              className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+              value={stageFilter}
+              onChange={e => setStageFilter(e.target.value)}
+            >
+              <option value="all">Toutes les étapes</option>
+              {Object.entries(stageLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        {["en_cours", "termines"].map(subTab => (
+        {["en_cours", "gagnes", "perdus"].map(subTab => (
           <TabsContent key={subTab} value={subTab}>
             {filtered.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">Aucun dossier</div>
@@ -2251,7 +2293,7 @@ const AdminContractsContent = () => {
                     <TableHead className="w-[200px]">Client</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead>Étape</TableHead>
+                    <TableHead>{subTab === "perdus" ? "Raison" : "Étape"}</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -2273,12 +2315,33 @@ const AdminContractsContent = () => {
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{formatDate(p.created_at)}</TableCell>
                           <TableCell>
-                            <span className="text-xs px-2 py-1 rounded-full bg-muted">{stageLabels[stage] || stage}</span>
+                            {subTab === "perdus" ? (
+                              <span className="text-xs text-muted-foreground italic">{p.lost_reason || "—"}</span>
+                            ) : (
+                              <span className="text-xs px-2 py-1 rounded-full bg-muted">{stageLabels[stage] || stage}</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">
-                              {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </Button>
+                            <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                              {subTab === "en_cours" && (
+                                <>
+                                  <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 h-7 px-2" title="Marquer comme perdu" onClick={() => setLostDialogId(p.id)}>
+                                    ❌
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-7 px-2" title="Supprimer" onClick={() => setDeleteDialogId(p.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                              {subTab === "perdus" && (
+                                <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Restaurer" onClick={() => handleRestoreFromLost(p.id)}>
+                                  ↩️ Restaurer
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}>
+                                {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                         {expandedId === p.id && (
@@ -2313,6 +2376,41 @@ const AdminContractsContent = () => {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Lost dialog */}
+      <Dialog open={!!lostDialogId} onOpenChange={open => { if (!open) { setLostDialogId(null); setLostReason(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Marquer comme perdu</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-sm">Raison (optionnel)</Label>
+            <Textarea value={lostReason} onChange={e => setLostReason(e.target.value)} rows={3} className="text-sm" />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setLostDialogId(null); setLostReason(""); }}>Annuler</Button>
+              <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white" onClick={handleMarkLost}>Confirmer</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteDialogId} onOpenChange={open => { if (!open) setDeleteDialogId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Supprimer le contrat</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              ⚠️ Cette action est <strong className="text-foreground">irréversible</strong>. La proposition, le contrat, les factures, le dossier événement et toutes les données associées seront définitivement supprimés.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDeleteDialogId(null)}>Annuler</Button>
+              <Button size="sm" variant="destructive" onClick={handleDeleteContract}>Supprimer définitivement</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
