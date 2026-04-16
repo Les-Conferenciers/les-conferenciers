@@ -1190,41 +1190,92 @@ const AdminSpeakersCRM = () => {
                   </div>
                 </div>
                 {editForm.image_url && (() => {
-                  // Parse current position: "X% Y%" or "center center" etc.
                   const pos = (editForm as any).image_position || 'center center';
                   const parts = pos.split(/\s+/);
                   const parseVal = (v: string) => v === 'center' ? 50 : v === 'left' || v === 'top' ? 0 : v === 'right' || v === 'bottom' ? 100 : parseInt(v.replace('%', '')) || 50;
                   const xVal = parseVal(parts[0] || 'center');
                   const yVal = parseVal(parts[1] || 'center');
-                  // Zoom stored as scale in a data attribute, default 1
                   const zoomKey = '__zoom';
                   const currentZoom = (editForm as any)[zoomKey] || 1;
-                  const setPos = (x: number, y: number) => setEditForm(p => ({ ...p, image_position: `${x}% ${y}%` }));
+                  const setPos = (x: number, y: number) => setEditForm(p => ({ ...p, image_position: `${Math.round(x)}% ${Math.round(y)}%` }));
+
+                  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+                    e.preventDefault();
+                    const container = (e.currentTarget as HTMLElement);
+                    const rect = container.getBoundingClientRect();
+                    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+                    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+                    const startPosX = xVal;
+                    const startPosY = yVal;
+
+                    const handleMove = (ev: MouseEvent | TouchEvent) => {
+                      const clientX = 'touches' in ev ? ev.touches[0].clientX : ev.clientX;
+                      const clientY = 'touches' in ev ? ev.touches[0].clientY : ev.clientY;
+                      const dx = (clientX - startX) / rect.width * -100;
+                      const dy = (clientY - startY) / rect.height * -100;
+                      const newX = Math.max(0, Math.min(100, startPosX + dx));
+                      const newY = Math.max(0, Math.min(100, startPosY + dy));
+                      setPos(newX, newY);
+                    };
+                    const handleUp = () => {
+                      document.removeEventListener('mousemove', handleMove);
+                      document.removeEventListener('mouseup', handleUp);
+                      document.removeEventListener('touchmove', handleMove);
+                      document.removeEventListener('touchend', handleUp);
+                    };
+                    document.addEventListener('mousemove', handleMove);
+                    document.addEventListener('mouseup', handleUp);
+                    document.addEventListener('touchmove', handleMove);
+                    document.addEventListener('touchend', handleUp);
+                  };
+
+                  const handleWheel = (e: React.WheelEvent) => {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.05 : 0.05;
+                    setEditForm(p => ({ ...p, [zoomKey]: Math.max(1, Math.min(3, ((p as any)[zoomKey] || 1) + delta)) }));
+                  };
+
                   return (
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Repositionner et zoomer l'image</Label>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-muted-foreground w-8">Gauche</span>
-                        <input type="range" min="0" max="100" value={xVal} onChange={e => setPos(Number(e.target.value), yVal)} className="flex-grow h-2 accent-primary" />
-                        <span className="text-[10px] text-muted-foreground w-8">Droite</span>
+                    <div className="space-y-3">
+                      <Label className="text-xs text-muted-foreground">Ajuster la photo — glissez pour repositionner, molette pour zoomer</Label>
+                      <div className="flex items-start gap-4">
+                        {/* Drag area - rectangle preview */}
+                        <div
+                          className="w-48 h-48 rounded-xl overflow-hidden border-2 border-primary/30 bg-muted cursor-grab active:cursor-grabbing relative select-none"
+                          onMouseDown={handleDragStart}
+                          onTouchStart={handleDragStart}
+                          onWheel={handleWheel}
+                        >
+                          <img
+                            src={editForm.image_url}
+                            alt=""
+                            className="w-full h-full object-cover pointer-events-none"
+                            draggable={false}
+                            style={{ objectPosition: `${xVal}% ${yVal}%`, transform: `scale(${currentZoom})` }}
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10">
+                            <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">↕ ↔ Glisser</span>
+                          </div>
+                        </div>
+                        {/* Circle preview (how it looks on the site) */}
+                        <div className="space-y-2">
+                          <span className="text-[10px] text-muted-foreground block">Aperçu médaillon</span>
+                          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
+                            <img src={editForm.image_url} alt="" className="w-full h-full object-cover pointer-events-none" draggable={false} style={{ objectPosition: `${xVal}% ${yVal}%`, transform: `scale(${currentZoom})` }} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-muted-foreground w-8">Haut</span>
-                        <input type="range" min="0" max="100" value={yVal} onChange={e => setPos(xVal, Number(e.target.value))} className="flex-grow h-2 accent-primary" />
-                        <span className="text-[10px] text-muted-foreground w-8">Bas</span>
-                      </div>
-                      <div className="flex items-center gap-3">
+                      {/* Zoom slider */}
+                      <div className="flex items-center gap-3 max-w-[240px]">
                         <span className="text-[10px] text-muted-foreground w-8">Zoom</span>
                         <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setEditForm(p => ({ ...p, [zoomKey]: Math.max(1, (p as any)[zoomKey] || 1) - 0.1 }))} disabled={currentZoom <= 1}>−</Button>
                         <input type="range" min="100" max="300" value={Math.round(currentZoom * 100)} onChange={e => setEditForm(p => ({ ...p, [zoomKey]: Number(e.target.value) / 100 }))} className="flex-grow h-2 accent-primary" />
                         <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setEditForm(p => ({ ...p, [zoomKey]: Math.min(3, ((p as any)[zoomKey] || 1) + 0.1) }))}>+</Button>
                         <span className="text-[10px] text-muted-foreground w-10">{Math.round(currentZoom * 100)}%</span>
                       </div>
-                      <div className="flex justify-center">
-                        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
-                          <img src={editForm.image_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: `${xVal}% ${yVal}%`, transform: `scale(${currentZoom})` }} />
-                        </div>
-                      </div>
+                      <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setPos(50, 50); setEditForm(p => ({ ...p, [zoomKey]: 1 })); }}>
+                        Réinitialiser
+                      </Button>
                     </div>
                   );
                 })()}
