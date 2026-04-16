@@ -474,6 +474,8 @@ export type Database = {
           event_location: string | null
           expires_at: string
           id: string
+          lost_at: string | null
+          lost_reason: string | null
           message: string | null
           proposal_type: string
           recipient_name: string | null
@@ -497,6 +499,8 @@ export type Database = {
           event_location?: string | null
           expires_at?: string
           id?: string
+          lost_at?: string | null
+          lost_reason?: string | null
           message?: string | null
           proposal_type?: string
           recipient_name?: string | null
@@ -520,6 +524,8 @@ export type Database = {
           event_location?: string | null
           expires_at?: string
           id?: string
+          lost_at?: string | null
+          lost_reason?: string | null
           message?: string | null
           proposal_type?: string
           recipient_name?: string | null
