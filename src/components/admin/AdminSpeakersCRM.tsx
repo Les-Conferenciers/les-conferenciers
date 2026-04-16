@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic, Eye, EyeOff, User, Diamond } from "lucide-react";
 import { parseThemes, CANONICAL_THEMES } from "@/lib/parseThemes";
+import { parseImagePosition, stringifyImagePosition } from "@/lib/imagePosition";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 
@@ -267,6 +268,7 @@ const AdminSpeakersCRM = () => {
 
   // Edit handlers
   const openEdit = (speaker: Speaker) => {
+    const parsedImage = parseImagePosition((speaker as any).image_position);
     setEditSpeaker(speaker);
     setEditForm({
       name: speaker.name,
@@ -276,7 +278,7 @@ const AdminSpeakersCRM = () => {
       fee_details: (speaker as any).fee_details,
       biography: speaker.biography,
       image_url: speaker.image_url,
-      image_position: (speaker as any).image_position || 'center center',
+      image_position: stringifyImagePosition(parsedImage.x, parsedImage.y, parsedImage.zoom),
       video_url: speaker.video_url,
       themes: speaker.themes,
       languages: speaker.languages,
@@ -1155,7 +1157,20 @@ const AdminSpeakersCRM = () => {
                 <div className="flex items-center gap-4">
                   {editForm.image_url ? (
                     <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-                      <img src={editForm.image_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: (editForm as any).image_position || 'center center' }} />
+                      {(() => {
+                        const previewImage = parseImagePosition((editForm as any).image_position);
+                        return (
+                          <img
+                            src={editForm.image_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            style={{
+                              objectPosition: `${previewImage.x}% ${previewImage.y}%`,
+                              transform: `scale(${previewImage.zoom})`,
+                            }}
+                          />
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
@@ -1190,67 +1205,63 @@ const AdminSpeakersCRM = () => {
                   </div>
                 </div>
                 {editForm.image_url && (() => {
-                  const pos = (editForm as any).image_position || 'center center';
-                  const parts = pos.split(/\s+/);
-                  const parseVal = (v: string) => v === 'center' ? 50 : v === 'left' || v === 'top' ? 0 : v === 'right' || v === 'bottom' ? 100 : parseInt(v.replace('%', '')) || 50;
-                  const xVal = parseVal(parts[0] || 'center');
-                  const yVal = parseVal(parts[1] || 'center');
-                  const zoomKey = '__zoom';
-                  const currentZoom = (editForm as any)[zoomKey] || 1;
-                  const setPos = (x: number, y: number) => setEditForm(p => ({ ...p, image_position: `${Math.round(x)}% ${Math.round(y)}%` }));
-
-                  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const container = (e.currentTarget as HTMLElement);
-                    const rect = container.getBoundingClientRect();
-                    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-                    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-                    const startPosX = xVal;
-                    const startPosY = yVal;
-                    // Prevent dialog scroll during drag
-                    const dialogEl = container.closest('[data-radix-scroll-area-viewport], .overflow-y-auto, [role="dialog"]');
-                    if (dialogEl) (dialogEl as HTMLElement).style.overflowY = 'hidden';
-
-                    const handleMove = (ev: MouseEvent | TouchEvent) => {
-                      ev.preventDefault();
-                      ev.stopPropagation();
-                      const clientX = 'touches' in ev ? ev.touches[0].clientX : ev.clientX;
-                      const clientY = 'touches' in ev ? ev.touches[0].clientY : ev.clientY;
-                      const dx = (clientX - startX) / rect.width * -100;
-                      const dy = (clientY - startY) / rect.height * -100;
-                      const newX = Math.max(0, Math.min(100, startPosX + dx));
-                      const newY = Math.max(0, Math.min(100, startPosY + dy));
-                      setPos(newX, newY);
-                    };
-                    const handleUp = () => {
-                      if (dialogEl) (dialogEl as HTMLElement).style.overflowY = 'auto';
-                      document.removeEventListener('mousemove', handleMove);
-                      document.removeEventListener('mouseup', handleUp);
-                      document.removeEventListener('touchmove', handleMove, true);
-                      document.removeEventListener('touchend', handleUp);
-                    };
-                    document.addEventListener('mousemove', handleMove);
-                    document.addEventListener('mouseup', handleUp);
-                    document.addEventListener('touchmove', handleMove, { passive: false, capture: true } as any);
-                    document.addEventListener('touchend', handleUp);
+                  const imageSettings = parseImagePosition((editForm as any).image_position);
+                  const xVal = imageSettings.x;
+                  const yVal = imageSettings.y;
+                  const currentZoom = imageSettings.zoom;
+                  const updateImagePosition = (x: number, y: number, zoom = currentZoom) => {
+                    setEditForm((p) => ({
+                      ...p,
+                      image_position: stringifyImagePosition(x, y, zoom),
+                    }));
                   };
 
-                  const handleWheel = (e: React.WheelEvent) => {
+                  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
                     e.preventDefault();
-                    const delta = e.deltaY > 0 ? -0.05 : 0.05;
-                    setEditForm(p => ({ ...p, [zoomKey]: Math.max(1, Math.min(3, ((p as any)[zoomKey] || 1) + delta)) }));
+                    const container = e.currentTarget;
+                    container.setPointerCapture(e.pointerId);
+
+                    const updateFromPointer = (clientX: number, clientY: number) => {
+                      const rect = container.getBoundingClientRect();
+                      const nextX = ((clientX - rect.left) / rect.width) * 100;
+                      const nextY = ((clientY - rect.top) / rect.height) * 100;
+                      updateImagePosition(nextX, nextY, currentZoom);
+                    };
+
+                    updateFromPointer(e.clientX, e.clientY);
+
+                    const handlePointerMove = (moveEvent: PointerEvent) => {
+                      moveEvent.preventDefault();
+                      updateFromPointer(moveEvent.clientX, moveEvent.clientY);
+                    };
+
+                    const handlePointerUp = () => {
+                      window.removeEventListener('pointermove', handlePointerMove);
+                      window.removeEventListener('pointerup', handlePointerUp);
+                      window.removeEventListener('pointercancel', handlePointerUp);
+                      if (container.hasPointerCapture(e.pointerId)) {
+                        container.releasePointerCapture(e.pointerId);
+                      }
+                    };
+
+                    window.addEventListener('pointermove', handlePointerMove);
+                    window.addEventListener('pointerup', handlePointerUp);
+                    window.addEventListener('pointercancel', handlePointerUp);
+                  };
+
+                  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.08 : 0.08;
+                    updateImagePosition(xVal, yVal, Math.max(1, Math.min(3, currentZoom + delta)));
                   };
 
                   return (
                     <div className="space-y-3">
-                      <Label className="text-xs text-muted-foreground">Ajuster la photo — glissez pour repositionner, molette pour zoomer</Label>
+                      <Label className="text-xs text-muted-foreground">Ajuster la photo — glissez dans l'aperçu ou utilisez les curseurs</Label>
                       <div className="flex items-start gap-4">
-                        {/* Drag area - rectangle preview */}
                         <div
-                          className="w-48 h-48 rounded-xl overflow-hidden border-2 border-primary/30 bg-muted cursor-grab active:cursor-grabbing relative select-none touch-none"
-                          onMouseDown={handleDragStart}
-                          onTouchStart={handleDragStart}
+                          className="w-48 h-48 rounded-xl overflow-hidden border-2 border-primary/30 bg-muted cursor-move relative select-none touch-none"
+                          onPointerDown={handlePointerDown}
                           onWheel={handleWheel}
                         >
                           <img
@@ -1264,7 +1275,6 @@ const AdminSpeakersCRM = () => {
                             <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">↕ ↔ Glisser</span>
                           </div>
                         </div>
-                        {/* Circle preview (how it looks on the site) */}
                         <div className="space-y-2">
                           <span className="text-[10px] text-muted-foreground block">Aperçu médaillon</span>
                           <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
@@ -1272,15 +1282,30 @@ const AdminSpeakersCRM = () => {
                           </div>
                         </div>
                       </div>
-                      {/* Zoom slider */}
-                      <div className="flex items-center gap-3 max-w-[240px]">
-                        <span className="text-[10px] text-muted-foreground w-8">Zoom</span>
-                        <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setEditForm(p => ({ ...p, [zoomKey]: Math.max(1, (p as any)[zoomKey] || 1) - 0.1 }))} disabled={currentZoom <= 1}>−</Button>
-                        <input type="range" min="100" max="300" value={Math.round(currentZoom * 100)} onChange={e => setEditForm(p => ({ ...p, [zoomKey]: Number(e.target.value) / 100 }))} className="flex-grow h-2 accent-primary" />
-                        <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setEditForm(p => ({ ...p, [zoomKey]: Math.min(3, ((p as any)[zoomKey] || 1) + 0.1) }))}>+</Button>
-                        <span className="text-[10px] text-muted-foreground w-10">{Math.round(currentZoom * 100)}%</span>
+                      <div className="space-y-3 max-w-sm">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                            <span>Zoom</span>
+                            <span>{Math.round(currentZoom * 100)}%</span>
+                          </div>
+                          <input type="range" min="100" max="300" step="1" value={Math.round(currentZoom * 100)} onChange={e => updateImagePosition(xVal, yVal, Number(e.target.value) / 100)} className="w-full h-2 accent-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                            <span>Horizontal</span>
+                            <span>{Math.round(xVal)}%</span>
+                          </div>
+                          <input type="range" min="0" max="100" step="1" value={Math.round(xVal)} onChange={e => updateImagePosition(Number(e.target.value), yVal, currentZoom)} className="w-full h-2 accent-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                            <span>Vertical</span>
+                            <span>{Math.round(yVal)}%</span>
+                          </div>
+                          <input type="range" min="0" max="100" step="1" value={Math.round(yVal)} onChange={e => updateImagePosition(xVal, Number(e.target.value), currentZoom)} className="w-full h-2 accent-primary" />
+                        </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setPos(50, 50); setEditForm(p => ({ ...p, [zoomKey]: 1 })); }}>
+                      <Button variant="ghost" size="sm" className="text-xs" onClick={() => updateImagePosition(50, 50, 1)}>
                         Réinitialiser
                       </Button>
                     </div>

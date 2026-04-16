@@ -10,6 +10,7 @@ import { Check, Mail, ChevronRight, ChevronDown, Target, Lightbulb, TrendingUp, 
 import nuggetIcon from "@/assets/nugget.png";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
+import { parseImagePosition } from "@/lib/imagePosition";
 import { useEffect, useState } from "react";
 import {
   Accordion,
@@ -508,6 +509,7 @@ const SpeakerDetail = () => {
     "Chinois": "🇨🇳",
     "Japonais": "🇯🇵",
   };
+  const imageSettings = parseImagePosition(speaker.image_position);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -534,7 +536,10 @@ const SpeakerDetail = () => {
                     src={speaker.image_url}
                     alt={`${speaker.name} - conférencier professionnel`}
                     className="w-full h-full object-cover"
-                    style={{ objectPosition: speaker.image_position || 'center center' }}
+                    style={{
+                      objectPosition: `${imageSettings.x}% ${imageSettings.y}%`,
+                      transform: `scale(${imageSettings.zoom})`,
+                    }}
                     fetchPriority="high"
                     decoding="sync"
                     width={176} height={176}
