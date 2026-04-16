@@ -1201,14 +1201,20 @@ const AdminSpeakersCRM = () => {
 
                   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     const container = (e.currentTarget as HTMLElement);
                     const rect = container.getBoundingClientRect();
                     const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
                     const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
                     const startPosX = xVal;
                     const startPosY = yVal;
+                    // Prevent dialog scroll during drag
+                    const dialogEl = container.closest('[data-radix-scroll-area-viewport], .overflow-y-auto, [role="dialog"]');
+                    if (dialogEl) (dialogEl as HTMLElement).style.overflowY = 'hidden';
 
                     const handleMove = (ev: MouseEvent | TouchEvent) => {
+                      ev.preventDefault();
+                      ev.stopPropagation();
                       const clientX = 'touches' in ev ? ev.touches[0].clientX : ev.clientX;
                       const clientY = 'touches' in ev ? ev.touches[0].clientY : ev.clientY;
                       const dx = (clientX - startX) / rect.width * -100;
@@ -1218,14 +1224,15 @@ const AdminSpeakersCRM = () => {
                       setPos(newX, newY);
                     };
                     const handleUp = () => {
+                      if (dialogEl) (dialogEl as HTMLElement).style.overflowY = 'auto';
                       document.removeEventListener('mousemove', handleMove);
                       document.removeEventListener('mouseup', handleUp);
-                      document.removeEventListener('touchmove', handleMove);
+                      document.removeEventListener('touchmove', handleMove, true);
                       document.removeEventListener('touchend', handleUp);
                     };
                     document.addEventListener('mousemove', handleMove);
                     document.addEventListener('mouseup', handleUp);
-                    document.addEventListener('touchmove', handleMove);
+                    document.addEventListener('touchmove', handleMove, { passive: false, capture: true } as any);
                     document.addEventListener('touchend', handleUp);
                   };
 
