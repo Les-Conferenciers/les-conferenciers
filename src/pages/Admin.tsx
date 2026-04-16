@@ -634,6 +634,37 @@ const AdminProposalsContent = () => {
 
   const getReminderDefaultBody = (p: Proposal, num: 1 | 2) => {
     const firstName = p.recipient_name?.split(" ")[0] || "";
+    const pType = (p as any).proposal_type || "classique";
+    const speakerName = p.proposal_speakers?.[0]?.speakers?.name || "l'intervenant";
+
+    if (pType === "unique") {
+      if (num === 1) {
+        return `<p>Bonjour,</p>
+<p>J'espère que vous allez bien ! 🙂</p>
+<p>Je me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.</p>
+<p>Je souhaitais savoir si le profil de ${speakerName} avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.</p>
+<p>Je reste bien évidemment à votre disposition si besoin est.</p>
+<p>Dans l'attente de votre retour.</p>
+<p>Très belle fin de journée à vous.</p>`;
+      }
+      return `<p>Bonjour,</p>
+<p>Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants. 🙂</p>
+<p>Je souhaitais savoir si l'intervention de ${speakerName} était toujours d'actualité.</p>
+<p>Je reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.</p>
+<p>Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.</p>
+<p>Bien à vous,</p>`;
+    }
+
+    if (pType === "info") {
+      // Only relance 1 for info type
+      return `<p>Bonjour,</p>
+<p>Je reviens vers vous suite à votre retour et je me réjouis de notre future collaboration.</p>
+<p>Afin d'avancer sur l'organisation de la venue de ${speakerName}, pouvez-vous me communiquer le numéro de RCS de l'entité à facturer, la taille de l'auditoire et les horaires souhaités.</p>
+<p>Nous pourrons dans un second temps prévoir un échange avec l'intervenant.</p>
+<p>Restant à votre écoute et dans l'attente de votre retour, je vous souhaite une excellente journée.</p>`;
+    }
+
+    // classique
     if (num === 1) {
       return `<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
 <p>J'espère que vous allez bien !</p>
