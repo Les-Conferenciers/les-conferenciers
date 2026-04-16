@@ -38,3 +38,9 @@ export const stringifyImagePosition = (x: number, y: number, zoom = 1) => {
   const safeZoom = clamp(Number(zoom.toFixed(2)), 1, 3);
   return `${safeX}% ${safeY}%|${safeZoom}`;
 };
+
+export const getImagePositionStyle = ({ x, y, zoom }: ParsedImagePosition) => ({
+  objectPosition: `${x}% ${y}%`,
+  transform: `scale(${zoom})`,
+  transformOrigin: `${x}% ${y}%`,
+});
