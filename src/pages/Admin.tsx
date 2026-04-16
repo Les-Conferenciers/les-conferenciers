@@ -1118,11 +1118,7 @@ const AdminProposalsContent = () => {
     await supabase.from("proposals").update({ status: "accepted" }).eq("id", id);
     toast.success("Proposition acceptée — retrouvez-la dans l'onglet Contrats");
     fetchProposals();
-    // Navigate to contrats tab
-    const params = new URLSearchParams(window.location.search);
-    params.set("tab", "contrats");
-    window.history.replaceState({}, "", `?${params.toString()}`);
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    setSearchParams({ tab: "contrats" });
   };
 
   const handleInfoAcceptConvert = async (newType: "classique" | "unique") => {
