@@ -2,6 +2,7 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
+import { parseImagePosition } from "@/lib/imagePosition";
 import { User } from "lucide-react";
 
 export interface Speaker {
@@ -29,6 +30,7 @@ const SpeakerCard = ({ speaker, onThemeClick, onNavigate }: SpeakerCardProps) =>
     ? speaker.image_url
     : null;
   const themes = parseThemes(speaker.themes);
+  const imageSettings = parseImagePosition(speaker.image_position);
 
   const handleThemeClick = (e: React.MouseEvent, theme: string) => {
     e.preventDefault();
@@ -50,7 +52,10 @@ const SpeakerCard = ({ speaker, onThemeClick, onNavigate }: SpeakerCardProps) =>
                 src={imageUrl}
                 alt={`${speaker.name} - conférencier professionnel`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                style={{ objectPosition: speaker.image_position || 'center center' }}
+                style={{
+                  objectPosition: `${imageSettings.x}% ${imageSettings.y}%`,
+                  transform: `scale(${imageSettings.zoom})`,
+                }}
                 loading="lazy"
                 decoding="async"
                 width={128}
