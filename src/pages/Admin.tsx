@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Users, Mic, Building2, FileText as FileTextIcon } from "lucide-react";
+import { LogOut, Users, Mic, Building2, FileText as FileTextIcon, ClipboardCheck } from "lucide-react";
 import nugget from "@/assets/nugget.png";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
@@ -63,6 +63,9 @@ const Admin = () => {
             <TabsTrigger value="propositions" className="gap-2">
               <FileTextIcon className="h-4 w-4" /> Propositions
             </TabsTrigger>
+            <TabsTrigger value="contrats" className="gap-2">
+              <ClipboardCheck className="h-4 w-4" /> Contrats
+            </TabsTrigger>
             <TabsTrigger value="clients" className="gap-2">
               <Building2 className="h-4 w-4" /> Clients
             </TabsTrigger>
@@ -77,6 +80,10 @@ const Admin = () => {
 
           <TabsContent value="propositions">
             <AdminProposalsContent />
+          </TabsContent>
+
+          <TabsContent value="contrats">
+            <AdminContractsContent />
           </TabsContent>
 
           <TabsContent value="clients">
@@ -469,6 +476,7 @@ const EmailPreviewCard = ({
 };
 
 const AdminProposalsContent = () => {
+  const [, setSearchParams] = useSearchParams();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [conferences, setConferences] = useState<SpeakerConference[]>([]);
@@ -616,17 +624,23 @@ const AdminProposalsContent = () => {
     setProposalTasks((data as any) || []);
   };
 
-  const createTasksForProposal = async (proposalId: string, sentAt: string) => {
+  const createTasksForProposal = async (proposalId: string, sentAt: string, pType?: string) => {
     const sentDate = new Date(sentAt);
     const relance1Date = new Date(sentDate);
     relance1Date.setDate(relance1Date.getDate() + 7);
-    const relance2Date = new Date(sentDate);
-    relance2Date.setDate(relance2Date.getDate() + 15);
     
-    await supabase.from("proposal_tasks").insert([
+    const tasks: any[] = [
       { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
-      { proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] },
-    ] as any);
+    ];
+    
+    // No relance 2 for "info" type
+    if (pType !== "info") {
+      const relance2Date = new Date(sentDate);
+      relance2Date.setDate(relance2Date.getDate() + 15);
+      tasks.push({ proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] });
+    }
+    
+    await supabase.from("proposal_tasks").insert(tasks as any);
     fetchTasks();
   };
 
@@ -634,6 +648,37 @@ const AdminProposalsContent = () => {
 
   const getReminderDefaultBody = (p: Proposal, num: 1 | 2) => {
     const firstName = p.recipient_name?.split(" ")[0] || "";
+    const pType = (p as any).proposal_type || "classique";
+    const speakerName = p.proposal_speakers?.[0]?.speakers?.name || "l'intervenant";
+
+    if (pType === "unique") {
+      if (num === 1) {
+        return `<p>Bonjour,</p>
+<p>J'espère que vous allez bien ! 🙂</p>
+<p>Je me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.</p>
+<p>Je souhaitais savoir si le profil de ${speakerName} avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.</p>
+<p>Je reste bien évidemment à votre disposition si besoin est.</p>
+<p>Dans l'attente de votre retour.</p>
+<p>Très belle fin de journée à vous.</p>`;
+      }
+      return `<p>Bonjour,</p>
+<p>Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants. 🙂</p>
+<p>Je souhaitais savoir si l'intervention de ${speakerName} était toujours d'actualité.</p>
+<p>Je reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.</p>
+<p>Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.</p>
+<p>Bien à vous,</p>`;
+    }
+
+    if (pType === "info") {
+      // Only relance 1 for info type
+      return `<p>Bonjour,</p>
+<p>Je reviens vers vous suite à votre retour et je me réjouis de notre future collaboration.</p>
+<p>Afin d'avancer sur l'organisation de la venue de ${speakerName}, pouvez-vous me communiquer le numéro de RCS de l'entité à facturer, la taille de l'auditoire et les horaires souhaités.</p>
+<p>Nous pourrons dans un second temps prévoir un échange avec l'intervenant.</p>
+<p>Restant à votre écoute et dans l'attente de votre retour, je vous souhaite une excellente journée.</p>`;
+    }
+
+    // classique
     if (num === 1) {
       return `<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
 <p>J'espère que vous allez bien !</p>
@@ -731,8 +776,8 @@ const AdminProposalsContent = () => {
   const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(applySearch(applyHideTest(items))));
 
   const drafts = filterAndSort(proposals.filter(p => p.status === "draft"));
-  const sent = filterAndSort(proposals.filter(p => (p.status === "sent" || p.status === "accepted") && !isFullyPaid(p)));
-  const completed = filterAndSort(proposals.filter(p => p.status === "accepted" && isFullyPaid(p)));
+  const sent = filterAndSort(proposals.filter(p => p.status === "sent"));
+  const accepted = filterAndSort(proposals.filter(p => p.status === "accepted"));
   const archived = filterAndSort(proposals.filter(p => p.status === "archived"));
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter(c => c.speaker_id === speakerId);
@@ -927,7 +972,7 @@ const AdminProposalsContent = () => {
         if (sendErr) throw sendErr;
         const sentAt = new Date().toISOString();
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
-        await createTasksForProposal(proposal.id, sentAt);
+        await createTasksForProposal(proposal.id, sentAt, proposalType);
         toast.success("Proposition créée et envoyée !");
       } catch { toast.error("Proposition créée mais erreur d'envoi"); }
     } else {
@@ -1020,7 +1065,7 @@ const AdminProposalsContent = () => {
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", editingProposal.id);
         // Create tasks if not yet existing
         const existingTasks = getTasksForProposal(editingProposal.id);
-        if (existingTasks.length === 0) await createTasksForProposal(editingProposal.id, sentAt);
+        if (existingTasks.length === 0) await createTasksForProposal(editingProposal.id, sentAt, (editingProposal as any).proposal_type);
         toast.success("Proposition sauvegardée et envoyée !");
       } catch { toast.error("Sauvegardée mais erreur d'envoi"); }
     } else {
@@ -1036,7 +1081,7 @@ const AdminProposalsContent = () => {
       if (error) throw error;
       const sentAt = new Date().toISOString();
       await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
-      await createTasksForProposal(proposal.id, sentAt);
+      await createTasksForProposal(proposal.id, sentAt, (proposal as any).proposal_type);
       toast.success("Email envoyé !"); fetchProposals();
     } catch { toast.error("Erreur d'envoi"); }
     setSending(null);
@@ -1064,16 +1109,16 @@ const AdminProposalsContent = () => {
 
 
   const handleAccept = async (id: string) => {
-    // Check if it's a "demande d'info" proposal
     const proposal = proposals.find(p => p.id === id);
     if ((proposal as any)?.proposal_type === "info") {
-      // Instead of accepting directly, open dialog to create a real proposal
       setInfoAcceptProposalId(id);
       setInfoAcceptDialogOpen(true);
       return;
     }
     await supabase.from("proposals").update({ status: "accepted" }).eq("id", id);
-    toast.success("Proposition passée en « Accepté »"); fetchProposals();
+    toast.success("Proposition acceptée — retrouvez-la dans l'onglet Contrats");
+    fetchProposals();
+    setSearchParams({ tab: "contrats" });
   };
 
   const handleInfoAcceptConvert = async (newType: "classique" | "unique") => {
@@ -1855,18 +1900,10 @@ const AdminProposalsContent = () => {
           <TabsTrigger value="sent" className="gap-1.5 text-xs">
             📤 Envoyées {sent.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{sent.length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="completed" className="gap-1.5 text-xs">
-            ✅ Terminées {completed.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{completed.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="archived" className="gap-1.5 text-xs">
-            🗄️ Archivées {archived.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{archived.length}</span>}
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="drafts">{renderTable(drafts, "draft")}</TabsContent>
         <TabsContent value="sent">{renderTable(sent, "sent")}</TabsContent>
-        <TabsContent value="completed">{renderTable(completed, "completed")}</TabsContent>
-        <TabsContent value="archived">{renderTable(archived, "draft")}</TabsContent>
       </Tabs>
 
       {/* Edit dialog */}
@@ -2011,17 +2048,19 @@ const AdminProposalsContent = () => {
                   >
                     Relance 1
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveReminderNum(2);
-                      setReminderSubject(getReminderDefaultSubject(reminderProposal, 2));
-                      setReminderBody(getReminderDefaultBody(reminderProposal, 2));
-                    }}
-                    className={`text-xs px-3 py-1.5 rounded-full transition-colors ${activeReminderNum === 2 ? "bg-orange-100 text-orange-700 font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                  >
-                    Relance 2
-                  </button>
+                  {(reminderProposal as any).proposal_type !== "info" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveReminderNum(2);
+                        setReminderSubject(getReminderDefaultSubject(reminderProposal, 2));
+                        setReminderBody(getReminderDefaultBody(reminderProposal, 2));
+                      }}
+                      className={`text-xs px-3 py-1.5 rounded-full transition-colors ${activeReminderNum === 2 ? "bg-orange-100 text-orange-700 font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                    >
+                      Relance 2
+                    </button>
+                  )}
                 </div>
 
                 {/* Already sent warning */}
@@ -2091,6 +2130,283 @@ const AdminProposalsContent = () => {
                 <div className="text-sm font-medium">Proposition unique</div>
                 <div className="text-[10px] text-muted-foreground">Un seul conférencier proposé</div>
               </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+// ── Contracts tab content ──
+const AdminContractsContent = () => {
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [contractSubTab, setContractSubTab] = useState<"en_cours" | "gagnes" | "perdus">("en_cours");
+  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [lostDialogId, setLostDialogId] = useState<string | null>(null);
+  const [lostReason, setLostReason] = useState("");
+  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [pRes, cRes, iRes, eRes] = await Promise.all([
+      supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))").eq("status", "accepted").order("created_at", { ascending: false }),
+      supabase.from("contracts").select("id, proposal_id, status, signed_at"),
+      supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at"),
+      supabase.from("events").select("id, proposal_id, selected_speaker_id, info_sent_speaker_at, contract_sent_speaker_at, liaison_sheet_sent_at, speaker_paid_at"),
+    ]);
+    setProposals((pRes.data as any) || []);
+    setContracts((cRes.data as any) || []);
+    setInvoices((iRes.data as any) || []);
+    setEvents((eRes.data as any) || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const getStage = (p: any) => {
+    const pInvoices = invoices.filter((i: any) => i.proposal_id === p.id);
+    const pContract = contracts.find((c: any) => c.proposal_id === p.id);
+    const pEvent = events.find((e: any) => e.proposal_id === p.id);
+    const allPaid = pInvoices.length > 0 && pInvoices.every((i: any) => i.status === "paid");
+    if (allPaid && pInvoices.length > 0) return "termine";
+    if (pEvent?.speaker_paid_at) return "speaker_paye";
+    if (pInvoices.some((i: any) => i.invoice_type === "solde" && i.status === "sent")) return "facture_solde";
+    if (pEvent?.liaison_sheet_sent_at) return "fiche_liaison";
+    if (pInvoices.some((i: any) => i.invoice_type === "acompte" && (i.status === "paid"))) return "acompte_paye";
+    if (pInvoices.some((i: any) => i.invoice_type === "acompte" && (i.status === "sent"))) return "acompte_envoye";
+    if (pContract?.signed_at) return "contrat_signe";
+    if (pEvent?.info_sent_speaker_at) return "info_conferencier";
+    if (pContract) return "contrat_client";
+    return "accepte";
+  };
+
+  const stageLabels: Record<string, string> = {
+    accepte: "📋 Acceptée",
+    contrat_client: "📝 Contrat client",
+    info_conferencier: "📧 Info conférencier",
+    contrat_signe: "✅ Contrat signé",
+    acompte_envoye: "💰 Acompte envoyé",
+    acompte_paye: "💵 Acompte payé",
+    fiche_liaison: "📋 Fiche liaison",
+    facture_solde: "🧾 Facture solde",
+    speaker_paye: "🎤 Speaker payé",
+    termine: "✅ Terminé",
+  };
+
+  const isTermine = (p: any) => getStage(p) === "termine";
+  const isLost = (p: any) => !!p.lost_at;
+
+  const enCours = proposals.filter(p => !isTermine(p) && !isLost(p));
+  const gagnes = proposals.filter(p => isTermine(p) && !isLost(p));
+  const perdus = proposals.filter(p => isLost(p));
+
+  const currentList = contractSubTab === "en_cours" ? enCours : contractSubTab === "gagnes" ? gagnes : perdus;
+  const filtered = stageFilter === "all" ? currentList : currentList.filter(p => getStage(p) === stageFilter);
+
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+
+  const handleMarkLost = async () => {
+    if (!lostDialogId) return;
+    const { error } = await supabase.from("proposals").update({ lost_at: new Date().toISOString(), lost_reason: lostReason || null } as any).eq("id", lostDialogId);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Contrat marqué comme perdu");
+    setLostDialogId(null);
+    setLostReason("");
+    fetchData();
+  };
+
+  const handleRestoreFromLost = async (id: string) => {
+    const { error } = await supabase.from("proposals").update({ lost_at: null, lost_reason: null } as any).eq("id", id);
+    if (error) { toast.error("Erreur"); return; }
+    toast.success("Contrat restauré");
+    fetchData();
+  };
+
+  const handleDeleteContract = async () => {
+    if (!deleteDialogId) return;
+    // Delete related data in order
+    await supabase.from("invoices").delete().eq("proposal_id", deleteDialogId);
+    await supabase.from("events").delete().eq("proposal_id", deleteDialogId);
+    await supabase.from("contracts").delete().eq("proposal_id", deleteDialogId);
+    await supabase.from("proposal_tasks").delete().eq("proposal_id", deleteDialogId);
+    await supabase.from("proposal_speakers").delete().eq("proposal_id", deleteDialogId);
+    const { error } = await supabase.from("proposals").delete().eq("id", deleteDialogId);
+    if (error) { toast.error("Erreur de suppression"); return; }
+    toast.success("Contrat supprimé définitivement");
+    setDeleteDialogId(null);
+    fetchData();
+  };
+
+  if (loading) return <div className="text-center py-12 text-muted-foreground">Chargement…</div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-serif font-bold">Contrats & Dossiers</h2>
+        <Button variant="ghost" size="sm" onClick={fetchData}>
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Tabs value={contractSubTab} onValueChange={(v) => setContractSubTab(v as any)}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="en_cours" className="gap-1.5 text-xs">
+            📂 En cours {enCours.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{enCours.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="gagnes" className="gap-1.5 text-xs">
+            🏆 Gagnés {gagnes.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{gagnes.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="perdus" className="gap-1.5 text-xs">
+            ❌ Perdus {perdus.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{perdus.length}</span>}
+          </TabsTrigger>
+        </TabsList>
+
+        {contractSubTab !== "perdus" && (
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <select
+              className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+              value={stageFilter}
+              onChange={e => setStageFilter(e.target.value)}
+            >
+              <option value="all">Toutes les étapes</option>
+              {Object.entries(stageLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {["en_cours", "gagnes", "perdus"].map(subTab => (
+          <TabsContent key={subTab} value={subTab}>
+            {filtered.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">Aucun dossier</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[200px]">Client</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>{subTab === "perdus" ? "Raison" : "Étape"}</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((p: any) => {
+                    const stage = getStage(p);
+                    return (
+                      <React.Fragment key={p.id}>
+                        <TableRow
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                        >
+                          <TableCell>
+                            <div className="font-medium text-sm">{p.client_name}</div>
+                            <div className="text-xs text-muted-foreground">{p.client_email}</div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs">{p.proposal_type === "unique" ? "🎤 Unique" : p.proposal_type === "info" ? "📝 Infos" : "📋 Classique"}</span>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{formatDate(p.created_at)}</TableCell>
+                          <TableCell>
+                            {subTab === "perdus" ? (
+                              <span className="text-xs text-muted-foreground italic">{p.lost_reason || "—"}</span>
+                            ) : (
+                              <span className="text-xs px-2 py-1 rounded-full bg-muted">{stageLabels[stage] || stage}</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                              {subTab === "en_cours" && (
+                                <>
+                                  <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 h-7 px-2" title="Marquer comme perdu" onClick={() => setLostDialogId(p.id)}>
+                                    ❌
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-7 px-2" title="Supprimer" onClick={() => setDeleteDialogId(p.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                              {subTab === "perdus" && (
+                                <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Restaurer" onClick={() => handleRestoreFromLost(p.id)}>
+                                  ↩️ Restaurer
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}>
+                                {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {expandedId === p.id && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="bg-muted/30 px-6 py-2">
+                              <EventDossier
+                                proposal={{
+                                  id: p.id, client_name: p.client_name, client_email: p.client_email,
+                                  recipient_name: p.recipient_name, client_id: p.client_id || null, status: p.status,
+                                  proposal_type: p.proposal_type || "classique",
+                                  event_date_text: p.event_date_text || null,
+                                  event_location: p.event_location || null,
+                                  audience_size: p.audience_size || null,
+                                  proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
+                                    speaker_id: ps.speaker_id,
+                                    speaker_fee: ps.speaker_fee, travel_costs: ps.travel_costs,
+                                    agency_commission: ps.agency_commission, total_price: ps.total_price,
+                                    speakers: ps.speakers,
+                                  })),
+                                }}
+                                onUpdate={fetchData}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      {/* Lost dialog */}
+      <Dialog open={!!lostDialogId} onOpenChange={open => { if (!open) { setLostDialogId(null); setLostReason(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Marquer comme perdu</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-sm">Raison (optionnel)</Label>
+            <Textarea value={lostReason} onChange={e => setLostReason(e.target.value)} rows={3} className="text-sm" />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setLostDialogId(null); setLostReason(""); }}>Annuler</Button>
+              <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white" onClick={handleMarkLost}>Confirmer</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteDialogId} onOpenChange={open => { if (!open) setDeleteDialogId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Supprimer le contrat</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              ⚠️ Cette action est <strong className="text-foreground">irréversible</strong>. La proposition, le contrat, les factures, le dossier événement et toutes les données associées seront définitivement supprimés.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDeleteDialogId(null)}>Annuler</Button>
+              <Button size="sm" variant="destructive" onClick={handleDeleteContract}>Supprimer définitivement</Button>
             </div>
           </div>
         </DialogContent>
