@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, X, MapPin, RefreshCw, ExternalLink, Pencil, Save, Globe, Video, Archive, ArchiveRestore, Trash2, Star, Plus, MessageSquare, UserPlus, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Mic, Eye, EyeOff, User, Diamond } from "lucide-react";
 import { parseThemes, CANONICAL_THEMES } from "@/lib/parseThemes";
-import { parseImagePosition, stringifyImagePosition } from "@/lib/imagePosition";
+import { getImagePositionStyle, parseImagePosition, stringifyImagePosition } from "@/lib/imagePosition";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 
@@ -1164,10 +1164,7 @@ const AdminSpeakersCRM = () => {
                             src={editForm.image_url}
                             alt=""
                             className="w-full h-full object-cover"
-                            style={{
-                              objectPosition: `${previewImage.x}% ${previewImage.y}%`,
-                              transform: `scale(${previewImage.zoom})`,
-                            }}
+                            style={getImagePositionStyle(previewImage)}
                           />
                         );
                       })()}
@@ -1269,7 +1266,7 @@ const AdminSpeakersCRM = () => {
                             alt=""
                             className="w-full h-full object-cover pointer-events-none"
                             draggable={false}
-                            style={{ objectPosition: `${xVal}% ${yVal}%`, transform: `scale(${currentZoom})` }}
+                            style={getImagePositionStyle(imageSettings)}
                           />
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10">
                             <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">↕ ↔ Glisser</span>
@@ -1278,7 +1275,7 @@ const AdminSpeakersCRM = () => {
                         <div className="space-y-2">
                           <span className="text-[10px] text-muted-foreground block">Aperçu médaillon</span>
                           <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
-                            <img src={editForm.image_url} alt="" className="w-full h-full object-cover pointer-events-none" draggable={false} style={{ objectPosition: `${xVal}% ${yVal}%`, transform: `scale(${currentZoom})` }} />
+                            <img src={editForm.image_url} alt="" className="w-full h-full object-cover pointer-events-none" draggable={false} style={getImagePositionStyle(imageSettings)} />
                           </div>
                         </div>
                       </div>
