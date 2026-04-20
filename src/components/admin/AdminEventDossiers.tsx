@@ -527,22 +527,15 @@ const AdminEventDossiers = () => {
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground text-sm">Aucun dossier</div>
       ) : (
-        <div className="border border-border rounded-xl overflow-x-auto">
+        <div className="border border-border rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[180px]">Client</TableHead>
-                <TableHead className="whitespace-nowrap">Date événement</TableHead>
-                <TableHead className="text-center" title="Contrat signé par le client">Contrat client</TableHead>
-                <TableHead className="text-center" title="Contrat signé par le conférencier">Contrat speaker</TableHead>
-                <TableHead className="whitespace-nowrap" title="Acompte versé par le client">Acpte client</TableHead>
-                <TableHead className="whitespace-nowrap" title="Acompte versé au conférencier">Acpte speaker</TableHead>
-                <TableHead className="whitespace-nowrap" title="Date de visio préparatoire">Visio</TableHead>
-                <TableHead className="text-center" title="Envoi feuille de liaison">Liaison</TableHead>
-                <TableHead className="text-center" title="Envoi facture client">Facture env.</TableHead>
-                <TableHead className="text-center" title="Règlement facture par le client">Facture payée</TableHead>
-                <TableHead className="text-center" title="Règlement de la facture au conférencier">Speaker payé</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[200px]">Client</TableHead>
+                <TableHead className="whitespace-nowrap w-[130px]">Date événement</TableHead>
+                <TableHead>Pipeline</TableHead>
+                <TableHead className="w-[140px]">Progression</TableHead>
+                <TableHead className="text-right w-[120px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -552,34 +545,57 @@ const AdminEventDossiers = () => {
                 return (
                   <React.Fragment key={p.id}>
                     <TableRow
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="cursor-pointer hover:bg-muted/50 align-top"
                       onClick={() => setExpandedId(isExpanded ? null : p.id)}
                     >
-                      <TableCell>
+                      <TableCell className="py-3">
                         <div className="font-medium text-sm">{p.client_name}</div>
                         {r.bdc && <div className="text-[10px] text-muted-foreground">BDC {r.bdc}</div>}
                         {r.archiveStatus === "perdu" && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
                         {r.archiveStatus === "gagne" && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap py-3">
                         {r.eventDate ? (
-                          <span className="text-xs font-medium">{r.eventDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                          <div>
+                            <div className="text-xs font-medium">{r.eventDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                            {r.eventDate >= new Date() && (
+                              <div className="text-[10px] text-muted-foreground">
+                                J-{Math.ceil((r.eventDate.getTime() - Date.now()) / 86400000)}
+                              </div>
+                            )}
+                          </div>
                         ) : p.event_date_text ? (
                           <span className="text-xs text-muted-foreground italic">{p.event_date_text}</span>
                         ) : (
                           <span className="text-xs text-muted-foreground/60">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.clientSigned} date={r.clientSigned} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.speakerSigned} date={r.speakerSigned} /></TableCell>
-                      <TableCell><DateCell value={r.clientDepositPaid} /></TableCell>
-                      <TableCell><DateCell value={r.speakerDepositPaid} /></TableCell>
-                      <TableCell><DateCell value={r.visioDate} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.liaisonSent} date={r.liaisonSent} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.invoiceSentClient} date={r.invoiceSentClient} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.invoicePaidClient} date={r.invoicePaidClient} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.speakerPaid} date={r.speakerPaid} /></TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
+                        <ContractPipeline stages={r.stages} onChange={fetchData} compact />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-2 text-[10px]">
+                            <span className="text-muted-foreground font-medium">{r.completedCount}/{r.stages.length}</span>
+                            <span className="text-muted-foreground">{r.progress}%</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-full transition-all",
+                                r.progress === 100 ? "bg-emerald-500" : "bg-primary",
+                              )}
+                              style={{ width: `${r.progress}%` }}
+                            />
+                          </div>
+                          {r.nextStage && (
+                            <div className="text-[10px] text-muted-foreground truncate" title={r.nextStage.label}>
+                              ➜ {r.nextStage.label}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right py-3">
                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           {!r.isArchived && (
                             <>
@@ -604,7 +620,12 @@ const AdminEventDossiers = () => {
                     </TableRow>
                     {isExpanded && (
                       <TableRow>
-                        <TableCell colSpan={12} className="bg-muted/30 px-6 py-2">
+                        <TableCell colSpan={5} className="bg-muted/30 px-6 py-4">
+                          {/* Stepper grand format avec libellés complets */}
+                          <div className="mb-4 bg-background rounded-lg border border-border p-3">
+                            <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Pipeline du dossier</div>
+                            <ContractPipeline stages={r.stages} onChange={fetchData} />
+                          </div>
                           <EventDossier
                             proposal={{
                               id: p.id, client_name: p.client_name, client_email: p.client_email,
