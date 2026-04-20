@@ -540,7 +540,7 @@ const AdminEventDossiers = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r) => {
+              {filtered.slice(0, pageSize).map((r) => {
                 const p = r.proposal;
                 const isExpanded = expandedId === p.id;
                 return (
