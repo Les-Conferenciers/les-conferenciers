@@ -1658,7 +1658,24 @@ const AdminProposalsContent = () => {
           <TableCell className="text-xs whitespace-nowrap">{formatDate(p.created_at)}</TableCell>
           <TableCell>
             <div className="font-medium text-sm">{p.client_name}</div>
-            <div className="text-xs text-muted-foreground">{p.client_email}</div>
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>{p.client_email}</span>
+              {(() => {
+                const matches = getMatchingLeads(p.client_email);
+                if (matches.length === 0) return null;
+                return (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setLeadsDialogProposal(p); }}
+                    title={`${matches.length} message${matches.length > 1 ? "s" : ""} client (lead)`}
+                    className="inline-flex items-center gap-0.5 text-sky-600 hover:text-sky-800 transition-colors"
+                  >
+                    <Mail className="h-3 w-3" />
+                    <span className="text-[10px] font-medium">{matches.length}</span>
+                  </button>
+                );
+              })()}
+            </div>
           </TableCell>
           <TableCell>
             {(() => {
