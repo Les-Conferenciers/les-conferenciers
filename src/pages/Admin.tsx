@@ -1891,7 +1891,7 @@ const AdminProposalsContent = () => {
         const merged = [...drafts, ...sent].sort((a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
-        return renderTable(merged, "sent");
+        return renderUnifiedTable(merged);
       })()}
 
       {/* Edit dialog */}
