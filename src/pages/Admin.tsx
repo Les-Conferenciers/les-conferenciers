@@ -1805,6 +1805,33 @@ const AdminProposalsContent = () => {
     );
   };
 
+  const renderUnifiedTable = (items: Proposal[]) => (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Client</TableHead>
+            <TableHead>Conférenciers</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map(p => renderProposalRow(p, p.status === "draft" ? "draft" : "sent"))}
+          {items.length === 0 && !loading && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                Aucune proposition.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   const renderTable = (items: Proposal[], mode: "draft" | "sent" | "completed") => (
     <div className="border border-border rounded-xl overflow-hidden">
       <Table>
