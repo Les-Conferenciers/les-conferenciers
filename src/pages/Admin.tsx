@@ -127,7 +127,7 @@ const buildEventContextLine = (eventLocation: string, eventDateText: string, aud
   if (eventDateText) parts.push(`du <strong>${eventDateText}</strong>`);
   if (eventLocation) parts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
   if (audienceSize) parts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
-  return `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${parts.join(", ")}.`;
+  return `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${parts.join(", ")}.`;
 };
 
 const TEMPLATE_EMAIL_PHRASES: Record<string, string> = {
@@ -136,20 +136,14 @@ const TEMPLATE_EMAIL_PHRASES: Record<string, string> = {
   "Patrouille de France": "une sélection de pilotes et anciens membres de la Patrouille de France, conférenciers d'exception, soigneusement choisis",
 };
 
-const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string, templateName?: string) => {
-  const selectionPhrase = templateName && TEMPLATE_EMAIL_PHRASES[templateName]
-    ? `${TEMPLATE_EMAIL_PHRASES[templateName]} pour ${clientName || "votre événement"}`
-    : `une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}`;
-
+const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string, _templateName?: string) => {
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
 
 ${eventContext ? `<p>${eventContext}</p>
 
-` : ""}<p>Vous trouverez ci-dessous ${selectionPhrase}, sous réserve de leur disponibilité.</p>
-
-<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
+` : ""}<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
 <p><strong>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</strong></p>
 
@@ -1811,6 +1805,33 @@ const AdminProposalsContent = () => {
     );
   };
 
+  const renderUnifiedTable = (items: Proposal[]) => (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Client</TableHead>
+            <TableHead>Conférenciers</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map(p => renderProposalRow(p, p.status === "draft" ? "draft" : "sent"))}
+          {items.length === 0 && !loading && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                Aucune proposition.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   const renderTable = (items: Proposal[], mode: "draft" | "sent" | "completed") => (
     <div className="border border-border rounded-xl overflow-hidden">
       <Table>
@@ -1865,7 +1886,7 @@ const AdminProposalsContent = () => {
             <option value="info">📝 Infos</option>
           </select>
           <Button variant="ghost" size="sm" onClick={() => setDateSortAsc(prev => !prev)} className="gap-1 text-xs" title="Trier par date">
-            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes" : "Plus récentes"}
+            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes d'abord" : "Plus récentes d'abord"}
           </Button>
           {testProposalCount > 0 && (
             <Button variant={hideTestProposals ? "outline" : "secondary"} size="sm" onClick={() => setHideTestProposals(prev => !prev)} className="gap-1 text-xs">
@@ -1892,19 +1913,13 @@ const AdminProposalsContent = () => {
         </div>
       </div>
 
-      <Tabs value={pipelineTab} onValueChange={setPipelineTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="drafts" className="gap-1.5 text-xs">
-            📝 Brouillons {drafts.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{drafts.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="sent" className="gap-1.5 text-xs">
-            📤 Envoyées {sent.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{sent.length}</span>}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="drafts">{renderTable(drafts, "draft")}</TabsContent>
-        <TabsContent value="sent">{renderTable(sent, "sent")}</TabsContent>
-      </Tabs>
+      {/* Liste unifiée triée par date desc — brouillons et envoyées affichés ensemble */}
+      {(() => {
+        const merged = [...drafts, ...sent].sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        return renderUnifiedTable(merged);
+      })()}
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
