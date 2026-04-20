@@ -481,6 +481,73 @@ const AdminEventDossiers = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Direct contract creation dialog */}
+      <Dialog open={directOpen} onOpenChange={setDirectOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Nouveau contrat direct</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Créez un dossier sans proposition préalable. Vous pourrez ensuite finaliser le contrat (lignes, montants, conférencier) dans le dossier.
+            </p>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Client (CRM)</Label>
+              <Select value={directClientId} onValueChange={setDirectClientId}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="— Sélectionner ou laisser vide pour saisir manuellement —" /></SelectTrigger>
+                <SelectContent>
+                  {directClients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.company_name}{c.contact_name ? ` — ${c.contact_name}` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {!directClientId && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Nom client / société</Label>
+                  <Input value={directClientName} onChange={(e) => setDirectClientName(e.target.value)} className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email client</Label>
+                  <Input type="email" value={directClientEmail} onChange={(e) => setDirectClientEmail(e.target.value)} className="h-9 text-sm" />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-xs">Interlocuteur (optionnel)</Label>
+              <Input value={directRecipientName} onChange={(e) => setDirectRecipientName(e.target.value)} className="h-9 text-sm" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Date événement</Label>
+                <Input type="date" value={directEventDate} onChange={(e) => setDirectEventDate(e.target.value)} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Auditoire</Label>
+                <Input value={directAudienceSize} onChange={(e) => setDirectAudienceSize(e.target.value)} placeholder="100, 200…" className="h-9 text-sm" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Lieu</Label>
+              <Input value={directEventLocation} onChange={(e) => setDirectEventLocation(e.target.value)} placeholder="Hôtel, ville…" className="h-9 text-sm" />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setDirectOpen(false)}>Annuler</Button>
+              <Button size="sm" onClick={handleCreateDirectContract} disabled={directCreating}>
+                {directCreating ? "Création…" : "Créer le dossier"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
