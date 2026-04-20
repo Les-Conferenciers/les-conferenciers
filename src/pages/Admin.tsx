@@ -593,6 +593,23 @@ const AdminProposalsContent = () => {
     return () => clearTimeout(timer);
   }, [clientEmail, proposals, allClients]);
 
+  // Load leads matching the client email — to consult their original message while drafting the proposal
+  useEffect(() => {
+    if (!clientEmail || clientEmail.length < 5 || !clientEmail.includes("@")) {
+      setMatchingLeads([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("simulator_leads")
+        .select("*")
+        .ilike("email", clientEmail.trim())
+        .order("created_at", { ascending: false });
+      setMatchingLeads((data as any[]) || []);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [clientEmail]);
+
   const fetchProposals = async () => {
     setLoading(true);
     const [proposalsRes, contractsRes, invoicesRes] = await Promise.all([
