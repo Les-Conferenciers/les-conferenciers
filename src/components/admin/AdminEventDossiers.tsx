@@ -16,9 +16,12 @@ import {
 } from "@/components/ui/select";
 import {
   RefreshCw, Search, ChevronDown, ChevronUp, Trash2, Check, X, FilePlus,
+  AlertTriangle, CalendarDays, FileSignature, CreditCard, Video, ClipboardList, Receipt, Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import EventDossier from "@/components/admin/EventDossier";
+import ContractPipeline, { PipelineStage } from "@/components/admin/ContractPipeline";
+import { cn } from "@/lib/utils";
 
 type Proposal = any;
 type Contract = any;
@@ -166,27 +169,27 @@ const AdminEventDossiers = () => {
       const finalInvoice = solde || total;
 
       // Client-side dates
+      const contractSentClient = pContract?.created_at || null; // contract created = sent shell
       const clientSigned = pContract?.client_signed_received_at || pContract?.signed_at || null;
       const clientDepositPaid = pEvent?.client_deposit_paid_at || acompte?.paid_at || null;
       const invoiceSentClient = pEvent?.client_invoice_sent_at || finalInvoice?.sent_at || null;
       const invoicePaidClient = pEvent?.client_invoice_paid_at || finalInvoice?.paid_at || null;
 
       // Speaker-side dates
+      const contractSentSpeaker = pEvent?.contract_sent_speaker_at || null;
+      const speakerAck = pEvent?.speaker_acknowledgment_at || null;
       const speakerSigned = pEvent?.speaker_signed_contract_at || null;
       const speakerDepositPaid = pEvent?.speaker_deposit_paid_at || null;
       const speakerPaid = pEvent?.speaker_paid_at || null;
 
-      // Visio
+      // Visio + liaison
       const visioDate = pEvent?.visio_date || null;
-
-      // Liaison
       const liaisonSent = pEvent?.liaison_sheet_sent_at || null;
 
       // Event date for sorting/display
       const eventDateRaw = pEvent?.event_date || pContract?.event_date || null;
       const eventDate = eventDateRaw ? new Date(eventDateRaw + (eventDateRaw.length === 10 ? "T12:00:00" : "")) : null;
 
-      // BDC
       const bdc = pEvent?.bdc_number || null;
 
       // Status
@@ -194,6 +197,36 @@ const AdminEventDossiers = () => {
       const isLost = !!p.lost_at;
       const isWon = allInvoicesPaid && !!speakerPaid && !isLost;
       const archiveStatus: "gagne" | "perdu" | null = isLost ? "perdu" : (isWon ? "gagne" : null);
+
+      // Build pipeline (10 stages)
+      const stages: PipelineStage[] = [
+        { key: "contract_sent", label: "Contrat envoyé client", shortLabel: "Contrat env.", doneAt: contractSentClient,
+          toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "created_at", valueType: "timestamp" } : undefined },
+        { key: "client_signed", label: "Contrat signé client", shortLabel: "Signé client", doneAt: clientSigned,
+          toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
+        { key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_deposit_paid_at", valueType: "date" } : undefined },
+        { key: "speaker_contract_sent", label: "Contrat envoyé conférencier", shortLabel: "Contrat speaker", doneAt: contractSentSpeaker,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "contract_sent_speaker_at", valueType: "timestamp" } : undefined },
+        { key: "speaker_ack", label: "AR conférencier", shortLabel: "AR speaker", doneAt: speakerAck,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_acknowledgment_at", valueType: "date" } : undefined },
+        { key: "speaker_signed", label: "Contrat signé conférencier", shortLabel: "Signé speaker", doneAt: speakerSigned,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_signed_contract_at", valueType: "date" } : undefined },
+        { key: "visio", label: "Visio préparatoire", shortLabel: "Visio", doneAt: visioDate,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "visio_date", valueType: "date" } : undefined },
+        { key: "liaison", label: "Feuille de liaison", shortLabel: "Liaison", doneAt: liaisonSent,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "liaison_sheet_sent_at", valueType: "timestamp" } : undefined },
+        { key: "invoice_sent", label: "Facture envoyée", shortLabel: "Facture env.", doneAt: invoiceSentClient,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_invoice_sent_at", valueType: "date" } : undefined },
+        { key: "invoice_paid", label: "Facture payée", shortLabel: "Facture payée", doneAt: invoicePaidClient,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_invoice_paid_at", valueType: "date" } : undefined },
+        { key: "speaker_paid", label: "Conférencier payé", shortLabel: "Speaker payé", doneAt: speakerPaid,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_paid_at", valueType: "timestamp" } : undefined },
+      ];
+
+      const completedCount = stages.filter((s) => !!s.doneAt).length;
+      const nextStage = stages.find((s) => !s.doneAt) || null;
+      const progress = Math.round((completedCount / stages.length) * 100);
 
       return {
         proposal: p,
@@ -212,8 +245,14 @@ const AdminEventDossiers = () => {
         invoiceSentClient,
         invoicePaidClient,
         speakerPaid,
+        speakerAck,
+        contractSentSpeaker,
         archiveStatus,
         isArchived: !!archiveStatus,
+        stages,
+        completedCount,
+        nextStage,
+        progress,
       };
     });
   }, [proposals, contracts, invoices, events]);
@@ -254,6 +293,62 @@ const AdminEventDossiers = () => {
     perdus: enriched.filter((r) => r.archiveStatus === "perdu").length,
   }), [enriched]);
 
+  // KPI: nombre de dossiers en cours bloqués sur chaque étape
+  const stageKpis = useMemo(() => {
+    const active = enriched.filter((r) => !r.isArchived);
+    const count = (key: string) => active.filter((r) => r.nextStage?.key === key).length;
+    return [
+      { key: "contract_sent", label: "Contrat à envoyer", icon: FileSignature, count: count("contract_sent") },
+      { key: "client_signed", label: "Signature client attendue", icon: FileSignature, count: count("client_signed") },
+      { key: "client_deposit", label: "Acompte client attendu", icon: CreditCard, count: count("client_deposit") },
+      { key: "speaker_ack", label: "AR conférencier attendu", icon: ClipboardList, count: count("speaker_ack") },
+      { key: "visio", label: "Visio à planifier", icon: Video, count: count("visio") },
+      { key: "liaison", label: "Liaison à envoyer", icon: ClipboardList, count: count("liaison") },
+      { key: "invoice_sent", label: "Facture à envoyer", icon: Receipt, count: count("invoice_sent") },
+      { key: "invoice_paid", label: "Paiement client attendu", icon: Wallet, count: count("invoice_paid") },
+    ];
+  }, [enriched]);
+
+  // Alertes "à traiter cette semaine"
+  const weekAlerts = useMemo(() => {
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 86400000);
+    return enriched
+      .filter((r) => !r.isArchived)
+      .map((r) => {
+        const alerts: string[] = [];
+        if (r.eventDate && r.eventDate >= now && r.eventDate <= in7) {
+          alerts.push(`📅 Événement dans ${Math.ceil((r.eventDate.getTime() - now.getTime()) / 86400000)}j`);
+        }
+        if (r.contractSentSpeaker && !r.speakerAck) {
+          const sent = new Date(r.contractSentSpeaker);
+          const days = Math.floor((now.getTime() - sent.getTime()) / 86400000);
+          if (days >= 3) alerts.push(`⏳ AR conférencier en retard (${days}j)`);
+        }
+        if (r.invoiceSentClient && !r.invoicePaidClient) {
+          const sent = new Date(r.invoiceSentClient + (r.invoiceSentClient.length === 10 ? "T12:00:00" : ""));
+          const days = Math.floor((now.getTime() - sent.getTime()) / 86400000);
+          if (days >= 30) alerts.push(`💰 Facture impayée (${days}j)`);
+        }
+        if (r.visioDate) {
+          const v = new Date(r.visioDate + "T12:00:00");
+          if (v >= now && v <= in7) alerts.push(`🎥 Visio dans ${Math.ceil((v.getTime() - now.getTime()) / 86400000)}j`);
+        }
+        return { row: r, alerts };
+      })
+      .filter((x) => x.alerts.length > 0);
+  }, [enriched]);
+
+  // Calendrier 30 jours
+  const upcoming30 = useMemo(() => {
+    const now = new Date();
+    const in30 = new Date(now.getTime() + 30 * 86400000);
+    return enriched
+      .filter((r) => !r.isArchived && r.eventDate && r.eventDate >= now && r.eventDate <= in30)
+      .sort((a, b) => (a.eventDate!.getTime() - b.eventDate!.getTime()))
+      .slice(0, 10);
+  }, [enriched]);
+
   const handleMarkLost = async () => {
     if (!lostDialogId) return;
     const { error } = await supabase.from("proposals").update({ lost_at: new Date().toISOString(), lost_reason: lostReason || null } as any).eq("id", lostDialogId);
@@ -290,7 +385,10 @@ const AdminEventDossiers = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-lg font-serif font-bold">Dossiers événement</h2>
+        <div>
+          <h2 className="text-lg font-serif font-bold">Contrats</h2>
+          <p className="text-xs text-muted-foreground">Pipeline complet du contrat à la facturation finale</p>
+        </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={openDirectContract}>
             <FilePlus className="h-3.5 w-3.5" /> Nouveau contrat direct
@@ -300,6 +398,96 @@ const AdminEventDossiers = () => {
           </Button>
         </div>
       </div>
+
+      {/* Dashboard : KPI + Alertes + Calendrier (uniquement onglet En cours) */}
+      {tab === "en_cours" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* KPI compteurs */}
+          <div className="lg:col-span-2 border border-border rounded-xl p-3 bg-card">
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">À traiter par étape</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {stageKpis.map((k) => (
+                <div key={k.key} className="rounded-lg border border-border bg-background px-2.5 py-2 hover:border-primary/40 transition-colors">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground leading-tight">
+                    <k.icon className="h-3 w-3 shrink-0" />
+                    <span>{k.label}</span>
+                  </div>
+                  <div className={cn("text-2xl font-bold mt-0.5", k.count > 0 ? "text-primary" : "text-muted-foreground/40")}>
+                    {k.count}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Calendrier 30j */}
+          <div className="border border-border rounded-xl p-3 bg-card">
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">Prochains événements (30j)</h3>
+            </div>
+            {upcoming30.length === 0 ? (
+              <div className="text-xs text-muted-foreground/70 py-3 text-center">Aucun événement à venir</div>
+            ) : (
+              <ul className="space-y-1.5 max-h-[180px] overflow-y-auto">
+                {upcoming30.map((r) => {
+                  const days = Math.ceil((r.eventDate!.getTime() - Date.now()) / 86400000);
+                  return (
+                    <li key={r.proposal.id}>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(r.proposal.id)}
+                        className="w-full flex items-center justify-between gap-2 text-left rounded-md px-2 py-1.5 hover:bg-muted/60 transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-xs font-medium truncate">{r.proposal.client_name}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {r.eventDate!.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                          </div>
+                        </div>
+                        <span className={cn(
+                          "text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0",
+                          days <= 7 ? "bg-orange-100 text-orange-700" : "bg-muted text-muted-foreground",
+                        )}>
+                          J-{days}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Alertes "à traiter cette semaine" */}
+      {tab === "en_cours" && weekAlerts.length > 0 && (
+        <div className="border border-orange-200 bg-orange-50 rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <h3 className="text-sm font-semibold text-orange-900">À traiter cette semaine ({weekAlerts.length})</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {weekAlerts.slice(0, 6).map(({ row, alerts }) => (
+              <button
+                key={row.proposal.id}
+                type="button"
+                onClick={() => setExpandedId(row.proposal.id)}
+                className="text-left bg-background rounded-md px-2.5 py-1.5 border border-orange-200/60 hover:border-orange-400 transition-colors"
+              >
+                <div className="text-xs font-medium">{row.proposal.client_name}</div>
+                <div className="text-[10px] text-orange-700 mt-0.5 flex flex-wrap gap-x-2">
+                  {alerts.map((a, i) => <span key={i}>{a}</span>)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setExpandedId(null); }}>
         <TabsList className="mb-4">
@@ -339,22 +527,15 @@ const AdminEventDossiers = () => {
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground text-sm">Aucun dossier</div>
       ) : (
-        <div className="border border-border rounded-xl overflow-x-auto">
+        <div className="border border-border rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[180px]">Client</TableHead>
-                <TableHead className="whitespace-nowrap">Date événement</TableHead>
-                <TableHead className="text-center" title="Contrat signé par le client">Contrat client</TableHead>
-                <TableHead className="text-center" title="Contrat signé par le conférencier">Contrat speaker</TableHead>
-                <TableHead className="whitespace-nowrap" title="Acompte versé par le client">Acpte client</TableHead>
-                <TableHead className="whitespace-nowrap" title="Acompte versé au conférencier">Acpte speaker</TableHead>
-                <TableHead className="whitespace-nowrap" title="Date de visio préparatoire">Visio</TableHead>
-                <TableHead className="text-center" title="Envoi feuille de liaison">Liaison</TableHead>
-                <TableHead className="text-center" title="Envoi facture client">Facture env.</TableHead>
-                <TableHead className="text-center" title="Règlement facture par le client">Facture payée</TableHead>
-                <TableHead className="text-center" title="Règlement de la facture au conférencier">Speaker payé</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[200px]">Client</TableHead>
+                <TableHead className="whitespace-nowrap w-[130px]">Date événement</TableHead>
+                <TableHead>Pipeline</TableHead>
+                <TableHead className="w-[140px]">Progression</TableHead>
+                <TableHead className="text-right w-[120px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -364,34 +545,57 @@ const AdminEventDossiers = () => {
                 return (
                   <React.Fragment key={p.id}>
                     <TableRow
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="cursor-pointer hover:bg-muted/50 align-top"
                       onClick={() => setExpandedId(isExpanded ? null : p.id)}
                     >
-                      <TableCell>
+                      <TableCell className="py-3">
                         <div className="font-medium text-sm">{p.client_name}</div>
                         {r.bdc && <div className="text-[10px] text-muted-foreground">BDC {r.bdc}</div>}
                         {r.archiveStatus === "perdu" && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
                         {r.archiveStatus === "gagne" && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap py-3">
                         {r.eventDate ? (
-                          <span className="text-xs font-medium">{r.eventDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                          <div>
+                            <div className="text-xs font-medium">{r.eventDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                            {r.eventDate >= new Date() && (
+                              <div className="text-[10px] text-muted-foreground">
+                                J-{Math.ceil((r.eventDate.getTime() - Date.now()) / 86400000)}
+                              </div>
+                            )}
+                          </div>
                         ) : p.event_date_text ? (
                           <span className="text-xs text-muted-foreground italic">{p.event_date_text}</span>
                         ) : (
                           <span className="text-xs text-muted-foreground/60">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.clientSigned} date={r.clientSigned} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.speakerSigned} date={r.speakerSigned} /></TableCell>
-                      <TableCell><DateCell value={r.clientDepositPaid} /></TableCell>
-                      <TableCell><DateCell value={r.speakerDepositPaid} /></TableCell>
-                      <TableCell><DateCell value={r.visioDate} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.liaisonSent} date={r.liaisonSent} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.invoiceSentClient} date={r.invoiceSentClient} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.invoicePaidClient} date={r.invoicePaidClient} /></TableCell>
-                      <TableCell className="text-center"><Bool value={!!r.speakerPaid} date={r.speakerPaid} /></TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
+                        <ContractPipeline stages={r.stages} onChange={fetchData} compact />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-2 text-[10px]">
+                            <span className="text-muted-foreground font-medium">{r.completedCount}/{r.stages.length}</span>
+                            <span className="text-muted-foreground">{r.progress}%</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-full transition-all",
+                                r.progress === 100 ? "bg-emerald-500" : "bg-primary",
+                              )}
+                              style={{ width: `${r.progress}%` }}
+                            />
+                          </div>
+                          {r.nextStage && (
+                            <div className="text-[10px] text-muted-foreground truncate" title={r.nextStage.label}>
+                              ➜ {r.nextStage.label}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right py-3">
                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           {!r.isArchived && (
                             <>
@@ -416,7 +620,12 @@ const AdminEventDossiers = () => {
                     </TableRow>
                     {isExpanded && (
                       <TableRow>
-                        <TableCell colSpan={12} className="bg-muted/30 px-6 py-2">
+                        <TableCell colSpan={5} className="bg-muted/30 px-6 py-4">
+                          {/* Stepper grand format avec libellés complets */}
+                          <div className="mb-4 bg-background rounded-lg border border-border p-3">
+                            <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Pipeline du dossier</div>
+                            <ContractPipeline stages={r.stages} onChange={fetchData} />
+                          </div>
                           <EventDossier
                             proposal={{
                               id: p.id, client_name: p.client_name, client_email: p.client_email,
