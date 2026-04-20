@@ -1255,6 +1255,12 @@ Nelly Sabde - Les Conférenciers`);
         </div>
       )}
 
+      {contract && (
+        <div className="border border-border/60 rounded-lg p-3 bg-muted/10">
+          <SignedContractUpload contractId={contract.id} />
+        </div>
+      )}
+
       {/* ─── Speaker Communication ─── */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
