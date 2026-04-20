@@ -8,6 +8,7 @@ import nugget from "@/assets/nugget.png";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
 import AdminClients from "@/components/admin/AdminClients";
+import AdminEventDossiers from "@/components/admin/AdminEventDossiers";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const Admin = () => {
               <FileTextIcon className="h-4 w-4" /> Propositions
             </TabsTrigger>
             <TabsTrigger value="contrats" className="gap-2">
-              <ClipboardCheck className="h-4 w-4" /> Contrats
+              <ClipboardCheck className="h-4 w-4" /> Dossiers événement
             </TabsTrigger>
             <TabsTrigger value="clients" className="gap-2">
               <Building2 className="h-4 w-4" /> Clients
