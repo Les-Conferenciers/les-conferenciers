@@ -518,6 +518,8 @@ const AdminProposalsContent = () => {
   const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
+  const [matchingLeads, setMatchingLeads] = useState<any[]>([]);
+  const [showLeadsPanel, setShowLeadsPanel] = useState(true);
   const [proposalSearch, setProposalSearch] = useState("");
   const [ccEmails, setCcEmails] = useState("");
   const [hideTestProposals, setHideTestProposals] = useState(true);
