@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
-import ContractPipeline, { PipelineStage } from "@/components/admin/ContractPipeline";
+
 
 // ── Types ──
 
@@ -1043,49 +1043,7 @@ Nelly Sabde - Les Conférenciers`);
 
   if (loading) return <div className="text-muted-foreground text-xs py-2">Chargement…</div>;
 
-  // ─── Pipeline (11 jalons, identiques à la vue liste) ───
-  const acompteInvoice = invoices.find(i => i.invoice_type === "acompte");
-  const finalInvoice = invoices.find(i => i.invoice_type === "solde" || i.invoice_type === "total");
-
-  const pipelineStages: PipelineStage[] = [
-    { key: "contract_sent", label: "Contrat envoyé client", shortLabel: "Contrat env.",
-      doneAt: contract?.created_at,
-      toggle: contract ? { table: "contracts", rowId: contract.id, field: "created_at", valueType: "timestamp" } : undefined },
-    { key: "client_signed", label: "Contrat signé client", shortLabel: "Signé client",
-      doneAt: contract?.client_signed_received_at || contract?.signed_at,
-      toggle: contract ? { table: "contracts", rowId: contract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
-    { key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client",
-      doneAt: event?.client_deposit_paid_at || acompteInvoice?.paid_at,
-      toggle: event ? { table: "events", rowId: event.id, field: "client_deposit_paid_at", valueType: "date" } : undefined },
-    { key: "speaker_contract_sent", label: "Contrat envoyé conférencier", shortLabel: "Contrat speaker",
-      doneAt: event?.contract_sent_speaker_at,
-      toggle: event ? { table: "events", rowId: event.id, field: "contract_sent_speaker_at", valueType: "timestamp" } : undefined },
-    { key: "speaker_ack", label: "AR conférencier", shortLabel: "AR speaker",
-      doneAt: event?.speaker_acknowledgment_at,
-      toggle: event ? { table: "events", rowId: event.id, field: "speaker_acknowledgment_at", valueType: "date" } : undefined },
-    { key: "speaker_signed", label: "Contrat signé conférencier", shortLabel: "Signé speaker",
-      doneAt: event?.speaker_signed_contract_at,
-      toggle: event ? { table: "events", rowId: event.id, field: "speaker_signed_contract_at", valueType: "date" } : undefined },
-    { key: "visio", label: "Visio préparatoire", shortLabel: "Visio",
-      doneAt: event?.visio_date,
-      toggle: event ? { table: "events", rowId: event.id, field: "visio_date", valueType: "date" } : undefined },
-    { key: "liaison", label: "Feuille de liaison", shortLabel: "Liaison",
-      doneAt: event?.liaison_sheet_sent_at,
-      toggle: event ? { table: "events", rowId: event.id, field: "liaison_sheet_sent_at", valueType: "timestamp" } : undefined },
-    { key: "invoice_sent", label: "Facture envoyée", shortLabel: "Facture env.",
-      doneAt: event?.client_invoice_sent_at || finalInvoice?.sent_at,
-      toggle: event ? { table: "events", rowId: event.id, field: "client_invoice_sent_at", valueType: "date" } : undefined },
-    { key: "invoice_paid", label: "Facture payée", shortLabel: "Facture payée",
-      doneAt: event?.client_invoice_paid_at || finalInvoice?.paid_at,
-      toggle: event ? { table: "events", rowId: event.id, field: "client_invoice_paid_at", valueType: "date" } : undefined },
-    { key: "speaker_paid", label: "Conférencier payé", shortLabel: "Speaker payé",
-      doneAt: event?.speaker_paid_at,
-      toggle: event ? { table: "events", rowId: event.id, field: "speaker_paid_at", valueType: "timestamp" } : undefined },
-  ];
-
-  const completedCount = pipelineStages.filter(s => !!s.doneAt).length;
-  const progress = Math.round((completedCount / pipelineStages.length) * 100);
-  const nextStage = pipelineStages.find(s => !s.doneAt);
+  // Pipeline supprimé du détail (visible uniquement en vue liste compacte)
 
   return (
     <div className="space-y-6 mt-4 border-t border-border pt-4">
