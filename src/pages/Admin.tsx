@@ -2149,6 +2149,51 @@ const AdminProposalsContent = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Leads matchés par email */}
+      <Dialog open={!!leadsDialogProposal} onOpenChange={(o) => !o && setLeadsDialogProposal(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Messages reçus du client</DialogTitle>
+          </DialogHeader>
+          {leadsDialogProposal && (() => {
+            const matches = getMatchingLeads(leadsDialogProposal.client_email);
+            if (matches.length === 0) return <p className="text-sm text-muted-foreground">Aucun message trouvé pour {leadsDialogProposal.client_email}.</p>;
+            return (
+              <div className="space-y-4 mt-2">
+                <p className="text-xs text-muted-foreground">
+                  {matches.length} message{matches.length > 1 ? "s" : ""} reçu{matches.length > 1 ? "s" : ""} de <span className="text-foreground font-medium">{leadsDialogProposal.client_email}</span>
+                </p>
+                {matches.map((l: any) => (
+                  <div key={l.id} className="border border-border rounded-lg p-3 space-y-2 bg-muted/20">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="text-sm font-medium">{l.first_name} {l.last_name} {l.company ? `· ${l.company}` : ""}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {new Date(l.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        <span className="ml-2 px-1.5 py-0.5 rounded bg-background border border-border">{l.lead_type || "Simulateur"}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {l.phone && <div>📞 {l.phone}</div>}
+                      {l.event_date && <div>📅 {l.event_date}</div>}
+                      {l.event_type && <div>🎯 {l.event_type}</div>}
+                      {l.audience_size && <div>👥 {l.audience_size}</div>}
+                      {l.location && <div>📍 {l.location}</div>}
+                      {l.budget && <div>💰 {l.budget}</div>}
+                    </div>
+                    {l.objective && (
+                      <div className="text-xs"><span className="text-muted-foreground">Objectif :</span> {l.objective}</div>
+                    )}
+                    {l.additional_info && (
+                      <div className="text-sm whitespace-pre-wrap bg-background border border-border rounded p-2 leading-relaxed">{l.additional_info}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* Info accept → new proposal dialog */}
       <Dialog open={infoAcceptDialogOpen} onOpenChange={setInfoAcceptDialogOpen}>
         <DialogContent className="max-w-md">
