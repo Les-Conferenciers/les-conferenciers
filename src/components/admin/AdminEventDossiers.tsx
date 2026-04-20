@@ -168,27 +168,27 @@ const AdminEventDossiers = () => {
       const finalInvoice = solde || total;
 
       // Client-side dates
+      const contractSentClient = pContract?.created_at || null; // contract created = sent shell
       const clientSigned = pContract?.client_signed_received_at || pContract?.signed_at || null;
       const clientDepositPaid = pEvent?.client_deposit_paid_at || acompte?.paid_at || null;
       const invoiceSentClient = pEvent?.client_invoice_sent_at || finalInvoice?.sent_at || null;
       const invoicePaidClient = pEvent?.client_invoice_paid_at || finalInvoice?.paid_at || null;
 
       // Speaker-side dates
+      const contractSentSpeaker = pEvent?.contract_sent_speaker_at || null;
+      const speakerAck = pEvent?.speaker_acknowledgment_at || null;
       const speakerSigned = pEvent?.speaker_signed_contract_at || null;
       const speakerDepositPaid = pEvent?.speaker_deposit_paid_at || null;
       const speakerPaid = pEvent?.speaker_paid_at || null;
 
-      // Visio
+      // Visio + liaison
       const visioDate = pEvent?.visio_date || null;
-
-      // Liaison
       const liaisonSent = pEvent?.liaison_sheet_sent_at || null;
 
       // Event date for sorting/display
       const eventDateRaw = pEvent?.event_date || pContract?.event_date || null;
       const eventDate = eventDateRaw ? new Date(eventDateRaw + (eventDateRaw.length === 10 ? "T12:00:00" : "")) : null;
 
-      // BDC
       const bdc = pEvent?.bdc_number || null;
 
       // Status
@@ -196,6 +196,36 @@ const AdminEventDossiers = () => {
       const isLost = !!p.lost_at;
       const isWon = allInvoicesPaid && !!speakerPaid && !isLost;
       const archiveStatus: "gagne" | "perdu" | null = isLost ? "perdu" : (isWon ? "gagne" : null);
+
+      // Build pipeline (10 stages)
+      const stages: PipelineStage[] = [
+        { key: "contract_sent", label: "Contrat envoyé client", shortLabel: "Contrat env.", doneAt: contractSentClient,
+          toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "created_at", valueType: "timestamp" } : undefined },
+        { key: "client_signed", label: "Contrat signé client", shortLabel: "Signé client", doneAt: clientSigned,
+          toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
+        { key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_deposit_paid_at", valueType: "date" } : undefined },
+        { key: "speaker_contract_sent", label: "Contrat envoyé conférencier", shortLabel: "Contrat speaker", doneAt: contractSentSpeaker,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "contract_sent_speaker_at", valueType: "timestamp" } : undefined },
+        { key: "speaker_ack", label: "AR conférencier", shortLabel: "AR speaker", doneAt: speakerAck,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_acknowledgment_at", valueType: "date" } : undefined },
+        { key: "speaker_signed", label: "Contrat signé conférencier", shortLabel: "Signé speaker", doneAt: speakerSigned,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_signed_contract_at", valueType: "date" } : undefined },
+        { key: "visio", label: "Visio préparatoire", shortLabel: "Visio", doneAt: visioDate,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "visio_date", valueType: "date" } : undefined },
+        { key: "liaison", label: "Feuille de liaison", shortLabel: "Liaison", doneAt: liaisonSent,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "liaison_sheet_sent_at", valueType: "timestamp" } : undefined },
+        { key: "invoice_sent", label: "Facture envoyée", shortLabel: "Facture env.", doneAt: invoiceSentClient,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_invoice_sent_at", valueType: "date" } : undefined },
+        { key: "invoice_paid", label: "Facture payée", shortLabel: "Facture payée", doneAt: invoicePaidClient,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_invoice_paid_at", valueType: "date" } : undefined },
+        { key: "speaker_paid", label: "Conférencier payé", shortLabel: "Speaker payé", doneAt: speakerPaid,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_paid_at", valueType: "timestamp" } : undefined },
+      ];
+
+      const completedCount = stages.filter((s) => !!s.doneAt).length;
+      const nextStage = stages.find((s) => !s.doneAt) || null;
+      const progress = Math.round((completedCount / stages.length) * 100);
 
       return {
         proposal: p,
@@ -214,8 +244,14 @@ const AdminEventDossiers = () => {
         invoiceSentClient,
         invoicePaidClient,
         speakerPaid,
+        speakerAck,
+        contractSentSpeaker,
         archiveStatus,
         isArchived: !!archiveStatus,
+        stages,
+        completedCount,
+        nextStage,
+        progress,
       };
     });
   }, [proposals, contracts, invoices, events]);
