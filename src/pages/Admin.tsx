@@ -106,6 +106,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import SimpleRichTextEditor from "@/components/admin/SimpleRichTextEditor";
+import { cn } from "@/lib/utils";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -518,6 +519,8 @@ const AdminProposalsContent = () => {
   const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
+  const [matchingLeads, setMatchingLeads] = useState<any[]>([]);
+  const [showLeadsPanel, setShowLeadsPanel] = useState(true);
   const [proposalSearch, setProposalSearch] = useState("");
   const [ccEmails, setCcEmails] = useState("");
   const [hideTestProposals, setHideTestProposals] = useState(true);
@@ -590,6 +593,23 @@ const AdminProposalsContent = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [clientEmail, proposals, allClients]);
+
+  // Load leads matching the client email — to consult their original message while drafting the proposal
+  useEffect(() => {
+    if (!clientEmail || clientEmail.length < 5 || !clientEmail.includes("@")) {
+      setMatchingLeads([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("simulator_leads")
+        .select("*")
+        .ilike("email", clientEmail.trim())
+        .order("created_at", { ascending: false });
+      setMatchingLeads((data as any[]) || []);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [clientEmail]);
 
   const fetchProposals = async () => {
     setLoading(true);
@@ -1519,14 +1539,64 @@ const AdminProposalsContent = () => {
         />
         <p className="text-[10px] text-muted-foreground">Séparez les adresses par des virgules. Ces adresses ne seront pas ajoutées au CRM.</p>
       </div>
-      <div className="space-y-2">
-        <Label>✉️ Email d'envoi - Corps</Label>
-        <SimpleRichTextEditor
-          value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers, eventContext })}
-          onChange={setEmailBody}
-          placeholder="Corps de l'email..."
-          rows={8}
-        />
+      <div className={cn("grid gap-3", matchingLeads.length > 0 ? "lg:grid-cols-[1fr_320px]" : "")}>
+        <div className="space-y-2">
+          <Label>✉️ Email d'envoi - Corps</Label>
+          <SimpleRichTextEditor
+            value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers, eventContext })}
+            onChange={setEmailBody}
+            placeholder="Corps de l'email..."
+            rows={8}
+          />
+        </div>
+        {matchingLeads.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">📨 Messages reçus de ce client ({matchingLeads.length})</Label>
+              <button type="button" onClick={() => setShowLeadsPanel(v => !v)} className="text-[10px] text-muted-foreground hover:text-foreground">
+                {showLeadsPanel ? "Masquer" : "Afficher"}
+              </button>
+            </div>
+            {showLeadsPanel && (
+              <div className="border border-border rounded-md bg-muted/20 max-h-[360px] overflow-y-auto divide-y divide-border">
+                {matchingLeads.map((lead) => {
+                  const date = new Date(lead.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+                  const fullName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim();
+                  return (
+                    <div key={lead.id} className="p-2.5 text-xs space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{fullName || "Sans nom"}</span>
+                        <span className="text-[10px] text-muted-foreground">{date}</span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground flex flex-wrap gap-x-2">
+                        <span className="bg-background px-1.5 rounded">{lead.lead_type}</span>
+                        {lead.company && <span>🏢 {lead.company}</span>}
+                        {lead.phone && <span>📞 {lead.phone}</span>}
+                      </div>
+                      {(lead.event_type || lead.event_date || lead.audience_size || lead.budget) && (
+                        <div className="text-[10px] text-muted-foreground">
+                          {lead.event_type && <span>📅 {lead.event_type}</span>}
+                          {lead.event_date && <span> · {lead.event_date}</span>}
+                          {lead.audience_size && <span> · 👥 {lead.audience_size}</span>}
+                          {lead.budget && <span> · 💶 {lead.budget}</span>}
+                        </div>
+                      )}
+                      {lead.themes?.length > 0 && (
+                        <div className="text-[10px] text-muted-foreground">🎯 {lead.themes.join(", ")}</div>
+                      )}
+                      {lead.objective && <div className="text-foreground/80 italic">« {lead.objective} »</div>}
+                      {lead.additional_info && (
+                        <div className="bg-background border border-border rounded p-1.5 mt-1 whitespace-pre-wrap text-foreground/90">
+                          {lead.additional_info}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="space-y-2">
         <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setShowCreatePreview(!showCreatePreview)}>
