@@ -1076,8 +1076,6 @@ Nelly Sabde - Les Conférenciers`);
   const completedCount = pipelineStages.filter(s => !!s.doneAt).length;
   const progress = Math.round((completedCount / pipelineStages.length) * 100);
   const nextStage = pipelineStages.find(s => !s.doneAt);
-    onUpdate();
-  };
 
   return (
     <div className="space-y-6 mt-4 border-t border-border pt-4">
