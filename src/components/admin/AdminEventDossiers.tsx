@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import EventDossier from "@/components/admin/EventDossier";
 import ContractPipeline, { PipelineStage } from "@/components/admin/ContractPipeline";
+import { cn } from "@/lib/utils";
 
 type Proposal = any;
 type Contract = any;
