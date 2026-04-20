@@ -384,7 +384,10 @@ const AdminEventDossiers = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-lg font-serif font-bold">Dossiers événement</h2>
+        <div>
+          <h2 className="text-lg font-serif font-bold">Contrats</h2>
+          <p className="text-xs text-muted-foreground">Pipeline complet du contrat à la facturation finale</p>
+        </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={openDirectContract}>
             <FilePlus className="h-3.5 w-3.5" /> Nouveau contrat direct
@@ -394,6 +397,96 @@ const AdminEventDossiers = () => {
           </Button>
         </div>
       </div>
+
+      {/* Dashboard : KPI + Alertes + Calendrier (uniquement onglet En cours) */}
+      {tab === "en_cours" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* KPI compteurs */}
+          <div className="lg:col-span-2 border border-border rounded-xl p-3 bg-card">
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">À traiter par étape</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {stageKpis.map((k) => (
+                <div key={k.key} className="rounded-lg border border-border bg-background px-2.5 py-2 hover:border-primary/40 transition-colors">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground leading-tight">
+                    <k.icon className="h-3 w-3 shrink-0" />
+                    <span>{k.label}</span>
+                  </div>
+                  <div className={cn("text-2xl font-bold mt-0.5", k.count > 0 ? "text-primary" : "text-muted-foreground/40")}>
+                    {k.count}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Calendrier 30j */}
+          <div className="border border-border rounded-xl p-3 bg-card">
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">Prochains événements (30j)</h3>
+            </div>
+            {upcoming30.length === 0 ? (
+              <div className="text-xs text-muted-foreground/70 py-3 text-center">Aucun événement à venir</div>
+            ) : (
+              <ul className="space-y-1.5 max-h-[180px] overflow-y-auto">
+                {upcoming30.map((r) => {
+                  const days = Math.ceil((r.eventDate!.getTime() - Date.now()) / 86400000);
+                  return (
+                    <li key={r.proposal.id}>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(r.proposal.id)}
+                        className="w-full flex items-center justify-between gap-2 text-left rounded-md px-2 py-1.5 hover:bg-muted/60 transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-xs font-medium truncate">{r.proposal.client_name}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {r.eventDate!.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                          </div>
+                        </div>
+                        <span className={cn(
+                          "text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0",
+                          days <= 7 ? "bg-orange-100 text-orange-700" : "bg-muted text-muted-foreground",
+                        )}>
+                          J-{days}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Alertes "à traiter cette semaine" */}
+      {tab === "en_cours" && weekAlerts.length > 0 && (
+        <div className="border border-orange-200 bg-orange-50 rounded-xl p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <h3 className="text-sm font-semibold text-orange-900">À traiter cette semaine ({weekAlerts.length})</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {weekAlerts.slice(0, 6).map(({ row, alerts }) => (
+              <button
+                key={row.proposal.id}
+                type="button"
+                onClick={() => setExpandedId(row.proposal.id)}
+                className="text-left bg-background rounded-md px-2.5 py-1.5 border border-orange-200/60 hover:border-orange-400 transition-colors"
+              >
+                <div className="text-xs font-medium">{row.proposal.client_name}</div>
+                <div className="text-[10px] text-orange-700 mt-0.5 flex flex-wrap gap-x-2">
+                  {alerts.map((a, i) => <span key={i}>{a}</span>)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setExpandedId(null); }}>
         <TabsList className="mb-4">
