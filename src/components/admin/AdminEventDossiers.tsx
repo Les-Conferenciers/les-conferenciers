@@ -621,11 +621,7 @@ const AdminEventDossiers = () => {
                     {isExpanded && (
                       <TableRow>
                         <TableCell colSpan={5} className="bg-muted/30 px-6 py-4">
-                          {/* Stepper grand format avec libellés complets */}
-                          <div className="mb-4 bg-background rounded-lg border border-border p-3">
-                            <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Pipeline du dossier</div>
-                            <ContractPipeline stages={r.stages} onChange={fetchData} />
-                          </div>
+                          {/* Pipeline détaillé géré par EventDossier ci-dessous */}
                           <EventDossier
                             proposal={{
                               id: p.id, client_name: p.client_name, client_email: p.client_email,
