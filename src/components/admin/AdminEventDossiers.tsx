@@ -63,6 +63,7 @@ const AdminEventDossiers = () => {
   const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu">("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState<10 | 50 | 100>(10);
   const [lostDialogId, setLostDialogId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
