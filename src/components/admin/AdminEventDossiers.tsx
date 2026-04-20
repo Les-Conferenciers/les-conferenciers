@@ -651,6 +651,28 @@ const AdminEventDossiers = () => {
         </div>
       )}
 
+      {filtered.length > 10 && (
+        <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+          <span>Afficher</span>
+          {([10, 50, 100] as const).map(n => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setPageSize(n)}
+              className={cn(
+                "px-2.5 py-1 rounded-md border transition-colors",
+                pageSize === n
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border hover:bg-muted",
+              )}
+            >
+              {n}
+            </button>
+          ))}
+          <span>· {Math.min(pageSize, filtered.length)} sur {filtered.length}</span>
+        </div>
+      )}
+
       {/* Lost dialog */}
       <Dialog open={!!lostDialogId} onOpenChange={(open) => { if (!open) { setLostDialogId(null); setLostReason(""); } }}>
         <DialogContent className="max-w-sm">
