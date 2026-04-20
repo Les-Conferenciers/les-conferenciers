@@ -259,6 +259,18 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editConferenceDuration, setEditConferenceDuration] = useState("");
   const [editParkingInfo, setEditParkingInfo] = useState("");
   const [editHotelInfo, setEditHotelInfo] = useState("");
+  // Lot 2 - tracking dates & logistics for liaison sheet
+  const [editEventRealDate, setEditEventRealDate] = useState("");
+  const [editClientDepositPaidAt, setEditClientDepositPaidAt] = useState("");
+  const [editSpeakerDepositPaidAt, setEditSpeakerDepositPaidAt] = useState("");
+  const [editClientInvoiceSentAt, setEditClientInvoiceSentAt] = useState("");
+  const [editClientInvoicePaidAt, setEditClientInvoicePaidAt] = useState("");
+  const [editSpeakerSignedAt, setEditSpeakerSignedAt] = useState("");
+  const [editSpeakerAcknowledgmentAt, setEditSpeakerAcknowledgmentAt] = useState("");
+  const [editSpeakerPaidAt, setEditSpeakerPaidAt] = useState("");
+  const [editLiaisonSheetSentAt, setEditLiaisonSheetSentAt] = useState("");
+  const [editLogisticsInfo, setEditLogisticsInfo] = useState("");
+  const [editClientSignedReceivedAt, setEditClientSignedReceivedAt] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -808,6 +820,18 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEditConferenceDuration(event?.conference_duration || "");
     setEditParkingInfo(event?.parking_info || "");
     setEditHotelInfo(event?.hotel_info || "");
+    // tracking dates
+    setEditEventRealDate((event as any)?.event_date || contract?.event_date || "");
+    setEditClientDepositPaidAt((event as any)?.client_deposit_paid_at || "");
+    setEditSpeakerDepositPaidAt((event as any)?.speaker_deposit_paid_at || "");
+    setEditClientInvoiceSentAt((event as any)?.client_invoice_sent_at || "");
+    setEditClientInvoicePaidAt((event as any)?.client_invoice_paid_at || "");
+    setEditSpeakerSignedAt((event as any)?.speaker_signed_contract_at || "");
+    setEditSpeakerAcknowledgmentAt((event as any)?.speaker_acknowledgment_at || "");
+    setEditSpeakerPaidAt(event?.speaker_paid_at ? (event.speaker_paid_at as string).slice(0, 10) : "");
+    setEditLiaisonSheetSentAt(event?.liaison_sheet_sent_at ? (event.liaison_sheet_sent_at as string).slice(0, 10) : "");
+    setEditLogisticsInfo((event as any)?.logistics_info || "");
+    setEditClientSignedReceivedAt((contract as any)?.client_signed_received_at || "");
     setEventEditOpen(true);
   };
 
@@ -835,7 +859,23 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       conference_duration: editConferenceDuration || null,
       parking_info: editParkingInfo || null,
       hotel_info: editHotelInfo || null,
+      event_date: editEventRealDate || null,
+      client_deposit_paid_at: editClientDepositPaidAt || null,
+      speaker_deposit_paid_at: editSpeakerDepositPaidAt || null,
+      client_invoice_sent_at: editClientInvoiceSentAt || null,
+      client_invoice_paid_at: editClientInvoicePaidAt || null,
+      speaker_signed_contract_at: editSpeakerSignedAt || null,
+      speaker_acknowledgment_at: editSpeakerAcknowledgmentAt || null,
+      speaker_paid_at: editSpeakerPaidAt ? new Date(editSpeakerPaidAt + "T12:00:00").toISOString() : null,
+      liaison_sheet_sent_at: editLiaisonSheetSentAt ? new Date(editLiaisonSheetSentAt + "T12:00:00").toISOString() : null,
+      logistics_info: editLogisticsInfo || null,
     } as any).eq("id", event.id);
+    // Also update contract.client_signed_received_at if a contract exists
+    if (contract?.id) {
+      await supabase.from("contracts").update({
+        client_signed_received_at: editClientSignedReceivedAt || null,
+      } as any).eq("id", contract.id);
+    }
     if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
     setEventEditOpen(false);
     fetchData();
@@ -1779,6 +1819,28 @@ Nelly Sabde - Les Conférenciers`);
                 <div className="space-y-1"><Label className="text-xs">Heure</Label><Input value={editVisioTime} onChange={e => setEditVisioTime(e.target.value)} placeholder="10h00" /></div>
               </div>
               <div className="space-y-1"><Label className="text-xs">Notes visio</Label><Textarea value={editVisioNotes} onChange={e => setEditVisioNotes(e.target.value)} rows={2} /></div>
+            </div>
+
+            {/* Section: Suivi des dates clés (chronologie dossier) */}
+            <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📅 Suivi du dossier (dates clés)</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Date de l'événement</Label><Input type="date" value={editEventRealDate} onChange={e => setEditEventRealDate(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Contrat client signé reçu le</Label><Input type="date" value={editClientSignedReceivedAt} onChange={e => setEditClientSignedReceivedAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">AR conférencier reçu le</Label><Input type="date" value={editSpeakerAcknowledgmentAt} onChange={e => setEditSpeakerAcknowledgmentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Contrat conférencier signé le</Label><Input type="date" value={editSpeakerSignedAt} onChange={e => setEditSpeakerSignedAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Acompte payé par le client le</Label><Input type="date" value={editClientDepositPaidAt} onChange={e => setEditClientDepositPaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Acompte versé au conférencier le</Label><Input type="date" value={editSpeakerDepositPaidAt} onChange={e => setEditSpeakerDepositPaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Feuille de liaison envoyée le</Label><Input type="date" value={editLiaisonSheetSentAt} onChange={e => setEditLiaisonSheetSentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Facture envoyée au client le</Label><Input type="date" value={editClientInvoiceSentAt} onChange={e => setEditClientInvoiceSentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Facture payée par le client le</Label><Input type="date" value={editClientInvoicePaidAt} onChange={e => setEditClientInvoicePaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Conférencier payé le</Label><Input type="date" value={editSpeakerPaidAt} onChange={e => setEditSpeakerPaidAt(e.target.value)} /></div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Infos logistiques (reportées dans la feuille de liaison)</Label>
+                <Textarea value={editLogisticsInfo} onChange={e => setEditLogisticsInfo(e.target.value)} rows={3} placeholder="Ex. : le conférencier vient en voiture, hôtel réservé au Marriott le 12, train arrivée 9h15…" />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Ces dates et infos alimentent automatiquement la vue chronologique des dossiers événement.</p>
             </div>
 
             {/* Section: Demandes spéciales */}
