@@ -136,20 +136,14 @@ const TEMPLATE_EMAIL_PHRASES: Record<string, string> = {
   "Patrouille de France": "une sélection de pilotes et anciens membres de la Patrouille de France, conférenciers d'exception, soigneusement choisis",
 };
 
-const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string, templateName?: string) => {
-  const selectionPhrase = templateName && TEMPLATE_EMAIL_PHRASES[templateName]
-    ? `${TEMPLATE_EMAIL_PHRASES[templateName]} pour ${clientName || "votre événement"}`
-    : `une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}`;
-
+const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string, _templateName?: string) => {
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
 
 ${eventContext ? `<p>${eventContext}</p>
 
-` : ""}<p>Vous trouverez ci-dessous ${selectionPhrase}, sous réserve de leur disponibilité.</p>
-
-<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
+` : ""}<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
 <p><strong>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</strong></p>
 
