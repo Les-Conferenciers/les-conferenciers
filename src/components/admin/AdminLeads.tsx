@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, ChevronLeft, ChevronRight, EyeOff, Eye } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { RefreshCw, ChevronLeft, ChevronRight, EyeOff, Eye, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type Lead = {
@@ -29,11 +32,27 @@ type Lead = {
 
 const PAGE_SIZE = 25;
 
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("fr-FR", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+
+const formatEventDate = (val: string | null) => {
+  if (!val) return "—";
+  // Try parse as ISO
+  const d = new Date(val);
+  if (!isNaN(d.getTime()) && /\d{4}-\d{2}-\d{2}/.test(val)) {
+    return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+  }
+  return val;
+};
+
 const AdminLeads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hideTest, setHideTest] = useState(true);
+  const [detailLead, setDetailLead] = useState<Lead | null>(null);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -46,11 +65,6 @@ const AdminLeads = () => {
   };
 
   useEffect(() => { fetchLeads(); }, []);
-
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("fr-FR", {
-      day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-    });
 
   const isTestLead = (lead: Lead) => {
     const full = `${lead.first_name} ${lead.last_name}`.toLowerCase();
@@ -65,6 +79,8 @@ const AdminLeads = () => {
   const currentPage = Math.min(page, totalPages);
   const pagedLeads = filteredLeads.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const testCount = leads.filter(isTestLead).length;
+
+  const getMessageSnippet = (lead: Lead) => lead.additional_info || lead.objective || "";
 
   return (
     <div>
@@ -105,37 +121,51 @@ const AdminLeads = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
+              <TableHead>Date reçu</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Nom</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Entreprise</TableHead>
               <TableHead>Téléphone</TableHead>
+              <TableHead>Date événement</TableHead>
               <TableHead>Événement</TableHead>
-              <TableHead>Thématiques</TableHead>
-              <TableHead>Message / Objectif</TableHead>
-              <TableHead>Speakers suggérés</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {pagedLeads.map((lead) => (
-              <TableRow key={lead.id}>
-                <TableCell className="whitespace-nowrap text-xs">{formatDate(lead.created_at)}</TableCell>
-                <TableCell>
-                  <Badge variant={lead.lead_type === "Contact" ? "default" : "secondary"} className="text-xs">
-                    {lead.lead_type || "Simulateur"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="whitespace-nowrap font-medium">{lead.first_name} {lead.last_name}</TableCell>
-                <TableCell className="text-sm">{lead.email}</TableCell>
-                <TableCell className="text-sm">{lead.company || "—"}</TableCell>
-                <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
-                <TableCell className="text-sm">{lead.event_type || "—"}</TableCell>
-                <TableCell className="text-sm">{lead.themes?.join(", ") || "—"}</TableCell>
-                <TableCell className="text-sm max-w-[200px] truncate">{lead.additional_info || lead.objective || "—"}</TableCell>
-                <TableCell className="text-sm">{lead.suggested_speakers?.join(", ") || "—"}</TableCell>
-              </TableRow>
-            ))}
+            {pagedLeads.map((lead) => {
+              const snippet = getMessageSnippet(lead);
+              return (
+                <TableRow key={lead.id} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
+                  <TableCell className="whitespace-nowrap text-xs">{formatDate(lead.created_at)}</TableCell>
+                  <TableCell>
+                    <Badge variant={lead.lead_type === "Contact" ? "default" : "secondary"} className="text-xs">
+                      {lead.lead_type || "Simulateur"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap font-medium">{lead.first_name} {lead.last_name}</TableCell>
+                  <TableCell className="text-sm">{lead.email}</TableCell>
+                  <TableCell className="text-sm">{lead.company || "—"}</TableCell>
+                  <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{formatEventDate(lead.event_date)}</TableCell>
+                  <TableCell className="text-sm">{lead.event_type || "—"}</TableCell>
+                  <TableCell className="text-sm max-w-[260px]">
+                    <span className="block truncate text-muted-foreground">{snippet || "—"}</span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1 text-xs"
+                      onClick={(e) => { e.stopPropagation(); setDetailLead(lead); }}
+                    >
+                      <Mail className="h-3.5 w-3.5" /> Détail
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             {pagedLeads.length === 0 && !loading && (
               <TableRow>
                 <TableCell colSpan={10} className="text-center text-muted-foreground py-12">
@@ -158,6 +188,78 @@ const AdminLeads = () => {
           </Button>
         </div>
       )}
+
+      {/* Détail lead */}
+      <Dialog open={!!detailLead} onOpenChange={(open) => !open && setDetailLead(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">
+              {detailLead?.first_name} {detailLead?.last_name}
+            </DialogTitle>
+          </DialogHeader>
+          {detailLead && (
+            <div className="space-y-4 mt-2 text-sm">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={detailLead.lead_type === "Contact" ? "default" : "secondary"} className="text-xs">
+                  {detailLead.lead_type || "Simulateur"}
+                </Badge>
+                <span className="text-xs text-muted-foreground">Reçu le {formatDate(detailLead.created_at)}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 bg-muted/30 rounded-lg p-3">
+                <div><span className="text-muted-foreground text-xs">Email :</span><br /><a href={`mailto:${detailLead.email}`} className="text-primary hover:underline">{detailLead.email}</a></div>
+                <div><span className="text-muted-foreground text-xs">Téléphone :</span><br />{detailLead.phone || "—"}</div>
+                <div><span className="text-muted-foreground text-xs">Entreprise :</span><br />{detailLead.company || "—"}</div>
+                <div><span className="text-muted-foreground text-xs">Lieu :</span><br />{detailLead.location || "—"}</div>
+                <div><span className="text-muted-foreground text-xs">Date événement :</span><br />{formatEventDate(detailLead.event_date)}</div>
+                <div><span className="text-muted-foreground text-xs">Type d'événement :</span><br />{detailLead.event_type || "—"}</div>
+                <div><span className="text-muted-foreground text-xs">Auditoire :</span><br />{detailLead.audience_size || "—"}</div>
+                <div><span className="text-muted-foreground text-xs">Budget :</span><br />{detailLead.budget || "—"}</div>
+              </div>
+
+              {detailLead.themes && detailLead.themes.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Thématiques</p>
+                  <div className="flex flex-wrap gap-1">
+                    {detailLead.themes.map((t, i) => <Badge key={i} variant="outline" className="text-xs">{t}</Badge>)}
+                  </div>
+                </div>
+              )}
+
+              {detailLead.objective && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Objectif</p>
+                  <p className="text-sm whitespace-pre-wrap">{detailLead.objective}</p>
+                </div>
+              )}
+
+              {detailLead.additional_info && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Message du client</p>
+                  <div className="border border-border rounded-md p-3 bg-background whitespace-pre-wrap text-sm leading-relaxed">
+                    {detailLead.additional_info}
+                  </div>
+                </div>
+              )}
+
+              {detailLead.suggested_speakers && detailLead.suggested_speakers.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Speakers suggérés (par le simulateur)</p>
+                  <p className="text-sm">{detailLead.suggested_speakers.join(", ")}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2 border-t border-border">
+                <Button asChild size="sm" variant="outline" className="gap-1.5">
+                  <a href={`mailto:${detailLead.email}?subject=Votre demande - Les Conférenciers`}>
+                    <Mail className="h-3.5 w-3.5" /> Répondre par email
+                  </a>
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
