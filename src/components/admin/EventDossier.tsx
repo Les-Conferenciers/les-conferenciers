@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import SignedContractUpload from "@/components/admin/SignedContractUpload";
 
 // ── Types ──
 
