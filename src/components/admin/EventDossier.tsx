@@ -757,6 +757,7 @@ ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""} - ${event?.contact_on_site_email || proposal.client_email}
 🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` - ${speaker.phone}` : ""}
 ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
+${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
     const clientCcList = liaisonClientCc.split(",").map(e => e.trim()).filter(Boolean);
