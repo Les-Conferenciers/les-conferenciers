@@ -1821,6 +1821,28 @@ Nelly Sabde - Les Conférenciers`);
               <div className="space-y-1"><Label className="text-xs">Notes visio</Label><Textarea value={editVisioNotes} onChange={e => setEditVisioNotes(e.target.value)} rows={2} /></div>
             </div>
 
+            {/* Section: Suivi des dates clés (chronologie dossier) */}
+            <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📅 Suivi du dossier (dates clés)</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Date de l'événement</Label><Input type="date" value={editEventRealDate} onChange={e => setEditEventRealDate(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Contrat client signé reçu le</Label><Input type="date" value={editClientSignedReceivedAt} onChange={e => setEditClientSignedReceivedAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">AR conférencier reçu le</Label><Input type="date" value={editSpeakerAcknowledgmentAt} onChange={e => setEditSpeakerAcknowledgmentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Contrat conférencier signé le</Label><Input type="date" value={editSpeakerSignedAt} onChange={e => setEditSpeakerSignedAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Acompte payé par le client le</Label><Input type="date" value={editClientDepositPaidAt} onChange={e => setEditClientDepositPaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Acompte versé au conférencier le</Label><Input type="date" value={editSpeakerDepositPaidAt} onChange={e => setEditSpeakerDepositPaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Feuille de liaison envoyée le</Label><Input type="date" value={editLiaisonSheetSentAt} onChange={e => setEditLiaisonSheetSentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Facture envoyée au client le</Label><Input type="date" value={editClientInvoiceSentAt} onChange={e => setEditClientInvoiceSentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Facture payée par le client le</Label><Input type="date" value={editClientInvoicePaidAt} onChange={e => setEditClientInvoicePaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Conférencier payé le</Label><Input type="date" value={editSpeakerPaidAt} onChange={e => setEditSpeakerPaidAt(e.target.value)} /></div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Infos logistiques (reportées dans la feuille de liaison)</Label>
+                <Textarea value={editLogisticsInfo} onChange={e => setEditLogisticsInfo(e.target.value)} rows={3} placeholder="Ex. : le conférencier vient en voiture, hôtel réservé au Marriott le 12, train arrivée 9h15…" />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Ces dates et infos alimentent automatiquement la vue chronologique des dossiers événement.</p>
+            </div>
+
             {/* Section: Demandes spéciales */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">📝 Notes & demandes</Label>
