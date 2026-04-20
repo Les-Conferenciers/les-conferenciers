@@ -1142,61 +1142,6 @@ Nelly Sabde - Les Conférenciers`);
         </div>
       )}
 
-      {/* ─── Pipeline unifié ─── */}
-      <div className="space-y-3 border border-border rounded-lg p-3 bg-card">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <ClipboardList className="h-4 w-4" /> Pipeline du dossier
-            {event?.bdc_number && <span className="text-xs font-normal text-muted-foreground">BDC n° {event.bdc_number}</span>}
-          </h3>
-          <div className="flex items-center gap-3">
-            <div className="text-xs text-muted-foreground">
-              {completedCount}/{pipelineStages.length} étapes
-              {nextStage && <span className="ml-2 text-foreground">· Prochain : <strong>{nextStage.label}</strong></span>}
-            </div>
-            <Button size="sm" variant="ghost" onClick={openEventEdit} title="Éditer les dates">
-              <Pencil className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Barre de progression */}
-        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-emerald-500 transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        {/* Stepper horizontal cliquable */}
-        <ContractPipeline stages={pipelineStages} onChange={fetchData} />
-      </div>
-
-      {/* Event details summary */}
-      {event && (event.audience_size || event.theme || event.visio_date || event.event_title || event.contact_on_site_name || event.conference_title) && (
-        <div className="bg-muted/20 rounded-lg p-3 space-y-2">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-            {event.event_title && <div><span className="text-muted-foreground">Événement :</span> {event.event_title}</div>}
-            {event.conference_title && <div><span className="text-muted-foreground">Conférence :</span> {event.conference_title}</div>}
-            {event.conference_duration && <div><span className="text-muted-foreground">Durée :</span> {event.conference_duration}</div>}
-            {event.audience_size && <div><span className="text-muted-foreground">Auditoire :</span> {event.audience_size}</div>}
-            {event.theme && <div><span className="text-muted-foreground">Thématique :</span> {event.theme}</div>}
-            {event.speaker_budget && <div><span className="text-muted-foreground">Budget speaker :</span> {event.speaker_budget.toLocaleString("fr-FR")} €</div>}
-            {event.visio_date && <div><span className="text-muted-foreground">Visio :</span> {formatDate(event.visio_date)} {event.visio_time || ""}</div>}
-            {event.dress_code && <div><span className="text-muted-foreground">Dress code :</span> {event.dress_code}</div>}
-          </div>
-          {(event.contact_on_site_name || event.tech_needs || event.arrival_info) && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs border-t border-border/50 pt-2">
-              {event.contact_on_site_name && <div><span className="text-muted-foreground">Contact sur place :</span> {event.contact_on_site_name} {event.contact_on_site_phone ? `(${event.contact_on_site_phone})` : ""}</div>}
-              {event.tech_needs && <div><span className="text-muted-foreground">Technique :</span> {event.tech_needs}</div>}
-              {event.arrival_info && <div><span className="text-muted-foreground">Arrivée :</span> {event.arrival_info}</div>}
-              {event.parking_info && <div><span className="text-muted-foreground">Parking :</span> {event.parking_info}</div>}
-              {event.hotel_info && <div><span className="text-muted-foreground">Hôtel :</span> {event.hotel_info}</div>}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ─── Contract Section ─── */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
