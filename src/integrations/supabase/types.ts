@@ -61,6 +61,7 @@ export type Database = {
       }
       contracts: {
         Row: {
+          client_signed_received_at: string | null
           contract_lines: Json | null
           created_at: string
           discount_percent: number | null
@@ -78,6 +79,7 @@ export type Database = {
           token: string | null
         }
         Insert: {
+          client_signed_received_at?: string | null
           contract_lines?: Json | null
           created_at?: string
           discount_percent?: number | null
@@ -95,6 +97,7 @@ export type Database = {
           token?: string | null
         }
         Update: {
+          client_signed_received_at?: string | null
           contract_lines?: Json | null
           created_at?: string
           discount_percent?: number | null
@@ -126,6 +129,9 @@ export type Database = {
           arrival_info: string | null
           audience_size: string | null
           bdc_number: string | null
+          client_deposit_paid_at: string | null
+          client_invoice_paid_at: string | null
+          client_invoice_sent_at: string | null
           conference_duration: string | null
           conference_title: string | null
           contact_on_site_email: string | null
@@ -134,18 +140,23 @@ export type Database = {
           contract_sent_speaker_at: string | null
           created_at: string
           dress_code: string | null
+          event_date: string | null
           event_title: string | null
           hotel_info: string | null
           id: string
           info_sent_speaker_at: string | null
           liaison_sheet_sent_at: string | null
+          logistics_info: string | null
           notes: string | null
           parking_info: string | null
           proposal_id: string
           room_setup: string | null
           selected_speaker_id: string | null
+          speaker_acknowledgment_at: string | null
           speaker_budget: number | null
+          speaker_deposit_paid_at: string | null
           speaker_paid_at: string | null
+          speaker_signed_contract_at: string | null
           special_requests: string | null
           tech_needs: string | null
           theme: string | null
@@ -158,6 +169,9 @@ export type Database = {
           arrival_info?: string | null
           audience_size?: string | null
           bdc_number?: string | null
+          client_deposit_paid_at?: string | null
+          client_invoice_paid_at?: string | null
+          client_invoice_sent_at?: string | null
           conference_duration?: string | null
           conference_title?: string | null
           contact_on_site_email?: string | null
@@ -166,18 +180,23 @@ export type Database = {
           contract_sent_speaker_at?: string | null
           created_at?: string
           dress_code?: string | null
+          event_date?: string | null
           event_title?: string | null
           hotel_info?: string | null
           id?: string
           info_sent_speaker_at?: string | null
           liaison_sheet_sent_at?: string | null
+          logistics_info?: string | null
           notes?: string | null
           parking_info?: string | null
           proposal_id: string
           room_setup?: string | null
           selected_speaker_id?: string | null
+          speaker_acknowledgment_at?: string | null
           speaker_budget?: number | null
+          speaker_deposit_paid_at?: string | null
           speaker_paid_at?: string | null
+          speaker_signed_contract_at?: string | null
           special_requests?: string | null
           tech_needs?: string | null
           theme?: string | null
@@ -190,6 +209,9 @@ export type Database = {
           arrival_info?: string | null
           audience_size?: string | null
           bdc_number?: string | null
+          client_deposit_paid_at?: string | null
+          client_invoice_paid_at?: string | null
+          client_invoice_sent_at?: string | null
           conference_duration?: string | null
           conference_title?: string | null
           contact_on_site_email?: string | null
@@ -198,18 +220,23 @@ export type Database = {
           contract_sent_speaker_at?: string | null
           created_at?: string
           dress_code?: string | null
+          event_date?: string | null
           event_title?: string | null
           hotel_info?: string | null
           id?: string
           info_sent_speaker_at?: string | null
           liaison_sheet_sent_at?: string | null
+          logistics_info?: string | null
           notes?: string | null
           parking_info?: string | null
           proposal_id?: string
           room_setup?: string | null
           selected_speaker_id?: string | null
+          speaker_acknowledgment_at?: string | null
           speaker_budget?: number | null
+          speaker_deposit_paid_at?: string | null
           speaker_paid_at?: string | null
+          speaker_signed_contract_at?: string | null
           special_requests?: string | null
           tech_needs?: string | null
           theme?: string | null
