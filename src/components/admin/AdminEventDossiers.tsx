@@ -18,7 +18,6 @@ import {
   RefreshCw, Search, ChevronDown, ChevronUp, Trash2, Check, X, FilePlus,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import EventDossier from "@/components/admin/EventDossier";
 
 type Proposal = any;
