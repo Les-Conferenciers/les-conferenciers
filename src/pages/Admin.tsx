@@ -522,6 +522,7 @@ const AdminProposalsContent = () => {
   const [matchingLeads, setMatchingLeads] = useState<any[]>([]);
   const [showLeadsPanel, setShowLeadsPanel] = useState(false);
   const [proposalSearch, setProposalSearch] = useState("");
+  const [pageSize, setPageSize] = useState<10 | 50 | 100>(10);
   const [ccEmails, setCcEmails] = useState("");
   const [hideTestProposals, setHideTestProposals] = useState(true);
   const [proposalTasks, setProposalTasks] = useState<any[]>([]);
@@ -2028,7 +2029,33 @@ const AdminProposalsContent = () => {
         const merged = [...drafts, ...sent].sort((a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
-        return renderUnifiedTable(merged);
+        const paginated = merged.slice(0, pageSize);
+        return (
+          <>
+            {renderUnifiedTable(paginated)}
+            {merged.length > 10 && (
+              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+                <span>Afficher</span>
+                {([10, 50, 100] as const).map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setPageSize(n)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md border transition-colors",
+                      pageSize === n
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:bg-muted"
+                    )}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <span>· {Math.min(pageSize, merged.length)} sur {merged.length}</span>
+              </div>
+            )}
+          </>
+        );
       })()}
 
       {/* Edit dialog */}

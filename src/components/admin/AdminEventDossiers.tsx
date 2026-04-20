@@ -63,6 +63,7 @@ const AdminEventDossiers = () => {
   const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu">("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState<10 | 50 | 100>(10);
   const [lostDialogId, setLostDialogId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
@@ -539,7 +540,7 @@ const AdminEventDossiers = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r) => {
+              {filtered.slice(0, pageSize).map((r) => {
                 const p = r.proposal;
                 const isExpanded = expandedId === p.id;
                 return (
@@ -647,6 +648,28 @@ const AdminEventDossiers = () => {
               })}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {filtered.length > 10 && (
+        <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+          <span>Afficher</span>
+          {([10, 50, 100] as const).map(n => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setPageSize(n)}
+              className={cn(
+                "px-2.5 py-1 rounded-md border transition-colors",
+                pageSize === n
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border hover:bg-muted",
+              )}
+            >
+              {n}
+            </button>
+          ))}
+          <span>· {Math.min(pageSize, filtered.length)} sur {filtered.length}</span>
         </div>
       )}
 
