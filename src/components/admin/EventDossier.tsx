@@ -638,6 +638,8 @@ ${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention
 🏢 Client : ${proposal.client_name}
 💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
 
+${vouvoi ? "Pourriez-vous m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible." : "Peux-tu m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible."}
+
 ${vouvoi ? "Restant à votre disposition." : "A très vite !"}
 
 Nelly Sabde - Les Conférenciers`);
