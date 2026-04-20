@@ -1886,19 +1886,13 @@ const AdminProposalsContent = () => {
         </div>
       </div>
 
-      <Tabs value={pipelineTab} onValueChange={setPipelineTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="drafts" className="gap-1.5 text-xs">
-            📝 Brouillons {drafts.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{drafts.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="sent" className="gap-1.5 text-xs">
-            📤 Envoyées {sent.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{sent.length}</span>}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="drafts">{renderTable(drafts, "draft")}</TabsContent>
-        <TabsContent value="sent">{renderTable(sent, "sent")}</TabsContent>
-      </Tabs>
+      {/* Liste unifiée triée par date desc — brouillons et envoyées affichés ensemble */}
+      {(() => {
+        const merged = [...drafts, ...sent].sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        return renderTable(merged, "sent");
+      })()}
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
