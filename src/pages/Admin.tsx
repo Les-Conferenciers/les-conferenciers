@@ -127,7 +127,7 @@ const buildEventContextLine = (eventLocation: string, eventDateText: string, aud
   if (eventDateText) parts.push(`du <strong>${eventDateText}</strong>`);
   if (eventLocation) parts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
   if (audienceSize) parts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
-  return `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${parts.join(", ")}.`;
+  return `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${parts.join(", ")}.`;
 };
 
 const TEMPLATE_EMAIL_PHRASES: Record<string, string> = {
