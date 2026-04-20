@@ -15,7 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  RefreshCw, Search, ChevronDown, ChevronUp, Trash2, Check, X,
+  RefreshCw, Search, ChevronDown, ChevronUp, Trash2, Check, X, FilePlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import EventDossier from "@/components/admin/EventDossier";
@@ -64,6 +64,18 @@ const AdminEventDossiers = () => {
   const [lostReason, setLostReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
 
+  // Direct contract creation (without prior proposal)
+  const [directOpen, setDirectOpen] = useState(false);
+  const [directClients, setDirectClients] = useState<Array<{ id: string; company_name: string; contact_name: string | null; email: string | null }>>([]);
+  const [directClientId, setDirectClientId] = useState("");
+  const [directClientName, setDirectClientName] = useState("");
+  const [directClientEmail, setDirectClientEmail] = useState("");
+  const [directRecipientName, setDirectRecipientName] = useState("");
+  const [directEventDate, setDirectEventDate] = useState("");
+  const [directEventLocation, setDirectEventLocation] = useState("");
+  const [directAudienceSize, setDirectAudienceSize] = useState("");
+  const [directCreating, setDirectCreating] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     const [pRes, cRes, iRes, eRes] = await Promise.all([
@@ -80,6 +92,68 @@ const AdminEventDossiers = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  const openDirectContract = async () => {
+    const { data } = await supabase.from("clients").select("id, company_name, contact_name, email").order("company_name");
+    setDirectClients((data as any) || []);
+    setDirectClientId("");
+    setDirectClientName("");
+    setDirectClientEmail("");
+    setDirectRecipientName("");
+    setDirectEventDate("");
+    setDirectEventLocation("");
+    setDirectAudienceSize("");
+    setDirectOpen(true);
+  };
+
+  const handleCreateDirectContract = async () => {
+    const clientName = directClientId
+      ? (directClients.find((c) => c.id === directClientId)?.company_name || "")
+      : directClientName.trim();
+    const clientEmail = directClientId
+      ? (directClients.find((c) => c.id === directClientId)?.email || "")
+      : directClientEmail.trim();
+    const recipient = directRecipientName.trim()
+      || (directClientId ? directClients.find((c) => c.id === directClientId)?.contact_name || "" : "");
+
+    if (!clientName) { toast.error("Sélectionnez ou saisissez un client"); return; }
+    if (!clientEmail) { toast.error("Email du client requis"); return; }
+
+    setDirectCreating(true);
+    try {
+      // 1) Create accepted "direct" proposal (placeholder shell)
+      const { data: prop, error: pErr } = await supabase.from("proposals").insert({
+        client_name: clientName,
+        client_email: clientEmail,
+        recipient_name: recipient || null,
+        client_id: directClientId || null,
+        status: "accepted",
+        accepted_at: new Date().toISOString(),
+        proposal_type: "direct",
+        event_location: directEventLocation || null,
+        event_date_text: directEventDate || null,
+        audience_size: directAudienceSize || null,
+        message: "Contrat créé directement (sans proposition).",
+      } as any).select("id").single();
+      if (pErr || !prop) throw pErr || new Error("create proposal failed");
+
+      // 2) Create event shell
+      await supabase.from("events").insert({
+        proposal_id: prop.id,
+        event_date: directEventDate || null,
+        audience_size: directAudienceSize || null,
+      } as any);
+
+      toast.success("Contrat direct créé — finalisez le contrat dans le dossier.");
+      setDirectOpen(false);
+      await fetchData();
+      setExpandedId(prop.id);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erreur lors de la création");
+    }
+    setDirectCreating(false);
+  };
 
   const enriched = useMemo(() => {
     return proposals.map((p) => {
@@ -217,9 +291,14 @@ const AdminEventDossiers = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-serif font-bold">Dossiers événement</h2>
-        <Button variant="ghost" size="sm" onClick={fetchData}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={openDirectContract}>
+            <FilePlus className="h-3.5 w-3.5" /> Nouveau contrat direct
+          </Button>
+          <Button variant="ghost" size="sm" onClick={fetchData}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setExpandedId(null); }}>
@@ -396,6 +475,73 @@ const AdminEventDossiers = () => {
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setDeleteDialogId(null)}>Annuler</Button>
               <Button variant="destructive" size="sm" onClick={handleDelete}>Supprimer</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Direct contract creation dialog */}
+      <Dialog open={directOpen} onOpenChange={setDirectOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Nouveau contrat direct</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Créez un dossier sans proposition préalable. Vous pourrez ensuite finaliser le contrat (lignes, montants, conférencier) dans le dossier.
+            </p>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Client (CRM)</Label>
+              <Select value={directClientId} onValueChange={setDirectClientId}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="— Sélectionner ou laisser vide pour saisir manuellement —" /></SelectTrigger>
+                <SelectContent>
+                  {directClients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.company_name}{c.contact_name ? ` — ${c.contact_name}` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {!directClientId && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Nom client / société</Label>
+                  <Input value={directClientName} onChange={(e) => setDirectClientName(e.target.value)} className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email client</Label>
+                  <Input type="email" value={directClientEmail} onChange={(e) => setDirectClientEmail(e.target.value)} className="h-9 text-sm" />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-xs">Interlocuteur (optionnel)</Label>
+              <Input value={directRecipientName} onChange={(e) => setDirectRecipientName(e.target.value)} className="h-9 text-sm" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Date événement</Label>
+                <Input type="date" value={directEventDate} onChange={(e) => setDirectEventDate(e.target.value)} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Auditoire</Label>
+                <Input value={directAudienceSize} onChange={(e) => setDirectAudienceSize(e.target.value)} placeholder="100, 200…" className="h-9 text-sm" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Lieu</Label>
+              <Input value={directEventLocation} onChange={(e) => setDirectEventLocation(e.target.value)} placeholder="Hôtel, ville…" className="h-9 text-sm" />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setDirectOpen(false)}>Annuler</Button>
+              <Button size="sm" onClick={handleCreateDirectContract} disabled={directCreating}>
+                {directCreating ? "Création…" : "Créer le dossier"}
+              </Button>
             </div>
           </div>
         </DialogContent>

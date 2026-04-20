@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import SignedContractUpload from "@/components/admin/SignedContractUpload";
 
 // ── Types ──
 
@@ -638,6 +639,8 @@ ${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention
 🏢 Client : ${proposal.client_name}
 💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
 
+${vouvoi ? "Pourriez-vous m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible." : "Peux-tu m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible."}
+
 ${vouvoi ? "Restant à votre disposition." : "A très vite !"}
 
 Nelly Sabde - Les Conférenciers`);
@@ -755,6 +758,7 @@ ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""} - ${event?.contact_on_site_email || proposal.client_email}
 🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` - ${speaker.phone}` : ""}
 ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
+${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
     const clientCcList = liaisonClientCc.split(",").map(e => e.trim()).filter(Boolean);
@@ -1248,6 +1252,12 @@ Nelly Sabde - Les Conférenciers`);
       {contract?.status === "signed" && contract.signed_at && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-700">
           ✓ Contrat signé le {formatDate(contract.signed_at)} par <strong>{contract.signer_name}</strong>
+        </div>
+      )}
+
+      {contract && (
+        <div className="border border-border/60 rounded-lg p-3 bg-muted/10">
+          <SignedContractUpload contractId={contract.id} />
         </div>
       )}
 
