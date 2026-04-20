@@ -95,6 +95,68 @@ const AdminEventDossiers = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const openDirectContract = async () => {
+    const { data } = await supabase.from("clients").select("id, company_name, contact_name, email").order("company_name");
+    setDirectClients((data as any) || []);
+    setDirectClientId("");
+    setDirectClientName("");
+    setDirectClientEmail("");
+    setDirectRecipientName("");
+    setDirectEventDate("");
+    setDirectEventLocation("");
+    setDirectAudienceSize("");
+    setDirectOpen(true);
+  };
+
+  const handleCreateDirectContract = async () => {
+    const clientName = directClientId
+      ? (directClients.find((c) => c.id === directClientId)?.company_name || "")
+      : directClientName.trim();
+    const clientEmail = directClientId
+      ? (directClients.find((c) => c.id === directClientId)?.email || "")
+      : directClientEmail.trim();
+    const recipient = directRecipientName.trim()
+      || (directClientId ? directClients.find((c) => c.id === directClientId)?.contact_name || "" : "");
+
+    if (!clientName) { toast.error("Sélectionnez ou saisissez un client"); return; }
+    if (!clientEmail) { toast.error("Email du client requis"); return; }
+
+    setDirectCreating(true);
+    try {
+      // 1) Create accepted "direct" proposal (placeholder shell)
+      const { data: prop, error: pErr } = await supabase.from("proposals").insert({
+        client_name: clientName,
+        client_email: clientEmail,
+        recipient_name: recipient || null,
+        client_id: directClientId || null,
+        status: "accepted",
+        accepted_at: new Date().toISOString(),
+        proposal_type: "direct",
+        event_location: directEventLocation || null,
+        event_date_text: directEventDate || null,
+        audience_size: directAudienceSize || null,
+        message: "Contrat créé directement (sans proposition).",
+      } as any).select("id").single();
+      if (pErr || !prop) throw pErr || new Error("create proposal failed");
+
+      // 2) Create event shell
+      await supabase.from("events").insert({
+        proposal_id: prop.id,
+        event_date: directEventDate || null,
+        audience_size: directAudienceSize || null,
+      } as any);
+
+      toast.success("Contrat direct créé — finalisez le contrat dans le dossier.");
+      setDirectOpen(false);
+      await fetchData();
+      setExpandedId(prop.id);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erreur lors de la création");
+    }
+    setDirectCreating(false);
+  };
+
   const enriched = useMemo(() => {
     return proposals.map((p) => {
       const pContract = contracts.find((c) => c.proposal_id === p.id);
