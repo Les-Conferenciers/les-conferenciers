@@ -259,6 +259,18 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editConferenceDuration, setEditConferenceDuration] = useState("");
   const [editParkingInfo, setEditParkingInfo] = useState("");
   const [editHotelInfo, setEditHotelInfo] = useState("");
+  // Lot 2 - tracking dates & logistics for liaison sheet
+  const [editEventRealDate, setEditEventRealDate] = useState("");
+  const [editClientDepositPaidAt, setEditClientDepositPaidAt] = useState("");
+  const [editSpeakerDepositPaidAt, setEditSpeakerDepositPaidAt] = useState("");
+  const [editClientInvoiceSentAt, setEditClientInvoiceSentAt] = useState("");
+  const [editClientInvoicePaidAt, setEditClientInvoicePaidAt] = useState("");
+  const [editSpeakerSignedAt, setEditSpeakerSignedAt] = useState("");
+  const [editSpeakerAcknowledgmentAt, setEditSpeakerAcknowledgmentAt] = useState("");
+  const [editSpeakerPaidAt, setEditSpeakerPaidAt] = useState("");
+  const [editLiaisonSheetSentAt, setEditLiaisonSheetSentAt] = useState("");
+  const [editLogisticsInfo, setEditLogisticsInfo] = useState("");
+  const [editClientSignedReceivedAt, setEditClientSignedReceivedAt] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -808,6 +820,18 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEditConferenceDuration(event?.conference_duration || "");
     setEditParkingInfo(event?.parking_info || "");
     setEditHotelInfo(event?.hotel_info || "");
+    // tracking dates
+    setEditEventRealDate((event as any)?.event_date || contract?.event_date || "");
+    setEditClientDepositPaidAt((event as any)?.client_deposit_paid_at || "");
+    setEditSpeakerDepositPaidAt((event as any)?.speaker_deposit_paid_at || "");
+    setEditClientInvoiceSentAt((event as any)?.client_invoice_sent_at || "");
+    setEditClientInvoicePaidAt((event as any)?.client_invoice_paid_at || "");
+    setEditSpeakerSignedAt((event as any)?.speaker_signed_contract_at || "");
+    setEditSpeakerAcknowledgmentAt((event as any)?.speaker_acknowledgment_at || "");
+    setEditSpeakerPaidAt(event?.speaker_paid_at ? (event.speaker_paid_at as string).slice(0, 10) : "");
+    setEditLiaisonSheetSentAt(event?.liaison_sheet_sent_at ? (event.liaison_sheet_sent_at as string).slice(0, 10) : "");
+    setEditLogisticsInfo((event as any)?.logistics_info || "");
+    setEditClientSignedReceivedAt((contract as any)?.client_signed_received_at || "");
     setEventEditOpen(true);
   };
 
@@ -835,7 +859,23 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       conference_duration: editConferenceDuration || null,
       parking_info: editParkingInfo || null,
       hotel_info: editHotelInfo || null,
+      event_date: editEventRealDate || null,
+      client_deposit_paid_at: editClientDepositPaidAt || null,
+      speaker_deposit_paid_at: editSpeakerDepositPaidAt || null,
+      client_invoice_sent_at: editClientInvoiceSentAt || null,
+      client_invoice_paid_at: editClientInvoicePaidAt || null,
+      speaker_signed_contract_at: editSpeakerSignedAt || null,
+      speaker_acknowledgment_at: editSpeakerAcknowledgmentAt || null,
+      speaker_paid_at: editSpeakerPaidAt ? new Date(editSpeakerPaidAt + "T12:00:00").toISOString() : null,
+      liaison_sheet_sent_at: editLiaisonSheetSentAt ? new Date(editLiaisonSheetSentAt + "T12:00:00").toISOString() : null,
+      logistics_info: editLogisticsInfo || null,
     } as any).eq("id", event.id);
+    // Also update contract.client_signed_received_at if a contract exists
+    if (contract?.id) {
+      await supabase.from("contracts").update({
+        client_signed_received_at: editClientSignedReceivedAt || null,
+      } as any).eq("id", contract.id);
+    }
     if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
     setEventEditOpen(false);
     fetchData();
