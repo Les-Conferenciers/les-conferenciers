@@ -51,7 +51,6 @@ const DateCell = ({ value }: { value?: string | null }) =>
   );
 
 const AdminEventDossiers = () => {
-  const navigate = useNavigate();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
