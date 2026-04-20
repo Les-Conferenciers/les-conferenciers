@@ -52,6 +52,7 @@ const DateCell = ({ value }: { value?: string | null }) =>
   );
 
 const AdminEventDossiers = () => {
+  const navigate = useNavigate();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -64,6 +65,18 @@ const AdminEventDossiers = () => {
   const [lostDialogId, setLostDialogId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
+
+  // Direct contract creation (without prior proposal)
+  const [directOpen, setDirectOpen] = useState(false);
+  const [directClients, setDirectClients] = useState<Array<{ id: string; company_name: string; contact_name: string | null; email: string | null }>>([]);
+  const [directClientId, setDirectClientId] = useState("");
+  const [directClientName, setDirectClientName] = useState("");
+  const [directClientEmail, setDirectClientEmail] = useState("");
+  const [directRecipientName, setDirectRecipientName] = useState("");
+  const [directEventDate, setDirectEventDate] = useState("");
+  const [directEventLocation, setDirectEventLocation] = useState("");
+  const [directAudienceSize, setDirectAudienceSize] = useState("");
+  const [directCreating, setDirectCreating] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
