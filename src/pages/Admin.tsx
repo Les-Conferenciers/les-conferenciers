@@ -1886,7 +1886,7 @@ const AdminProposalsContent = () => {
             <option value="info">📝 Infos</option>
           </select>
           <Button variant="ghost" size="sm" onClick={() => setDateSortAsc(prev => !prev)} className="gap-1 text-xs" title="Trier par date">
-            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes" : "Plus récentes"}
+            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes d'abord" : "Plus récentes d'abord"}
           </Button>
           {testProposalCount > 0 && (
             <Button variant={hideTestProposals ? "outline" : "secondary"} size="sm" onClick={() => setHideTestProposals(prev => !prev)} className="gap-1 text-xs">
