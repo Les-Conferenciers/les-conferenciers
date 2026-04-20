@@ -293,9 +293,14 @@ const AdminEventDossiers = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-serif font-bold">Dossiers événement</h2>
-        <Button variant="ghost" size="sm" onClick={fetchData}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={openDirectContract}>
+            <FilePlus className="h-3.5 w-3.5" /> Nouveau contrat direct
+          </Button>
+          <Button variant="ghost" size="sm" onClick={fetchData}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setExpandedId(null); }}>
