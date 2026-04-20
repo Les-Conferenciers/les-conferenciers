@@ -63,6 +63,7 @@ type Contract = {
   created_at: string;
   contract_lines: any;
   discount_percent: number | null;
+  client_signed_received_at?: string | null;
 };
 
 type Invoice = {
@@ -110,6 +111,15 @@ type EventData = {
   conference_duration: string | null;
   parking_info: string | null;
   hotel_info: string | null;
+  logistics_info?: string | null;
+  client_signed_received_at?: string | null;
+  client_deposit_paid_at?: string | null;
+  speaker_acknowledgment_at?: string | null;
+  speaker_signed_contract_at?: string | null;
+  speaker_deposit_paid_at?: string | null;
+  client_invoice_sent_at?: string | null;
+  client_invoice_paid_at?: string | null;
+  event_date?: string | null;
 };
 
 type ContractLine = {
@@ -1132,81 +1142,34 @@ Nelly Sabde - Les Conférenciers`);
         </div>
       )}
 
-      {/* ─── Tracking Dashboard ─── */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <ClipboardList className="h-4 w-4" /> Suivi du dossier
-          {event?.bdc_number && <span className="text-xs font-normal text-muted-foreground">BDC n° {event.bdc_number}</span>}
-        </h3>
-        <Button size="sm" variant="ghost" onClick={openEventEdit}>
-          <Pencil className="h-3 w-3" />
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-        {steps.map((step, i) => {
-          const isClickable = !!step.toggleKey;
-          const stepClasses = `text-center p-2 rounded-lg border text-[10px] leading-tight ${
-            step.done
-              ? "bg-green-50 border-green-200 text-green-700"
-              : "bg-muted/30 border-border text-muted-foreground"
-          } ${isClickable ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}`;
-          const stepContent = (
-            <>
-              <div className="text-base mb-0.5">{step.done ? "✓" : "○"}</div>
-              <div className="font-medium">{step.label}</div>
-              {step.done && step.date && (
-                <div className="text-[8px] mt-0.5 opacity-70">
-                  {new Date(step.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-                </div>
-              )}
-            </>
-          );
-
-          // Visio step gets a Calendar popover
-          if (i === 4) {
-            return (
-              <Popover key={i}>
-                <PopoverTrigger asChild>
-                  <button className={cn(stepClasses, "cursor-pointer hover:border-primary/50 transition-colors")}>
-                    {stepContent}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-4 space-y-3" align="center">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
-                    <CalendarIcon className="h-3.5 w-3.5" /> Visio préparatoire
-                  </Label>
-                  <Calendar
-                    mode="single"
-                    selected={visioQuickDate}
-                    onSelect={setVisioQuickDate}
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                  <div className="space-y-1">
-                    <Label className="text-[10px] text-muted-foreground">Heure</Label>
-                    <Input value={visioQuickTime} onChange={e => setVisioQuickTime(e.target.value)} placeholder="10h00" className="h-8 text-sm" />
-                  </div>
-                  <Button size="sm" className="w-full" onClick={handleSaveVisioQuick}>Enregistrer</Button>
-                </PopoverContent>
-              </Popover>
-            );
-          }
-
-          // Toggleable steps
-          if (isClickable) {
-            return (
-              <button key={i} className={stepClasses} onClick={() => handleToggleStep(step)} title={`Cliquer pour ${step.done ? "décocher" : "cocher"}`}>
-                {stepContent}
-              </button>
-            );
-          }
-
-          return (
-            <div key={i} className={stepClasses}>
-              {stepContent}
+      {/* ─── Pipeline unifié ─── */}
+      <div className="space-y-3 border border-border rounded-lg p-3 bg-card">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" /> Pipeline du dossier
+            {event?.bdc_number && <span className="text-xs font-normal text-muted-foreground">BDC n° {event.bdc_number}</span>}
+          </h3>
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-muted-foreground">
+              {completedCount}/{pipelineStages.length} étapes
+              {nextStage && <span className="ml-2 text-foreground">· Prochain : <strong>{nextStage.label}</strong></span>}
             </div>
-          );
-        })}
+            <Button size="sm" variant="ghost" onClick={openEventEdit} title="Éditer les dates">
+              <Pencil className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Barre de progression */}
+        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* Stepper horizontal cliquable */}
+        <ContractPipeline stages={pipelineStages} onChange={fetchData} />
       </div>
 
       {/* Event details summary */}
