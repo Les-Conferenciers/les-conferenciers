@@ -292,6 +292,62 @@ const AdminEventDossiers = () => {
     perdus: enriched.filter((r) => r.archiveStatus === "perdu").length,
   }), [enriched]);
 
+  // KPI: nombre de dossiers en cours bloqués sur chaque étape
+  const stageKpis = useMemo(() => {
+    const active = enriched.filter((r) => !r.isArchived);
+    const count = (key: string) => active.filter((r) => r.nextStage?.key === key).length;
+    return [
+      { key: "contract_sent", label: "Contrat à envoyer", icon: FileSignature, count: count("contract_sent") },
+      { key: "client_signed", label: "Signature client attendue", icon: FileSignature, count: count("client_signed") },
+      { key: "client_deposit", label: "Acompte client attendu", icon: CreditCard, count: count("client_deposit") },
+      { key: "speaker_ack", label: "AR conférencier attendu", icon: ClipboardList, count: count("speaker_ack") },
+      { key: "visio", label: "Visio à planifier", icon: Video, count: count("visio") },
+      { key: "liaison", label: "Liaison à envoyer", icon: ClipboardList, count: count("liaison") },
+      { key: "invoice_sent", label: "Facture à envoyer", icon: Receipt, count: count("invoice_sent") },
+      { key: "invoice_paid", label: "Paiement client attendu", icon: Wallet, count: count("invoice_paid") },
+    ];
+  }, [enriched]);
+
+  // Alertes "à traiter cette semaine"
+  const weekAlerts = useMemo(() => {
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 86400000);
+    return enriched
+      .filter((r) => !r.isArchived)
+      .map((r) => {
+        const alerts: string[] = [];
+        if (r.eventDate && r.eventDate >= now && r.eventDate <= in7) {
+          alerts.push(`📅 Événement dans ${Math.ceil((r.eventDate.getTime() - now.getTime()) / 86400000)}j`);
+        }
+        if (r.contractSentSpeaker && !r.speakerAck) {
+          const sent = new Date(r.contractSentSpeaker);
+          const days = Math.floor((now.getTime() - sent.getTime()) / 86400000);
+          if (days >= 3) alerts.push(`⏳ AR conférencier en retard (${days}j)`);
+        }
+        if (r.invoiceSentClient && !r.invoicePaidClient) {
+          const sent = new Date(r.invoiceSentClient + (r.invoiceSentClient.length === 10 ? "T12:00:00" : ""));
+          const days = Math.floor((now.getTime() - sent.getTime()) / 86400000);
+          if (days >= 30) alerts.push(`💰 Facture impayée (${days}j)`);
+        }
+        if (r.visioDate) {
+          const v = new Date(r.visioDate + "T12:00:00");
+          if (v >= now && v <= in7) alerts.push(`🎥 Visio dans ${Math.ceil((v.getTime() - now.getTime()) / 86400000)}j`);
+        }
+        return { row: r, alerts };
+      })
+      .filter((x) => x.alerts.length > 0);
+  }, [enriched]);
+
+  // Calendrier 30 jours
+  const upcoming30 = useMemo(() => {
+    const now = new Date();
+    const in30 = new Date(now.getTime() + 30 * 86400000);
+    return enriched
+      .filter((r) => !r.isArchived && r.eventDate && r.eventDate >= now && r.eventDate <= in30)
+      .sort((a, b) => (a.eventDate!.getTime() - b.eventDate!.getTime()))
+      .slice(0, 10);
+  }, [enriched]);
+
   const handleMarkLost = async () => {
     if (!lostDialogId) return;
     const { error } = await supabase.from("proposals").update({ lost_at: new Date().toISOString(), lost_reason: lostReason || null } as any).eq("id", lostDialogId);
