@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
+import ContractPipeline, { PipelineStage } from "@/components/admin/ContractPipeline";
 
 // ── Types ──
 
@@ -62,6 +63,7 @@ type Contract = {
   created_at: string;
   contract_lines: any;
   discount_percent: number | null;
+  client_signed_received_at?: string | null;
 };
 
 type Invoice = {
@@ -109,6 +111,15 @@ type EventData = {
   conference_duration: string | null;
   parking_info: string | null;
   hotel_info: string | null;
+  logistics_info?: string | null;
+  client_signed_received_at?: string | null;
+  client_deposit_paid_at?: string | null;
+  speaker_acknowledgment_at?: string | null;
+  speaker_signed_contract_at?: string | null;
+  speaker_deposit_paid_at?: string | null;
+  client_invoice_sent_at?: string | null;
+  client_invoice_paid_at?: string | null;
+  event_date?: string | null;
 };
 
 type ContractLine = {
@@ -1032,27 +1043,49 @@ Nelly Sabde - Les Conférenciers`);
 
   if (loading) return <div className="text-muted-foreground text-xs py-2">Chargement…</div>;
 
-  // ─── Tracking Dashboard ───
-  // Each step can be toggled manually via clicking
-  const steps = [
-    { label: "Contrat client", done: contract?.status === "sent" || contract?.status === "signed", date: contract?.created_at, toggleKey: null as string | null },
-    { label: "Info conférencier", done: !!event?.info_sent_speaker_at, date: event?.info_sent_speaker_at, toggleKey: "info_sent_speaker_at" },
-    { label: "Contrat signé", done: contract?.status === "signed", date: contract?.signed_at, toggleKey: null },
-    { label: "Facture acompte", done: invoices.some(i => i.invoice_type === "acompte" && (i.status === "sent" || i.status === "paid")), date: invoices.find(i => i.invoice_type === "acompte")?.sent_at, toggleKey: null },
-    { label: "Visio prépa", done: !!event?.visio_date, date: event?.visio_date, toggleKey: null },
-    { label: "Feuille liaison", done: !!event?.liaison_sheet_sent_at, date: event?.liaison_sheet_sent_at, toggleKey: "liaison_sheet_sent_at" },
-    { label: "Facture finale", done: invoices.some(i => (i.invoice_type === "solde" || i.invoice_type === "total") && (i.status === "sent" || i.status === "paid")), date: invoices.find(i => i.invoice_type === "solde" || i.invoice_type === "total")?.sent_at, toggleKey: null },
-    { label: "Conf. payé", done: !!event?.speaker_paid_at, date: event?.speaker_paid_at, toggleKey: "speaker_paid_at" },
+  // ─── Pipeline (11 jalons, identiques à la vue liste) ───
+  const acompteInvoice = invoices.find(i => i.invoice_type === "acompte");
+  const finalInvoice = invoices.find(i => i.invoice_type === "solde" || i.invoice_type === "total");
+
+  const pipelineStages: PipelineStage[] = [
+    { key: "contract_sent", label: "Contrat envoyé client", shortLabel: "Contrat env.",
+      doneAt: contract?.created_at,
+      toggle: contract ? { table: "contracts", rowId: contract.id, field: "created_at", valueType: "timestamp" } : undefined },
+    { key: "client_signed", label: "Contrat signé client", shortLabel: "Signé client",
+      doneAt: contract?.client_signed_received_at || contract?.signed_at,
+      toggle: contract ? { table: "contracts", rowId: contract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
+    { key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client",
+      doneAt: event?.client_deposit_paid_at || acompteInvoice?.paid_at,
+      toggle: event ? { table: "events", rowId: event.id, field: "client_deposit_paid_at", valueType: "date" } : undefined },
+    { key: "speaker_contract_sent", label: "Contrat envoyé conférencier", shortLabel: "Contrat speaker",
+      doneAt: event?.contract_sent_speaker_at,
+      toggle: event ? { table: "events", rowId: event.id, field: "contract_sent_speaker_at", valueType: "timestamp" } : undefined },
+    { key: "speaker_ack", label: "AR conférencier", shortLabel: "AR speaker",
+      doneAt: event?.speaker_acknowledgment_at,
+      toggle: event ? { table: "events", rowId: event.id, field: "speaker_acknowledgment_at", valueType: "date" } : undefined },
+    { key: "speaker_signed", label: "Contrat signé conférencier", shortLabel: "Signé speaker",
+      doneAt: event?.speaker_signed_contract_at,
+      toggle: event ? { table: "events", rowId: event.id, field: "speaker_signed_contract_at", valueType: "date" } : undefined },
+    { key: "visio", label: "Visio préparatoire", shortLabel: "Visio",
+      doneAt: event?.visio_date,
+      toggle: event ? { table: "events", rowId: event.id, field: "visio_date", valueType: "date" } : undefined },
+    { key: "liaison", label: "Feuille de liaison", shortLabel: "Liaison",
+      doneAt: event?.liaison_sheet_sent_at,
+      toggle: event ? { table: "events", rowId: event.id, field: "liaison_sheet_sent_at", valueType: "timestamp" } : undefined },
+    { key: "invoice_sent", label: "Facture envoyée", shortLabel: "Facture env.",
+      doneAt: event?.client_invoice_sent_at || finalInvoice?.sent_at,
+      toggle: event ? { table: "events", rowId: event.id, field: "client_invoice_sent_at", valueType: "date" } : undefined },
+    { key: "invoice_paid", label: "Facture payée", shortLabel: "Facture payée",
+      doneAt: event?.client_invoice_paid_at || finalInvoice?.paid_at,
+      toggle: event ? { table: "events", rowId: event.id, field: "client_invoice_paid_at", valueType: "date" } : undefined },
+    { key: "speaker_paid", label: "Conférencier payé", shortLabel: "Speaker payé",
+      doneAt: event?.speaker_paid_at,
+      toggle: event ? { table: "events", rowId: event.id, field: "speaker_paid_at", valueType: "timestamp" } : undefined },
   ];
 
-  const handleToggleStep = async (step: typeof steps[0]) => {
-    if (!event || !step.toggleKey) return;
-    const newValue = step.done ? null : new Date().toISOString();
-    await supabase.from("events").update({ [step.toggleKey]: newValue } as any).eq("id", event.id);
-    toast.success(step.done ? `"${step.label}" décoché` : `"${step.label}" coché`);
-    fetchData();
-    onUpdate();
-  };
+  const completedCount = pipelineStages.filter(s => !!s.doneAt).length;
+  const progress = Math.round((completedCount / pipelineStages.length) * 100);
+  const nextStage = pipelineStages.find(s => !s.doneAt);
 
   return (
     <div className="space-y-6 mt-4 border-t border-border pt-4">
@@ -1109,81 +1142,34 @@ Nelly Sabde - Les Conférenciers`);
         </div>
       )}
 
-      {/* ─── Tracking Dashboard ─── */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <ClipboardList className="h-4 w-4" /> Suivi du dossier
-          {event?.bdc_number && <span className="text-xs font-normal text-muted-foreground">BDC n° {event.bdc_number}</span>}
-        </h3>
-        <Button size="sm" variant="ghost" onClick={openEventEdit}>
-          <Pencil className="h-3 w-3" />
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-        {steps.map((step, i) => {
-          const isClickable = !!step.toggleKey;
-          const stepClasses = `text-center p-2 rounded-lg border text-[10px] leading-tight ${
-            step.done
-              ? "bg-green-50 border-green-200 text-green-700"
-              : "bg-muted/30 border-border text-muted-foreground"
-          } ${isClickable ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}`;
-          const stepContent = (
-            <>
-              <div className="text-base mb-0.5">{step.done ? "✓" : "○"}</div>
-              <div className="font-medium">{step.label}</div>
-              {step.done && step.date && (
-                <div className="text-[8px] mt-0.5 opacity-70">
-                  {new Date(step.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-                </div>
-              )}
-            </>
-          );
-
-          // Visio step gets a Calendar popover
-          if (i === 4) {
-            return (
-              <Popover key={i}>
-                <PopoverTrigger asChild>
-                  <button className={cn(stepClasses, "cursor-pointer hover:border-primary/50 transition-colors")}>
-                    {stepContent}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-4 space-y-3" align="center">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
-                    <CalendarIcon className="h-3.5 w-3.5" /> Visio préparatoire
-                  </Label>
-                  <Calendar
-                    mode="single"
-                    selected={visioQuickDate}
-                    onSelect={setVisioQuickDate}
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                  <div className="space-y-1">
-                    <Label className="text-[10px] text-muted-foreground">Heure</Label>
-                    <Input value={visioQuickTime} onChange={e => setVisioQuickTime(e.target.value)} placeholder="10h00" className="h-8 text-sm" />
-                  </div>
-                  <Button size="sm" className="w-full" onClick={handleSaveVisioQuick}>Enregistrer</Button>
-                </PopoverContent>
-              </Popover>
-            );
-          }
-
-          // Toggleable steps
-          if (isClickable) {
-            return (
-              <button key={i} className={stepClasses} onClick={() => handleToggleStep(step)} title={`Cliquer pour ${step.done ? "décocher" : "cocher"}`}>
-                {stepContent}
-              </button>
-            );
-          }
-
-          return (
-            <div key={i} className={stepClasses}>
-              {stepContent}
+      {/* ─── Pipeline unifié ─── */}
+      <div className="space-y-3 border border-border rounded-lg p-3 bg-card">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" /> Pipeline du dossier
+            {event?.bdc_number && <span className="text-xs font-normal text-muted-foreground">BDC n° {event.bdc_number}</span>}
+          </h3>
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-muted-foreground">
+              {completedCount}/{pipelineStages.length} étapes
+              {nextStage && <span className="ml-2 text-foreground">· Prochain : <strong>{nextStage.label}</strong></span>}
             </div>
-          );
-        })}
+            <Button size="sm" variant="ghost" onClick={openEventEdit} title="Éditer les dates">
+              <Pencil className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Barre de progression */}
+        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* Stepper horizontal cliquable */}
+        <ContractPipeline stages={pipelineStages} onChange={fetchData} />
       </div>
 
       {/* Event details summary */}
