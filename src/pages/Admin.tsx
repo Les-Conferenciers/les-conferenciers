@@ -530,10 +530,23 @@ const AdminProposalsContent = () => {
   const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
   const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
   const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
+  const [allLeads, setAllLeads] = useState<any[]>([]);
+  const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks()]);
+    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks(), fetchLeads()]);
   }, []);
+
+  const fetchLeads = async () => {
+    const { data } = await supabase.from("simulator_leads").select("*").order("created_at", { ascending: false });
+    setAllLeads((data as any) || []);
+  };
+
+  const getMatchingLeads = (email: string) => {
+    if (!email) return [];
+    const norm = email.trim().toLowerCase();
+    return allLeads.filter(l => (l.email || "").trim().toLowerCase() === norm);
+  };
 
   // Auto-update email body when event details change
   useEffect(() => {
