@@ -160,16 +160,14 @@ const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmo
   const hasEventContext = eventDateText || eventLocation || audienceSize;
   const contextParts: string[] = [];
   if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
-  if (eventLocation) contextParts.push(`à <strong>${eventLocation}</strong>`);
-  if (audienceSize) contextParts.push(`pour <strong>${audienceSize} personnes</strong>`);
+  if (eventLocation) contextParts.push(`qui aura lieu à <strong>${eventLocation}</strong>`);
+  if (audienceSize) contextParts.push(`pour un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
   
   const introPhrase = hasEventContext
-    ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants ${contextParts.join(" ")} et vous adresse, comme convenu, le profil de ${speakerName}.`
+    ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${contextParts.join(", ")}, et vous adresse, comme convenu, le profil de ${speakerName}.`
     : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}.`;
 
-  const alternativePhrase = hasEventContext
-    ? `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>`
-    : `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>`;
+  const alternativePhrase = `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>`;
 
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
