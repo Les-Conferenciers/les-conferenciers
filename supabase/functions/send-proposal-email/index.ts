@@ -84,11 +84,19 @@ Deno.serve(async (req) => {
         .replace(/\n/g, "<br>");
     };
 
+    const eventContextParts: string[] = [];
+    if (proposal.event_date_text) eventContextParts.push(`du <strong>${proposal.event_date_text}</strong>`);
+    if (proposal.event_location) eventContextParts.push(`qui se tiendra à <strong>${proposal.event_location}</strong>`);
+    if (proposal.audience_size) eventContextParts.push(`devant un auditoire d'environ <strong>${proposal.audience_size} personnes</strong>`);
+    const classicSelectionLine = eventContextParts.length
+      ? `<p>Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${eventContextParts.join(", ")}.</p>`
+      : `<p>Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour ${proposal.client_name || "votre événement"}.</p>`;
+
     const defaultClassicBody = `<p>Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},</p>
 
 <p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
 
-<p>Vous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${proposal.client_name || "votre événement"}, sous réserve de leur disponibilité.</p>
+${classicSelectionLine}
 
 <p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
