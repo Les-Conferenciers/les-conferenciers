@@ -155,14 +155,18 @@ const Speakers = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <div className="bg-primary py-12 px-4 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
-          Conférenciers professionnels pour vos événements
-        </h1>
-        <p className="text-primary-foreground/80 max-w-2xl mx-auto text-lg font-normal">
-          Parmi nos 300 conférenciers et intervenants d'exception, trouvez celui qui marquera votre événement.
-        </p>
-      </div>
+      <section className="relative bg-primary py-12 px-4 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
+        <div className="absolute inset-0 bg-primary/80" />
+        <div className="relative z-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
+            Conférenciers professionnels pour vos événements
+          </h1>
+          <p className="text-primary-foreground/80 max-w-2xl mx-auto text-lg font-normal">
+            Parmi nos 300 conférenciers et intervenants d'exception, trouvez celui qui marquera votre événement.
+          </p>
+        </div>
+      </section>
 
       <div className="container mx-auto px-4 py-8 flex-grow">
 
