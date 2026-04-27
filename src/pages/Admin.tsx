@@ -8,6 +8,7 @@ import nugget from "@/assets/nugget.png";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
 import AdminClients from "@/components/admin/AdminClients";
+import AdminEventDossiers from "@/components/admin/AdminEventDossiers";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -83,7 +84,7 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="contrats">
-            <AdminContractsContent />
+            <AdminEventDossiers />
           </TabsContent>
 
           <TabsContent value="clients">
@@ -105,13 +106,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import SimpleRichTextEditor from "@/components/admin/SimpleRichTextEditor";
+import { cn } from "@/lib/utils";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save, FileText, Bell, CalendarDays } from "lucide-react";
+import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save, FileText, Bell, CalendarDays, Mail } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 
@@ -127,7 +129,7 @@ const buildEventContextLine = (eventLocation: string, eventDateText: string, aud
   if (eventDateText) parts.push(`du <strong>${eventDateText}</strong>`);
   if (eventLocation) parts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
   if (audienceSize) parts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
-  return `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${parts.join(", ")}.`;
+  return `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${parts.join(", ")}.`;
 };
 
 const TEMPLATE_EMAIL_PHRASES: Record<string, string> = {
@@ -136,20 +138,14 @@ const TEMPLATE_EMAIL_PHRASES: Record<string, string> = {
   "Patrouille de France": "une sélection de pilotes et anciens membres de la Patrouille de France, conférenciers d'exception, soigneusement choisis",
 };
 
-const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string, templateName?: string) => {
-  const selectionPhrase = templateName && TEMPLATE_EMAIL_PHRASES[templateName]
-    ? `${TEMPLATE_EMAIL_PHRASES[templateName]} pour ${clientName || "votre événement"}`
-    : `une sélection de conférenciers soigneusement choisis pour ${clientName || "votre événement"}`;
-
+const getDefaultEmailBody = (recipientName: string, clientName: string, eventContext?: string, _templateName?: string) => {
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
 
 ${eventContext ? `<p>${eventContext}</p>
 
-` : ""}<p>Vous trouverez ci-dessous ${selectionPhrase}, sous réserve de leur disponibilité.</p>
-
-<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
+` : ""}<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
 <p><strong>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</strong></p>
 
@@ -523,7 +519,10 @@ const AdminProposalsContent = () => {
   const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
+  const [matchingLeads, setMatchingLeads] = useState<any[]>([]);
+  const [showLeadsPanel, setShowLeadsPanel] = useState(false);
   const [proposalSearch, setProposalSearch] = useState("");
+  const [pageSize, setPageSize] = useState<10 | 50 | 100>(10);
   const [ccEmails, setCcEmails] = useState("");
   const [hideTestProposals, setHideTestProposals] = useState(true);
   const [proposalTasks, setProposalTasks] = useState<any[]>([]);
@@ -535,10 +534,23 @@ const AdminProposalsContent = () => {
   const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
   const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
   const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
+  const [allLeads, setAllLeads] = useState<any[]>([]);
+  const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks()]);
+    Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks(), fetchLeads()]);
   }, []);
+
+  const fetchLeads = async () => {
+    const { data } = await supabase.from("simulator_leads").select("*").order("created_at", { ascending: false });
+    setAllLeads((data as any) || []);
+  };
+
+  const getMatchingLeads = (email: string) => {
+    if (!email) return [];
+    const norm = email.trim().toLowerCase();
+    return allLeads.filter(l => (l.email || "").trim().toLowerCase() === norm);
+  };
 
   // Auto-update email body when event details change
   useEffect(() => {
@@ -582,6 +594,23 @@ const AdminProposalsContent = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [clientEmail, proposals, allClients]);
+
+  // Load leads matching the client email — to consult their original message while drafting the proposal
+  useEffect(() => {
+    if (!clientEmail || clientEmail.length < 5 || !clientEmail.includes("@")) {
+      setMatchingLeads([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("simulator_leads")
+        .select("*")
+        .ilike("email", clientEmail.trim())
+        .order("created_at", { ascending: false });
+      setMatchingLeads((data as any[]) || []);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [clientEmail]);
 
   const fetchProposals = async () => {
     setLoading(true);
@@ -1511,14 +1540,73 @@ const AdminProposalsContent = () => {
         />
         <p className="text-[10px] text-muted-foreground">Séparez les adresses par des virgules. Ces adresses ne seront pas ajoutées au CRM.</p>
       </div>
-      <div className="space-y-2">
-        <Label>✉️ Email d'envoi - Corps</Label>
-        <SimpleRichTextEditor
-          value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers, eventContext })}
-          onChange={setEmailBody}
-          placeholder="Corps de l'email..."
-          rows={8}
-        />
+      <div className={cn("grid gap-3", matchingLeads.length > 0 && showLeadsPanel ? "lg:grid-cols-[1fr_320px]" : "")}>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label>✉️ Email d'envoi - Corps</Label>
+            {matchingLeads.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowLeadsPanel(v => !v)}
+                className="text-[10px] text-muted-foreground hover:text-foreground underline"
+              >
+                {showLeadsPanel ? "Masquer" : `📨 Afficher les messages reçus (${matchingLeads.length})`}
+              </button>
+            )}
+          </div>
+          <SimpleRichTextEditor
+            value={emailBody || getResolvedEmailBody({ type: proposalType, body: "", recipientName, clientName, selectedSpeakers, speakers, eventContext })}
+            onChange={setEmailBody}
+            placeholder="Corps de l'email..."
+            rows={8}
+          />
+        </div>
+        {matchingLeads.length > 0 && showLeadsPanel && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">📨 Messages reçus ({matchingLeads.length})</Label>
+              <button type="button" onClick={() => setShowLeadsPanel(false)} className="text-[10px] text-muted-foreground hover:text-foreground">
+                Masquer
+              </button>
+            </div>
+            <div className="border border-border rounded-md bg-muted/20 max-h-[360px] overflow-y-auto divide-y divide-border">
+              {matchingLeads.map((lead) => {
+                const date = new Date(lead.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+                const fullName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim();
+                return (
+                  <div key={lead.id} className="p-2.5 text-xs space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{fullName || "Sans nom"}</span>
+                      <span className="text-[10px] text-muted-foreground">{date}</span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground flex flex-wrap gap-x-2">
+                      <span className="bg-background px-1.5 rounded">{lead.lead_type}</span>
+                      {lead.company && <span>🏢 {lead.company}</span>}
+                      {lead.phone && <span>📞 {lead.phone}</span>}
+                    </div>
+                    {(lead.event_type || lead.event_date || lead.audience_size || lead.budget) && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {lead.event_type && <span>📅 {lead.event_type}</span>}
+                        {lead.event_date && <span> · {lead.event_date}</span>}
+                        {lead.audience_size && <span> · 👥 {lead.audience_size}</span>}
+                        {lead.budget && <span> · 💶 {lead.budget}</span>}
+                      </div>
+                    )}
+                    {lead.themes?.length > 0 && (
+                      <div className="text-[10px] text-muted-foreground">🎯 {lead.themes.join(", ")}</div>
+                    )}
+                    {lead.objective && <div className="text-foreground/80 italic">« {lead.objective} »</div>}
+                    {lead.additional_info && (
+                      <div className="bg-background border border-border rounded p-1.5 mt-1 whitespace-pre-wrap text-foreground/90">
+                        {lead.additional_info}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
       <div className="space-y-2">
         <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setShowCreatePreview(!showCreatePreview)}>
@@ -1650,7 +1738,24 @@ const AdminProposalsContent = () => {
           <TableCell className="text-xs whitespace-nowrap">{formatDate(p.created_at)}</TableCell>
           <TableCell>
             <div className="font-medium text-sm">{p.client_name}</div>
-            <div className="text-xs text-muted-foreground">{p.client_email}</div>
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>{p.client_email}</span>
+              {(() => {
+                const matches = getMatchingLeads(p.client_email);
+                if (matches.length === 0) return null;
+                return (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setLeadsDialogProposal(p); }}
+                    title={`${matches.length} message${matches.length > 1 ? "s" : ""} client (lead)`}
+                    className="inline-flex items-center gap-0.5 text-sky-600 hover:text-sky-800 transition-colors"
+                  >
+                    <Mail className="h-3 w-3" />
+                    <span className="text-[10px] font-medium">{matches.length}</span>
+                  </button>
+                );
+              })()}
+            </div>
           </TableCell>
           <TableCell>
             {(() => {
@@ -1811,6 +1916,33 @@ const AdminProposalsContent = () => {
     );
   };
 
+  const renderUnifiedTable = (items: Proposal[]) => (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Client</TableHead>
+            <TableHead>Conférenciers</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map(p => renderProposalRow(p, p.status === "draft" ? "draft" : "sent"))}
+          {items.length === 0 && !loading && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                Aucune proposition.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   const renderTable = (items: Proposal[], mode: "draft" | "sent" | "completed") => (
     <div className="border border-border rounded-xl overflow-hidden">
       <Table>
@@ -1865,7 +1997,7 @@ const AdminProposalsContent = () => {
             <option value="info">📝 Infos</option>
           </select>
           <Button variant="ghost" size="sm" onClick={() => setDateSortAsc(prev => !prev)} className="gap-1 text-xs" title="Trier par date">
-            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes" : "Plus récentes"}
+            <ArrowUpDown className="h-3.5 w-3.5" /> {dateSortAsc ? "Plus anciennes d'abord" : "Plus récentes d'abord"}
           </Button>
           {testProposalCount > 0 && (
             <Button variant={hideTestProposals ? "outline" : "secondary"} size="sm" onClick={() => setHideTestProposals(prev => !prev)} className="gap-1 text-xs">
@@ -1892,19 +2024,39 @@ const AdminProposalsContent = () => {
         </div>
       </div>
 
-      <Tabs value={pipelineTab} onValueChange={setPipelineTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="drafts" className="gap-1.5 text-xs">
-            📝 Brouillons {drafts.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{drafts.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="sent" className="gap-1.5 text-xs">
-            📤 Envoyées {sent.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{sent.length}</span>}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="drafts">{renderTable(drafts, "draft")}</TabsContent>
-        <TabsContent value="sent">{renderTable(sent, "sent")}</TabsContent>
-      </Tabs>
+      {/* Liste unifiée triée par date desc — brouillons et envoyées affichés ensemble */}
+      {(() => {
+        const merged = [...drafts, ...sent].sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        const paginated = merged.slice(0, pageSize);
+        return (
+          <>
+            {renderUnifiedTable(paginated)}
+            {merged.length > 10 && (
+              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+                <span>Afficher</span>
+                {([10, 50, 100] as const).map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setPageSize(n)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md border transition-colors",
+                      pageSize === n
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:bg-muted"
+                    )}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <span>· {Math.min(pageSize, merged.length)} sur {merged.length}</span>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -2103,6 +2255,51 @@ const AdminProposalsContent = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Leads matchés par email */}
+      <Dialog open={!!leadsDialogProposal} onOpenChange={(o) => !o && setLeadsDialogProposal(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Messages reçus du client</DialogTitle>
+          </DialogHeader>
+          {leadsDialogProposal && (() => {
+            const matches = getMatchingLeads(leadsDialogProposal.client_email);
+            if (matches.length === 0) return <p className="text-sm text-muted-foreground">Aucun message trouvé pour {leadsDialogProposal.client_email}.</p>;
+            return (
+              <div className="space-y-4 mt-2">
+                <p className="text-xs text-muted-foreground">
+                  {matches.length} message{matches.length > 1 ? "s" : ""} reçu{matches.length > 1 ? "s" : ""} de <span className="text-foreground font-medium">{leadsDialogProposal.client_email}</span>
+                </p>
+                {matches.map((l: any) => (
+                  <div key={l.id} className="border border-border rounded-lg p-3 space-y-2 bg-muted/20">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="text-sm font-medium">{l.first_name} {l.last_name} {l.company ? `· ${l.company}` : ""}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {new Date(l.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        <span className="ml-2 px-1.5 py-0.5 rounded bg-background border border-border">{l.lead_type || "Simulateur"}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {l.phone && <div>📞 {l.phone}</div>}
+                      {l.event_date && <div>📅 {l.event_date}</div>}
+                      {l.event_type && <div>🎯 {l.event_type}</div>}
+                      {l.audience_size && <div>👥 {l.audience_size}</div>}
+                      {l.location && <div>📍 {l.location}</div>}
+                      {l.budget && <div>💰 {l.budget}</div>}
+                    </div>
+                    {l.objective && (
+                      <div className="text-xs"><span className="text-muted-foreground">Objectif :</span> {l.objective}</div>
+                    )}
+                    {l.additional_info && (
+                      <div className="text-sm whitespace-pre-wrap bg-background border border-border rounded p-2 leading-relaxed">{l.additional_info}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* Info accept → new proposal dialog */}
       <Dialog open={infoAcceptDialogOpen} onOpenChange={setInfoAcceptDialogOpen}>
         <DialogContent className="max-w-md">
@@ -2138,281 +2335,6 @@ const AdminProposalsContent = () => {
   );
 };
 
-// ── Contracts tab content ──
-const AdminContractsContent = () => {
-  const [proposals, setProposals] = useState<any[]>([]);
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [contractSubTab, setContractSubTab] = useState<"en_cours" | "gagnes" | "perdus">("en_cours");
-  const [stageFilter, setStageFilter] = useState<string>("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [lostDialogId, setLostDialogId] = useState<string | null>(null);
-  const [lostReason, setLostReason] = useState("");
-  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
-
-  const fetchData = async () => {
-    setLoading(true);
-    const [pRes, cRes, iRes, eRes] = await Promise.all([
-      supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))").eq("status", "accepted").order("created_at", { ascending: false }),
-      supabase.from("contracts").select("id, proposal_id, status, signed_at"),
-      supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at"),
-      supabase.from("events").select("id, proposal_id, selected_speaker_id, info_sent_speaker_at, contract_sent_speaker_at, liaison_sheet_sent_at, speaker_paid_at"),
-    ]);
-    setProposals((pRes.data as any) || []);
-    setContracts((cRes.data as any) || []);
-    setInvoices((iRes.data as any) || []);
-    setEvents((eRes.data as any) || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchData(); }, []);
-
-  const getStage = (p: any) => {
-    const pInvoices = invoices.filter((i: any) => i.proposal_id === p.id);
-    const pContract = contracts.find((c: any) => c.proposal_id === p.id);
-    const pEvent = events.find((e: any) => e.proposal_id === p.id);
-    const allPaid = pInvoices.length > 0 && pInvoices.every((i: any) => i.status === "paid");
-    if (allPaid && pInvoices.length > 0) return "termine";
-    if (pEvent?.speaker_paid_at) return "speaker_paye";
-    if (pInvoices.some((i: any) => i.invoice_type === "solde" && i.status === "sent")) return "facture_solde";
-    if (pEvent?.liaison_sheet_sent_at) return "fiche_liaison";
-    if (pInvoices.some((i: any) => i.invoice_type === "acompte" && (i.status === "paid"))) return "acompte_paye";
-    if (pInvoices.some((i: any) => i.invoice_type === "acompte" && (i.status === "sent"))) return "acompte_envoye";
-    if (pContract?.signed_at) return "contrat_signe";
-    if (pEvent?.info_sent_speaker_at) return "info_conferencier";
-    if (pContract) return "contrat_client";
-    return "accepte";
-  };
-
-  const stageLabels: Record<string, string> = {
-    accepte: "📋 Acceptée",
-    contrat_client: "📝 Contrat client",
-    info_conferencier: "📧 Info conférencier",
-    contrat_signe: "✅ Contrat signé",
-    acompte_envoye: "💰 Acompte envoyé",
-    acompte_paye: "💵 Acompte payé",
-    fiche_liaison: "📋 Fiche liaison",
-    facture_solde: "🧾 Facture solde",
-    speaker_paye: "🎤 Speaker payé",
-    termine: "✅ Terminé",
-  };
-
-  const isTermine = (p: any) => getStage(p) === "termine";
-  const isLost = (p: any) => !!p.lost_at;
-
-  const enCours = proposals.filter(p => !isTermine(p) && !isLost(p));
-  const gagnes = proposals.filter(p => isTermine(p) && !isLost(p));
-  const perdus = proposals.filter(p => isLost(p));
-
-  const currentList = contractSubTab === "en_cours" ? enCours : contractSubTab === "gagnes" ? gagnes : perdus;
-  const filtered = stageFilter === "all" ? currentList : currentList.filter(p => getStage(p) === stageFilter);
-
-  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
-
-  const handleMarkLost = async () => {
-    if (!lostDialogId) return;
-    const { error } = await supabase.from("proposals").update({ lost_at: new Date().toISOString(), lost_reason: lostReason || null } as any).eq("id", lostDialogId);
-    if (error) { toast.error("Erreur"); return; }
-    toast.success("Contrat marqué comme perdu");
-    setLostDialogId(null);
-    setLostReason("");
-    fetchData();
-  };
-
-  const handleRestoreFromLost = async (id: string) => {
-    const { error } = await supabase.from("proposals").update({ lost_at: null, lost_reason: null } as any).eq("id", id);
-    if (error) { toast.error("Erreur"); return; }
-    toast.success("Contrat restauré");
-    fetchData();
-  };
-
-  const handleDeleteContract = async () => {
-    if (!deleteDialogId) return;
-    // Delete related data in order
-    await supabase.from("invoices").delete().eq("proposal_id", deleteDialogId);
-    await supabase.from("events").delete().eq("proposal_id", deleteDialogId);
-    await supabase.from("contracts").delete().eq("proposal_id", deleteDialogId);
-    await supabase.from("proposal_tasks").delete().eq("proposal_id", deleteDialogId);
-    await supabase.from("proposal_speakers").delete().eq("proposal_id", deleteDialogId);
-    const { error } = await supabase.from("proposals").delete().eq("id", deleteDialogId);
-    if (error) { toast.error("Erreur de suppression"); return; }
-    toast.success("Contrat supprimé définitivement");
-    setDeleteDialogId(null);
-    fetchData();
-  };
-
-  if (loading) return <div className="text-center py-12 text-muted-foreground">Chargement…</div>;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-serif font-bold">Contrats & Dossiers</h2>
-        <Button variant="ghost" size="sm" onClick={fetchData}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <Tabs value={contractSubTab} onValueChange={(v) => setContractSubTab(v as any)}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="en_cours" className="gap-1.5 text-xs">
-            📂 En cours {enCours.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{enCours.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="gagnes" className="gap-1.5 text-xs">
-            🏆 Gagnés {gagnes.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{gagnes.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="perdus" className="gap-1.5 text-xs">
-            ❌ Perdus {perdus.length > 0 && <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{perdus.length}</span>}
-          </TabsTrigger>
-        </TabsList>
-
-        {contractSubTab !== "perdus" && (
-          <div className="flex gap-2 mb-4 flex-wrap">
-            <select
-              className="rounded-md border border-input bg-background px-2 py-1 text-xs"
-              value={stageFilter}
-              onChange={e => setStageFilter(e.target.value)}
-            >
-              <option value="all">Toutes les étapes</option>
-              {Object.entries(stageLabels).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {["en_cours", "gagnes", "perdus"].map(subTab => (
-          <TabsContent key={subTab} value={subTab}>
-            {filtered.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground text-sm">Aucun dossier</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Client</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>{subTab === "perdus" ? "Raison" : "Étape"}</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((p: any) => {
-                    const stage = getStage(p);
-                    return (
-                      <React.Fragment key={p.id}>
-                        <TableRow
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                        >
-                          <TableCell>
-                            <div className="font-medium text-sm">{p.client_name}</div>
-                            <div className="text-xs text-muted-foreground">{p.client_email}</div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs">{p.proposal_type === "unique" ? "🎤 Unique" : p.proposal_type === "info" ? "📝 Infos" : "📋 Classique"}</span>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{formatDate(p.created_at)}</TableCell>
-                          <TableCell>
-                            {subTab === "perdus" ? (
-                              <span className="text-xs text-muted-foreground italic">{p.lost_reason || "—"}</span>
-                            ) : (
-                              <span className="text-xs px-2 py-1 rounded-full bg-muted">{stageLabels[stage] || stage}</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                              {subTab === "en_cours" && (
-                                <>
-                                  <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 h-7 px-2" title="Marquer comme perdu" onClick={() => setLostDialogId(p.id)}>
-                                    ❌
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-7 px-2" title="Supprimer" onClick={() => setDeleteDialogId(p.id)}>
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </>
-                              )}
-                              {subTab === "perdus" && (
-                                <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Restaurer" onClick={() => handleRestoreFromLost(p.id)}>
-                                  ↩️ Restaurer
-                                </Button>
-                              )}
-                              <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}>
-                                {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        {expandedId === p.id && (
-                          <TableRow>
-                            <TableCell colSpan={5} className="bg-muted/30 px-6 py-2">
-                              <EventDossier
-                                proposal={{
-                                  id: p.id, client_name: p.client_name, client_email: p.client_email,
-                                  recipient_name: p.recipient_name, client_id: p.client_id || null, status: p.status,
-                                  proposal_type: p.proposal_type || "classique",
-                                  event_date_text: p.event_date_text || null,
-                                  event_location: p.event_location || null,
-                                  audience_size: p.audience_size || null,
-                                  proposal_speakers: (p.proposal_speakers || []).map((ps: any) => ({
-                                    speaker_id: ps.speaker_id,
-                                    speaker_fee: ps.speaker_fee, travel_costs: ps.travel_costs,
-                                    agency_commission: ps.agency_commission, total_price: ps.total_price,
-                                    speakers: ps.speakers,
-                                  })),
-                                }}
-                                onUpdate={fetchData}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      {/* Lost dialog */}
-      <Dialog open={!!lostDialogId} onOpenChange={open => { if (!open) { setLostDialogId(null); setLostReason(""); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Marquer comme perdu</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Label className="text-sm">Raison (optionnel)</Label>
-            <Textarea value={lostReason} onChange={e => setLostReason(e.target.value)} rows={3} className="text-sm" />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setLostDialogId(null); setLostReason(""); }}>Annuler</Button>
-              <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white" onClick={handleMarkLost}>Confirmer</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete confirmation dialog */}
-      <Dialog open={!!deleteDialogId} onOpenChange={open => { if (!open) setDeleteDialogId(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-destructive">Supprimer le contrat</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              ⚠️ Cette action est <strong className="text-foreground">irréversible</strong>. La proposition, le contrat, les factures, le dossier événement et toutes les données associées seront définitivement supprimés.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setDeleteDialogId(null)}>Annuler</Button>
-              <Button size="sm" variant="destructive" onClick={handleDeleteContract}>Supprimer définitivement</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
+// (AdminContractsContent moved to src/components/admin/AdminEventDossiers.tsx)
 
 export default Admin;

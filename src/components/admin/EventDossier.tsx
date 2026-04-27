@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import SignedContractUpload from "@/components/admin/SignedContractUpload";
+
 
 // ── Types ──
 
@@ -61,6 +63,7 @@ type Contract = {
   created_at: string;
   contract_lines: any;
   discount_percent: number | null;
+  client_signed_received_at?: string | null;
 };
 
 type Invoice = {
@@ -108,6 +111,15 @@ type EventData = {
   conference_duration: string | null;
   parking_info: string | null;
   hotel_info: string | null;
+  logistics_info?: string | null;
+  client_signed_received_at?: string | null;
+  client_deposit_paid_at?: string | null;
+  speaker_acknowledgment_at?: string | null;
+  speaker_signed_contract_at?: string | null;
+  speaker_deposit_paid_at?: string | null;
+  client_invoice_sent_at?: string | null;
+  client_invoice_paid_at?: string | null;
+  event_date?: string | null;
 };
 
 type ContractLine = {
@@ -259,6 +271,18 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editConferenceDuration, setEditConferenceDuration] = useState("");
   const [editParkingInfo, setEditParkingInfo] = useState("");
   const [editHotelInfo, setEditHotelInfo] = useState("");
+  // Lot 2 - tracking dates & logistics for liaison sheet
+  const [editEventRealDate, setEditEventRealDate] = useState("");
+  const [editClientDepositPaidAt, setEditClientDepositPaidAt] = useState("");
+  const [editSpeakerDepositPaidAt, setEditSpeakerDepositPaidAt] = useState("");
+  const [editClientInvoiceSentAt, setEditClientInvoiceSentAt] = useState("");
+  const [editClientInvoicePaidAt, setEditClientInvoicePaidAt] = useState("");
+  const [editSpeakerSignedAt, setEditSpeakerSignedAt] = useState("");
+  const [editSpeakerAcknowledgmentAt, setEditSpeakerAcknowledgmentAt] = useState("");
+  const [editSpeakerPaidAt, setEditSpeakerPaidAt] = useState("");
+  const [editLiaisonSheetSentAt, setEditLiaisonSheetSentAt] = useState("");
+  const [editLogisticsInfo, setEditLogisticsInfo] = useState("");
+  const [editClientSignedReceivedAt, setEditClientSignedReceivedAt] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -626,6 +650,8 @@ ${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention
 🏢 Client : ${proposal.client_name}
 💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
 
+${vouvoi ? "Pourriez-vous m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible." : "Peux-tu m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible."}
+
 ${vouvoi ? "Restant à votre disposition." : "A très vite !"}
 
 Nelly Sabde - Les Conférenciers`);
@@ -743,6 +769,7 @@ ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""} - ${event?.contact_on_site_email || proposal.client_email}
 🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` - ${speaker.phone}` : ""}
 ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
+${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
     const clientCcList = liaisonClientCc.split(",").map(e => e.trim()).filter(Boolean);
@@ -808,6 +835,18 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEditConferenceDuration(event?.conference_duration || "");
     setEditParkingInfo(event?.parking_info || "");
     setEditHotelInfo(event?.hotel_info || "");
+    // tracking dates
+    setEditEventRealDate((event as any)?.event_date || contract?.event_date || "");
+    setEditClientDepositPaidAt((event as any)?.client_deposit_paid_at || "");
+    setEditSpeakerDepositPaidAt((event as any)?.speaker_deposit_paid_at || "");
+    setEditClientInvoiceSentAt((event as any)?.client_invoice_sent_at || "");
+    setEditClientInvoicePaidAt((event as any)?.client_invoice_paid_at || "");
+    setEditSpeakerSignedAt((event as any)?.speaker_signed_contract_at || "");
+    setEditSpeakerAcknowledgmentAt((event as any)?.speaker_acknowledgment_at || "");
+    setEditSpeakerPaidAt(event?.speaker_paid_at ? (event.speaker_paid_at as string).slice(0, 10) : "");
+    setEditLiaisonSheetSentAt(event?.liaison_sheet_sent_at ? (event.liaison_sheet_sent_at as string).slice(0, 10) : "");
+    setEditLogisticsInfo((event as any)?.logistics_info || "");
+    setEditClientSignedReceivedAt((contract as any)?.client_signed_received_at || "");
     setEventEditOpen(true);
   };
 
@@ -835,7 +874,23 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       conference_duration: editConferenceDuration || null,
       parking_info: editParkingInfo || null,
       hotel_info: editHotelInfo || null,
+      event_date: editEventRealDate || null,
+      client_deposit_paid_at: editClientDepositPaidAt || null,
+      speaker_deposit_paid_at: editSpeakerDepositPaidAt || null,
+      client_invoice_sent_at: editClientInvoiceSentAt || null,
+      client_invoice_paid_at: editClientInvoicePaidAt || null,
+      speaker_signed_contract_at: editSpeakerSignedAt || null,
+      speaker_acknowledgment_at: editSpeakerAcknowledgmentAt || null,
+      speaker_paid_at: editSpeakerPaidAt ? new Date(editSpeakerPaidAt + "T12:00:00").toISOString() : null,
+      liaison_sheet_sent_at: editLiaisonSheetSentAt ? new Date(editLiaisonSheetSentAt + "T12:00:00").toISOString() : null,
+      logistics_info: editLogisticsInfo || null,
     } as any).eq("id", event.id);
+    // Also update contract.client_signed_received_at if a contract exists
+    if (contract?.id) {
+      await supabase.from("contracts").update({
+        client_signed_received_at: editClientSignedReceivedAt || null,
+      } as any).eq("id", contract.id);
+    }
     if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
     setEventEditOpen(false);
     fetchData();
@@ -988,27 +1043,7 @@ Nelly Sabde - Les Conférenciers`);
 
   if (loading) return <div className="text-muted-foreground text-xs py-2">Chargement…</div>;
 
-  // ─── Tracking Dashboard ───
-  // Each step can be toggled manually via clicking
-  const steps = [
-    { label: "Contrat client", done: contract?.status === "sent" || contract?.status === "signed", date: contract?.created_at, toggleKey: null as string | null },
-    { label: "Info conférencier", done: !!event?.info_sent_speaker_at, date: event?.info_sent_speaker_at, toggleKey: "info_sent_speaker_at" },
-    { label: "Contrat signé", done: contract?.status === "signed", date: contract?.signed_at, toggleKey: null },
-    { label: "Facture acompte", done: invoices.some(i => i.invoice_type === "acompte" && (i.status === "sent" || i.status === "paid")), date: invoices.find(i => i.invoice_type === "acompte")?.sent_at, toggleKey: null },
-    { label: "Visio prépa", done: !!event?.visio_date, date: event?.visio_date, toggleKey: null },
-    { label: "Feuille liaison", done: !!event?.liaison_sheet_sent_at, date: event?.liaison_sheet_sent_at, toggleKey: "liaison_sheet_sent_at" },
-    { label: "Facture finale", done: invoices.some(i => (i.invoice_type === "solde" || i.invoice_type === "total") && (i.status === "sent" || i.status === "paid")), date: invoices.find(i => i.invoice_type === "solde" || i.invoice_type === "total")?.sent_at, toggleKey: null },
-    { label: "Conf. payé", done: !!event?.speaker_paid_at, date: event?.speaker_paid_at, toggleKey: "speaker_paid_at" },
-  ];
-
-  const handleToggleStep = async (step: typeof steps[0]) => {
-    if (!event || !step.toggleKey) return;
-    const newValue = step.done ? null : new Date().toISOString();
-    await supabase.from("events").update({ [step.toggleKey]: newValue } as any).eq("id", event.id);
-    toast.success(step.done ? `"${step.label}" décoché` : `"${step.label}" coché`);
-    fetchData();
-    onUpdate();
-  };
+  // Pipeline supprimé du détail (visible uniquement en vue liste compacte)
 
   return (
     <div className="space-y-6 mt-4 border-t border-border pt-4">
@@ -1065,108 +1100,6 @@ Nelly Sabde - Les Conférenciers`);
         </div>
       )}
 
-      {/* ─── Tracking Dashboard ─── */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <ClipboardList className="h-4 w-4" /> Suivi du dossier
-          {event?.bdc_number && <span className="text-xs font-normal text-muted-foreground">BDC n° {event.bdc_number}</span>}
-        </h3>
-        <Button size="sm" variant="ghost" onClick={openEventEdit}>
-          <Pencil className="h-3 w-3" />
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-        {steps.map((step, i) => {
-          const isClickable = !!step.toggleKey;
-          const stepClasses = `text-center p-2 rounded-lg border text-[10px] leading-tight ${
-            step.done
-              ? "bg-green-50 border-green-200 text-green-700"
-              : "bg-muted/30 border-border text-muted-foreground"
-          } ${isClickable ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}`;
-          const stepContent = (
-            <>
-              <div className="text-base mb-0.5">{step.done ? "✓" : "○"}</div>
-              <div className="font-medium">{step.label}</div>
-              {step.done && step.date && (
-                <div className="text-[8px] mt-0.5 opacity-70">
-                  {new Date(step.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-                </div>
-              )}
-            </>
-          );
-
-          // Visio step gets a Calendar popover
-          if (i === 4) {
-            return (
-              <Popover key={i}>
-                <PopoverTrigger asChild>
-                  <button className={cn(stepClasses, "cursor-pointer hover:border-primary/50 transition-colors")}>
-                    {stepContent}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-4 space-y-3" align="center">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
-                    <CalendarIcon className="h-3.5 w-3.5" /> Visio préparatoire
-                  </Label>
-                  <Calendar
-                    mode="single"
-                    selected={visioQuickDate}
-                    onSelect={setVisioQuickDate}
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                  <div className="space-y-1">
-                    <Label className="text-[10px] text-muted-foreground">Heure</Label>
-                    <Input value={visioQuickTime} onChange={e => setVisioQuickTime(e.target.value)} placeholder="10h00" className="h-8 text-sm" />
-                  </div>
-                  <Button size="sm" className="w-full" onClick={handleSaveVisioQuick}>Enregistrer</Button>
-                </PopoverContent>
-              </Popover>
-            );
-          }
-
-          // Toggleable steps
-          if (isClickable) {
-            return (
-              <button key={i} className={stepClasses} onClick={() => handleToggleStep(step)} title={`Cliquer pour ${step.done ? "décocher" : "cocher"}`}>
-                {stepContent}
-              </button>
-            );
-          }
-
-          return (
-            <div key={i} className={stepClasses}>
-              {stepContent}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Event details summary */}
-      {event && (event.audience_size || event.theme || event.visio_date || event.event_title || event.contact_on_site_name || event.conference_title) && (
-        <div className="bg-muted/20 rounded-lg p-3 space-y-2">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-            {event.event_title && <div><span className="text-muted-foreground">Événement :</span> {event.event_title}</div>}
-            {event.conference_title && <div><span className="text-muted-foreground">Conférence :</span> {event.conference_title}</div>}
-            {event.conference_duration && <div><span className="text-muted-foreground">Durée :</span> {event.conference_duration}</div>}
-            {event.audience_size && <div><span className="text-muted-foreground">Auditoire :</span> {event.audience_size}</div>}
-            {event.theme && <div><span className="text-muted-foreground">Thématique :</span> {event.theme}</div>}
-            {event.speaker_budget && <div><span className="text-muted-foreground">Budget speaker :</span> {event.speaker_budget.toLocaleString("fr-FR")} €</div>}
-            {event.visio_date && <div><span className="text-muted-foreground">Visio :</span> {formatDate(event.visio_date)} {event.visio_time || ""}</div>}
-            {event.dress_code && <div><span className="text-muted-foreground">Dress code :</span> {event.dress_code}</div>}
-          </div>
-          {(event.contact_on_site_name || event.tech_needs || event.arrival_info) && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs border-t border-border/50 pt-2">
-              {event.contact_on_site_name && <div><span className="text-muted-foreground">Contact sur place :</span> {event.contact_on_site_name} {event.contact_on_site_phone ? `(${event.contact_on_site_phone})` : ""}</div>}
-              {event.tech_needs && <div><span className="text-muted-foreground">Technique :</span> {event.tech_needs}</div>}
-              {event.arrival_info && <div><span className="text-muted-foreground">Arrivée :</span> {event.arrival_info}</div>}
-              {event.parking_info && <div><span className="text-muted-foreground">Parking :</span> {event.parking_info}</div>}
-              {event.hotel_info && <div><span className="text-muted-foreground">Hôtel :</span> {event.hotel_info}</div>}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ─── Contract Section ─── */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -1208,6 +1141,12 @@ Nelly Sabde - Les Conférenciers`);
       {contract?.status === "signed" && contract.signed_at && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-700">
           ✓ Contrat signé le {formatDate(contract.signed_at)} par <strong>{contract.signer_name}</strong>
+        </div>
+      )}
+
+      {contract && (
+        <div className="border border-border/60 rounded-lg p-3 bg-muted/10">
+          <SignedContractUpload contractId={contract.id} />
         </div>
       )}
 
@@ -1779,6 +1718,28 @@ Nelly Sabde - Les Conférenciers`);
                 <div className="space-y-1"><Label className="text-xs">Heure</Label><Input value={editVisioTime} onChange={e => setEditVisioTime(e.target.value)} placeholder="10h00" /></div>
               </div>
               <div className="space-y-1"><Label className="text-xs">Notes visio</Label><Textarea value={editVisioNotes} onChange={e => setEditVisioNotes(e.target.value)} rows={2} /></div>
+            </div>
+
+            {/* Section: Suivi des dates clés (chronologie dossier) */}
+            <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">📅 Suivi du dossier (dates clés)</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Date de l'événement</Label><Input type="date" value={editEventRealDate} onChange={e => setEditEventRealDate(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Contrat client signé reçu le</Label><Input type="date" value={editClientSignedReceivedAt} onChange={e => setEditClientSignedReceivedAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">AR conférencier reçu le</Label><Input type="date" value={editSpeakerAcknowledgmentAt} onChange={e => setEditSpeakerAcknowledgmentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Contrat conférencier signé le</Label><Input type="date" value={editSpeakerSignedAt} onChange={e => setEditSpeakerSignedAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Acompte payé par le client le</Label><Input type="date" value={editClientDepositPaidAt} onChange={e => setEditClientDepositPaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Acompte versé au conférencier le</Label><Input type="date" value={editSpeakerDepositPaidAt} onChange={e => setEditSpeakerDepositPaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Feuille de liaison envoyée le</Label><Input type="date" value={editLiaisonSheetSentAt} onChange={e => setEditLiaisonSheetSentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Facture envoyée au client le</Label><Input type="date" value={editClientInvoiceSentAt} onChange={e => setEditClientInvoiceSentAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Facture payée par le client le</Label><Input type="date" value={editClientInvoicePaidAt} onChange={e => setEditClientInvoicePaidAt(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Conférencier payé le</Label><Input type="date" value={editSpeakerPaidAt} onChange={e => setEditSpeakerPaidAt(e.target.value)} /></div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Infos logistiques (reportées dans la feuille de liaison)</Label>
+                <Textarea value={editLogisticsInfo} onChange={e => setEditLogisticsInfo(e.target.value)} rows={3} placeholder="Ex. : le conférencier vient en voiture, hôtel réservé au Marriott le 12, train arrivée 9h15…" />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Ces dates et infos alimentent automatiquement la vue chronologique des dossiers événement.</p>
             </div>
 
             {/* Section: Demandes spéciales */}
