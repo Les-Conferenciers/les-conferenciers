@@ -2025,7 +2025,7 @@ const AdminProposalsContent = () => {
       </div>
 
       {/* Sous-onglets : brouillons, envoyées, archivées */}
-      <Tabs defaultValue="drafts" className="w-full">
+      <Tabs defaultValue="sent" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="drafts">Brouillons ({drafts.length})</TabsTrigger>
           <TabsTrigger value="sent">Envoyées ({sent.length})</TabsTrigger>
