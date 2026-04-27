@@ -123,7 +123,7 @@ ${classicSelectionLine}
 
 ${uniqueProfileUrl ? `<p><strong>👉 <a href="${uniqueProfileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${uniqueSpeakerName}</a></strong> (sous réserve de sa disponibilité)</p>` : ""}
 
-<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>
+<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br><strong>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</strong></p>
 
 <p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p>
 
@@ -162,7 +162,9 @@ Nelly Sabde - Les Conférenciers
 
     const emailHtml = `
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>.email-body p{margin:0 0 8px 0;}.email-body p:last-child{margin-bottom:0;}</style>
+</head>
 <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
     <!-- Header -->
@@ -172,7 +174,7 @@ Nelly Sabde - Les Conférenciers
     </div>
     
     <div style="padding:30px 30px 20px;">
-      <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
+      <div class="email-body" style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
       ${showProposalButton ? `<div style="text-align:center;margin:30px 0;">
         <a href="${proposalUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
           Consulter la proposition complète

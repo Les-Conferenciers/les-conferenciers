@@ -167,7 +167,7 @@ const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmo
     ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${contextParts.join(", ")}, et vous adresse, comme convenu, le profil de ${speakerName}.`
     : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}.`;
 
-  const alternativePhrase = `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>`;
+  const alternativePhrase = `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br><strong>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</strong></p>`;
 
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
@@ -442,7 +442,7 @@ const EmailPreviewCard = ({
           <span style={{ color: "#f5f0e8", fontSize: "20px", fontWeight: "bold", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
         </div>
         <div style={{ padding: "30px 30px 20px" }}>
-          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} className="[&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} className="[&_p]:mt-0 [&_p]:mb-2 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           {showProposalButton && (
             <>
               <div style={{ textAlign: "center", margin: "30px 0" }}>
