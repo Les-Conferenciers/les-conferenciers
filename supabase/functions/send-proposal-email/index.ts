@@ -123,7 +123,7 @@ ${classicSelectionLine}
 
 ${uniqueProfileUrl ? `<p><strong>👉 <a href="${uniqueProfileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${uniqueSpeakerName}</a></strong> (sous réserve de sa disponibilité)</p>` : ""}
 
-<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>
+<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br><strong>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</strong></p>
 
 <p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p>
 
