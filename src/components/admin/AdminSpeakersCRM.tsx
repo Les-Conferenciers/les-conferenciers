@@ -100,7 +100,7 @@ const AdminSpeakersCRM = () => {
   const [showManualCreate, setShowManualCreate] = useState(false);
   const [manualForm, setManualForm] = useState({
     name: "", specialty: "", city: "", base_fee: "" as string, fee_details: "",
-    phone: "", email: "", gender: "male", themes: "", languages: "Français",
+    phone: "", email: "", gender: "male", themes: [] as string[], languages: "Français",
     biography: "", archived: false,
   });
   const [creatingManual, setCreatingManual] = useState(false);
@@ -376,7 +376,7 @@ const AdminSpeakersCRM = () => {
       phone: manualForm.phone || null,
       email: manualForm.email || null,
       gender: manualForm.gender,
-      themes: manualForm.themes ? manualForm.themes.split(",").map(t => t.trim()).filter(Boolean) : [],
+      themes: manualForm.themes,
       languages: manualForm.languages ? manualForm.languages.split(",").map(l => l.trim()).filter(Boolean) : [],
       biography: manualForm.biography || null,
       archived: manualForm.archived,
@@ -385,7 +385,7 @@ const AdminSpeakersCRM = () => {
     if (error) { toast.error(`Erreur : ${error.message}`); return; }
     toast.success(`${manualForm.name} créé avec succès ! Ouvrez la fiche pour compléter les détails.`);
     setShowManualCreate(false);
-    setManualForm({ name: "", specialty: "", city: "", base_fee: "", fee_details: "", phone: "", email: "", gender: "male", themes: "", languages: "Français", biography: "", archived: false });
+    setManualForm({ name: "", specialty: "", city: "", base_fee: "", fee_details: "", phone: "", email: "", gender: "male", themes: [], languages: "Français", biography: "", archived: false });
     await fetchSpeakers();
     // Auto-open edit dialog for the newly created speaker
     if (inserted) {
@@ -963,8 +963,38 @@ const AdminSpeakersCRM = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Thématiques (séparées par virgules)</Label>
-              <Input value={manualForm.themes} onChange={e => setManualForm(p => ({ ...p, themes: e.target.value }))} />
+              <Label className="text-xs text-muted-foreground">Thématiques</Label>
+              <div className="flex flex-wrap gap-1.5 mb-1.5 min-h-[28px]">
+                {manualForm.themes.length === 0 && (
+                  <span className="text-xs text-muted-foreground italic">Aucune thématique sélectionnée</span>
+                )}
+                {manualForm.themes.map((theme, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-1 bg-accent/10 text-accent-foreground text-xs font-medium px-2.5 py-1 rounded-full border border-accent/20">
+                    {theme}
+                    <button type="button" onClick={() => {
+                      setManualForm(p => ({ ...p, themes: p.themes.filter((_, i) => i !== idx) }));
+                    }} className="hover:text-destructive transition-colors">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <select
+                className="rounded-lg border border-input bg-background text-foreground px-3 py-1.5 text-sm w-full"
+                value=""
+                onChange={e => {
+                  if (e.target.value && !manualForm.themes.includes(e.target.value)) {
+                    setManualForm(p => ({ ...p, themes: [...p.themes, e.target.value] }));
+                  }
+                  e.target.value = "";
+                }}
+              >
+                <option value="">Ajouter une thématique…</option>
+                {CANONICAL_THEMES.filter(t => !manualForm.themes.includes(t)).map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted-foreground italic">Seules les {CANONICAL_THEMES.length} catégories officielles sont sélectionnables.</p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Langues</Label>
