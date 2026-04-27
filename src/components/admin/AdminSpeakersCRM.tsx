@@ -1485,25 +1485,14 @@ const AdminSpeakersCRM = () => {
                     }}
                   >
                     <option value="">Ajouter une thématique…</option>
-                    {allThemes.filter(t => !(editForm.themes || []).includes(t)).map(t => (
+                    {CANONICAL_THEMES.filter(t => !(editForm.themes || []).includes(t)).map(t => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
-                  <form className="flex gap-1" onSubmit={e => {
-                    e.preventDefault();
-                    const input = (e.target as HTMLFormElement).elements.namedItem("newTheme") as HTMLInputElement;
-                    const val = input.value.trim();
-                    if (val && !(editForm.themes || []).includes(val)) {
-                      setEditForm(p => ({ ...p, themes: [...(p.themes || []), val] }));
-                      input.value = "";
-                    }
-                  }}>
-                    <Input name="newTheme" placeholder="Nouvelle catégorie…" className="text-sm w-40" />
-                    <Button type="submit" variant="outline" size="sm" className="gap-1 whitespace-nowrap">
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </form>
                 </div>
+                <p className="text-[11px] text-muted-foreground italic">
+                  Seules les {CANONICAL_THEMES.length} catégories officielles sont sélectionnables.
+                </p>
               </div>
 
               {/* Key Points (Pépites / Diamant) */}
