@@ -1385,11 +1385,17 @@ const AdminProposalsContent = () => {
         </div>
         {(eventDateText || eventLocation || audienceSize) && (() => {
           const contextParts: string[] = [];
-          if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
-          if (eventLocation) contextParts.push(`à <strong>${eventLocation}</strong>`);
-          if (audienceSize) contextParts.push(`pour <strong>${audienceSize} personnes</strong>`);
+          if (proposalType === "unique") {
+            if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+            if (eventLocation) contextParts.push(`qui aura lieu à <strong>${eventLocation}</strong>`);
+            if (audienceSize) contextParts.push(`pour un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
+          } else {
+            if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+            if (eventLocation) contextParts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
+            if (audienceSize) contextParts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
+          }
           const previewText = proposalType === "unique"
-            ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants ${contextParts.join(" ")}...`
+            ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${contextParts.join(", ")}...`
             : `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${contextParts.join(", ")}.`;
           return (
             <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic" dangerouslySetInnerHTML={{ __html: previewText }} />
