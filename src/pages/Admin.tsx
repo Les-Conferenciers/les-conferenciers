@@ -442,7 +442,7 @@ const EmailPreviewCard = ({
           <span style={{ color: "#f5f0e8", fontSize: "20px", fontWeight: "bold", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
         </div>
         <div style={{ padding: "30px 30px 20px" }}>
-          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} className="[&_p]:mt-0 [&_p]:mb-2 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} className="[&_p]:mt-0 [&_p]:mb-4 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           {showProposalButton && (
             <>
               <div style={{ textAlign: "center", margin: "30px 0" }}>
