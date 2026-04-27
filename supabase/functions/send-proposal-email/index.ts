@@ -163,7 +163,7 @@ Nelly Sabde - Les Conférenciers
     const emailHtml = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>.email-body p{margin:0 0 8px 0;}.email-body p:last-child{margin-bottom:0;}</style>
+<style>.email-body p{margin:0 0 16px 0;}.email-body p:last-child{margin-bottom:0;}</style>
 </head>
 <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
