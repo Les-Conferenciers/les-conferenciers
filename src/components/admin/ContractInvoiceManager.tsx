@@ -659,6 +659,16 @@ Nelly Sabde - Les Conférenciers`);
               <Textarea value={contractEmailBody} onChange={e => setContractEmailBody(e.target.value)} rows={12} className="text-sm" />
               <p className="text-[10px] text-muted-foreground">Le bouton « Consulter et signer le contrat » est ajouté automatiquement.</p>
             </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Aperçu</Label>
+              <div className="border rounded-md p-4 bg-white max-h-64 overflow-y-auto">
+                <div
+                  style={{ color: "#333", fontSize: "15px", lineHeight: "1.6", fontFamily: "Arial, sans-serif" }}
+                  className="[&_p]:mt-0 [&_p]:mb-4 [&_p:last-child]:mb-0"
+                  dangerouslySetInnerHTML={{ __html: (contractEmailBody || "").replace(/\n/g, "<br>") }}
+                />
+              </div>
+            </div>
             <Button className="w-full" onClick={handleSendContractEmail} disabled={sendingContract}>
               <Send className="h-4 w-4 mr-2" />
               {sendingContract ? "Envoi en cours…" : "Envoyer le contrat par email"}
