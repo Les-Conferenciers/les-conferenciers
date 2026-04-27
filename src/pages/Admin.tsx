@@ -2024,39 +2024,111 @@ const AdminProposalsContent = () => {
         </div>
       </div>
 
-      {/* Liste unifiée triée par date desc — brouillons et envoyées affichés ensemble */}
-      {(() => {
-        const merged = [...drafts, ...sent].sort((a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        const paginated = merged.slice(0, pageSize);
-        return (
-          <>
-            {renderUnifiedTable(paginated)}
-            {merged.length > 10 && (
-              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-                <span>Afficher</span>
-                {([10, 50, 100] as const).map(n => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setPageSize(n)}
-                    className={cn(
-                      "px-2.5 py-1 rounded-md border transition-colors",
-                      pageSize === n
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:bg-muted"
-                    )}
-                  >
-                    {n}
-                  </button>
-                ))}
-                <span>· {Math.min(pageSize, merged.length)} sur {merged.length}</span>
-              </div>
-            )}
-          </>
-        );
-      })()}
+      {/* Sous-onglets : brouillons, envoyées, archivées */}
+      <Tabs defaultValue="drafts" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="drafts">Brouillons ({drafts.length})</TabsTrigger>
+          <TabsTrigger value="sent">Envoyées ({sent.length})</TabsTrigger>
+          <TabsTrigger value="archived">Archivées ({archived.length})</TabsTrigger>
+        </TabsList>
+
+        {([
+          { key: "drafts", items: drafts, mode: "draft" as const, allowDelete: false },
+          { key: "sent", items: sent, mode: "sent" as const, allowDelete: false },
+          { key: "archived", items: archived, mode: "sent" as const, allowDelete: true },
+        ]).map(({ key, items, mode, allowDelete }) => {
+          const paginated = items.slice(0, pageSize);
+          return (
+            <TabsContent key={key} value={key}>
+              {key === "archived" ? (
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Conférenciers</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginated.map(p => (
+                        <TableRow key={p.id}>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium text-sm">{p.client_name}</div>
+                            <div className="text-xs text-muted-foreground">{p.client_email}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1 flex-wrap text-xs text-muted-foreground">
+                              {(p.proposal_speakers || []).slice(0, 3).map((ps: any, i: number) => (
+                                <span key={i}>{ps.speakers?.name}{i < Math.min(2, (p.proposal_speakers || []).length - 1) ? "," : ""}</span>
+                              ))}
+                              {(p.proposal_speakers || []).length > 3 && <span>+{(p.proposal_speakers || []).length - 3}</span>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                              {(p as any).proposal_type === "unique" ? "🎤 Unique" : (p as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="sm" asChild title="Voir en ligne">
+                                <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer définitivement">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {paginated.length === 0 && !loading && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                            Aucune proposition archivée.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                renderTable(paginated, mode)
+              )}
+              {items.length > 10 && (
+                <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+                  <span>Afficher</span>
+                  {([10, 50, 100] as const).map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setPageSize(n)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-md border transition-colors",
+                        pageSize === n
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border hover:bg-muted"
+                      )}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <span>· {Math.min(pageSize, items.length)} sur {items.length}</span>
+                </div>
+              )}
+            </TabsContent>
+          );
+        })}
+      </Tabs>
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
