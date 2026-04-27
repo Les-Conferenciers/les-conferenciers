@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Liste canonique des thématiques (doit rester synchronisée avec src/lib/parseThemes.ts)
+const CANONICAL_THEMES = new Set<string>([
+  "Adaptabilité","Audace","Bien-être au travail","Bienveillance","Cohésion d'équipe","Collectif","Communication","Conduite du changement","Confiance","Confiance en soi","Créativité","Cybersécurité","Dépassement de soi","Diversité et handicap","Droit à l'erreur","Économie","Empowerment","Engagement","Entrepreneuriat","Environnement","Esprit d'équipe","Expérience client","Expérience collaborateur","Facteur humain","Géopolitique","Gestion de crise","Gestion de l'échec","Gestion des conflits","Gestion des émotions","Gestion des risques","Gestion du stress","Handicap","Innovation","Intelligence artificielle","Intelligence collective","Intelligence émotionnelle","Intelligence relationnelle","Jeunes générations","Leadership","Maîtrise des risques","Management","Marketing","Motivation","Négociation","Neurosciences","Optimisme","Parité","Performance","Performance collective","Prise de décision","Prise de parole","Résilience","Storytelling","Stratégie","Transformation","Transformation digitale",
+]);
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -74,6 +79,9 @@ serve(async (req) => {
         } else if (typeof s.themes === 'string' && s.themes) {
           themes = s.themes.split(',').map((t: string) => t.trim()).filter(Boolean);
         }
+
+        // Filter themes to canonical list only
+        themes = themes.filter((t: string) => CANONICAL_THEMES.has(t));
 
         return {
           name: s.name,
