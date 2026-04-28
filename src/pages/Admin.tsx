@@ -2172,6 +2172,51 @@ const AdminProposalsContent = () => {
                   </div>
                 )}
 
+                {matchingLeads.length > 0 && (
+                  <div className="border-t border-border pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm">📨 Messages reçus du client ({matchingLeads.length})</Label>
+                      <button type="button" onClick={() => setShowLeadsPanel(v => !v)} className="text-[10px] text-muted-foreground hover:text-foreground underline">
+                        {showLeadsPanel ? "Masquer" : "Afficher"}
+                      </button>
+                    </div>
+                    {showLeadsPanel && (
+                      <div className="border border-border rounded-md bg-muted/20 max-h-[300px] overflow-y-auto divide-y divide-border">
+                        {matchingLeads.map((lead) => {
+                          const date = new Date(lead.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+                          const fullName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim();
+                          return (
+                            <div key={lead.id} className="p-2.5 text-xs space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium">{fullName || "Sans nom"}</span>
+                                <span className="text-[10px] text-muted-foreground">{date}</span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground flex flex-wrap gap-x-2">
+                                <span className="bg-background px-1.5 rounded">{lead.lead_type}</span>
+                                {lead.company && <span>🏢 {lead.company}</span>}
+                                {lead.phone && <span>📞 {lead.phone}</span>}
+                              </div>
+                              {(lead.event_date || lead.location || lead.audience_size || lead.budget) && (
+                                <div className="text-[10px] text-muted-foreground">
+                                  {lead.event_date && <span>📅 {lead.event_date}</span>}
+                                  {lead.location && <span> · 📍 {lead.location}</span>}
+                                  {lead.audience_size && <span> · 👥 {lead.audience_size}</span>}
+                                  {lead.budget && <span> · 💶 {lead.budget}</span>}
+                                </div>
+                              )}
+                              {lead.additional_info && (
+                                <div className="bg-background border border-border rounded p-1.5 mt-1 whitespace-pre-wrap text-foreground/90">
+                                  {lead.additional_info}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="border-t border-border pt-4">
                   <h3 className="font-medium text-sm mb-3">✉️ Email d'envoi</h3>
                   <div className="space-y-3">
