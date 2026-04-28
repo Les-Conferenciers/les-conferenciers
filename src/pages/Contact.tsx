@@ -20,7 +20,8 @@ const contactSchema = z.object({
   company: z.string().trim().max(100).optional().or(z.literal("")),
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   eventDate: z.string().optional().or(z.literal("")),
-  eventType: z.string().trim().max(200).optional().or(z.literal("")),
+  eventLocation: z.string().trim().max(200).optional().or(z.literal("")),
+  audienceSize: z.string().trim().max(20).optional().or(z.literal("")),
   message: z.string().trim().min(1, "Le message est requis").max(2000, "2000 caractères max"),
 });
 
