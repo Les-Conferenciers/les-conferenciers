@@ -128,6 +128,8 @@ const AdminEventDossiers = () => {
     const { data } = await supabase.from("clients").select("id, company_name, contact_name, email").order("company_name");
     setDirectClients((data as any) || []);
     setDirectClientId("");
+    setDirectClientSearch("");
+    setDirectClientMode("existing");
     setDirectClientName("");
     setDirectClientEmail("");
     setDirectRecipientName("");
@@ -138,26 +140,45 @@ const AdminEventDossiers = () => {
   };
 
   const handleCreateDirectContract = async () => {
-    const clientName = directClientId
-      ? (directClients.find((c) => c.id === directClientId)?.company_name || "")
-      : directClientName.trim();
-    const clientEmail = directClientId
-      ? (directClients.find((c) => c.id === directClientId)?.email || "")
-      : directClientEmail.trim();
-    const recipient = directRecipientName.trim()
-      || (directClientId ? directClients.find((c) => c.id === directClientId)?.contact_name || "" : "");
+    let resolvedClientId = directClientId || null;
+    let clientName = "";
+    let clientEmail = "";
+    let recipient = directRecipientName.trim();
 
-    if (!clientName) { toast.error("Sélectionnez ou saisissez un client"); return; }
-    if (!clientEmail) { toast.error("Email du client requis"); return; }
+    if (directClientMode === "existing") {
+      const sel = directClients.find((c) => c.id === directClientId);
+      if (!sel) { toast.error("Sélectionnez un client"); return; }
+      clientName = sel.company_name;
+      clientEmail = sel.email || "";
+      if (!recipient) recipient = sel.contact_name || "";
+      if (!clientEmail) { toast.error("Ce client n'a pas d'email — complétez sa fiche d'abord"); return; }
+    } else {
+      clientName = directClientName.trim();
+      clientEmail = directClientEmail.trim();
+      if (!clientName) { toast.error("Nom du client requis"); return; }
+      if (!clientEmail) { toast.error("Email du client requis"); return; }
+    }
 
     setDirectCreating(true);
     try {
+      // 0) Create client in CRM if "new" mode
+      if (directClientMode === "new") {
+        const { data: newCl, error: clErr } = await supabase.from("clients").insert({
+          company_name: clientName,
+          email: clientEmail,
+          contact_name: recipient || null,
+          status: "client",
+        } as any).select("id").single();
+        if (clErr) throw clErr;
+        resolvedClientId = newCl?.id || null;
+      }
+
       // 1) Create accepted "direct" proposal (placeholder shell)
       const { data: prop, error: pErr } = await supabase.from("proposals").insert({
         client_name: clientName,
         client_email: clientEmail,
         recipient_name: recipient || null,
-        client_id: directClientId || null,
+        client_id: resolvedClientId,
         status: "accepted",
         accepted_at: new Date().toISOString(),
         proposal_type: "direct",
