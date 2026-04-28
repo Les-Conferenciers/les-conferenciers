@@ -803,6 +803,34 @@ const AdminEventDossiers = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Visio quick scheduler */}
+      <Dialog open={!!visioDialog} onOpenChange={(open) => !open && setVisioDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-serif flex items-center gap-2"><Video className="h-4 w-4" /> Planifier la visio préparatoire</DialogTitle>
+          </DialogHeader>
+          {visioDialog && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Date</Label>
+                  <Input type="date" value={visioDialog.date} onChange={(e) => setVisioDialog({ ...visioDialog, date: e.target.value })} className="h-9" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Heure</Label>
+                  <Input type="time" value={visioDialog.time} onChange={(e) => setVisioDialog({ ...visioDialog, time: e.target.value })} className="h-9" />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Renseigner une date marquera l'étape comme planifiée. Laisser vide réinitialisera l'étape.</p>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setVisioDialog(null)}>Annuler</Button>
+                <Button size="sm" onClick={handleSaveVisio} disabled={savingVisio}>{savingVisio ? "Enregistrement…" : "Enregistrer"}</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
