@@ -210,13 +210,13 @@ Nelly Sabde - Les Conférenciers
       .limit(1)
       .maybeSingle();
 
-    // Resend stores message ids without angle brackets; for In-Reply-To/References they must be wrapped in <...>
+    // Resend stores message ids without angle brackets; the real Message-ID header uses the sending domain.
+    // Confirmation emails are sent from nellysabde@lesconferenciers.com, so the Message-ID is <{id}@lesconferenciers.com>.
     const buildMessageIdRef = (rawId: string) => {
       const trimmed = rawId.trim();
       if (!trimmed) return null;
       if (trimmed.startsWith("<") && trimmed.endsWith(">")) return trimmed;
-      // Resend message ids are UUIDs; the actual Message-ID header uses the resend.dev domain
-      const idCore = trimmed.includes("@") ? trimmed : `${trimmed}@resend.dev`;
+      const idCore = trimmed.includes("@") ? trimmed : `${trimmed}@lesconferenciers.com`;
       return `<${idCore}>`;
     };
     const inReplyToRef = latestLead?.confirmation_message_id ? buildMessageIdRef(latestLead.confirmation_message_id) : null;
