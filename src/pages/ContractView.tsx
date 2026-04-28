@@ -21,6 +21,8 @@ type ContractData = {
   event_format: string | null;
   event_description: string | null;
   status: string;
+  signer_name: string | null;
+  signed_at: string | null;
   created_at: string;
   contract_lines: ContractLine[] | null;
   discount_percent: number | null;
