@@ -218,9 +218,21 @@ const Contact = () => {
                       <Input id="eventDate" type="date" {...register("eventDate")} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="eventType">Type d'événement</Label>
-                      <Input id="eventType" placeholder="Séminaire, conférence…" {...register("eventType")} />
+                      <Label htmlFor="eventLocation">Lieu de l'intervention</Label>
+                      <Input id="eventLocation" placeholder="Paris, Lyon, Marseille…" {...register("eventLocation")} />
                     </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="audienceSize">Taille de l'auditoire</Label>
+                    <Input
+                      id="audienceSize"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      placeholder="200"
+                      {...register("audienceSize")}
+                    />
                   </div>
 
                   <div className="space-y-1.5">
