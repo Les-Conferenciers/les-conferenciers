@@ -415,13 +415,31 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   // ─── Contract CRUD ───
+  const parseProposalEventDate = (): string => {
+    const txt = proposal.event_date_text || "";
+    if (!txt) return "";
+    // Try to find an ISO-style date YYYY-MM-DD
+    const isoMatch = txt.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return isoMatch[0];
+    // Try DD/MM/YYYY or DD-MM-YYYY
+    const frMatch = txt.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+    if (frMatch) {
+      const day = frMatch[1].padStart(2, "0");
+      const month = frMatch[2].padStart(2, "0");
+      let year = frMatch[3];
+      if (year.length === 2) year = "20" + year;
+      return `${year}-${month}-${day}`;
+    }
+    return "";
+  };
+
   const openCreateContract = () => {
     setEditingContract(false);
     // Auto-fill from proposal data
-    setEventDate(""); 
-    setEventLocation(proposal.event_location || ""); 
-    setEventTime(""); 
-    setEventFormat("Conférence"); 
+    setEventDate(parseProposalEventDate());
+    setEventLocation(proposal.event_location || "");
+    setEventTime("");
+    setEventFormat("Conférence");
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
     setContractBdcNumber("");
@@ -437,7 +455,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const openEditContract = () => {
     if (!contract) return;
     setEditingContract(true);
-    setEventDate(contract.event_date || ""); setEventLocation(contract.event_location || "");
+    setEventDate(contract.event_date || (parseProposalEventDate()));
+    setEventLocation(contract.event_location || "");
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
