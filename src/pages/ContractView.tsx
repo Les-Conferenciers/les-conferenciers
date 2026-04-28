@@ -70,7 +70,6 @@ const ContractView = () => {
         .from("contracts")
         .select(`
           *,
-          selected_speaker:speakers!contracts_selected_speaker_id_fkey(name, gender),
           proposal:proposals(
             client_name, client_email, recipient_name, client_id,
             proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(name, gender))
@@ -80,8 +79,8 @@ const ContractView = () => {
         .single();
       let c = data as any;
 
-      // Fallback fetch for selected speaker if FK relation fails
-      if (c?.selected_speaker_id && !c?.selected_speaker) {
+      // Fetch selected speaker if defined on contract
+      if (c?.selected_speaker_id) {
         const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", c.selected_speaker_id).maybeSingle();
         if (sp) c.selected_speaker = sp;
       }
