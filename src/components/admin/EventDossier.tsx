@@ -726,7 +726,7 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
-    setLiaisonNotes(event?.visio_notes || "");
+    setLiaisonNotes(event?.visio_notes || (contract as any)?.event_description || "");
     setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur");
     setLiaisonSalleSetup(event?.room_setup || "Salle installée en largeur avec une allée centrale si possible");
     setLiaisonArrival(event?.arrival_info || "");
