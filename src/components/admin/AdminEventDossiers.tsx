@@ -596,7 +596,12 @@ const AdminEventDossiers = () => {
                         )}
                       </TableCell>
                       <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
-                        <ContractPipeline stages={r.stages} onChange={fetchData} compact />
+                        <ContractPipeline
+                          stages={r.stages}
+                          onChange={fetchData}
+                          compact
+                          onCustomAction={(key) => { if (key === "visio") openVisioPicker(r.event); }}
+                        />
                       </TableCell>
                       <TableCell className="py-3">
                         <div className="space-y-1">
