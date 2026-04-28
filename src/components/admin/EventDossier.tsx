@@ -1136,13 +1136,14 @@ Nelly Sabde - Les Conférenciers`);
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              contract.status === "signed" ? "bg-green-100 text-green-700" :
-              contract.status === "sent" ? "bg-amber-100 text-amber-700" :
-              "bg-muted text-muted-foreground"
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              contract.status === "signed"
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
             }`}>
-              {contract.status === "signed" ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}` :
-               contract.status === "sent" ? "Envoyé" : "Brouillon"}
+              {contract.status === "signed"
+                ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
+                : (contract.status === "sent" ? "⏳ Non signé (envoyé)" : "⚠️ Non signé (brouillon)")}
             </span>
             {(contract.status === "draft" || contract.status === "sent") && (
               <>
