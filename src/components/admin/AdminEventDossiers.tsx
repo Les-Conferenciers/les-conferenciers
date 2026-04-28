@@ -72,6 +72,8 @@ const AdminEventDossiers = () => {
   const [directOpen, setDirectOpen] = useState(false);
   const [directClients, setDirectClients] = useState<Array<{ id: string; company_name: string; contact_name: string | null; email: string | null }>>([]);
   const [directClientId, setDirectClientId] = useState("");
+  const [directClientSearch, setDirectClientSearch] = useState("");
+  const [directClientMode, setDirectClientMode] = useState<"existing" | "new">("existing");
   const [directClientName, setDirectClientName] = useState("");
   const [directClientEmail, setDirectClientEmail] = useState("");
   const [directRecipientName, setDirectRecipientName] = useState("");
