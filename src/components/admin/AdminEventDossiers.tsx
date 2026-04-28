@@ -80,6 +80,31 @@ const AdminEventDossiers = () => {
   const [directAudienceSize, setDirectAudienceSize] = useState("");
   const [directCreating, setDirectCreating] = useState(false);
 
+  // Visio quick scheduler (déclenché depuis la pipeline)
+  const [visioDialog, setVisioDialog] = useState<{ eventId: string; date: string; time: string } | null>(null);
+  const [savingVisio, setSavingVisio] = useState(false);
+
+  const openVisioPicker = (eventRow: any) => {
+    if (!eventRow) { toast.error("Créez d'abord le dossier événement"); return; }
+    setVisioDialog({
+      eventId: eventRow.id,
+      date: eventRow.visio_date || "",
+      time: eventRow.visio_time || "",
+    });
+  };
+
+  const handleSaveVisio = async () => {
+    if (!visioDialog) return;
+    setSavingVisio(true);
+    const { error } = await supabase.from("events").update({
+      visio_date: visioDialog.date || null,
+      visio_time: visioDialog.time || null,
+    } as any).eq("id", visioDialog.eventId);
+    if (error) toast.error("Erreur");
+    else { toast.success("Visio planifiée"); setVisioDialog(null); fetchData(); }
+    setSavingVisio(false);
+  };
+
   const fetchData = async () => {
     setLoading(true);
     const [pRes, cRes, iRes, eRes] = await Promise.all([
