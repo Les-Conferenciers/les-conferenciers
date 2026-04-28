@@ -231,6 +231,7 @@ const Contact = () => {
                       inputMode="numeric"
                       min={1}
                       placeholder="200"
+                      onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                       {...register("audienceSize")}
                     />
                   </div>
