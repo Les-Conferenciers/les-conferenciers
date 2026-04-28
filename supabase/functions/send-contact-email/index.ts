@@ -189,6 +189,10 @@ ${message}
   </div>
 </body></html>`;
 
+    // Generate our own deterministic Message-ID so we can reliably thread the proposal as a reply.
+    const customMessageIdCore = `lead-${leadId || crypto.randomUUID()}-${Date.now()}@lesconferenciers.com`;
+    const customMessageIdHeader = `<${customMessageIdCore}>`;
+
     try {
       const confirmRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -199,14 +203,15 @@ ${message}
           subject: confirmationSubject,
           html: confirmationHtml,
           reply_to: "nellysabde@lesconferenciers.com",
+          headers: {
+            "Message-ID": customMessageIdHeader,
+          },
         }),
       });
       if (confirmRes.ok) {
-        const confirmData = await confirmRes.json();
-        const confirmationMessageId = confirmData?.id || null;
-        if (leadId && confirmationMessageId) {
+        if (leadId) {
           await sb.from("simulator_leads")
-            .update({ confirmation_message_id: confirmationMessageId } as any)
+            .update({ confirmation_message_id: customMessageIdHeader } as any)
             .eq("id", leadId);
         }
       } else {
