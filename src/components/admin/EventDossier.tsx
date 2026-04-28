@@ -1488,82 +1488,15 @@ Nelly Sabde - Les Conférenciers`);
           <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
 
-            {/* Client contact selector */}
-            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
-              <Label className="text-xs font-semibold flex items-center gap-2">
-                <User className="h-3.5 w-3.5" /> Destinataire du contrat
-              </Label>
-              <div className="flex gap-2">
-                <select
-                  className="flex-1 rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
-                  value={selectedClientId}
-                  onChange={e => {
-                    if (e.target.value === "__new__") {
-                      setShowCreateClient(true);
-                      setSelectedClientId("");
-                    } else if (e.target.value) {
-                      handleSelectClient(e.target.value);
-                    } else {
-                      setSelectedClientId("");
-                      setContractRecipientName(proposal.recipient_name || "");
-                      setContractRecipientEmail(proposal.client_email);
-                    }
-                  }}
-                >
-                  <option value="">- Utiliser les infos de la proposition -</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.company_name}{c.contact_name ? ` - ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
-                    </option>
-                  ))}
-                  <option value="__new__">➕ Créer un nouveau client…</option>
-                </select>
+            {/* Auto-linked recipient from proposal */}
+            <div className="p-3 bg-muted/30 rounded-lg border border-border/50 text-sm">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                <User className="h-3.5 w-3.5" /> Destinataire (lié à la proposition)
               </div>
-
-              {/* Inline create client form */}
-              {showCreateClient && (
-                <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
-                    <UserPlus className="h-3.5 w-3.5" /> Nouveau client
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Société *</Label>
-                      <Input value={newClientCompany} onChange={e => setNewClientCompany(e.target.value)} placeholder="SNCF" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Nom du contact</Label>
-                      <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="Pascal Dupont" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Email</Label>
-                      <Input type="email" value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} placeholder="email@societe.com" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Téléphone</Label>
-                      <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="06 XX XX XX XX" className="h-8 text-sm" />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleCreateNewClient} disabled={creatingClient} className="gap-1">
-                      <UserPlus className="h-3 w-3" /> {creatingClient ? "Création…" : "Créer et sélectionner"}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setShowCreateClient(false)}>Annuler</Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Editable recipient fields */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Nom du destinataire</Label>
-                  <Input value={contractRecipientName} onChange={e => setContractRecipientName(e.target.value)} className="h-8 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Email du destinataire</Label>
-                  <Input type="email" value={contractRecipientEmail} onChange={e => setContractRecipientEmail(e.target.value)} className="h-8 text-sm" />
-                </div>
-              </div>
+              <p className="font-medium">
+                {proposal.recipient_name || proposal.client_name}
+                <span className="text-muted-foreground font-normal"> &lt;{proposal.client_email}&gt;</span>
+              </p>
             </div>
 
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={contractEmailSubject} onChange={e => setContractEmailSubject(e.target.value)} /></div>
@@ -1571,7 +1504,6 @@ Nelly Sabde - Les Conférenciers`);
 
             {/* Recap */}
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>📧 <strong>Destinataire :</strong> {contractRecipientName || "—"} &lt;{contractRecipientEmail || "—"}&gt;</p>
               <p>🎤 <strong>Conférencier :</strong> {speakerSummary}</p>
               {getContractSignUrl() && <p>🔗 <strong>Lien signature :</strong> {getContractSignUrl()}</p>}
             </div>
