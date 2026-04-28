@@ -72,6 +72,7 @@ export type Database = {
           event_time: string | null
           id: string
           proposal_id: string
+          selected_speaker_id: string | null
           signed_at: string | null
           signer_ip: string | null
           signer_name: string | null
@@ -90,6 +91,7 @@ export type Database = {
           event_time?: string | null
           id?: string
           proposal_id: string
+          selected_speaker_id?: string | null
           signed_at?: string | null
           signer_ip?: string | null
           signer_name?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           event_time?: string | null
           id?: string
           proposal_id?: string
+          selected_speaker_id?: string | null
           signed_at?: string | null
           signer_ip?: string | null
           signer_name?: string | null

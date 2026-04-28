@@ -415,13 +415,31 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   // ─── Contract CRUD ───
+  const parseProposalEventDate = (): string => {
+    const txt = proposal.event_date_text || "";
+    if (!txt) return "";
+    // Try to find an ISO-style date YYYY-MM-DD
+    const isoMatch = txt.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return isoMatch[0];
+    // Try DD/MM/YYYY or DD-MM-YYYY
+    const frMatch = txt.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+    if (frMatch) {
+      const day = frMatch[1].padStart(2, "0");
+      const month = frMatch[2].padStart(2, "0");
+      let year = frMatch[3];
+      if (year.length === 2) year = "20" + year;
+      return `${year}-${month}-${day}`;
+    }
+    return "";
+  };
+
   const openCreateContract = () => {
     setEditingContract(false);
     // Auto-fill from proposal data
-    setEventDate(""); 
-    setEventLocation(proposal.event_location || ""); 
-    setEventTime(""); 
-    setEventFormat("Conférence"); 
+    setEventDate(parseProposalEventDate());
+    setEventLocation(proposal.event_location || "");
+    setEventTime("");
+    setEventFormat("Conférence");
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
     setContractBdcNumber("");
@@ -437,7 +455,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const openEditContract = () => {
     if (!contract) return;
     setEditingContract(true);
-    setEventDate(contract.event_date || ""); setEventLocation(contract.event_location || "");
+    setEventDate(contract.event_date || (parseProposalEventDate()));
+    setEventLocation(contract.event_location || "");
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
@@ -578,7 +597,9 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendContractEmail = async () => {
     if (!contract) return;
-    if (!contractRecipientEmail) { toast.error("Email du destinataire requis"); return; }
+    // Auto-use proposal recipient — no manual selector needed
+    const targetEmail = proposal.client_email;
+    if (!targetEmail) { toast.error("Aucun email client sur la proposition"); return; }
     setSendingContract(true);
     try {
       const { error } = await supabase.functions.invoke("send-contract-email", {
@@ -586,11 +607,15 @@ Nelly Sabde - Les Conférenciers`);
           contract_id: contract.id,
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
-          recipient_email: contractRecipientEmail,
+          recipient_email: targetEmail,
         },
       });
       if (error) throw error;
       await supabase.from("contracts").update({ status: "sent" } as any).eq("id", contract.id);
+      // Mark "Contrat envoyé" milestone on event
+      if (event) {
+        await supabase.from("events").update({ contract_sent_speaker_at: new Date().toISOString() } as any).eq("id", event.id);
+      }
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
       fetchData(); onUpdate();
@@ -1288,7 +1313,7 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Contract form dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">
               {editingContract ? "Modifier" : "Créer"} le contrat - {proposal.client_name}
@@ -1385,12 +1410,55 @@ Nelly Sabde - Les Conférenciers`);
               })()}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* Speaker selector — allows changing the assigned speaker even after contract creation */}
+            {proposal.proposal_speakers.length > 1 && (
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                <Label className="text-xs font-semibold flex items-center gap-2">
+                  <User className="h-3.5 w-3.5" /> Conférencier retenu pour ce contrat
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {proposal.proposal_speakers.map(ps => {
+                    const isSelected = event?.selected_speaker_id === ps.speaker_id;
+                    return (
+                      <button
+                        key={ps.speaker_id}
+                        type="button"
+                        onClick={async () => {
+                          if (!ps.speaker_id || !event) return;
+                          await supabase.from("events").update({ selected_speaker_id: ps.speaker_id } as any).eq("id", event.id);
+                          // Rebuild lines for the newly selected speaker
+                          const newLines = [{
+                            id: generateId(),
+                            label: ps.speakers?.name || "Conférencier",
+                            amount_ht: ps.total_price || 0,
+                            tva_rate: 20,
+                            type: "speaker" as const,
+                          }];
+                          setContractLines(newLines);
+                          fetchData();
+                          toast.success("Conférencier mis à jour");
+                        }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-md border text-xs transition-all",
+                          isSelected ? "border-primary bg-primary text-primary-foreground font-medium" : "border-border bg-background hover:border-primary/50"
+                        )}
+                      >
+                        {ps.speakers?.name || "—"}
+                        {isSelected && <CheckCircle className="h-3 w-3 inline-block ml-1" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground">Modifier ici si le conférencier choisi diffère de la proposition initiale.</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-xs">Horaires</Label><Input placeholder="14h00 - 15h30" value={eventTime} onChange={e => setEventTime(e.target.value)} /></div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Lieu</Label><Input placeholder="Hôtel Marriott, Paris" value={eventLocation} onChange={e => setEventLocation(e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input placeholder="200 personnes" value={contractAudienceSize} onChange={e => setContractAudienceSize(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-xs">N° Bon de commande</Label><Input placeholder="BDC-001" value={contractBdcNumber} onChange={e => setContractBdcNumber(e.target.value)} /></div>
             </div>
@@ -1463,82 +1531,15 @@ Nelly Sabde - Les Conférenciers`);
           <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
 
-            {/* Client contact selector */}
-            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
-              <Label className="text-xs font-semibold flex items-center gap-2">
-                <User className="h-3.5 w-3.5" /> Destinataire du contrat
-              </Label>
-              <div className="flex gap-2">
-                <select
-                  className="flex-1 rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
-                  value={selectedClientId}
-                  onChange={e => {
-                    if (e.target.value === "__new__") {
-                      setShowCreateClient(true);
-                      setSelectedClientId("");
-                    } else if (e.target.value) {
-                      handleSelectClient(e.target.value);
-                    } else {
-                      setSelectedClientId("");
-                      setContractRecipientName(proposal.recipient_name || "");
-                      setContractRecipientEmail(proposal.client_email);
-                    }
-                  }}
-                >
-                  <option value="">- Utiliser les infos de la proposition -</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.company_name}{c.contact_name ? ` - ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
-                    </option>
-                  ))}
-                  <option value="__new__">➕ Créer un nouveau client…</option>
-                </select>
+            {/* Auto-linked recipient from proposal */}
+            <div className="p-3 bg-muted/30 rounded-lg border border-border/50 text-sm">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                <User className="h-3.5 w-3.5" /> Destinataire (lié à la proposition)
               </div>
-
-              {/* Inline create client form */}
-              {showCreateClient && (
-                <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
-                    <UserPlus className="h-3.5 w-3.5" /> Nouveau client
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Société *</Label>
-                      <Input value={newClientCompany} onChange={e => setNewClientCompany(e.target.value)} placeholder="SNCF" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Nom du contact</Label>
-                      <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="Pascal Dupont" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Email</Label>
-                      <Input type="email" value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} placeholder="email@societe.com" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Téléphone</Label>
-                      <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="06 XX XX XX XX" className="h-8 text-sm" />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleCreateNewClient} disabled={creatingClient} className="gap-1">
-                      <UserPlus className="h-3 w-3" /> {creatingClient ? "Création…" : "Créer et sélectionner"}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setShowCreateClient(false)}>Annuler</Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Editable recipient fields */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Nom du destinataire</Label>
-                  <Input value={contractRecipientName} onChange={e => setContractRecipientName(e.target.value)} className="h-8 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Email du destinataire</Label>
-                  <Input type="email" value={contractRecipientEmail} onChange={e => setContractRecipientEmail(e.target.value)} className="h-8 text-sm" />
-                </div>
-              </div>
+              <p className="font-medium">
+                {proposal.recipient_name || proposal.client_name}
+                <span className="text-muted-foreground font-normal"> &lt;{proposal.client_email}&gt;</span>
+              </p>
             </div>
 
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={contractEmailSubject} onChange={e => setContractEmailSubject(e.target.value)} /></div>
@@ -1546,7 +1547,6 @@ Nelly Sabde - Les Conférenciers`);
 
             {/* Recap */}
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>📧 <strong>Destinataire :</strong> {contractRecipientName || "—"} &lt;{contractRecipientEmail || "—"}&gt;</p>
               <p>🎤 <strong>Conférencier :</strong> {speakerSummary}</p>
               {getContractSignUrl() && <p>🔗 <strong>Lien signature :</strong> {getContractSignUrl()}</p>}
             </div>
