@@ -263,13 +263,41 @@ const ContractSign = () => {
           {/* Signature section */}
           <div className="border-t border-gray-200 p-6">
             {signed ? (
-              <div className="text-center space-y-3">
-                <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-3 rounded-full text-sm font-medium">
-                  <CheckCircle className="h-5 w-5" />
-                  Contrat signé{contract.signer_name ? ` par ${contract.signer_name}` : ""}
-                  {contract.signed_at ? ` le ${formatDateLong(contract.signed_at)}` : ""}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-3 rounded-full text-sm font-medium">
+                    <CheckCircle className="h-5 w-5" />
+                    Contrat signé{contract.signer_name ? ` par ${contract.signer_name}` : ""}
+                    {contract.signed_at ? ` le ${formatDateLong(contract.signed_at)}` : ""}
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500">Vous recevrez une confirmation par email.</p>
+                {/* Bloc signature manuscrite (utilisé pour la génération PDF) */}
+                <div className="grid grid-cols-2 gap-6 mt-4">
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50/50 min-h-[140px]">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Le Client</p>
+                    <p className="text-[11px] text-gray-500 mb-2">{clientName}</p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">
+                      Bon pour accord
+                    </p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">
+                      {contract.signer_name || signerName}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-2">
+                      Signé électroniquement le {contract.signed_at ? formatDateLong(contract.signed_at) : formatDateLong(new Date().toISOString())}
+                    </p>
+                  </div>
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50/50 min-h-[140px]">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Les Conférenciers</p>
+                    <p className="text-[11px] text-gray-500 mb-2">Société Eve</p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">
+                      Bon pour accord
+                    </p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">
+                      Nelly Sabde
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-2">Vous recevrez une confirmation par email avec le contrat signé en pièce jointe.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -281,13 +309,18 @@ const ContractSign = () => {
                   <div className="space-y-2">
                     <Label>Votre nom complet (signature)</Label>
                     <Input value={signerName} onChange={e => setSignerName(e.target.value)} placeholder="Prénom NOM" className="text-center text-lg font-serif" />
+                    {signerName && (
+                      <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] text-center mt-2">
+                        Bon pour accord — {signerName}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg">
                     <Checkbox id="accept" checked={accepted} onCheckedChange={(v) => setAccepted(v === true)} />
                     <label htmlFor="accept" className="text-sm leading-relaxed cursor-pointer">
                       Je soussigné(e) <strong>{signerName || "___"}</strong>, représentant la société <strong>{clientName}</strong>,
                       déclare avoir pris connaissance des conditions ci-dessus et les accepte sans réserve.
-                      <br /><span className="text-xs text-gray-500">Mention « Bon pour accord »</span>
+                      <br /><span className="text-xs text-gray-500">La mention « Bon pour accord » sera apposée automatiquement.</span>
                     </label>
                   </div>
                   <Button className="w-full py-6 text-base" onClick={handleSign} disabled={signing || !signerName.trim() || !accepted}>
