@@ -26,6 +26,8 @@ type ContractData = {
   created_at: string;
   contract_lines: ContractLine[] | null;
   discount_percent: number | null;
+  selected_speaker_id: string | null;
+  selected_speaker?: { name: string; gender: string | null } | null;
   proposal: {
     client_name: string;
     client_email: string;
@@ -75,7 +77,13 @@ const ContractView = () => {
         `)
         .eq("id", id!)
         .single();
-      const c = data as any;
+      let c = data as any;
+
+      // Fetch selected speaker if defined on contract
+      if (c?.selected_speaker_id) {
+        const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", c.selected_speaker_id).maybeSingle();
+        if (sp) c.selected_speaker = sp;
+      }
       setContract(c);
 
       if (c?.proposal?.client_id) {
@@ -97,7 +105,8 @@ const ContractView = () => {
   const proposal = contract.proposal as any;
   const speakers = proposal?.proposal_speakers || [];
   const speakerNames = speakers.map((s: any) => s.speakers?.name || "—").join(", ");
-  const firstSpeaker = speakers[0]?.speakers;
+  // Priority: contract.selected_speaker (manual selection) → first proposal speaker
+  const firstSpeaker = contract.selected_speaker || speakers[0]?.speakers;
   const speakerGender = firstSpeaker?.gender === "female" ? "Madame" : "Monsieur";
 
   // Use contract_lines if available, else fallback
