@@ -26,6 +26,8 @@ type ContractData = {
   created_at: string;
   contract_lines: ContractLine[] | null;
   discount_percent: number | null;
+  selected_speaker_id: string | null;
+  selected_speaker?: { name: string; gender: string | null } | null;
   proposal: {
     client_name: string;
     client_email: string;
