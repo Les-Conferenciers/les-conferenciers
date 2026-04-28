@@ -595,9 +595,11 @@ const AdminProposalsContent = () => {
     return () => clearTimeout(timer);
   }, [clientEmail, proposals, allClients]);
 
-  // Load leads matching the client email — to consult their original message while drafting the proposal
+  // Load leads matching the client email — to consult their original message while drafting/editing the proposal.
+  // Also auto-prefill event details (date, location, audience size) from the most recent lead, when those fields are empty.
   useEffect(() => {
-    if (!clientEmail || clientEmail.length < 5 || !clientEmail.includes("@")) {
+    const targetEmail = editDialogOpen ? editClientEmail : clientEmail;
+    if (!targetEmail || targetEmail.length < 5 || !targetEmail.includes("@")) {
       setMatchingLeads([]);
       return;
     }
@@ -605,12 +607,22 @@ const AdminProposalsContent = () => {
       const { data } = await supabase
         .from("simulator_leads")
         .select("*")
-        .ilike("email", clientEmail.trim())
+        .ilike("email", targetEmail.trim())
         .order("created_at", { ascending: false });
-      setMatchingLeads((data as any[]) || []);
+      const leads = (data as any[]) || [];
+      setMatchingLeads(leads);
+
+      // Auto-prefill from latest lead (only when creating, and only empty fields)
+      if (!editDialogOpen && leads.length > 0) {
+        const latest = leads[0];
+        if (latest.event_date && !eventDateText) setEventDateText(latest.event_date);
+        if (latest.location && !eventLocation) setEventLocation(latest.location);
+        if (latest.audience_size && !audienceSize) setAudienceSize(latest.audience_size);
+      }
     }, 350);
     return () => clearTimeout(timer);
-  }, [clientEmail]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientEmail, editClientEmail, editDialogOpen]);
 
   const fetchProposals = async () => {
     setLoading(true);
