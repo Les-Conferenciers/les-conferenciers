@@ -174,7 +174,7 @@ const ContractSign = () => {
           <p className="text-sm text-[#1a2332]/60 mt-1">Bon de commande</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div ref={printRef} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-[#1a2332] px-6 py-4">
             <div className="flex items-center gap-2 text-white">
               <FileText className="h-5 w-5" />
