@@ -200,14 +200,43 @@ Nelly Sabde - Les Conférenciers
   </div>
 </body></html>`;
 
+    // Look up the most recent lead for this client email to thread the proposal email as a reply
+    const { data: latestLead } = await adminClient
+      .from("simulator_leads")
+      .select("confirmation_message_id")
+      .ilike("email", proposal.client_email.trim())
+      .not("confirmation_message_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Resend stores message ids without angle brackets; for In-Reply-To/References they must be wrapped in <...>
+    const buildMessageIdRef = (rawId: string) => {
+      const trimmed = rawId.trim();
+      if (!trimmed) return null;
+      if (trimmed.startsWith("<") && trimmed.endsWith(">")) return trimmed;
+      // Resend message ids are UUIDs; the actual Message-ID header uses the resend.dev domain
+      const idCore = trimmed.includes("@") ? trimmed : `${trimmed}@resend.dev`;
+      return `<${idCore}>`;
+    };
+    const inReplyToRef = latestLead?.confirmation_message_id ? buildMessageIdRef(latestLead.confirmation_message_id) : null;
+
+    const finalSubject = inReplyToRef && !/^re\s*:/i.test(emailSubject) ? `Re: ${emailSubject}` : emailSubject;
+
     const emailPayload: any = {
       from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
       to: [proposal.client_email],
-      subject: emailSubject,
+      subject: finalSubject,
       html: emailHtml,
     };
     if (ccList.length > 0) {
       emailPayload.cc = ccList;
+    }
+    if (inReplyToRef) {
+      emailPayload.headers = {
+        "In-Reply-To": inReplyToRef,
+        "References": inReplyToRef,
+      };
     }
 
     const resendRes = await fetch("https://api.resend.com/emails", {

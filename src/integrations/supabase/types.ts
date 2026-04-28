@@ -654,6 +654,7 @@ export type Database = {
           audience_size: string | null
           budget: string | null
           company: string | null
+          confirmation_message_id: string | null
           created_at: string
           email: string
           event_date: string | null
@@ -673,6 +674,7 @@ export type Database = {
           audience_size?: string | null
           budget?: string | null
           company?: string | null
+          confirmation_message_id?: string | null
           created_at?: string
           email: string
           event_date?: string | null
@@ -692,6 +694,7 @@ export type Database = {
           audience_size?: string | null
           budget?: string | null
           company?: string | null
+          confirmation_message_id?: string | null
           created_at?: string
           email?: string
           event_date?: string | null

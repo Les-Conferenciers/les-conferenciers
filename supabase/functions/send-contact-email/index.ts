@@ -90,38 +90,41 @@ serve(async (req) => {
       });
     }
 
-    // ─── Mode 2: Contact form (internal notification — no signature needed) ───
-    const { name, email, company, phone, eventDate, eventType, message } = body;
+    // ─── Mode 2: Contact form (internal notification + auto-confirmation to lead) ───
+    const { name, email, company, phone, eventDate, eventLocation, audienceSize, message } = body;
     if (!name || !email || !message) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Save as lead in simulator_leads table
+    // Save as lead in simulator_leads table — and capture the lead id so we can store the confirmation message id
+    let leadId: string | null = null;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, supabaseKey);
     try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const sb = createClient(supabaseUrl, supabaseKey);
       const nameParts = name.trim().split(/\s+/);
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
-      await sb.from("simulator_leads").insert({
+      const { data: leadRow } = await sb.from("simulator_leads").insert({
         first_name: firstName,
         last_name: lastName,
         email,
-        event_type: eventType || null,
         additional_info: message,
         lead_type: "Contact",
         company: company || null,
         phone: phone || null,
         event_date: eventDate || null,
-      });
+        location: eventLocation || null,
+        audience_size: audienceSize || null,
+      }).select("id").single();
+      leadId = leadRow?.id || null;
     } catch (e) {
       console.error("Failed to save contact lead:", e);
     }
 
-    const emailBody = `
+    const internalEmailBody = `
 Nouvelle demande de devis reçue via le site web :
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -136,7 +139,8 @@ ${phone ? `Téléphone : ${phone}` : ""}
 🎤 DÉTAILS DE L'ÉVÉNEMENT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${eventDate ? `Date : ${eventDate}` : "Date : Non précisée"}
-${eventType ? `Type : ${eventType}` : "Type : Non précisé"}
+${eventLocation ? `Lieu : ${eventLocation}` : "Lieu : Non précisé"}
+${audienceSize ? `Auditoire : ${audienceSize} personnes` : "Auditoire : Non précisé"}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💬 MESSAGE
@@ -144,22 +148,72 @@ ${eventType ? `Type : ${eventType}` : "Type : Non précisé"}
 ${message}
     `.trim();
 
-    const emailRes = await fetch("https://api.resend.com/emails", {
+    const internalRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
         to: ["nellysabde@lesconferenciers.com"],
         subject: `Nouvelle demande de devis - ${name}${company ? ` (${company})` : ""}`,
-        text: emailBody,
+        text: internalEmailBody,
         reply_to: email,
       }),
     });
 
-    if (!emailRes.ok) {
-      const errData = await emailRes.text();
-      console.error("Resend error:", errData);
-      throw new Error(`Email sending failed [${emailRes.status}]: ${errData}`);
+    if (!internalRes.ok) {
+      const errData = await internalRes.text();
+      console.error("Resend internal error:", errData);
+      throw new Error(`Email sending failed [${internalRes.status}]: ${errData}`);
+    }
+
+    // ─── Auto-confirmation to the prospect (allows future proposal email to thread as a "Re:") ───
+    const firstNameOnly = name.trim().split(/\s+/)[0] || "";
+    const confirmationSubject = `Votre demande - Les Conférenciers`;
+    const confirmationHtml = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+    ${emailHeader}
+    <div style="padding:30px;color:#333;font-size:15px;line-height:1.6;">
+      <p>Bonjour${firstNameOnly ? ` ${firstNameOnly}` : ""},</p>
+      <p>Merci pour votre demande, je l'ai bien reçue et reviens vers vous très rapidement avec une proposition adaptée à votre événement.</p>
+      <p>Belle journée,</p>
+      <p><strong>Nelly Sabde</strong><br/>Agence Les Conférenciers<br/>📞 06 95 93 97 91</p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+      <p style="font-size:12px;color:#888;"><em>Pour rappel, votre message :</em></p>
+      <blockquote style="border-left:3px solid #d9c9a3;padding:8px 12px;margin:0;color:#555;font-size:13px;white-space:pre-wrap;">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</blockquote>
+    </div>
+    ${emailSignature}
+    ${emailFooter}
+  </div>
+</body></html>`;
+
+    try {
+      const confirmRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: "Nelly Sabde <nellysabde@lesconferenciers.com>",
+          to: [email],
+          subject: confirmationSubject,
+          html: confirmationHtml,
+          reply_to: "nellysabde@lesconferenciers.com",
+        }),
+      });
+      if (confirmRes.ok) {
+        const confirmData = await confirmRes.json();
+        const confirmationMessageId = confirmData?.id || null;
+        if (leadId && confirmationMessageId) {
+          await sb.from("simulator_leads")
+            .update({ confirmation_message_id: confirmationMessageId } as any)
+            .eq("id", leadId);
+        }
+      } else {
+        console.error("Confirmation email failed:", await confirmRes.text());
+      }
+    } catch (e) {
+      console.error("Confirmation email exception:", e);
     }
 
     return new Response(JSON.stringify({ success: true }), {
