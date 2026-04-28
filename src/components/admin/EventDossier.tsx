@@ -1410,8 +1410,49 @@ Nelly Sabde - Les Conférenciers`);
               })()}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} /></div>
+            {/* Speaker selector — allows changing the assigned speaker even after contract creation */}
+            {proposal.proposal_speakers.length > 1 && (
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                <Label className="text-xs font-semibold flex items-center gap-2">
+                  <User className="h-3.5 w-3.5" /> Conférencier retenu pour ce contrat
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {proposal.proposal_speakers.map(ps => {
+                    const isSelected = event?.selected_speaker_id === ps.speaker_id;
+                    return (
+                      <button
+                        key={ps.speaker_id}
+                        type="button"
+                        onClick={async () => {
+                          if (!ps.speaker_id || !event) return;
+                          await supabase.from("events").update({ selected_speaker_id: ps.speaker_id } as any).eq("id", event.id);
+                          // Rebuild lines for the newly selected speaker
+                          const newLines = [{
+                            id: generateId(),
+                            label: ps.speakers?.name || "Conférencier",
+                            amount_ht: ps.total_price || 0,
+                            tva_rate: 20,
+                            type: "speaker" as const,
+                          }];
+                          setContractLines(newLines);
+                          fetchData();
+                          toast.success("Conférencier mis à jour");
+                        }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-md border text-xs transition-all",
+                          isSelected ? "border-primary bg-primary text-primary-foreground font-medium" : "border-border bg-background hover:border-primary/50"
+                        )}
+                      >
+                        {ps.speakers?.name || "—"}
+                        {isSelected && <CheckCircle className="h-3 w-3 inline-block ml-1" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground">Modifier ici si le conférencier choisi diffère de la proposition initiale.</p>
+              </div>
+            )}
+
               <div className="space-y-1"><Label className="text-xs">Horaires</Label><Input placeholder="14h00 - 15h30" value={eventTime} onChange={e => setEventTime(e.target.value)} /></div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Lieu</Label><Input placeholder="Hôtel Marriott, Paris" value={eventLocation} onChange={e => setEventLocation(e.target.value)} /></div>
