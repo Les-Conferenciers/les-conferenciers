@@ -57,6 +57,7 @@ const ContractSign = () => {
   const [accepted, setAccepted] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -67,7 +68,10 @@ const ContractSign = () => {
         .single();
       const c = data as any;
       setContract(c);
-      if (c?.status === "signed") setSigned(true);
+      if (c?.status === "signed") {
+        setSigned(true);
+        if (c.signer_name) setSignerName(c.signer_name);
+      }
 
       if (c?.proposal?.client_id) {
         const { data: cl } = await supabase.from("clients").select("company_name, contact_name, address, city, siret").eq("id", c.proposal.client_id).single();
@@ -81,13 +85,56 @@ const ContractSign = () => {
     fetchAll();
   }, [token]);
 
+  const generateAndUploadPdf = async (contractId: string) => {
+    if (!printRef.current) return;
+    try {
+      // Wait a tick for DOM to settle (signature block visible)
+      await new Promise((r) => setTimeout(r, 300));
+      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
+        heightLeft -= pageH;
+      }
+      const pdfBlob = pdf.output("blob");
+      const fileName = `Contrat-signé-${contractId.slice(0, 8)}.pdf`;
+      const path = `${contractId}/${Date.now()}-signed.pdf`;
+      const { error: upErr } = await supabase.storage.from("signed-contracts").upload(path, pdfBlob, { contentType: "application/pdf", upsert: false });
+      if (upErr) { console.error(upErr); return; }
+      await supabase.from("signed_contract_files" as any).insert({
+        contract_id: contractId,
+        file_name: fileName,
+        file_path: path,
+        file_size: pdfBlob.size,
+        mime_type: "application/pdf",
+      } as any);
+    } catch (e) {
+      console.error("PDF gen failed", e);
+    }
+  };
+
   const handleSign = async () => {
     if (!contract || !signerName.trim() || !accepted) return;
     setSigning(true);
     const { error } = await supabase.from("contracts").update({
       status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: new Date().toISOString(),
     } as any).eq("token", token!);
-    if (error) { toast.error("Erreur lors de la signature"); } else { setSigned(true); toast.success("Contrat signé avec succès !"); }
+    if (error) { toast.error("Erreur lors de la signature"); setSigning(false); return; }
+    setSigned(true);
+    toast.success("Contrat signé avec succès !");
+    // Génère le PDF après mise à jour de l'UI (la signature manuscrite doit apparaître)
+    setTimeout(() => { generateAndUploadPdf(contract.id); }, 600);
     setSigning(false);
   };
 
