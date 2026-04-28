@@ -70,6 +70,7 @@ const ContractView = () => {
         .from("contracts")
         .select(`
           *,
+          selected_speaker:speakers!contracts_selected_speaker_id_fkey(name, gender),
           proposal:proposals(
             client_name, client_email, recipient_name, client_id,
             proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(name, gender))
@@ -77,7 +78,13 @@ const ContractView = () => {
         `)
         .eq("id", id!)
         .single();
-      const c = data as any;
+      let c = data as any;
+
+      // Fallback fetch for selected speaker if FK relation fails
+      if (c?.selected_speaker_id && !c?.selected_speaker) {
+        const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", c.selected_speaker_id).maybeSingle();
+        if (sp) c.selected_speaker = sp;
+      }
       setContract(c);
 
       if (c?.proposal?.client_id) {
@@ -99,7 +106,8 @@ const ContractView = () => {
   const proposal = contract.proposal as any;
   const speakers = proposal?.proposal_speakers || [];
   const speakerNames = speakers.map((s: any) => s.speakers?.name || "—").join(", ");
-  const firstSpeaker = speakers[0]?.speakers;
+  // Priority: contract.selected_speaker (manual selection) → first proposal speaker
+  const firstSpeaker = contract.selected_speaker || speakers[0]?.speakers;
   const speakerGender = firstSpeaker?.gender === "female" ? "Madame" : "Monsieur";
 
   // Use contract_lines if available, else fallback
