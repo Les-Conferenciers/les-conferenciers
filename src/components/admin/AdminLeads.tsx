@@ -84,6 +84,17 @@ const AdminLeads = () => {
 
   const getMessageSnippet = (lead: Lead) => lead.additional_info || lead.objective || "";
 
+  const handleDelete = async (lead: Lead) => {
+    const { error } = await supabase.from("simulator_leads").delete().eq("id", lead.id);
+    if (error) {
+      toast.error("Erreur lors de la suppression");
+      return;
+    }
+    toast.success("Lead supprimé");
+    setLeads(prev => prev.filter(l => l.id !== lead.id));
+    if (detailLead?.id === lead.id) setDetailLead(null);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
