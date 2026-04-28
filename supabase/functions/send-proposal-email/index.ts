@@ -222,7 +222,9 @@ Nelly Sabde - Les Conférenciers
     };
     const inReplyToRef = latestLead?.confirmation_message_id ? buildMessageIdRef(latestLead.confirmation_message_id) : null;
 
-    const finalSubject = inReplyToRef && !/^re\s*:/i.test(emailSubject) ? `Re: ${emailSubject}` : emailSubject;
+    // Gmail/Outlook usually require both thread headers AND the same subject to group emails.
+    // When we can reference the confirmation email, keep the proposal in that conversation.
+    const finalSubject = inReplyToRef ? "Re: Votre demande - Les Conférenciers" : emailSubject;
 
     const emailPayload: any = {
       from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
