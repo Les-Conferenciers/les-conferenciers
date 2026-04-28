@@ -1053,6 +1053,7 @@ const AdminProposalsContent = () => {
       setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
     }
     setEditSelectedSpeakers(proposalSpeakers);
+    setShowLeadsPanel(true);
     setEditDialogOpen(true);
   };
 
