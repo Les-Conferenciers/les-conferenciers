@@ -597,7 +597,9 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendContractEmail = async () => {
     if (!contract) return;
-    if (!contractRecipientEmail) { toast.error("Email du destinataire requis"); return; }
+    // Auto-use proposal recipient — no manual selector needed
+    const targetEmail = proposal.client_email;
+    if (!targetEmail) { toast.error("Aucun email client sur la proposition"); return; }
     setSendingContract(true);
     try {
       const { error } = await supabase.functions.invoke("send-contract-email", {
@@ -605,11 +607,15 @@ Nelly Sabde - Les Conférenciers`);
           contract_id: contract.id,
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
-          recipient_email: contractRecipientEmail,
+          recipient_email: targetEmail,
         },
       });
       if (error) throw error;
       await supabase.from("contracts").update({ status: "sent" } as any).eq("id", contract.id);
+      // Mark "Contrat envoyé" milestone on event
+      if (event) {
+        await supabase.from("events").update({ contract_sent_speaker_at: new Date().toISOString() } as any).eq("id", event.id);
+      }
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
       fetchData(); onUpdate();
