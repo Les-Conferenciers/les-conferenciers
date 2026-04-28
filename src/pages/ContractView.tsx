@@ -21,6 +21,8 @@ type ContractData = {
   event_format: string | null;
   event_description: string | null;
   status: string;
+  signer_name: string | null;
+  signed_at: string | null;
   created_at: string;
   contract_lines: ContractLine[] | null;
   discount_percent: number | null;
@@ -209,13 +211,26 @@ const ContractView = () => {
 
         {/* Signatures */}
         <div className="grid grid-cols-2 gap-8 mb-12">
-          <div className="border rounded-lg p-6 min-h-[120px]">
+          <div className="border rounded-lg p-6 min-h-[140px]">
             <p className="font-semibold mb-1">Le Client</p>
-            <p className="text-sm text-gray-500">{clientName}</p>
+            <p className="text-sm text-gray-500 mb-2">{clientName}</p>
+            {contract.status === "signed" && contract.signer_name && (
+              <>
+                <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">Bon pour accord</p>
+                <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">{contract.signer_name}</p>
+                <p className="text-[10px] text-gray-400 mt-2">Signé électroniquement le {formatDateLong(contract.signed_at)}</p>
+              </>
+            )}
           </div>
-          <div className="border rounded-lg p-6 min-h-[120px]">
+          <div className="border rounded-lg p-6 min-h-[140px]">
             <p className="font-semibold mb-1">Les Conférenciers</p>
-            <p className="text-sm text-gray-500">Société Eve</p>
+            <p className="text-sm text-gray-500 mb-2">Société Eve</p>
+            {contract.status === "signed" && (
+              <>
+                <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">Bon pour accord</p>
+                <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">Nelly Sabde</p>
+              </>
+            )}
           </div>
         </div>
 

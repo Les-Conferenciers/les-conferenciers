@@ -80,6 +80,31 @@ const AdminEventDossiers = () => {
   const [directAudienceSize, setDirectAudienceSize] = useState("");
   const [directCreating, setDirectCreating] = useState(false);
 
+  // Visio quick scheduler (déclenché depuis la pipeline)
+  const [visioDialog, setVisioDialog] = useState<{ eventId: string; date: string; time: string } | null>(null);
+  const [savingVisio, setSavingVisio] = useState(false);
+
+  const openVisioPicker = (eventRow: any) => {
+    if (!eventRow) { toast.error("Créez d'abord le dossier événement"); return; }
+    setVisioDialog({
+      eventId: eventRow.id,
+      date: eventRow.visio_date || "",
+      time: eventRow.visio_time || "",
+    });
+  };
+
+  const handleSaveVisio = async () => {
+    if (!visioDialog) return;
+    setSavingVisio(true);
+    const { error } = await supabase.from("events").update({
+      visio_date: visioDialog.date || null,
+      visio_time: visioDialog.time || null,
+    } as any).eq("id", visioDialog.eventId);
+    if (error) toast.error("Erreur");
+    else { toast.success("Visio planifiée"); setVisioDialog(null); fetchData(); }
+    setSavingVisio(false);
+  };
+
   const fetchData = async () => {
     setLoading(true);
     const [pRes, cRes, iRes, eRes] = await Promise.all([
@@ -207,14 +232,13 @@ const AdminEventDossiers = () => {
           toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
         { key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,
           toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_deposit_paid_at", valueType: "date" } : undefined },
-        { key: "speaker_contract_sent", label: "Contrat envoyé conférencier", shortLabel: "Contrat speaker", doneAt: contractSentSpeaker,
-          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "contract_sent_speaker_at", valueType: "timestamp" } : undefined },
-        { key: "speaker_ack", label: "AR conférencier", shortLabel: "AR speaker", doneAt: speakerAck,
+        // Étapes 4-5-6 fusionnées : envoi contrat + AR + signature → "AR speaker" (déclencheur = speaker_acknowledgment_at)
+        { key: "speaker_ack", label: "AR speaker (contrat envoyé / signé)", shortLabel: "AR speaker",
+          doneAt: speakerAck || speakerSigned || contractSentSpeaker,
           toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_acknowledgment_at", valueType: "date" } : undefined },
-        { key: "speaker_signed", label: "Contrat signé conférencier", shortLabel: "Signé speaker", doneAt: speakerSigned,
-          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_signed_contract_at", valueType: "date" } : undefined },
         { key: "visio", label: "Visio préparatoire", shortLabel: "Visio", doneAt: visioDate,
-          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "visio_date", valueType: "date" } : undefined },
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "visio_date", valueType: "date" } : undefined,
+          customAction: "visio" },
         { key: "liaison", label: "Feuille de liaison", shortLabel: "Liaison", doneAt: liaisonSent,
           toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "liaison_sheet_sent_at", valueType: "timestamp" } : undefined },
         { key: "invoice_sent", label: "Facture envoyée", shortLabel: "Facture env.", doneAt: invoiceSentClient,
@@ -572,7 +596,12 @@ const AdminEventDossiers = () => {
                         )}
                       </TableCell>
                       <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
-                        <ContractPipeline stages={r.stages} onChange={fetchData} compact />
+                        <ContractPipeline
+                          stages={r.stages}
+                          onChange={fetchData}
+                          compact
+                          onCustomAction={(key) => { if (key === "visio") openVisioPicker(r.event); }}
+                        />
                       </TableCell>
                       <TableCell className="py-3">
                         <div className="space-y-1">
@@ -772,6 +801,34 @@ const AdminEventDossiers = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Visio quick scheduler */}
+      <Dialog open={!!visioDialog} onOpenChange={(open) => !open && setVisioDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-serif flex items-center gap-2"><Video className="h-4 w-4" /> Planifier la visio préparatoire</DialogTitle>
+          </DialogHeader>
+          {visioDialog && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Date</Label>
+                  <Input type="date" value={visioDialog.date} onChange={(e) => setVisioDialog({ ...visioDialog, date: e.target.value })} className="h-9" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Heure</Label>
+                  <Input type="time" value={visioDialog.time} onChange={(e) => setVisioDialog({ ...visioDialog, time: e.target.value })} className="h-9" />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Renseigner une date marquera l'étape comme planifiée. Laisser vide réinitialisera l'étape.</p>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setVisioDialog(null)}>Annuler</Button>
+                <Button size="sm" onClick={handleSaveVisio} disabled={savingVisio}>{savingVisio ? "Enregistrement…" : "Enregistrer"}</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

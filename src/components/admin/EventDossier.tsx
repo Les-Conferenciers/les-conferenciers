@@ -726,7 +726,7 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
-    setLiaisonNotes(event?.visio_notes || "");
+    setLiaisonNotes(event?.visio_notes || (contract as any)?.event_description || "");
     setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur");
     setLiaisonSalleSetup(event?.room_setup || "Salle installée en largeur avec une allée centrale si possible");
     setLiaisonArrival(event?.arrival_info || "");
@@ -1136,13 +1136,14 @@ Nelly Sabde - Les Conférenciers`);
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              contract.status === "signed" ? "bg-green-100 text-green-700" :
-              contract.status === "sent" ? "bg-amber-100 text-amber-700" :
-              "bg-muted text-muted-foreground"
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              contract.status === "signed"
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
             }`}>
-              {contract.status === "signed" ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}` :
-               contract.status === "sent" ? "Envoyé" : "Brouillon"}
+              {contract.status === "signed"
+                ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
+                : (contract.status === "sent" ? "⏳ Non signé (envoyé)" : "⚠️ Non signé (brouillon)")}
             </span>
             {(contract.status === "draft" || contract.status === "sent") && (
               <>
@@ -1591,7 +1592,7 @@ Nelly Sabde - Les Conférenciers`);
                 <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Arrivée du conférencier sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
                 <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Besoins techniques</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
               </div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Configuration de la salle</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Salle en largeur avec allée centrale" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Détails techniques</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Configuration salle, micro HF, écran…" className="h-8 text-sm" /></div>
               <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
               
               {/* Preview of what the liaison sheet will contain */}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { COMPANY } from "@/lib/companyConfig";
@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 type ContractLine = {
   id: string;
@@ -55,6 +57,7 @@ const ContractSign = () => {
   const [accepted, setAccepted] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -65,7 +68,10 @@ const ContractSign = () => {
         .single();
       const c = data as any;
       setContract(c);
-      if (c?.status === "signed") setSigned(true);
+      if (c?.status === "signed") {
+        setSigned(true);
+        if (c.signer_name) setSignerName(c.signer_name);
+      }
 
       if (c?.proposal?.client_id) {
         const { data: cl } = await supabase.from("clients").select("company_name, contact_name, address, city, siret").eq("id", c.proposal.client_id).single();
@@ -79,13 +85,56 @@ const ContractSign = () => {
     fetchAll();
   }, [token]);
 
+  const generateAndUploadPdf = async (contractId: string) => {
+    if (!printRef.current) return;
+    try {
+      // Wait a tick for DOM to settle (signature block visible)
+      await new Promise((r) => setTimeout(r, 300));
+      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
+        heightLeft -= pageH;
+      }
+      const pdfBlob = pdf.output("blob");
+      const fileName = `Contrat-signé-${contractId.slice(0, 8)}.pdf`;
+      const path = `${contractId}/${Date.now()}-signed.pdf`;
+      const { error: upErr } = await supabase.storage.from("signed-contracts").upload(path, pdfBlob, { contentType: "application/pdf", upsert: false });
+      if (upErr) { console.error(upErr); return; }
+      await supabase.from("signed_contract_files" as any).insert({
+        contract_id: contractId,
+        file_name: fileName,
+        file_path: path,
+        file_size: pdfBlob.size,
+        mime_type: "application/pdf",
+      } as any);
+    } catch (e) {
+      console.error("PDF gen failed", e);
+    }
+  };
+
   const handleSign = async () => {
     if (!contract || !signerName.trim() || !accepted) return;
     setSigning(true);
     const { error } = await supabase.from("contracts").update({
       status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: new Date().toISOString(),
     } as any).eq("token", token!);
-    if (error) { toast.error("Erreur lors de la signature"); } else { setSigned(true); toast.success("Contrat signé avec succès !"); }
+    if (error) { toast.error("Erreur lors de la signature"); setSigning(false); return; }
+    setSigned(true);
+    toast.success("Contrat signé avec succès !");
+    // Génère le PDF après mise à jour de l'UI (la signature manuscrite doit apparaître)
+    setTimeout(() => { generateAndUploadPdf(contract.id); }, 600);
     setSigning(false);
   };
 
@@ -125,7 +174,7 @@ const ContractSign = () => {
           <p className="text-sm text-[#1a2332]/60 mt-1">Bon de commande</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div ref={printRef} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-[#1a2332] px-6 py-4">
             <div className="flex items-center gap-2 text-white">
               <FileText className="h-5 w-5" />
@@ -214,13 +263,41 @@ const ContractSign = () => {
           {/* Signature section */}
           <div className="border-t border-gray-200 p-6">
             {signed ? (
-              <div className="text-center space-y-3">
-                <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-3 rounded-full text-sm font-medium">
-                  <CheckCircle className="h-5 w-5" />
-                  Contrat signé{contract.signer_name ? ` par ${contract.signer_name}` : ""}
-                  {contract.signed_at ? ` le ${formatDateLong(contract.signed_at)}` : ""}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-3 rounded-full text-sm font-medium">
+                    <CheckCircle className="h-5 w-5" />
+                    Contrat signé{contract.signer_name ? ` par ${contract.signer_name}` : ""}
+                    {contract.signed_at ? ` le ${formatDateLong(contract.signed_at)}` : ""}
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500">Vous recevrez une confirmation par email.</p>
+                {/* Bloc signature manuscrite (utilisé pour la génération PDF) */}
+                <div className="grid grid-cols-2 gap-6 mt-4">
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50/50 min-h-[140px]">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Le Client</p>
+                    <p className="text-[11px] text-gray-500 mb-2">{clientName}</p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">
+                      Bon pour accord
+                    </p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">
+                      {contract.signer_name || signerName}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-2">
+                      Signé électroniquement le {contract.signed_at ? formatDateLong(contract.signed_at) : formatDateLong(new Date().toISOString())}
+                    </p>
+                  </div>
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50/50 min-h-[140px]">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Les Conférenciers</p>
+                    <p className="text-[11px] text-gray-500 mb-2">Société Eve</p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">
+                      Bon pour accord
+                    </p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">
+                      Nelly Sabde
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-2">Vous recevrez une confirmation par email avec le contrat signé en pièce jointe.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -232,13 +309,18 @@ const ContractSign = () => {
                   <div className="space-y-2">
                     <Label>Votre nom complet (signature)</Label>
                     <Input value={signerName} onChange={e => setSignerName(e.target.value)} placeholder="Prénom NOM" className="text-center text-lg font-serif" />
+                    {signerName && (
+                      <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] text-center mt-2">
+                        Bon pour accord — {signerName}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg">
                     <Checkbox id="accept" checked={accepted} onCheckedChange={(v) => setAccepted(v === true)} />
                     <label htmlFor="accept" className="text-sm leading-relaxed cursor-pointer">
                       Je soussigné(e) <strong>{signerName || "___"}</strong>, représentant la société <strong>{clientName}</strong>,
                       déclare avoir pris connaissance des conditions ci-dessus et les accepte sans réserve.
-                      <br /><span className="text-xs text-gray-500">Mention « Bon pour accord »</span>
+                      <br /><span className="text-xs text-gray-500">La mention « Bon pour accord » sera apposée automatiquement.</span>
                     </label>
                   </div>
                   <Button className="w-full py-6 text-base" onClick={handleSign} disabled={signing || !signerName.trim() || !accepted}>

@@ -1,7 +1,6 @@
 import React from "react";
-import { Check, Circle } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -10,14 +9,14 @@ export type PipelineStage = {
   label: string;
   shortLabel?: string;
   doneAt: string | null | undefined;
-  /** Source = "auto" si déclenché par une action système (envoi mail, signature…), "manual" si coché à la main */
   toggle?: {
     table: "events" | "contracts";
     rowId: string | null;
     field: string;
-    /** type de stockage : date ISO simple ou timestamp complet */
     valueType?: "date" | "timestamp";
   };
+  /** Si défini, le clic déclenche onCustomAction(key, stage) au lieu du toggle direct (ex: ouvrir un picker date/heure) */
+  customAction?: string;
 };
 
 const formatDate = (d: string | null | undefined) => {
@@ -31,10 +30,15 @@ type Props = {
   stages: PipelineStage[];
   onChange?: () => void;
   compact?: boolean;
+  onCustomAction?: (key: string, stage: PipelineStage) => void;
 };
 
-const ContractPipeline = ({ stages, onChange, compact = false }: Props) => {
+const ContractPipeline = ({ stages, onChange, compact = false, onCustomAction }: Props) => {
   const handleToggle = async (stage: PipelineStage) => {
+    if (stage.customAction && onCustomAction) {
+      onCustomAction(stage.customAction, stage);
+      return;
+    }
     if (!stage.toggle) return;
     const { table, rowId, field, valueType = "timestamp" } = stage.toggle;
     if (!rowId) {
@@ -61,13 +65,18 @@ const ContractPipeline = ({ stages, onChange, compact = false }: Props) => {
         const done = !!stage.doneAt;
         const isLast = idx === stages.length - 1;
         const nextDone = !isLast && !!stages[idx + 1].doneAt;
+        const clickable = !!stage.toggle?.rowId || (!!stage.customAction && !!onCustomAction);
         return (
           <React.Fragment key={stage.key}>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); handleToggle(stage); }}
-              disabled={!stage.toggle?.rowId}
-              title={stage.toggle?.rowId ? (done ? "Cliquer pour réinitialiser" : "Cliquer pour marquer comme fait") : "Disponible une fois le contrat créé"}
+              disabled={!clickable}
+              title={
+                stage.customAction
+                  ? (done ? `Planifié le ${formatDate(stage.doneAt)} — cliquer pour modifier` : "Cliquer pour planifier")
+                  : (stage.toggle?.rowId ? (done ? "Cliquer pour réinitialiser" : "Cliquer pour marquer comme fait") : "Disponible une fois le contrat créé")
+              }
               className={cn(
                 "group flex flex-col items-center gap-1 px-1.5 py-1 rounded-md transition-colors min-w-[64px]",
                 "hover:bg-muted/60 disabled:opacity-50 disabled:cursor-not-allowed",
