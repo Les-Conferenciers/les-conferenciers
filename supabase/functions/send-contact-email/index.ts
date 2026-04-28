@@ -181,7 +181,12 @@ ${message}
       <p>Belle journée,</p>
       <p><strong>Nelly Sabde</strong><br/>Agence Les Conférenciers<br/>📞 06 95 93 97 91</p>
       <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-      <p style="font-size:12px;color:#888;"><em>Pour rappel, votre message :</em></p>
+      <p style="font-size:12px;color:#888;margin:0 0 8px;"><em>Pour rappel, votre demande :</em></p>
+      ${(eventDate || eventLocation || audienceSize) ? `<table cellpadding="0" cellspacing="0" style="font-size:13px;color:#555;margin:0 0 12px;">
+        ${eventDate ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Date :</td><td style="padding:2px 0;">${String(eventDate).replace(/</g, "&lt;")}</td></tr>` : ""}
+        ${eventLocation ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Lieu :</td><td style="padding:2px 0;">${String(eventLocation).replace(/</g, "&lt;")}</td></tr>` : ""}
+        ${audienceSize ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Auditoire :</td><td style="padding:2px 0;">${String(audienceSize).replace(/</g, "&lt;")} personnes</td></tr>` : ""}
+      </table>` : ""}
       <blockquote style="border-left:3px solid #d9c9a3;padding:8px 12px;margin:0;color:#555;font-size:13px;white-space:pre-wrap;">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</blockquote>
     </div>
     ${emailSignature}
