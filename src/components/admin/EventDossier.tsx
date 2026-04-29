@@ -1410,13 +1410,13 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Contract form dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-w-0">
           <DialogHeader>
             <DialogTitle className="font-serif">
               {editingContract ? "Modifier" : "Créer"} le contrat - {proposal.client_name}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-5 mt-2">
+          <div className="space-y-5 mt-2 min-w-0 max-w-full">
             {/* Client selector - mandatory */}
             <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
               <Label className="text-xs font-semibold flex items-center gap-2">
