@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { COMPANY } from "@/lib/companyConfig";
@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 type ContractLine = {
@@ -57,7 +56,6 @@ const ContractSign = () => {
   const [accepted, setAccepted] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -85,29 +83,45 @@ const ContractSign = () => {
     fetchAll();
   }, [token]);
 
-  const generateAndUploadPdf = async (contractId: string, contractToken: string) => {
-    if (!printRef.current) return;
+  const generateAndUploadPdf = async (contractId: string, contractToken: string, signedBy: string, signedAt: string) => {
     try {
-      // Wait a tick for DOM to settle (signature block visible)
-      await new Promise((r) => setTimeout(r, 300));
-      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const pdf = new jsPDF({ unit: "mm", format: "a4" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const imgW = pageW;
-      const imgH = (canvas.height * imgW) / canvas.width;
-      let heightLeft = imgH;
-      let position = 0;
-      pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
-      heightLeft -= pageH;
-      while (heightLeft > 0) {
-        position = heightLeft - imgH;
-        pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
-        heightLeft -= pageH;
-      }
-      // Convert to base64 (without data: prefix)
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 18;
+      let y = 18;
+      const addText = (text: string, size = 10, bold = false) => {
+        pdf.setFont("helvetica", bold ? "bold" : "normal");
+        pdf.setFontSize(size);
+        const lines = pdf.splitTextToSize(text, pageWidth - margin * 2);
+        pdf.text(lines, margin, y);
+        y += lines.length * (size * 0.45) + 3;
+      };
+
+      addText("LES CONFÉRENCIERS", 16, true);
+      addText(`Bon de commande signé — N° ${event?.bdc_number || contractId.slice(0, 4).toUpperCase()}`, 12, true);
+      y += 4;
+      addText(`Client : ${clientName || proposal?.client_name || "—"}`);
+      addText(`Intervenant : ${speakerGender} ${firstSpeaker?.name || "—"}`);
+      y += 3;
+      addText("Détails de l'événement", 12, true);
+      addText(`Date : ${formatDateLong(contract.event_date)}`);
+      addText(`Lieu : ${contract.event_location || "À définir"}`);
+      addText(`Horaires : ${contract.event_time || "À définir"}`);
+      if (event?.audience_size) addText(`Auditoire : ${event.audience_size}`);
+      if (event?.theme) addText(`Thématique : ${event.theme}`);
+      if (contract.event_format) addText(`Format : ${contract.event_format}`);
+      if (contract.event_description) addText(`Détails : ${contract.event_description}`);
+      y += 3;
+      addText("Montant de la prestation", 12, true);
+      lines.forEach((line) => addText(`${line.type === "speaker" ? "Montant de la prestation de l'intervenant" : line.label} : ${(line.amount_ht * (1 + line.tva_rate / 100)).toLocaleString("fr-FR")} €TTC, soit ${line.amount_ht.toLocaleString("fr-FR")} €HT`));
+      if (discount > 0) addText(`Remise de ${discount}% appliquée`);
+      addText("TVA Les conférenciers : FR - TVA applicable : 20%");
+      y += 6;
+      addText("Signature électronique", 12, true);
+      addText(`Bon pour accord — ${signedBy}`);
+      addText(`Signé électroniquement le ${formatDateLong(signedAt)}`);
+      addText("Les Conférenciers — Bon pour accord — Nelly Sabde");
+
       const dataUri = pdf.output("datauristring");
       const base64 = dataUri.split(",")[1];
       const fileName = `Contrat-signe-${contractId.slice(0, 8)}.pdf`;
@@ -124,14 +138,15 @@ const ContractSign = () => {
   const handleSign = async () => {
     if (!contract || !signerName.trim() || !accepted) return;
     setSigning(true);
+    const signedAt = new Date().toISOString();
     const { error } = await supabase.from("contracts").update({
-      status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: new Date().toISOString(),
+      status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: signedAt, client_signed_received_at: signedAt.slice(0, 10),
     } as any).eq("token", token!);
     if (error) { toast.error("Erreur lors de la signature"); setSigning(false); return; }
+    setContract({ ...contract, status: "signed", signer_name: signerName.trim(), signed_at: signedAt } as ContractData);
     setSigned(true);
     toast.success("Contrat signé avec succès !");
-    // Génère le PDF après mise à jour de l'UI (la signature manuscrite doit apparaître)
-    setTimeout(() => { generateAndUploadPdf(contract.id, contract.token); }, 600);
+    await generateAndUploadPdf(contract.id, contract.token, signerName.trim(), signedAt);
     setSigning(false);
   };
 
@@ -171,7 +186,7 @@ const ContractSign = () => {
           <p className="text-sm text-[#1a2332]/60 mt-1">Bon de commande</p>
         </div>
 
-        <div ref={printRef} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-[#1a2332] px-6 py-4">
             <div className="flex items-center gap-2 text-white">
               <FileText className="h-5 w-5" />
