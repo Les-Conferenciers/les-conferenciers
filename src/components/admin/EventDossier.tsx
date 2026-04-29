@@ -493,7 +493,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const openCreateContract = () => {
     setEditingContract(false);
     // Auto-fill from proposal data
-    setEventDate(parseProposalEventDate());
+    setEventDate(event?.event_date || parseProposalEventDate());
     setEventLocation(proposal.event_location || "");
     setEventTime("");
     setEventFormat("Conférence");
@@ -512,7 +512,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const openEditContract = () => {
     if (!contract) return;
     setEditingContract(true);
-    setEventDate(contract.event_date || (parseProposalEventDate()));
+    setEventDate(contract.event_date || event?.event_date || parseProposalEventDate());
     setEventLocation(contract.event_location || "");
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
