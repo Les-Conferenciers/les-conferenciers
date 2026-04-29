@@ -352,10 +352,14 @@ const AdminLeads = () => {
               )}
 
               <div className="flex justify-end pt-2 border-t border-border">
-                <Button asChild size="sm" variant="outline" className="gap-1.5">
-                  <a href={`mailto:${detailLead.email}?subject=Votre demande - Les Conférenciers`}>
-                    <Mail className="h-3.5 w-3.5" /> Répondre par email
-                  </a>
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={creatingProposal}
+                  onClick={() => handleCreateProposalFromLead(detailLead)}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  {creatingProposal ? "Préparation…" : "Créer la proposition"}
                 </Button>
               </div>
             </div>
