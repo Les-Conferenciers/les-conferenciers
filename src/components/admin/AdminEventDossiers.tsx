@@ -129,8 +129,12 @@ const AdminEventDossiers = () => {
   useEffect(() => { fetchData(); }, []);
 
   const openDirectContract = async () => {
-    const { data } = await supabase.from("clients").select("id, company_name, contact_name, email").order("company_name");
-    setDirectClients((data as any) || []);
+    const [{ data: cl }, { data: sp }] = await Promise.all([
+      supabase.from("clients").select("id, company_name, contact_name, email").order("company_name"),
+      supabase.from("speakers").select("id, name, base_fee, email, phone").eq("archived", false).order("name"),
+    ]);
+    setDirectClients((cl as any) || []);
+    setDirectSpeakers((sp as any) || []);
     setDirectClientId("");
     setDirectClientSearch("");
     setDirectClientMode("existing");
@@ -140,6 +144,8 @@ const AdminEventDossiers = () => {
     setDirectEventDate("");
     setDirectEventLocation("");
     setDirectAudienceSize("");
+    setDirectSpeakerIds([]);
+    setDirectSpeakerSearch("");
     setDirectOpen(true);
   };
 
