@@ -914,27 +914,45 @@ ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""
 ${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
-    const clientCcList = liaisonClientCc.split(",").map(e => e.trim()).filter(Boolean);
-    const speakerCcList = liaisonSpeakerCc.split(",").map(e => e.trim()).filter(Boolean);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const splitList = (s: string) => s.split(/[,;]/).map(e => e.trim()).filter(Boolean);
+    const clientToList = splitList(liaisonClientTo);
+    const clientCcList = splitList(liaisonClientCc);
+    const speakerToList = splitList(liaisonSpeakerTo);
+    const speakerCcList = splitList(liaisonSpeakerCc);
+
+    const allEmails = [...clientToList, ...clientCcList, ...speakerToList, ...speakerCcList];
+    const invalid = allEmails.find(e => !emailRegex.test(e));
+    if (invalid) {
+      toast.error(`Email invalide : ${invalid}`);
+      setSendingLiaison(false);
+      return;
+    }
+    if (clientToList.length === 0 && speakerToList.length === 0) {
+      toast.error("Veuillez renseigner au moins un destinataire (client ou conférencier)");
+      setSendingLiaison(false);
+      return;
+    }
 
     try {
       // Send to client
-      await supabase.functions.invoke("send-contact-email", {
-        body: {
-          to: proposal.client_email,
-          subject: liaisonClientSubject,
-          body: liaisonClientBody + liaisonContent,
-          from_name: "Les Conférenciers",
-          cc: clientCcList.length > 0 ? clientCcList : undefined,
-        },
-      });
-
-      // Send to speaker if has email
-      const speakerEmail = speaker?.email;
-      if (speakerEmail) {
+      if (clientToList.length > 0) {
         await supabase.functions.invoke("send-contact-email", {
           body: {
-            to: speakerEmail,
+            to: clientToList,
+            subject: liaisonClientSubject,
+            body: liaisonClientBody + liaisonContent,
+            from_name: "Les Conférenciers",
+            cc: clientCcList.length > 0 ? clientCcList : undefined,
+          },
+        });
+      }
+
+      // Send to speaker
+      if (speakerToList.length > 0) {
+        await supabase.functions.invoke("send-contact-email", {
+          body: {
+            to: speakerToList,
             subject: liaisonSpeakerSubject,
             body: liaisonSpeakerBody + liaisonContent,
             from_name: "Les Conférenciers",
