@@ -130,9 +130,11 @@ const ContractSign = () => {
       const { error } = await supabase.functions.invoke("upload-signed-contract", {
         body: { token: contractToken, pdf_base64: base64, file_name: fileName },
       });
-      if (error) console.error("upload-signed-contract error", error);
+      if (error) throw error;
+      return true;
     } catch (e) {
       console.error("PDF gen failed", e);
+      return false;
     }
   };
 
@@ -144,10 +146,10 @@ const ContractSign = () => {
       status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: signedAt, client_signed_received_at: signedAt.slice(0, 10),
     } as any).eq("token", token!);
     if (error) { toast.error("Erreur lors de la signature"); setSigning(false); return; }
+    const uploaded = await generateAndUploadPdf(contract.id, contract.token, signerName.trim(), signedAt);
     setContract({ ...contract, status: "signed", signer_name: signerName.trim(), signed_at: signedAt } as ContractData);
     setSigned(true);
-    toast.success("Contrat signé avec succès !");
-    await generateAndUploadPdf(contract.id, contract.token, signerName.trim(), signedAt);
+    toast.success(uploaded ? "Contrat signé et PDF archivé." : "Contrat signé, mais le PDF n'a pas pu être archivé automatiquement.");
     setSigning(false);
   };
 
