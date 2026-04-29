@@ -164,6 +164,8 @@ const TVA_OPTIONS = [
   { value: "20", label: "20%" },
 ];
 
+const parseAmountInput = (value: string) => Number(value.replace(/\s/g, "").replace(",", ".")) || 0;
+
 const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contract, setContract] = useState<Contract | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -183,6 +185,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [agencyCommission, setAgencyCommission] = useState<number>(0);
+  const [agencyCommissionText, setAgencyCommissionText] = useState("0");
   const [saving, setSaving] = useState(false);
   // CRM speaker picker for contract lines
   const [allSpeakers, setAllSpeakers] = useState<SpeakerCRM[]>([]);
