@@ -1129,7 +1129,7 @@ Nelly Sabde - Les Conférenciers`);
   const getContractSignUrl = () =>
     contract?.token ? `${window.location.origin}/signer-contrat/${contract.token}` : null;
 
-  const dialogTotals = computeTotals(contractLines, discountPercent);
+  const dialogTotals = computeTotals(contractLines, discountPercent, agencyCommission);
 
   if (loading) return <div className="text-muted-foreground text-xs py-2">Chargement…</div>;
 
