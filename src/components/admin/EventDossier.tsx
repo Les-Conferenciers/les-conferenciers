@@ -406,8 +406,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   const effectiveDiscount = contract?.discount_percent || 0;
+  const effectiveCommission = (contract as any)?.agency_commission || 0;
   const effectiveLines = getEffectiveLines();
-  const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount);
+  const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount, effectiveCommission);
 
   const selectedSpeaker = getSelectedSpeaker();
   const speakerInfo = getSelectedSpeakerInfo();
