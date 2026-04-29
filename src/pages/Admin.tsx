@@ -543,6 +543,41 @@ const AdminProposalsContent = () => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks(), fetchLeads()]);
   }, []);
 
+  // Pre-fill proposal dialog from a lead draft (handed off via sessionStorage by AdminLeads)
+  const [draftConsumed, setDraftConsumed] = useState(false);
+  useEffect(() => {
+    if (draftConsumed) return;
+    const raw = sessionStorage.getItem("pendingProposalDraft");
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw);
+      resetForm();
+      setProposalType("classique");
+      setClientName(draft.clientName || "");
+      setClientEmail(draft.clientEmail || "");
+      setRecipientName(draft.recipientName || "");
+      setClientPhone(draft.clientPhone || "");
+      setEventLocation(draft.eventLocation || "");
+      setEventDateText(draft.eventDateText || "");
+      setAudienceSize(draft.audienceSize || "");
+      if (draft.message) setMessage(draft.message);
+      setEmailSubject(getDefaultEmailSubject(draft.clientName || ""));
+      setEmailBody(getDefaultEmailBody(draft.recipientName || "", draft.clientName || ""));
+      if (draft.clientId) {
+        setSelectedClientId(draft.clientId);
+        setClientMode("search");
+      } else {
+        setClientMode("new");
+      }
+      setDialogOpen(true);
+      sessionStorage.removeItem("pendingProposalDraft");
+      setDraftConsumed(true);
+    } catch (e) {
+      sessionStorage.removeItem("pendingProposalDraft");
+      setDraftConsumed(true);
+    }
+  }, [draftConsumed]);
+
   const fetchLeads = async () => {
     const { data } = await supabase.from("simulator_leads").select("*").order("created_at", { ascending: false });
     setAllLeads((data as any) || []);
