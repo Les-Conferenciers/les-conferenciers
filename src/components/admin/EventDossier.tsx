@@ -1563,21 +1563,26 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-1"><Label className="text-xs">Détails</Label><Textarea placeholder="Infos complémentaires..." value={eventDescription} onChange={e => setEventDescription(e.target.value)} rows={2} /></div>
 
             {/* Lines */}
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0">
               <Label className="text-sm font-semibold">Lignes de facturation</Label>
               {contractLines.map(line => (
-                <div key={line.id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2">
-                  <span className={cn(
-                    "inline-flex w-fit text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground",
-                    line.type === "speaker" && "bg-primary/10 text-primary"
-                  )}>{line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}</span>
-                  <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-0.5">
+                <div key={line.id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2 min-w-0">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <span className={cn(
+                      "inline-flex shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground",
+                      line.type === "speaker" && "bg-primary/10 text-primary"
+                    )}>{line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}</span>
+                    <Button type="button" size="icon" variant="ghost" className="ml-auto h-7 w-7 shrink-0 text-destructive hover:text-destructive" onClick={() => removeLine(line.id)} title="Supprimer cette ligne" aria-label="Supprimer cette ligne">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm min-w-0" />
+                  <div className="grid grid-cols-[minmax(0,1fr)_92px] gap-2 min-w-0">
+                    <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
-                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">TVA</Label>
                       <Select value={String(line.tva_rate)} onValueChange={v => updateLine(line.id, "tva_rate", Number(v))}>
                         <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
@@ -1585,15 +1590,12 @@ Nelly Sabde - Les Conférenciers`);
                       </Select>
                     </div>
                   </div>
-                  <Button type="button" size="sm" variant="destructive" className="w-full gap-1 text-xs h-8" onClick={() => removeLine(line.id)}>
-                    <Trash2 className="h-3.5 w-3.5" /> Supprimer cette ligne
-                  </Button>
                 </div>
               ))}
-              <div className="flex gap-2 flex-wrap">
-                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("speaker")}><Plus className="h-3 w-3" /> Conférencier</Button>
-                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("travel")}><Plus className="h-3 w-3" /> Déplacement</Button>
-                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("custom")}><Plus className="h-3 w-3" /> Autre</Button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-0">
+                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("speaker")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Conférencier</span></Button>
+                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("travel")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Déplacement</span></Button>
+                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("custom")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Autre</span></Button>
               </div>
             </div>
 
