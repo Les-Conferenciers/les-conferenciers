@@ -732,10 +732,15 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
-    setLiaisonNotes(event?.visio_notes || (contract as any)?.event_description || "");
+    setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "");
     setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur");
     setLiaisonSalleSetup(event?.room_setup || "Salle installée en largeur avec une allée centrale si possible");
     setLiaisonArrival(event?.arrival_info || "");
+    setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
+    setLiaisonEventLocation(contract?.event_location || "");
+    setLiaisonEventTime(contract?.event_time || "");
+    setLiaisonAudience(event?.audience_size || "");
+    setLiaisonTheme(event?.theme || "");
     setLiaisonTab("client");
 
     // Client email template
