@@ -968,12 +968,12 @@ const AdminEventDossiers = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setDirectOpen(false)}>Annuler</Button>
-              <Button size="sm" onClick={handleCreateDirectContract} disabled={directCreating}>
-                {directCreating ? "Création…" : "Créer le dossier"}
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-3 border-t border-border bg-background shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setDirectOpen(false)}>Annuler</Button>
+            <Button size="sm" onClick={handleCreateDirectContract} disabled={directCreating}>
+              {directCreating ? "Création…" : "Créer le dossier"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
