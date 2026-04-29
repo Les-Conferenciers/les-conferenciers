@@ -223,6 +223,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
 
   // Speaker info email
   const [speakerEmailOpen, setSpeakerEmailOpen] = useState(false);
+  const [speakerEmailTo, setSpeakerEmailTo] = useState("");
+  const [speakerEmailCc, setSpeakerEmailCc] = useState("");
   const [speakerEmailSubject, setSpeakerEmailSubject] = useState("");
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
@@ -690,6 +692,8 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const greeting = isFormal ? `Bonjour ${firstName},` : `Hello ${firstName},`;
     const vouvoi = isFormal;
+    setSpeakerEmailTo(speaker?.email || "");
+    setSpeakerEmailCc("");
 
     const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "à définir";
     const ps = getSelectedSpeaker();
@@ -744,11 +748,18 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendSpeakerEmail = async () => {
     setSendingSpeakerEmail(true);
-    const speaker = getSelectedSpeakerInfo();
-    const speakerEmail = speaker?.email;
-    
-    if (!speakerEmail) {
-      toast.error("Pas d'email renseigné pour ce conférencier");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const toList = speakerEmailTo.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    const ccList = speakerEmailCc.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+
+    if (toList.length === 0) {
+      toast.error("Veuillez renseigner au moins un destinataire");
+      setSendingSpeakerEmail(false);
+      return;
+    }
+    const invalid = [...toList, ...ccList].find(e => !emailRegex.test(e));
+    if (invalid) {
+      toast.error(`Email invalide : ${invalid}`);
       setSendingSpeakerEmail(false);
       return;
     }
@@ -756,7 +767,8 @@ Nelly Sabde - Les Conférenciers`);
     try {
       const { error } = await supabase.functions.invoke("send-contact-email", {
         body: {
-          to: speakerEmail,
+          to: toList,
+          cc: ccList.length > 0 ? ccList : undefined,
           subject: speakerEmailSubject,
           body: speakerEmailBody,
           from_name: "Les Conférenciers",
@@ -1746,11 +1758,12 @@ Nelly Sabde - Les Conférenciers`);
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label className="text-xs">À</Label><Input value={speakerEmailTo} onChange={e => setSpeakerEmailTo(e.target.value)} placeholder="email@exemple.com" /></div>
+              <div className="space-y-2"><Label className="text-xs">Cc (séparés par virgule)</Label><Input value={speakerEmailCc} onChange={e => setSpeakerEmailCc(e.target.value)} placeholder="copie1@exemple.com, copie2@exemple.com" /></div>
+            </div>
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={speakerEmailSubject} onChange={e => setSpeakerEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={speakerEmailBody} onChange={e => setSpeakerEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
-            <p className="text-[10px] text-muted-foreground">
-              📧 Sera envoyé à : {speakerInfo?.email || "Pas d'email renseigné"}
-            </p>
             <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
               <Send className="h-4 w-4 mr-2" />{sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
             </Button>
