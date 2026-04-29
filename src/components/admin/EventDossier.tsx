@@ -1220,16 +1220,37 @@ Nelly Sabde - Les Conférenciers`);
       )}
 
       {/* ─── Contract Section ─── */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <FileText className="h-4 w-4" /> Contrat client
-        </h3>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="space-y-1 min-w-0">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <FileText className="h-4 w-4" /> Contrat client
+          </h3>
+          {contract && (contract.event_date || contract.event_location || contract.event_format) && (
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+              {contract.event_date && (
+                <span className="inline-flex items-center gap-1">
+                  <CalendarIcon className="h-3 w-3" />
+                  {formatDate(contract.event_date)}
+                  {contract.event_time ? ` · ${contract.event_time}` : ""}
+                </span>
+              )}
+              {contract.event_location && (
+                <span className="inline-flex items-center gap-1">
+                  📍 <span className="truncate max-w-[280px]">{contract.event_location}</span>
+                </span>
+              )}
+              {contract.event_format && (
+                <span className="inline-flex items-center gap-1">🎤 {contract.event_format}</span>
+              )}
+            </div>
+          )}
+        </div>
         {!contract ? (
           <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateContract}>
             <Plus className="h-3 w-3" /> Créer le contrat
           </Button>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
               contract.status === "signed"
                 ? "bg-green-100 text-green-700 border border-green-300"
@@ -1239,15 +1260,13 @@ Nelly Sabde - Les Conférenciers`);
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
                 : (contract.status === "sent" ? "⏳ Non signé (envoyé)" : "⚠️ Non signé (brouillon)")}
             </span>
-            {(contract.status === "draft" || contract.status === "sent") && (
-              <>
-                <Button size="sm" variant="ghost" onClick={openEditContract}><Pencil className="h-3 w-3" /></Button>
-                {contract.status === "draft" && (
-                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
-                    <Send className="h-3 w-3" /> Envoyer
-                  </Button>
-                )}
-              </>
+            <Button size="sm" variant="ghost" onClick={openEditContract} title="Éditer les informations du contrat">
+              <Pencil className="h-3 w-3" />
+            </Button>
+            {contract.status === "draft" && (
+              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
+                <Send className="h-3 w-3" /> Envoyer
+              </Button>
             )}
             <Button size="sm" variant="ghost" asChild>
               <a href={`/admin/contrat/${contract.id}`} target="_blank" rel="noopener noreferrer" className="gap-1">
