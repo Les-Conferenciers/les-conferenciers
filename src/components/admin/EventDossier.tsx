@@ -1619,14 +1619,14 @@ Nelly Sabde - Les Conférenciers`);
             </div>
 
             {/* Discount */}
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50 min-w-0">
               <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div className="flex-1"><Label className="text-xs">Remise globale (%)</Label></div>
-              <Input type="number" min={0} max={100} value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="w-20 h-8 text-sm text-right" />
+              <div className="flex-1 min-w-0"><Label className="text-xs">Remise globale (%)</Label></div>
+              <Input type="number" min={0} max={100} inputMode="numeric" value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="w-20 h-8 text-sm text-right shrink-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
             </div>
 
             {/* Totals */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+            <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-2 text-sm min-w-0">
               <div className="flex justify-between text-muted-foreground"><span>Sous-total lignes HT</span><span>{(dialogTotals.subtotalHT - (agencyCommission || 0)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
               {agencyCommission > 0 && <div className="flex justify-between text-amber-700"><span>+ Commission agence (interne)</span><span>{agencyCommission.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
               <div className="flex justify-between text-muted-foreground"><span>Sous-total HT</span><span>{dialogTotals.subtotalHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
