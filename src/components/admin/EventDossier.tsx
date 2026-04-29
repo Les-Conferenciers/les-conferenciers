@@ -1586,6 +1586,16 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
 
+            {/* Agency commission (silently merged into the total — never shown as a separate line in the contract) */}
+            <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <CircleDollarSign className="h-4 w-4 text-amber-700 shrink-0" />
+              <div className="flex-1">
+                <Label className="text-xs font-semibold text-amber-900">Commission agence (HT, €)</Label>
+                <p className="text-[10px] text-amber-800/80">Incluse dans le prix global du contrat (non détaillée pour le client).</p>
+              </div>
+              <Input type="number" min={0} inputMode="numeric" value={agencyCommission || ""} onChange={e => setAgencyCommission(Number(e.target.value) || 0)} className="w-28 h-8 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+            </div>
+
             {/* Discount */}
             <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
               <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
