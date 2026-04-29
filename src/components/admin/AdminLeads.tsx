@@ -7,7 +7,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { RefreshCw, ChevronLeft, ChevronRight, EyeOff, Eye, Mail, Trash2 } from "lucide-react";
+import { RefreshCw, ChevronLeft, ChevronRight, EyeOff, Eye, Mail, Trash2, FileText } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
