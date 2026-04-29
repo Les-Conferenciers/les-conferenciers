@@ -164,9 +164,9 @@ const SignedContractUpload = ({ contractId }: Props) => {
           {files.map((f) => (
             <li key={f.id} className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-muted/40 border border-border/60 text-xs">
               <button
-                onClick={() => handleDownload(f)}
+                onClick={() => handlePreview(f)}
                 className="flex-1 flex items-center gap-2 text-left hover:text-primary truncate"
-                title="Télécharger"
+                title="Aperçu dans un nouvel onglet"
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate font-medium">{f.file_name}</span>
@@ -174,6 +174,9 @@ const SignedContractUpload = ({ contractId }: Props) => {
                   {formatSize(f.file_size)} · {new Date(f.uploaded_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" })}
                 </span>
               </button>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handlePreview(f)} title="Aperçu">
+                <Eye className="h-3 w-3" />
+              </Button>
               <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleDownload(f)} title="Télécharger">
                 <Download className="h-3 w-3" />
               </Button>
