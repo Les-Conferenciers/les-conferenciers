@@ -1410,15 +1410,15 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Contract form dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-w-0 [&_*]:box-border [&_button]:max-w-full [&_input]:max-w-full [&_textarea]:max-w-full [&_select]:max-w-full">
           <DialogHeader>
             <DialogTitle className="font-serif">
               {editingContract ? "Modifier" : "Créer"} le contrat - {proposal.client_name}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-5 mt-2">
+          <div className="space-y-5 mt-2 min-w-0 max-w-full">
             {/* Client selector - mandatory */}
-            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+              <div className="space-y-3 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 min-w-0 max-w-full overflow-hidden">
               <Label className="text-xs font-semibold flex items-center gap-2">
                 <User className="h-3.5 w-3.5" /> Client (obligatoire pour le contrat) *
               </Label>
@@ -1550,12 +1550,12 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 min-w-0">
               <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-xs">Horaires</Label><Input placeholder="14h00 - 15h30" value={eventTime} onChange={e => setEventTime(e.target.value)} /></div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Lieu</Label><Input placeholder="Hôtel Marriott, Paris" value={eventLocation} onChange={e => setEventLocation(e.target.value)} /></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 min-w-0">
               <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input placeholder="200 personnes" value={contractAudienceSize} onChange={e => setContractAudienceSize(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-xs">N° Bon de commande</Label><Input placeholder="BDC-001" value={contractBdcNumber} onChange={e => setContractBdcNumber(e.target.value)} /></div>
             </div>
@@ -1567,7 +1567,7 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-sm font-semibold">Lignes de facturation</Label>
               {contractLines.map(line => (
                 <div key={line.id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2 min-w-0">
-                  <div className="flex items-start gap-2 min-w-0">
+                  <div className="flex items-start gap-2 min-w-0 max-w-full overflow-hidden">
                     <span className={cn(
                       "inline-flex shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground",
                       line.type === "speaker" && "bg-primary/10 text-primary"
@@ -1576,23 +1576,23 @@ Nelly Sabde - Les Conférenciers`);
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                  <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm min-w-0" />
-                  <div className="grid grid-cols-[minmax(0,1fr)_92px] gap-2 min-w-0">
+                  <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm min-w-0 max-w-full" />
+                  <div className="grid grid-cols-1 gap-2 min-w-0">
                     <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
-                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm min-w-0 max-w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
                     </div>
                     <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">TVA</Label>
                       <Select value={String(line.tva_rate)} onValueChange={v => updateLine(line.id, "tva_rate", Number(v))}>
-                        <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 text-sm max-w-full"><SelectValue /></SelectTrigger>
                         <SelectContent>{TVA_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                   </div>
                 </div>
               ))}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-0">
+              <div className="grid grid-cols-1 gap-2 min-w-0">
                 <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("speaker")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Conférencier</span></Button>
                 <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("travel")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Déplacement</span></Button>
                 <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("custom")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Autre</span></Button>
@@ -1600,31 +1600,33 @@ Nelly Sabde - Les Conférenciers`);
             </div>
 
             {/* Agency commission (silently merged into the total — never shown as a separate line in the contract) */}
-            <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_160px_auto] items-end gap-2 p-3 bg-muted/30 rounded-lg border border-border/50 min-w-0">
+            <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50 min-w-0">
               <div className="space-y-1 min-w-0">
                 <Label className="text-xs font-semibold flex items-center gap-2">
                   <CircleDollarSign className="h-3.5 w-3.5" /> Commission agence HT
                 </Label>
                 <p className="text-[10px] text-muted-foreground">Interne, incluse dans le prix global client.</p>
               </div>
-              <div className="relative min-w-0">
-                <Input type="text" inputMode="decimal" value={agencyCommissionText} onChange={e => updateAgencyCommission(e.target.value)} className="h-8 pr-8 text-sm text-right min-w-0" />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">€</span>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 min-w-0 max-w-full overflow-hidden">
+                <div className="relative flex-1 min-w-0">
+                  <Input type="text" inputMode="decimal" value={agencyCommissionText} onChange={e => updateAgencyCommission(e.target.value)} className="h-8 pr-8 text-sm text-right min-w-0" />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">€</span>
+                </div>
+                <Button type="button" size="sm" variant="ghost" className="h-8 shrink-0 px-2 text-xs text-destructive hover:text-destructive" onClick={resetAgencyCommission}>
+                  Retirer
+                </Button>
               </div>
-              <Button type="button" size="sm" variant="ghost" className="h-8 w-full sm:w-auto px-2 text-xs text-destructive hover:text-destructive" onClick={resetAgencyCommission}>
-                Retirer
-              </Button>
             </div>
 
             {/* Discount */}
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50 min-w-0">
               <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div className="flex-1"><Label className="text-xs">Remise globale (%)</Label></div>
-              <Input type="number" min={0} max={100} value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="w-20 h-8 text-sm text-right" />
+              <div className="flex-1 min-w-0"><Label className="text-xs">Remise globale (%)</Label></div>
+              <Input type="number" min={0} max={100} inputMode="numeric" value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="w-20 h-8 text-sm text-right shrink-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
             </div>
 
             {/* Totals */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+            <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-2 text-sm min-w-0">
               <div className="flex justify-between text-muted-foreground"><span>Sous-total lignes HT</span><span>{(dialogTotals.subtotalHT - (agencyCommission || 0)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
               {agencyCommission > 0 && <div className="flex justify-between text-amber-700"><span>+ Commission agence (interne)</span><span>{agencyCommission.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
               <div className="flex justify-between text-muted-foreground"><span>Sous-total HT</span><span>{dialogTotals.subtotalHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
