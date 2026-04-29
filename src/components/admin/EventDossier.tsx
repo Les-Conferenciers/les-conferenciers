@@ -247,6 +247,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonClientBody, setLiaisonClientBody] = useState("");
   const [liaisonSpeakerSubject, setLiaisonSpeakerSubject] = useState("");
   const [liaisonSpeakerBody, setLiaisonSpeakerBody] = useState("");
+  const [liaisonClientTo, setLiaisonClientTo] = useState("");
+  const [liaisonSpeakerTo, setLiaisonSpeakerTo] = useState("");
   const [liaisonClientCc, setLiaisonClientCc] = useState("");
   const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
