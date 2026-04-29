@@ -491,6 +491,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
     setContractBdcNumber(event?.bdc_number || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
+    setAgencyCommission(((contract as any).agency_commission as number) || 0);
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
     setContractDialogOpen(true);
