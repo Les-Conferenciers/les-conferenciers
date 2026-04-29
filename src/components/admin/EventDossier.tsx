@@ -326,6 +326,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const fetchClients = async () => {
     const { data } = await supabase.from("clients").select("id, company_name, contact_name, email, phone, siret, address, city").order("company_name");
     setClients((data as any) || []);
+    const { data: sp } = await supabase.from("speakers").select("id, name, base_fee, email, phone, city").eq("archived", false).order("name");
+    setAllSpeakers((sp as any) || []);
   };
 
   // ─── Auto-create event if missing ───
