@@ -193,6 +193,8 @@ const ContractView = () => {
             <p><span className="text-gray-600">Horaires de l'intervention :</span> {contract.event_time || "À définir"}</p>
             {event?.audience_size && <p><span className="text-gray-600">Auditoire :</span> {event.audience_size}</p>}
             {event?.theme && <p><span className="text-gray-600">Thématique :</span> {event.theme}</p>}
+            {contract.event_format && <p><span className="text-gray-600">Format :</span> {contract.event_format}</p>}
+            {contract.event_description && <p className="whitespace-pre-line"><span className="text-gray-600">Détails :</span> {contract.event_description}</p>}
           </div>
         </section>
 
