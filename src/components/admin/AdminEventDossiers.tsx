@@ -255,9 +255,10 @@ const AdminEventDossiers = () => {
           toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
         { key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,
           toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_deposit_paid_at", valueType: "date" } : undefined },
-        // Étapes 4-5-6 fusionnées : envoi contrat + AR + signature → "AR speaker" (déclencheur = speaker_acknowledgment_at)
-        { key: "speaker_ack", label: "AR speaker (contrat envoyé / signé)", shortLabel: "AR speaker",
-          doneAt: speakerAck || speakerSigned || contractSentSpeaker,
+        { key: "contract_sent_speaker", label: "Contrat envoyé speaker", shortLabel: "Contrat speaker", doneAt: contractSentSpeaker,
+          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "contract_sent_speaker_at", valueType: "timestamp" } : undefined },
+        { key: "speaker_ack", label: "AR speaker (accusé de réception)", shortLabel: "AR speaker",
+          doneAt: speakerAck,
           toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "speaker_acknowledgment_at", valueType: "date" } : undefined },
         { key: "visio", label: "Visio préparatoire", shortLabel: "Visio", doneAt: visioDate,
           toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "visio_date", valueType: "date" } : undefined,
