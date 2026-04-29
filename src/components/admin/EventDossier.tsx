@@ -1847,29 +1847,37 @@ Nelly Sabde - Les Conférenciers`);
 
             {liaisonTab === "client" ? (
               <div className="space-y-3">
-                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">À</Label>
+                  <Input value={liaisonClientTo} onChange={e => setLiaisonClientTo(e.target.value)} placeholder="client@email.com" className="text-sm" />
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">CC (copie pour le mail client)</Label>
                   <Input value={liaisonClientCc} onChange={e => setLiaisonClientCc(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
                   <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                 </div>
+                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">À</Label>
+                  <Input value={liaisonSpeakerTo} onChange={e => setLiaisonSpeakerTo(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">CC (copie pour le mail conférencier)</Label>
                   <Input value={liaisonSpeakerCc} onChange={e => setLiaisonSpeakerCc(e.target.value)} placeholder="client@email.com" className="text-sm" />
                   <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                 </div>
+                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
               </div>
             )}
 
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>📧 <strong>Client :</strong> {proposal.client_email}{liaisonClientCc ? ` (CC: ${liaisonClientCc})` : ""}</p>
-              <p>🎤 <strong>Conférencier :</strong> {speakerInfo?.email || "Pas d'email renseigné"}{liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}</p>
+              <p>📧 <strong>Client :</strong> {liaisonClientTo || "—"}{liaisonClientCc ? ` (CC: ${liaisonClientCc})` : ""}</p>
+              <p>🎤 <strong>Conférencier :</strong> {liaisonSpeakerTo || "—"}{liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}</p>
             </div>
 
             <Button className="w-full" onClick={handleSendLiaisonSheet} disabled={sendingLiaison}>
