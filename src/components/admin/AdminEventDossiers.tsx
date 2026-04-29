@@ -81,6 +81,10 @@ const AdminEventDossiers = () => {
   const [directEventLocation, setDirectEventLocation] = useState("");
   const [directAudienceSize, setDirectAudienceSize] = useState("");
   const [directCreating, setDirectCreating] = useState(false);
+  // Speaker selection for direct contract
+  const [directSpeakers, setDirectSpeakers] = useState<Array<{ id: string; name: string; base_fee: number | null; email: string | null; phone: string | null }>>([]);
+  const [directSpeakerIds, setDirectSpeakerIds] = useState<string[]>([]);
+  const [directSpeakerSearch, setDirectSpeakerSearch] = useState("");
 
   // Visio quick scheduler (déclenché depuis la pipeline)
   const [visioDialog, setVisioDialog] = useState<{ eventId: string; date: string; time: string } | null>(null);
