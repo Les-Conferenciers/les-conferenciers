@@ -557,7 +557,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const openContractEmail = () => {
     if (!contract) return;
     const dateStr = contract.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "à définir";
-    const totals = computeTotals(getEffectiveLines(), contract.discount_percent || 0);
+    const totals = computeTotals(getEffectiveLines(), contract.discount_percent || 0, (contract as any).agency_commission || 0);
 
     // Pre-fill recipient from proposal
     setContractRecipientName(proposal.recipient_name || "");
