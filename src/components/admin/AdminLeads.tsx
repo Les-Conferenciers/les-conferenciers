@@ -51,11 +51,67 @@ const formatEventDate = (val: string | null) => {
 };
 
 const AdminLeads = () => {
+  const [, setSearchParams] = useSearchParams();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hideTest, setHideTest] = useState(true);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
+  const [creatingProposal, setCreatingProposal] = useState(false);
+
+  const handleCreateProposalFromLead = async (lead: Lead) => {
+    setCreatingProposal(true);
+    try {
+      // Look up an existing client by email (case-insensitive)
+      let clientId: string | null = null;
+      let clientCompany = lead.company || "";
+      let clientPhone = lead.phone || "";
+      let recipient = `${lead.first_name || ""} ${lead.last_name || ""}`.trim();
+      if (lead.email) {
+        const { data: existing } = await supabase
+          .from("clients")
+          .select("id, company_name, contact_name, email, phone")
+          .ilike("email", lead.email)
+          .limit(1)
+          .maybeSingle();
+        if (existing) {
+          clientId = existing.id;
+          clientCompany = existing.company_name || clientCompany;
+          clientPhone = existing.phone || clientPhone;
+          if (existing.contact_name) recipient = existing.contact_name;
+        }
+      }
+
+      // Build a context message from the lead's details
+      const parts: string[] = [];
+      if (lead.objective) parts.push(`Objectif : ${lead.objective}`);
+      if (lead.themes && lead.themes.length > 0) parts.push(`Thématiques : ${lead.themes.join(", ")}`);
+      if (lead.event_type) parts.push(`Type d'événement : ${lead.event_type}`);
+      if (lead.budget) parts.push(`Budget : ${lead.budget}`);
+      if (lead.additional_info) parts.push(`Message du client :\n${lead.additional_info}`);
+      const message = parts.join("\n\n");
+
+      const draft = {
+        clientId,
+        clientName: clientCompany || recipient || "",
+        clientEmail: lead.email || "",
+        recipientName: recipient,
+        clientPhone,
+        eventLocation: lead.location || "",
+        eventDateText: lead.event_date || "",
+        audienceSize: lead.audience_size || "",
+        message,
+      };
+      sessionStorage.setItem("pendingProposalDraft", JSON.stringify(draft));
+      setDetailLead(null);
+      toast.success(clientId ? "Client existant rattaché" : "Nouveau client à créer");
+      setSearchParams({ tab: "propositions" });
+    } catch (e) {
+      toast.error("Erreur lors de la préparation de la proposition");
+    } finally {
+      setCreatingProposal(false);
+    }
+  };
 
   const fetchLeads = async () => {
     setLoading(true);
