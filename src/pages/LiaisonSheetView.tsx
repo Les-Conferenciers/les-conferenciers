@@ -13,13 +13,13 @@ const LiaisonSheetView = () => {
     const fetchAll = async () => {
       const { data: ev } = await supabase
         .from("events")
-        .select("*, proposal:proposals(client_name, recipient_name, client_email, proposal_speakers(speakers(name, phone)))")
+        .select("*, proposal:proposals(client_name, recipient_name, client_email, proposal_speakers(speaker_id, speakers(name, phone)))")
         .eq("proposal_id", id!)
         .maybeSingle();
 
       const { data: contract } = await supabase
         .from("contracts")
-        .select("event_date, event_location, event_time")
+        .select("event_date, event_location, event_time, event_description")
         .eq("proposal_id", id!)
         .maybeSingle();
 
