@@ -111,9 +111,20 @@ const ContractView = () => {
   const speakerGender = firstSpeaker?.gender === "female" ? "Madame" : "Monsieur";
 
   // Use contract_lines if available, else fallback
-  const lines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
+  const rawLines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
     ? contract.contract_lines
     : speakers.map((s: any, i: number) => ({ id: String(i), label: s.speakers?.name || `Conférencier ${i + 1}`, amount_ht: s.total_price || 0, tva_rate: 20, type: "speaker" }));
+
+  // Silently distribute the agency commission across speaker lines (proportional to their HT share)
+  const commission = contract.agency_commission || 0;
+  const speakerLinesTotal = rawLines.filter(l => l.type === "speaker").reduce((s, l) => s + l.amount_ht, 0);
+  const lines: ContractLine[] = commission > 0 && speakerLinesTotal > 0
+    ? rawLines.map(l => l.type === "speaker"
+        ? { ...l, amount_ht: l.amount_ht + commission * (l.amount_ht / speakerLinesTotal) }
+        : l)
+    : (commission > 0 && speakerLinesTotal === 0 && rawLines.length > 0
+        ? rawLines.map((l, i) => i === 0 ? { ...l, amount_ht: l.amount_ht + commission } : l)
+        : rawLines);
 
   const discount = contract.discount_percent || 0;
   const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
