@@ -222,10 +222,15 @@ Nelly Sabde - Les Conférenciers
     };
     const inReplyToRef = latestLead?.confirmation_message_id ? buildMessageIdRef(latestLead.confirmation_message_id) : null;
 
+    // When threading on a previous lead confirmation, prefix the subject with "Re:" so Gmail/Outlook group the messages.
+    const threadedSubject = inReplyToRef && !/^re\s*:/i.test(emailSubject)
+      ? `Re: ${emailSubject}`
+      : emailSubject;
+
     const emailPayload: any = {
       from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
       to: [proposal.client_email],
-      subject: emailSubject,
+      subject: threadedSubject,
       html: emailHtml,
     };
     if (ccList.length > 0) {
