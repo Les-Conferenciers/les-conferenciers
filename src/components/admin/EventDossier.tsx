@@ -441,6 +441,14 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
   };
   const removeLine = (id: string) => setContractLines(prev => prev.filter(l => l.id !== id));
+  const updateAgencyCommission = (value: string) => {
+    setAgencyCommissionText(value);
+    setAgencyCommission(parseAmountInput(value));
+  };
+  const resetAgencyCommission = () => {
+    setAgencyCommission(0);
+    setAgencyCommissionText("0");
+  };
   const addLine = (type: ContractLine["type"]) => {
     if (type === "speaker") {
       setSpeakerPickerSearch("");
