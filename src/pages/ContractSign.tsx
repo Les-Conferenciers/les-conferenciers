@@ -33,6 +33,7 @@ type ContractData = {
   created_at: string;
   contract_lines: ContractLine[] | null;
   discount_percent: number | null;
+  agency_commission?: number | null;
   proposal: {
     client_name: string;
     client_email: string;
