@@ -672,10 +672,8 @@ Nelly Sabde - Les Conférenciers`);
       });
       if (error) throw error;
       await supabase.from("contracts").update({ status: "sent" } as any).eq("id", contract.id);
-      // Mark "Contrat envoyé" milestone on event
-      if (event) {
-        await supabase.from("events").update({ contract_sent_speaker_at: new Date().toISOString() } as any).eq("id", event.id);
-      }
+      // L'étape 1 « Contrat env. » se base sur contracts.created_at — rien à mettre à jour ici.
+      // Ne pas toucher à contract_sent_speaker_at (= étape « Contrat speaker »).
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
       fetchData(); onUpdate();
