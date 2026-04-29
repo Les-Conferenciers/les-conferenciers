@@ -502,7 +502,14 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
     setContractBdcNumber("");
-    setContractLines(buildInitialLines()); setDiscountPercent(0); setAgencyCommission(0); setAgencyCommissionText("0");
+    // Pre-fill agency commission from proposal (selected speaker if any, else sum across speakers)
+    const speakersForCommission = event?.selected_speaker_id
+      ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
+      : proposal.proposal_speakers;
+    const proposalCommission = speakersForCommission.reduce((sum, ps) => sum + (Number(ps.agency_commission) || 0), 0);
+    setContractLines(buildInitialLines()); setDiscountPercent(0);
+    setAgencyCommission(proposalCommission);
+    setAgencyCommissionText(proposalCommission ? String(proposalCommission) : "0");
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
