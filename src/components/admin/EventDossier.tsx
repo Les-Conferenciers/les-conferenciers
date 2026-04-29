@@ -1572,15 +1572,15 @@ Nelly Sabde - Les Conférenciers`);
                       </Select>
                     </div>
                   </div>
-                  <Button size="sm" variant="destructive" className="w-full gap-1 text-xs h-8" onClick={() => removeLine(line.id)}>
+                  <Button type="button" size="sm" variant="destructive" className="w-full gap-1 text-xs h-8" onClick={() => removeLine(line.id)}>
                     <Trash2 className="h-3.5 w-3.5" /> Supprimer cette ligne
                   </Button>
                 </div>
               ))}
               <div className="flex gap-2 flex-wrap">
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("speaker")}><Plus className="h-3 w-3" /> Conférencier</Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("travel")}><Plus className="h-3 w-3" /> Déplacement</Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("custom")}><Plus className="h-3 w-3" /> Autre</Button>
+                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("speaker")}><Plus className="h-3 w-3" /> Conférencier</Button>
+                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("travel")}><Plus className="h-3 w-3" /> Déplacement</Button>
+                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("custom")}><Plus className="h-3 w-3" /> Autre</Button>
               </div>
             </div>
 
@@ -1596,7 +1596,7 @@ Nelly Sabde - Les Conférenciers`);
                 <Input type="number" min={0} inputMode="numeric" value={agencyCommission || ""} onChange={e => setAgencyCommission(Number(e.target.value) || 0)} className="w-28 h-8 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
                 <span className="text-xs font-semibold text-muted-foreground">€</span>
                 {agencyCommission > 0 && (
-                  <Button size="sm" variant="ghost" className="h-8 px-2 text-xs text-destructive hover:text-destructive" onClick={() => setAgencyCommission(0)}>
+                  <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-xs text-destructive hover:text-destructive" onClick={() => setAgencyCommission(0)}>
                     Retirer
                   </Button>
                 )}
