@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Trash2, Download, Loader2 } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 type SignedFile = {
