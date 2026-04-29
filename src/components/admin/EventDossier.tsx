@@ -534,6 +534,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       event_description: eventDescription || null,
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
+      agency_commission: agencyCommission || 0,
     };
     // Link client to proposal
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
