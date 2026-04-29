@@ -85,7 +85,7 @@ const ContractSign = () => {
     fetchAll();
   }, [token]);
 
-  const generateAndUploadPdf = async (contractId: string) => {
+  const generateAndUploadPdf = async (contractId: string, contractToken: string) => {
     if (!printRef.current) return;
     try {
       // Wait a tick for DOM to settle (signature block visible)
@@ -107,18 +107,15 @@ const ContractSign = () => {
         pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
         heightLeft -= pageH;
       }
-      const pdfBlob = pdf.output("blob");
-      const fileName = `Contrat-signé-${contractId.slice(0, 8)}.pdf`;
-      const path = `${contractId}/${Date.now()}-signed.pdf`;
-      const { error: upErr } = await supabase.storage.from("signed-contracts").upload(path, pdfBlob, { contentType: "application/pdf", upsert: false });
-      if (upErr) { console.error(upErr); return; }
-      await supabase.from("signed_contract_files" as any).insert({
-        contract_id: contractId,
-        file_name: fileName,
-        file_path: path,
-        file_size: pdfBlob.size,
-        mime_type: "application/pdf",
-      } as any);
+      // Convert to base64 (without data: prefix)
+      const dataUri = pdf.output("datauristring");
+      const base64 = dataUri.split(",")[1];
+      const fileName = `Contrat-signe-${contractId.slice(0, 8)}.pdf`;
+
+      const { error } = await supabase.functions.invoke("upload-signed-contract", {
+        body: { token: contractToken, pdf_base64: base64, file_name: fileName },
+      });
+      if (error) console.error("upload-signed-contract error", error);
     } catch (e) {
       console.error("PDF gen failed", e);
     }
