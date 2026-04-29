@@ -63,7 +63,17 @@ type Contract = {
   created_at: string;
   contract_lines: any;
   discount_percent: number | null;
+  agency_commission?: number | null;
   client_signed_received_at?: string | null;
+};
+
+type SpeakerCRM = {
+  id: string;
+  name: string;
+  base_fee: number | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
 };
 
 type Invoice = {
