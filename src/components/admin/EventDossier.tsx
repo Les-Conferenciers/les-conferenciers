@@ -499,7 +499,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
     setContractBdcNumber("");
-    setContractLines(buildInitialLines()); setDiscountPercent(0); setAgencyCommission(0);
+    setContractLines(buildInitialLines()); setDiscountPercent(0); setAgencyCommission(0); setAgencyCommissionText("0");
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
@@ -518,7 +518,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
     setContractBdcNumber(event?.bdc_number || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
-    setAgencyCommission(((contract as any).agency_commission as number) || 0);
+    const savedCommission = Number((contract as any).agency_commission) || 0;
+    setAgencyCommission(savedCommission);
+    setAgencyCommissionText(savedCommission ? String(savedCommission) : "0");
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
     setContractDialogOpen(true);
