@@ -199,12 +199,32 @@ const AdminEventDossiers = () => {
       } as any).select("id").single();
       if (pErr || !prop) throw pErr || new Error("create proposal failed");
 
-      // 2) Create event shell
+      // 2) Create event shell (with selected speaker if exactly one chosen)
+      const selectedSpeakerId = directSpeakerIds.length === 1 ? directSpeakerIds[0] : null;
       await supabase.from("events").insert({
         proposal_id: prop.id,
         event_date: directEventDate || null,
         audience_size: directAudienceSize || null,
+        selected_speaker_id: selectedSpeakerId,
       } as any);
+
+      // 3) Insert proposal_speakers rows for each chosen speaker
+      if (directSpeakerIds.length > 0) {
+        const rows = directSpeakerIds.map((sid, idx) => {
+          const sp = directSpeakers.find((s) => s.id === sid);
+          const fee = sp?.base_fee ?? 0;
+          return {
+            proposal_id: prop.id,
+            speaker_id: sid,
+            speaker_fee: fee,
+            travel_costs: 0,
+            agency_commission: 0,
+            total_price: fee,
+            display_order: idx,
+          };
+        });
+        await supabase.from("proposal_speakers").insert(rows as any);
+      }
 
       toast.success("Contrat direct créé — finalisez le contrat dans le dossier.");
       setDirectOpen(false);
