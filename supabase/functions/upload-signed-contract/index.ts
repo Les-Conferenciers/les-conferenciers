@@ -56,15 +56,6 @@ Deno.serve(async (req) => {
       mime_type: "application/pdf",
     });
 
-    // Notify Nelly
-    try {
-      await supabase.functions.invoke("send-contract-email", {
-        body: { type: "signed_notification", contract_id: contract.id },
-      });
-    } catch (e) {
-      console.warn("notification failed", e);
-    }
-
     return new Response(JSON.stringify({ success: true, path }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
