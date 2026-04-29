@@ -81,6 +81,10 @@ const AdminEventDossiers = () => {
   const [directEventLocation, setDirectEventLocation] = useState("");
   const [directAudienceSize, setDirectAudienceSize] = useState("");
   const [directCreating, setDirectCreating] = useState(false);
+  // Speaker selection for direct contract
+  const [directSpeakers, setDirectSpeakers] = useState<Array<{ id: string; name: string; base_fee: number | null; email: string | null; phone: string | null }>>([]);
+  const [directSpeakerIds, setDirectSpeakerIds] = useState<string[]>([]);
+  const [directSpeakerSearch, setDirectSpeakerSearch] = useState("");
 
   // Visio quick scheduler (déclenché depuis la pipeline)
   const [visioDialog, setVisioDialog] = useState<{ eventId: string; date: string; time: string } | null>(null);
@@ -125,8 +129,12 @@ const AdminEventDossiers = () => {
   useEffect(() => { fetchData(); }, []);
 
   const openDirectContract = async () => {
-    const { data } = await supabase.from("clients").select("id, company_name, contact_name, email").order("company_name");
-    setDirectClients((data as any) || []);
+    const [{ data: cl }, { data: sp }] = await Promise.all([
+      supabase.from("clients").select("id, company_name, contact_name, email").order("company_name"),
+      supabase.from("speakers").select("id, name, base_fee, email, phone").eq("archived", false).order("name"),
+    ]);
+    setDirectClients((cl as any) || []);
+    setDirectSpeakers((sp as any) || []);
     setDirectClientId("");
     setDirectClientSearch("");
     setDirectClientMode("existing");
@@ -136,6 +144,8 @@ const AdminEventDossiers = () => {
     setDirectEventDate("");
     setDirectEventLocation("");
     setDirectAudienceSize("");
+    setDirectSpeakerIds([]);
+    setDirectSpeakerSearch("");
     setDirectOpen(true);
   };
 
@@ -189,12 +199,32 @@ const AdminEventDossiers = () => {
       } as any).select("id").single();
       if (pErr || !prop) throw pErr || new Error("create proposal failed");
 
-      // 2) Create event shell
+      // 2) Create event shell (with selected speaker if exactly one chosen)
+      const selectedSpeakerId = directSpeakerIds.length === 1 ? directSpeakerIds[0] : null;
       await supabase.from("events").insert({
         proposal_id: prop.id,
         event_date: directEventDate || null,
         audience_size: directAudienceSize || null,
+        selected_speaker_id: selectedSpeakerId,
       } as any);
+
+      // 3) Insert proposal_speakers rows for each chosen speaker
+      if (directSpeakerIds.length > 0) {
+        const rows = directSpeakerIds.map((sid, idx) => {
+          const sp = directSpeakers.find((s) => s.id === sid);
+          const fee = sp?.base_fee ?? 0;
+          return {
+            proposal_id: prop.id,
+            speaker_id: sid,
+            speaker_fee: fee,
+            travel_costs: 0,
+            agency_commission: 0,
+            total_price: fee,
+            display_order: idx,
+          };
+        });
+        await supabase.from("proposal_speakers").insert(rows as any);
+      }
 
       toast.success("Contrat direct créé — finalisez le contrat dans le dossier.");
       setDirectOpen(false);
@@ -763,11 +793,11 @@ const AdminEventDossiers = () => {
 
       {/* Direct contract creation dialog */}
       <Dialog open={directOpen} onOpenChange={setDirectOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">Nouveau contrat direct</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto px-6 py-4 flex-1 min-h-0">
             <p className="text-xs text-muted-foreground">
               Créez un dossier sans proposition préalable. Vous pourrez ensuite finaliser le contrat (lignes, montants, conférencier) dans le dossier.
             </p>
@@ -872,12 +902,73 @@ const AdminEventDossiers = () => {
               <Input value={directEventLocation} onChange={(e) => setDirectEventLocation(e.target.value)} placeholder="Hôtel, ville…" className="h-9 text-sm" />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setDirectOpen(false)}>Annuler</Button>
-              <Button size="sm" onClick={handleCreateDirectContract} disabled={directCreating}>
-                {directCreating ? "Création…" : "Créer le dossier"}
-              </Button>
+            {/* Speaker picker (single) */}
+            <div className="space-y-1.5 pt-2 border-t border-border">
+              <Label className="text-xs font-semibold">Conférencier</Label>
+              <p className="text-[10px] text-muted-foreground">Sélectionnez le conférencier pour pré-préparer le contrat avec son tarif.</p>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={directSpeakerSearch}
+                  onChange={(e) => setDirectSpeakerSearch(e.target.value)}
+                  placeholder="Rechercher un conférencier…"
+                  className="h-9 text-sm pl-7"
+                />
+              </div>
+              {directSpeakerIds[0] && (() => {
+                const sp = directSpeakers.find((s) => s.id === directSpeakerIds[0]);
+                if (!sp) return null;
+                return (
+                  <div className="flex items-center justify-between gap-2 bg-primary/10 text-primary text-xs px-2 py-1.5 rounded-md">
+                    <span className="truncate font-medium">
+                      {sp.name}
+                      {sp.base_fee ? <span className="text-[10px] text-primary/70 ml-2">{Number(sp.base_fee).toLocaleString("fr-FR")} €</span> : null}
+                    </span>
+                    <button type="button" onClick={() => setDirectSpeakerIds([])} className="hover:text-primary/70 shrink-0">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })()}
+              <div className="max-h-40 overflow-y-auto border border-border rounded-md divide-y divide-border">
+                {directSpeakers
+                  .filter((s) => {
+                    const q = directSpeakerSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    return s.name.toLowerCase().includes(q);
+                  })
+                  .slice(0, 50)
+                  .map((s) => {
+                    const checked = directSpeakerIds[0] === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setDirectSpeakerIds(checked ? [] : [s.id])}
+                        className={cn(
+                          "w-full text-left px-2 py-1.5 text-xs hover:bg-accent flex items-center justify-between gap-2",
+                          checked && "bg-primary/10 text-primary font-medium"
+                        )}
+                      >
+                        <span className="truncate">{s.name}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {s.base_fee ? `${Number(s.base_fee).toLocaleString("fr-FR")} €` : "—"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                {directSpeakers.length === 0 && (
+                  <div className="px-2 py-3 text-xs text-muted-foreground text-center">Aucun conférencier en base</div>
+                )}
+              </div>
             </div>
+
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-3 border-t border-border bg-background shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setDirectOpen(false)}>Annuler</Button>
+            <Button size="sm" onClick={handleCreateDirectContract} disabled={directCreating}>
+              {directCreating ? "Création…" : "Créer le dossier"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
