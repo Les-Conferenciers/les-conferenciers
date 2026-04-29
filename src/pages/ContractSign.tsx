@@ -131,7 +131,7 @@ const ContractSign = () => {
     setSigned(true);
     toast.success("Contrat signé avec succès !");
     // Génère le PDF après mise à jour de l'UI (la signature manuscrite doit apparaître)
-    setTimeout(() => { generateAndUploadPdf(contract.id); }, 600);
+    setTimeout(() => { generateAndUploadPdf(contract.id, contract.token); }, 600);
     setSigning(false);
   };
 
