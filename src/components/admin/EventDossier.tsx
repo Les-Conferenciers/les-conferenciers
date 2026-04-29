@@ -1605,6 +1605,8 @@ Nelly Sabde - Les Conférenciers`);
 
             {/* Totals */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between text-muted-foreground"><span>Sous-total lignes HT</span><span>{(dialogTotals.subtotalHT - (agencyCommission || 0)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
+              {agencyCommission > 0 && <div className="flex justify-between text-amber-700"><span>+ Commission agence (interne)</span><span>{agencyCommission.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
               <div className="flex justify-between text-muted-foreground"><span>Sous-total HT</span><span>{dialogTotals.subtotalHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
               {discountPercent > 0 && <div className="flex justify-between text-red-600"><span>Remise ({discountPercent}%)</span><span>-{dialogTotals.discountAmount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
               <div className="flex justify-between text-muted-foreground"><span>Total HT</span><span>{dialogTotals.totalHTAfterDiscount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
