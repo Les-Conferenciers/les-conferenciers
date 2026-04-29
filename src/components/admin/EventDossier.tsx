@@ -63,7 +63,17 @@ type Contract = {
   created_at: string;
   contract_lines: any;
   discount_percent: number | null;
+  agency_commission?: number | null;
   client_signed_received_at?: string | null;
+};
+
+type SpeakerCRM = {
+  id: string;
+  name: string;
+  base_fee: number | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
 };
 
 type Invoice = {
@@ -172,7 +182,12 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractBdcNumber, setContractBdcNumber] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [agencyCommission, setAgencyCommission] = useState<number>(0);
   const [saving, setSaving] = useState(false);
+  // CRM speaker picker for contract lines
+  const [allSpeakers, setAllSpeakers] = useState<SpeakerCRM[]>([]);
+  const [speakerPickerOpen, setSpeakerPickerOpen] = useState(false);
+  const [speakerPickerSearch, setSpeakerPickerSearch] = useState("");
   // Client for contract creation
   const [contractClientId, setContractClientId] = useState<string>("");
   const [showCreateClientInContract, setShowCreateClientInContract] = useState(false);
@@ -311,6 +326,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const fetchClients = async () => {
     const { data } = await supabase.from("clients").select("id, company_name, contact_name, email, phone, siret, address, city").order("company_name");
     setClients((data as any) || []);
+    const { data: sp } = await supabase.from("speakers").select("id, name, base_fee, email, phone, city").eq("archived", false).order("name");
+    setAllSpeakers((sp as any) || []);
   };
 
   // ─── Auto-create event if missing ───
@@ -353,15 +370,20 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   // ─── Compute totals ───
-  const computeTotals = (lines: ContractLine[], discount: number) => {
-    const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
+  // The agency commission is added to the global HT (silent — not shown as a separate line in the contract)
+  const computeTotals = (lines: ContractLine[], discount: number, commission: number = 0) => {
+    const linesSubtotal = lines.reduce((sum, l) => sum + l.amount_ht, 0);
+    const subtotalHT = linesSubtotal + (commission || 0);
     const discountAmount = subtotalHT * (discount / 100);
     const totalHTAfterDiscount = subtotalHT - discountAmount;
-    const totalTVA = lines.reduce((sum, l) => {
-      const lineShare = subtotalHT > 0 ? l.amount_ht / subtotalHT : 0;
-      const lineHTAfterDiscount = l.amount_ht - (discountAmount * lineShare);
+    // TVA computed on the merged base, prorated against original line TVA mix (commission inherits 20%)
+    const commissionTVA = (commission || 0) * 0.20;
+    const linesTVA = lines.reduce((sum, l) => {
+      const lineShare = linesSubtotal > 0 ? l.amount_ht / linesSubtotal : 0;
+      const lineHTAfterDiscount = l.amount_ht - (discountAmount * (linesSubtotal / (subtotalHT || 1)) * lineShare);
       return sum + lineHTAfterDiscount * (l.tva_rate / 100);
     }, 0);
+    const totalTVA = linesTVA + commissionTVA * (1 - discount / 100);
     const totalTTC = totalHTAfterDiscount + totalTVA;
     return { subtotalHT, discountAmount, totalHTAfterDiscount, totalTVA, totalTTC };
   };
@@ -384,8 +406,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   const effectiveDiscount = contract?.discount_percent || 0;
+  const effectiveCommission = (contract as any)?.agency_commission || 0;
   const effectiveLines = getEffectiveLines();
-  const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount);
+  const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount, effectiveCommission);
 
   const selectedSpeaker = getSelectedSpeaker();
   const speakerInfo = getSelectedSpeakerInfo();
@@ -416,8 +439,24 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
   const removeLine = (id: string) => setContractLines(prev => prev.filter(l => l.id !== id));
   const addLine = (type: ContractLine["type"]) => {
+    if (type === "speaker") {
+      setSpeakerPickerSearch("");
+      setSpeakerPickerOpen(true);
+      return;
+    }
     const defaults: Record<string, string> = { speaker: "Conférencier", travel: "Frais de déplacement", custom: "Prestation complémentaire" };
     setContractLines(prev => [...prev, { id: generateId(), label: defaults[type], amount_ht: 0, tva_rate: 20, type }]);
+  };
+  const addSpeakerLineFromCRM = (sp: SpeakerCRM) => {
+    setContractLines(prev => [...prev, {
+      id: generateId(),
+      label: sp.name,
+      amount_ht: sp.base_fee || 0,
+      tva_rate: 20,
+      type: "speaker",
+    }]);
+    setSpeakerPickerOpen(false);
+    toast.success(`${sp.name} ajouté`);
   };
 
   // ─── Contract CRUD ───
@@ -449,7 +488,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
     setContractBdcNumber("");
-    setContractLines(buildInitialLines()); setDiscountPercent(0);
+    setContractLines(buildInitialLines()); setDiscountPercent(0); setAgencyCommission(0);
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
@@ -468,6 +507,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
     setContractBdcNumber(event?.bdc_number || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
+    setAgencyCommission(((contract as any).agency_commission as number) || 0);
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
     setContractDialogOpen(true);
@@ -510,6 +550,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       event_description: eventDescription || null,
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
+      agency_commission: agencyCommission || 0,
     };
     // Link client to proposal
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
@@ -534,7 +575,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const openContractEmail = () => {
     if (!contract) return;
     const dateStr = contract.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "à définir";
-    const totals = computeTotals(getEffectiveLines(), contract.discount_percent || 0);
+    const totals = computeTotals(getEffectiveLines(), contract.discount_percent || 0, (contract as any).agency_commission || 0);
 
     // Pre-fill recipient from proposal
     setContractRecipientName(proposal.recipient_name || "");
@@ -1106,7 +1147,7 @@ Nelly Sabde - Les Conférenciers`);
   const getContractSignUrl = () =>
     contract?.token ? `${window.location.origin}/signer-contrat/${contract.token}` : null;
 
-  const dialogTotals = computeTotals(contractLines, discountPercent);
+  const dialogTotals = computeTotals(contractLines, discountPercent, agencyCommission);
 
   if (loading) return <div className="text-muted-foreground text-xs py-2">Chargement…</div>;
 
@@ -1545,6 +1586,16 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
 
+            {/* Agency commission (silently merged into the total — never shown as a separate line in the contract) */}
+            <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <CircleDollarSign className="h-4 w-4 text-amber-700 shrink-0" />
+              <div className="flex-1">
+                <Label className="text-xs font-semibold text-amber-900">Commission agence (HT, €)</Label>
+                <p className="text-[10px] text-amber-800/80">Incluse dans le prix global du contrat (non détaillée pour le client).</p>
+              </div>
+              <Input type="number" min={0} inputMode="numeric" value={agencyCommission || ""} onChange={e => setAgencyCommission(Number(e.target.value) || 0)} className="w-28 h-8 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+            </div>
+
             {/* Discount */}
             <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
               <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -1554,6 +1605,8 @@ Nelly Sabde - Les Conférenciers`);
 
             {/* Totals */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between text-muted-foreground"><span>Sous-total lignes HT</span><span>{(dialogTotals.subtotalHT - (agencyCommission || 0)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
+              {agencyCommission > 0 && <div className="flex justify-between text-amber-700"><span>+ Commission agence (interne)</span><span>{agencyCommission.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
               <div className="flex justify-between text-muted-foreground"><span>Sous-total HT</span><span>{dialogTotals.subtotalHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
               {discountPercent > 0 && <div className="flex justify-between text-red-600"><span>Remise ({discountPercent}%)</span><span>-{dialogTotals.discountAmount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
               <div className="flex justify-between text-muted-foreground"><span>Total HT</span><span>{dialogTotals.totalHTAfterDiscount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
@@ -1564,6 +1617,50 @@ Nelly Sabde - Les Conférenciers`);
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
               {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour" : "Créer le contrat"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* CRM speaker picker for contract lines */}
+      <Dialog open={speakerPickerOpen} onOpenChange={setSpeakerPickerOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-base">Ajouter un conférencier (CRM)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
+            <Input
+              placeholder="Rechercher un conférencier…"
+              value={speakerPickerSearch}
+              onChange={e => setSpeakerPickerSearch(e.target.value)}
+              autoFocus
+            />
+            <div className="flex-1 overflow-y-auto border border-border/60 rounded-md divide-y divide-border/40">
+              {allSpeakers
+                .filter(sp => !speakerPickerSearch || sp.name.toLowerCase().includes(speakerPickerSearch.toLowerCase()) || (sp.city || "").toLowerCase().includes(speakerPickerSearch.toLowerCase()))
+                .slice(0, 200)
+                .map(sp => (
+                  <button
+                    key={sp.id}
+                    type="button"
+                    onClick={() => addSpeakerLineFromCRM(sp)}
+                    className="w-full text-left px-3 py-2 hover:bg-muted/60 transition flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{sp.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {sp.city || "—"}{sp.email ? ` · ${sp.email}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-primary shrink-0">
+                      {sp.base_fee ? `${sp.base_fee.toLocaleString("fr-FR")} €` : "—"}
+                    </span>
+                  </button>
+                ))}
+              {allSpeakers.length === 0 && (
+                <p className="p-4 text-xs text-muted-foreground italic text-center">Chargement des conférenciers…</p>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground">Le tarif de base et le nom seront pré-remplis depuis la fiche CRM.</p>
           </div>
         </DialogContent>
       </Dialog>
