@@ -902,6 +902,72 @@ const AdminEventDossiers = () => {
               <Input value={directEventLocation} onChange={(e) => setDirectEventLocation(e.target.value)} placeholder="Hôtel, ville…" className="h-9 text-sm" />
             </div>
 
+            {/* Speakers picker */}
+            <div className="space-y-1.5 pt-2 border-t border-border">
+              <Label className="text-xs font-semibold">
+                Conférencier(s) {directSpeakerIds.length > 0 && (
+                  <span className="text-muted-foreground font-normal">· {directSpeakerIds.length} sélectionné{directSpeakerIds.length > 1 ? "s" : ""}</span>
+                )}
+              </Label>
+              <p className="text-[10px] text-muted-foreground">Sélectionnez un ou plusieurs conférenciers pour pré-préparer le contrat avec leurs tarifs.</p>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={directSpeakerSearch}
+                  onChange={(e) => setDirectSpeakerSearch(e.target.value)}
+                  placeholder="Rechercher un conférencier…"
+                  className="h-9 text-sm pl-7"
+                />
+              </div>
+              {directSpeakerIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {directSpeakerIds.map((sid) => {
+                    const sp = directSpeakers.find((s) => s.id === sid);
+                    if (!sp) return null;
+                    return (
+                      <span key={sid} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[11px] px-2 py-0.5 rounded-full">
+                        {sp.name}
+                        <button type="button" onClick={() => setDirectSpeakerIds((prev) => prev.filter((x) => x !== sid))} className="hover:text-primary/70">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="max-h-40 overflow-y-auto border border-border rounded-md divide-y divide-border">
+                {directSpeakers
+                  .filter((s) => {
+                    const q = directSpeakerSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    return s.name.toLowerCase().includes(q);
+                  })
+                  .slice(0, 50)
+                  .map((s) => {
+                    const checked = directSpeakerIds.includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setDirectSpeakerIds((prev) => checked ? prev.filter((x) => x !== s.id) : [...prev, s.id])}
+                        className={cn(
+                          "w-full text-left px-2 py-1.5 text-xs hover:bg-accent flex items-center justify-between gap-2",
+                          checked && "bg-primary/10 text-primary font-medium"
+                        )}
+                      >
+                        <span className="truncate">{s.name}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {s.base_fee ? `${Number(s.base_fee).toLocaleString("fr-FR")} €` : "—"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                {directSpeakers.length === 0 && (
+                  <div className="px-2 py-3 text-xs text-muted-foreground text-center">Aucun conférencier en base</div>
+                )}
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={() => setDirectOpen(false)}>Annuler</Button>
               <Button size="sm" onClick={handleCreateDirectContract} disabled={directCreating}>
