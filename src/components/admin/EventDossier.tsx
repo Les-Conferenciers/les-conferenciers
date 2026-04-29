@@ -439,8 +439,24 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
   const removeLine = (id: string) => setContractLines(prev => prev.filter(l => l.id !== id));
   const addLine = (type: ContractLine["type"]) => {
+    if (type === "speaker") {
+      setSpeakerPickerSearch("");
+      setSpeakerPickerOpen(true);
+      return;
+    }
     const defaults: Record<string, string> = { speaker: "Conférencier", travel: "Frais de déplacement", custom: "Prestation complémentaire" };
     setContractLines(prev => [...prev, { id: generateId(), label: defaults[type], amount_ht: 0, tva_rate: 20, type }]);
+  };
+  const addSpeakerLineFromCRM = (sp: SpeakerCRM) => {
+    setContractLines(prev => [...prev, {
+      id: generateId(),
+      label: sp.name,
+      amount_ht: sp.base_fee || 0,
+      tva_rate: 20,
+      type: "speaker",
+    }]);
+    setSpeakerPickerOpen(false);
+    toast.success(`${sp.name} ajouté`);
   };
 
   // ─── Contract CRUD ───
