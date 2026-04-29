@@ -2286,19 +2286,21 @@ const AdminProposalsContent = () => {
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
-                        <Input
-                          type="date"
-                          value={task.due_date}
-                          onChange={e => {
-                            const updated = [...editingTasks];
-                            updated[idx] = { ...updated[idx], due_date: e.target.value };
-                            setEditingTasks(updated);
-                          }}
-                        />
-                      </div>
+                    <div className={task.status === "completed" ? "" : "grid grid-cols-2 gap-3"}>
+                      {task.status !== "completed" && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                          <Input
+                            type="date"
+                            value={task.due_date}
+                            onChange={e => {
+                              const updated = [...editingTasks];
+                              updated[idx] = { ...updated[idx], due_date: e.target.value };
+                              setEditingTasks(updated);
+                            }}
+                          />
+                        </div>
+                      )}
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Note</Label>
                         <Input
