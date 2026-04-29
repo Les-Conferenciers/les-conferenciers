@@ -1600,22 +1600,20 @@ Nelly Sabde - Les Conférenciers`);
             </div>
 
             {/* Agency commission (silently merged into the total — never shown as a separate line in the contract) */}
-            <div className="flex flex-col sm:flex-row sm:items-end gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
-              <div className="flex-1 space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_160px_auto] items-end gap-2 p-3 bg-muted/30 rounded-lg border border-border/50 min-w-0">
+              <div className="space-y-1 min-w-0">
                 <Label className="text-xs font-semibold flex items-center gap-2">
                   <CircleDollarSign className="h-3.5 w-3.5" /> Commission agence HT
                 </Label>
                 <p className="text-[10px] text-muted-foreground">Interne, incluse dans le prix global client.</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Input type="number" min={0} inputMode="numeric" value={agencyCommission || ""} onChange={e => setAgencyCommission(Number(e.target.value) || 0)} className="w-28 h-8 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
-                <span className="text-xs font-semibold text-muted-foreground">€</span>
-                {agencyCommission > 0 && (
-                  <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-xs text-destructive hover:text-destructive" onClick={() => setAgencyCommission(0)}>
-                    Retirer
-                  </Button>
-                )}
+              <div className="relative min-w-0">
+                <Input type="text" inputMode="decimal" value={agencyCommissionText} onChange={e => updateAgencyCommission(e.target.value)} className="h-8 pr-8 text-sm text-right min-w-0" />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">€</span>
               </div>
+              <Button type="button" size="sm" variant="ghost" className="h-8 w-full sm:w-auto px-2 text-xs text-destructive hover:text-destructive" onClick={resetAgencyCommission}>
+                Retirer
+              </Button>
             </div>
 
             {/* Discount */}
