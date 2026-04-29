@@ -1621,6 +1621,50 @@ Nelly Sabde - Les Conférenciers`);
         </DialogContent>
       </Dialog>
 
+      {/* CRM speaker picker for contract lines */}
+      <Dialog open={speakerPickerOpen} onOpenChange={setSpeakerPickerOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-base">Ajouter un conférencier (CRM)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
+            <Input
+              placeholder="Rechercher un conférencier…"
+              value={speakerPickerSearch}
+              onChange={e => setSpeakerPickerSearch(e.target.value)}
+              autoFocus
+            />
+            <div className="flex-1 overflow-y-auto border border-border/60 rounded-md divide-y divide-border/40">
+              {allSpeakers
+                .filter(sp => !speakerPickerSearch || sp.name.toLowerCase().includes(speakerPickerSearch.toLowerCase()) || (sp.city || "").toLowerCase().includes(speakerPickerSearch.toLowerCase()))
+                .slice(0, 200)
+                .map(sp => (
+                  <button
+                    key={sp.id}
+                    type="button"
+                    onClick={() => addSpeakerLineFromCRM(sp)}
+                    className="w-full text-left px-3 py-2 hover:bg-muted/60 transition flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{sp.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {sp.city || "—"}{sp.email ? ` · ${sp.email}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-primary shrink-0">
+                      {sp.base_fee ? `${sp.base_fee.toLocaleString("fr-FR")} €` : "—"}
+                    </span>
+                  </button>
+                ))}
+              {allSpeakers.length === 0 && (
+                <p className="p-4 text-xs text-muted-foreground italic text-center">Chargement des conférenciers…</p>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground">Le tarif de base et le nom seront pré-remplis depuis la fiche CRM.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Contract email dialog with client selector */}
       <Dialog open={contractEmailOpen} onOpenChange={setContractEmailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
