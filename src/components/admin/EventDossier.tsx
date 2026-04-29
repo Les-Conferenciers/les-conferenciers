@@ -1554,20 +1554,15 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-sm font-semibold">Lignes de facturation</Label>
               {contractLines.map(line => (
                 <div key={line.id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                      line.type === "speaker" ? "bg-primary/10 text-primary" :
-                      line.type === "travel" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
-                    }`}>{line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}</span>
-                    <Button size="sm" variant="outline" className="gap-1 text-xs text-destructive border-destructive/40 hover:bg-destructive hover:text-destructive-foreground h-7 px-2" onClick={() => removeLine(line.id)}>
-                      <Trash2 className="h-3.5 w-3.5" /> Supprimer
-                    </Button>
-                  </div>
+                  <span className={cn(
+                    "inline-flex w-fit text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground",
+                    line.type === "speaker" && "bg-primary/10 text-primary"
+                  )}>{line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}</span>
                   <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm" />
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-0.5">
                       <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
-                      <Input type="number" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm" />
+                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
                     </div>
                     <div className="space-y-0.5">
                       <Label className="text-[10px] text-muted-foreground">TVA</Label>
@@ -1577,31 +1572,34 @@ Nelly Sabde - Les Conférenciers`);
                       </Select>
                     </div>
                   </div>
+                  <Button type="button" size="sm" variant="destructive" className="w-full gap-1 text-xs h-8" onClick={() => removeLine(line.id)}>
+                    <Trash2 className="h-3.5 w-3.5" /> Supprimer cette ligne
+                  </Button>
                 </div>
               ))}
               <div className="flex gap-2 flex-wrap">
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("speaker")}><Plus className="h-3 w-3" /> Conférencier</Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("travel")}><Plus className="h-3 w-3" /> Déplacement</Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("custom")}><Plus className="h-3 w-3" /> Autre</Button>
+                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("speaker")}><Plus className="h-3 w-3" /> Conférencier</Button>
+                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("travel")}><Plus className="h-3 w-3" /> Déplacement</Button>
+                <Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("custom")}><Plus className="h-3 w-3" /> Autre</Button>
               </div>
             </div>
 
             {/* Agency commission (silently merged into the total — never shown as a separate line in the contract) */}
-            <div className="space-y-2 pt-2">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <CircleDollarSign className="h-4 w-4 text-amber-700" /> Commission agence (interne)
-              </Label>
-              <div className="p-3 bg-amber-50 rounded-lg border-2 border-amber-300 space-y-2">
-                <p className="text-[11px] text-amber-900 font-medium">Montant HT en € — incluse dans le prix global du contrat (jamais détaillée pour le client).</p>
-                <div className="flex items-center gap-2">
-                  <Input type="number" min={0} inputMode="numeric" value={agencyCommission || ""} onChange={e => setAgencyCommission(Number(e.target.value) || 0)} className="flex-1 h-10 text-sm text-right font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
-                  <span className="text-sm font-semibold text-amber-900">€ HT</span>
-                  {agencyCommission > 0 && (
-                    <Button size="sm" variant="outline" className="gap-1 text-xs text-destructive border-destructive/40 hover:bg-destructive hover:text-destructive-foreground h-10" onClick={() => setAgencyCommission(0)}>
-                      <Trash2 className="h-3.5 w-3.5" /> Retirer
-                    </Button>
-                  )}
-                </div>
+            <div className="flex flex-col sm:flex-row sm:items-end gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs font-semibold flex items-center gap-2">
+                  <CircleDollarSign className="h-3.5 w-3.5" /> Commission agence HT
+                </Label>
+                <p className="text-[10px] text-muted-foreground">Interne, incluse dans le prix global client.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input type="number" min={0} inputMode="numeric" value={agencyCommission || ""} onChange={e => setAgencyCommission(Number(e.target.value) || 0)} className="w-28 h-8 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+                <span className="text-xs font-semibold text-muted-foreground">€</span>
+                {agencyCommission > 0 && (
+                  <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-xs text-destructive hover:text-destructive" onClick={() => setAgencyCommission(0)}>
+                    Retirer
+                  </Button>
+                )}
               </div>
             </div>
 
