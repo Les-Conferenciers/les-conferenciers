@@ -1574,8 +1574,8 @@ Nelly Sabde - Les Conférenciers`);
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive mt-6" onClick={() => removeLine(line.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
+                  <Button size="sm" variant="outline" className="gap-1 text-xs text-destructive border-destructive/40 hover:bg-destructive hover:text-destructive-foreground mt-6 shrink-0" onClick={() => removeLine(line.id)}>
+                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
                   </Button>
                 </div>
               ))}
