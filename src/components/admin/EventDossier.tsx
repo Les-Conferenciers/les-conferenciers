@@ -692,6 +692,8 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const greeting = isFormal ? `Bonjour ${firstName},` : `Hello ${firstName},`;
     const vouvoi = isFormal;
+    setSpeakerEmailTo(speaker?.email || "");
+    setSpeakerEmailCc("");
 
     const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "à définir";
     const ps = getSelectedSpeaker();
