@@ -223,6 +223,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
 
   // Speaker info email
   const [speakerEmailOpen, setSpeakerEmailOpen] = useState(false);
+  const [speakerEmailTo, setSpeakerEmailTo] = useState("");
+  const [speakerEmailCc, setSpeakerEmailCc] = useState("");
   const [speakerEmailSubject, setSpeakerEmailSubject] = useState("");
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
@@ -245,6 +247,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonClientBody, setLiaisonClientBody] = useState("");
   const [liaisonSpeakerSubject, setLiaisonSpeakerSubject] = useState("");
   const [liaisonSpeakerBody, setLiaisonSpeakerBody] = useState("");
+  const [liaisonClientTo, setLiaisonClientTo] = useState("");
+  const [liaisonSpeakerTo, setLiaisonSpeakerTo] = useState("");
   const [liaisonClientCc, setLiaisonClientCc] = useState("");
   const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
@@ -500,7 +504,14 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
     setContractBdcNumber("");
-    setContractLines(buildInitialLines()); setDiscountPercent(0); setAgencyCommission(0); setAgencyCommissionText("0");
+    // Pre-fill agency commission from proposal (selected speaker if any, else sum across speakers)
+    const speakersForCommission = event?.selected_speaker_id
+      ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
+      : proposal.proposal_speakers;
+    const proposalCommission = speakersForCommission.reduce((sum, ps) => sum + (Number(ps.agency_commission) || 0), 0);
+    setContractLines(buildInitialLines()); setDiscountPercent(0);
+    setAgencyCommission(proposalCommission);
+    setAgencyCommissionText(proposalCommission ? String(proposalCommission) : "0");
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
@@ -690,6 +701,8 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const greeting = isFormal ? `Bonjour ${firstName},` : `Hello ${firstName},`;
     const vouvoi = isFormal;
+    setSpeakerEmailTo(speaker?.email || "");
+    setSpeakerEmailCc("");
 
     const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "à définir";
     const ps = getSelectedSpeaker();
@@ -744,11 +757,18 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendSpeakerEmail = async () => {
     setSendingSpeakerEmail(true);
-    const speaker = getSelectedSpeakerInfo();
-    const speakerEmail = speaker?.email;
-    
-    if (!speakerEmail) {
-      toast.error("Pas d'email renseigné pour ce conférencier");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const toList = speakerEmailTo.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    const ccList = speakerEmailCc.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+
+    if (toList.length === 0) {
+      toast.error("Veuillez renseigner au moins un destinataire");
+      setSendingSpeakerEmail(false);
+      return;
+    }
+    const invalid = [...toList, ...ccList].find(e => !emailRegex.test(e));
+    if (invalid) {
+      toast.error(`Email invalide : ${invalid}`);
       setSendingSpeakerEmail(false);
       return;
     }
@@ -756,7 +776,8 @@ Nelly Sabde - Les Conférenciers`);
     try {
       const { error } = await supabase.functions.invoke("send-contact-email", {
         body: {
-          to: speakerEmail,
+          to: toList,
+          cc: ccList.length > 0 ? ccList : undefined,
           subject: speakerEmailSubject,
           body: speakerEmailBody,
           from_name: "Les Conférenciers",
@@ -785,8 +806,8 @@ Nelly Sabde - Les Conférenciers`);
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
     setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "");
-    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur");
-    setLiaisonSalleSetup(event?.room_setup || "Salle installée en largeur avec une allée centrale si possible");
+    setLiaisonTechNeeds(event?.tech_needs || "");
+    setLiaisonSalleSetup(event?.room_setup || "");
     setLiaisonArrival(event?.arrival_info || "");
     setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
     setLiaisonEventLocation(contract?.event_location || "");
@@ -819,8 +840,10 @@ ${isFormal ? "À très bientôt !" : "A très vite !"}
 
 Nelly Sabde - Les Conférenciers`);
 
-    // Pre-fill CC: speaker email for client tab, client email for speaker tab
+    // Pre-fill recipients (editable) — client tab CC defaults to speaker, speaker tab CC empty
     const speakerEmail = speaker?.email || "";
+    setLiaisonClientTo(proposal.client_email || "");
+    setLiaisonSpeakerTo(speakerEmail);
     setLiaisonClientCc(speakerEmail);
     setLiaisonSpeakerCc("");
 
@@ -891,27 +914,45 @@ ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""
 ${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
-    const clientCcList = liaisonClientCc.split(",").map(e => e.trim()).filter(Boolean);
-    const speakerCcList = liaisonSpeakerCc.split(",").map(e => e.trim()).filter(Boolean);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const splitList = (s: string) => s.split(/[,;]/).map(e => e.trim()).filter(Boolean);
+    const clientToList = splitList(liaisonClientTo);
+    const clientCcList = splitList(liaisonClientCc);
+    const speakerToList = splitList(liaisonSpeakerTo);
+    const speakerCcList = splitList(liaisonSpeakerCc);
+
+    const allEmails = [...clientToList, ...clientCcList, ...speakerToList, ...speakerCcList];
+    const invalid = allEmails.find(e => !emailRegex.test(e));
+    if (invalid) {
+      toast.error(`Email invalide : ${invalid}`);
+      setSendingLiaison(false);
+      return;
+    }
+    if (clientToList.length === 0 && speakerToList.length === 0) {
+      toast.error("Veuillez renseigner au moins un destinataire (client ou conférencier)");
+      setSendingLiaison(false);
+      return;
+    }
 
     try {
       // Send to client
-      await supabase.functions.invoke("send-contact-email", {
-        body: {
-          to: proposal.client_email,
-          subject: liaisonClientSubject,
-          body: liaisonClientBody + liaisonContent,
-          from_name: "Les Conférenciers",
-          cc: clientCcList.length > 0 ? clientCcList : undefined,
-        },
-      });
-
-      // Send to speaker if has email
-      const speakerEmail = speaker?.email;
-      if (speakerEmail) {
+      if (clientToList.length > 0) {
         await supabase.functions.invoke("send-contact-email", {
           body: {
-            to: speakerEmail,
+            to: clientToList,
+            subject: liaisonClientSubject,
+            body: liaisonClientBody + liaisonContent,
+            from_name: "Les Conférenciers",
+            cc: clientCcList.length > 0 ? clientCcList : undefined,
+          },
+        });
+      }
+
+      // Send to speaker
+      if (speakerToList.length > 0) {
+        await supabase.functions.invoke("send-contact-email", {
+          body: {
+            to: speakerToList,
             subject: liaisonSpeakerSubject,
             body: liaisonSpeakerBody + liaisonContent,
             from_name: "Les Conférenciers",
@@ -1746,11 +1787,12 @@ Nelly Sabde - Les Conférenciers`);
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label className="text-xs">À</Label><Input value={speakerEmailTo} onChange={e => setSpeakerEmailTo(e.target.value)} placeholder="email@exemple.com" /></div>
+              <div className="space-y-2"><Label className="text-xs">Cc (séparés par virgule)</Label><Input value={speakerEmailCc} onChange={e => setSpeakerEmailCc(e.target.value)} placeholder="copie1@exemple.com, copie2@exemple.com" /></div>
+            </div>
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={speakerEmailSubject} onChange={e => setSpeakerEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={speakerEmailBody} onChange={e => setSpeakerEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
-            <p className="text-[10px] text-muted-foreground">
-              📧 Sera envoyé à : {speakerInfo?.email || "Pas d'email renseigné"}
-            </p>
             <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
               <Send className="h-4 w-4 mr-2" />{sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
             </Button>
@@ -1805,29 +1847,37 @@ Nelly Sabde - Les Conférenciers`);
 
             {liaisonTab === "client" ? (
               <div className="space-y-3">
-                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">À</Label>
+                  <Input value={liaisonClientTo} onChange={e => setLiaisonClientTo(e.target.value)} placeholder="client@email.com" className="text-sm" />
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">CC (copie pour le mail client)</Label>
                   <Input value={liaisonClientCc} onChange={e => setLiaisonClientCc(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
                   <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                 </div>
+                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">À</Label>
+                  <Input value={liaisonSpeakerTo} onChange={e => setLiaisonSpeakerTo(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">CC (copie pour le mail conférencier)</Label>
                   <Input value={liaisonSpeakerCc} onChange={e => setLiaisonSpeakerCc(e.target.value)} placeholder="client@email.com" className="text-sm" />
                   <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                 </div>
+                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
               </div>
             )}
 
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>📧 <strong>Client :</strong> {proposal.client_email}{liaisonClientCc ? ` (CC: ${liaisonClientCc})` : ""}</p>
-              <p>🎤 <strong>Conférencier :</strong> {speakerInfo?.email || "Pas d'email renseigné"}{liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}</p>
+              <p>📧 <strong>Client :</strong> {liaisonClientTo || "—"}{liaisonClientCc ? ` (CC: ${liaisonClientCc})` : ""}</p>
+              <p>🎤 <strong>Conférencier :</strong> {liaisonSpeakerTo || "—"}{liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}</p>
             </div>
 
             <Button className="w-full" onClick={handleSendLiaisonSheet} disabled={sendingLiaison}>
