@@ -370,15 +370,20 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   // ─── Compute totals ───
-  const computeTotals = (lines: ContractLine[], discount: number) => {
-    const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
+  // The agency commission is added to the global HT (silent — not shown as a separate line in the contract)
+  const computeTotals = (lines: ContractLine[], discount: number, commission: number = 0) => {
+    const linesSubtotal = lines.reduce((sum, l) => sum + l.amount_ht, 0);
+    const subtotalHT = linesSubtotal + (commission || 0);
     const discountAmount = subtotalHT * (discount / 100);
     const totalHTAfterDiscount = subtotalHT - discountAmount;
-    const totalTVA = lines.reduce((sum, l) => {
-      const lineShare = subtotalHT > 0 ? l.amount_ht / subtotalHT : 0;
-      const lineHTAfterDiscount = l.amount_ht - (discountAmount * lineShare);
+    // TVA computed on the merged base, prorated against original line TVA mix (commission inherits 20%)
+    const commissionTVA = (commission || 0) * 0.20;
+    const linesTVA = lines.reduce((sum, l) => {
+      const lineShare = linesSubtotal > 0 ? l.amount_ht / linesSubtotal : 0;
+      const lineHTAfterDiscount = l.amount_ht - (discountAmount * (linesSubtotal / (subtotalHT || 1)) * lineShare);
       return sum + lineHTAfterDiscount * (l.tva_rate / 100);
     }, 0);
+    const totalTVA = linesTVA + commissionTVA * (1 - discount / 100);
     const totalTTC = totalHTAfterDiscount + totalTVA;
     return { subtotalHT, discountAmount, totalHTAfterDiscount, totalTVA, totalTTC };
   };
