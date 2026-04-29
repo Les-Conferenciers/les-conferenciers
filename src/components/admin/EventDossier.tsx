@@ -840,8 +840,10 @@ ${isFormal ? "À très bientôt !" : "A très vite !"}
 
 Nelly Sabde - Les Conférenciers`);
 
-    // Pre-fill CC: speaker email for client tab, client email for speaker tab
+    // Pre-fill recipients (editable) — client tab CC defaults to speaker, speaker tab CC empty
     const speakerEmail = speaker?.email || "";
+    setLiaisonClientTo(proposal.client_email || "");
+    setLiaisonSpeakerTo(speakerEmail);
     setLiaisonClientCc(speakerEmail);
     setLiaisonSpeakerCc("");
 
