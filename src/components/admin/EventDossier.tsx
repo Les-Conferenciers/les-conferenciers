@@ -1607,7 +1607,7 @@ Nelly Sabde - Les Conférenciers`);
                 </Label>
                 <p className="text-[10px] text-muted-foreground">Interne, incluse dans le prix global client.</p>
               </div>
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 min-w-0 max-w-full overflow-hidden">
                 <div className="relative flex-1 min-w-0">
                   <Input type="text" inputMode="decimal" value={agencyCommissionText} onChange={e => updateAgencyCommission(e.target.value)} className="h-8 pr-8 text-sm text-right min-w-0" />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">€</span>
