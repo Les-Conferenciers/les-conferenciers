@@ -215,6 +215,12 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonTechNeeds, setLiaisonTechNeeds] = useState("");
   const [liaisonArrival, setLiaisonArrival] = useState("");
   const [liaisonSalleSetup, setLiaisonSalleSetup] = useState("");
+  // Liaison editable contract/event fields
+  const [liaisonEventDate, setLiaisonEventDate] = useState("");
+  const [liaisonEventLocation, setLiaisonEventLocation] = useState("");
+  const [liaisonEventTime, setLiaisonEventTime] = useState("");
+  const [liaisonAudience, setLiaisonAudience] = useState("");
+  const [liaisonTheme, setLiaisonTheme] = useState("");
   const [sendingLiaison, setSendingLiaison] = useState(false);
   const [liaisonClientSubject, setLiaisonClientSubject] = useState("");
   const [liaisonClientBody, setLiaisonClientBody] = useState("");
