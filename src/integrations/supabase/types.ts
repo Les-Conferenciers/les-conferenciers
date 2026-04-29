@@ -64,6 +64,7 @@ export type Database = {
           agency_commission: number | null
           client_signed_received_at: string | null
           contract_lines: Json | null
+          contract_sent_at: string | null
           created_at: string
           discount_percent: number | null
           event_date: string | null
@@ -84,6 +85,7 @@ export type Database = {
           agency_commission?: number | null
           client_signed_received_at?: string | null
           contract_lines?: Json | null
+          contract_sent_at?: string | null
           created_at?: string
           discount_percent?: number | null
           event_date?: string | null
@@ -104,6 +106,7 @@ export type Database = {
           agency_commission?: number | null
           client_signed_received_at?: string | null
           contract_lines?: Json | null
+          contract_sent_at?: string | null
           created_at?: string
           discount_percent?: number | null
           event_date?: string | null
