@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -48,13 +48,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    await supabase.from("signed_contract_files").insert({
+    const { error: insErr } = await supabase.from("signed_contract_files").insert({
       contract_id: contract.id,
       file_name: safeName,
       file_path: path,
       file_size: binary.byteLength,
       mime_type: "application/pdf",
     });
+    if (insErr) {
+      console.error("signed_contract_files insert error", insErr);
+      await supabase.storage.from("signed-contracts").remove([path]);
+      return new Response(JSON.stringify({ error: insErr.message }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true, path }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
