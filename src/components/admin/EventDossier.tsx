@@ -1410,7 +1410,7 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Contract form dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="font-serif">
               {editingContract ? "Modifier" : "Créer"} le contrat - {proposal.client_name}
@@ -1577,7 +1577,7 @@ Nelly Sabde - Les Conférenciers`);
                     </Button>
                   </div>
                   <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm min-w-0" />
-                  <div className="grid grid-cols-[minmax(0,1fr)_92px] gap-2 min-w-0">
+                  <div className="grid grid-cols-1 gap-2 min-w-0">
                     <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
                       <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
@@ -1592,7 +1592,7 @@ Nelly Sabde - Les Conférenciers`);
                   </div>
                 </div>
               ))}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-0">
+              <div className="grid grid-cols-1 gap-2 min-w-0">
                 <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("speaker")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Conférencier</span></Button>
                 <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("travel")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Déplacement</span></Button>
                 <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("custom")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Autre</span></Button>
