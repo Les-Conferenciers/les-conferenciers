@@ -111,7 +111,7 @@ const AdminEventDossiers = () => {
     setLoading(true);
     const [pRes, cRes, iRes, eRes] = await Promise.all([
       supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))").eq("status", "accepted").order("created_at", { ascending: false }),
-      supabase.from("contracts").select("id, proposal_id, status, signed_at, client_signed_received_at, event_date").order("created_at", { ascending: false }),
+      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date").order("created_at", { ascending: false }),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at, sent_at, due_date").order("created_at", { ascending: false }),
       supabase.from("events").select("*").order("created_at", { ascending: false }),
     ]);
@@ -218,7 +218,7 @@ const AdminEventDossiers = () => {
       const finalInvoice = solde || total;
 
       // Client-side dates
-      const contractSentClient = pContract?.created_at || null; // contract created = sent shell
+      const contractSentClient = pContract?.contract_sent_at || null;
       const clientSigned = pContract?.client_signed_received_at || pContract?.signed_at || null;
       const clientDepositPaid = pEvent?.client_deposit_paid_at || acompte?.paid_at || null;
       const invoiceSentClient = pEvent?.client_invoice_sent_at || finalInvoice?.sent_at || null;
@@ -250,7 +250,7 @@ const AdminEventDossiers = () => {
       // Build pipeline (10 stages)
       const stages: PipelineStage[] = [
         { key: "contract_sent", label: "Contrat envoyé client", shortLabel: "Contrat env.", doneAt: contractSentClient,
-          toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "created_at", valueType: "timestamp" } : undefined },
+          toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "contract_sent_at", valueType: "timestamp" } : undefined },
         { key: "client_signed", label: "Contrat signé client", shortLabel: "Signé client", doneAt: clientSigned,
           toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
         { key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,

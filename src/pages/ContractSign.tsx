@@ -47,6 +47,16 @@ type ContractData = {
   };
 };
 
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+};
+
 const ContractSign = () => {
   const { token } = useParams();
   const [contract, setContract] = useState<ContractData | null>(null);
@@ -110,8 +120,8 @@ const ContractSign = () => {
       addText(`Horaires : ${contract.event_time || "À définir"}`);
       if (event?.audience_size) addText(`Auditoire : ${event.audience_size}`);
       if (event?.theme) addText(`Thématique : ${event.theme}`);
-      if (contract.event_format) addText(`Format : ${contract.event_format}`);
-      if (contract.event_description) addText(`Détails : ${contract.event_description}`);
+      addText(`Format : ${eventFormatLabel}`);
+      if (eventDetails) addText(`Détails : ${eventDetails}`);
       y += 3;
       addText("Montant de la prestation", 12, true);
       lines.forEach((line) => addText(`${line.type === "speaker" ? "Montant de la prestation de l'intervenant" : line.label} : ${(line.amount_ht * (1 + line.tva_rate / 100)).toLocaleString("fr-FR")} €TTC, soit ${line.amount_ht.toLocaleString("fr-FR")} €HT`));
@@ -123,14 +133,14 @@ const ContractSign = () => {
       addText(`Signé électroniquement le ${formatDateLong(signedAt)}`);
       addText("Les Conférenciers — Bon pour accord — Nelly Sabde");
 
-      const dataUri = pdf.output("datauristring");
-      const base64 = dataUri.split(",")[1];
+      const base64 = arrayBufferToBase64(pdf.output("arraybuffer"));
       const fileName = `Contrat-signe-${contractId.slice(0, 8)}.pdf`;
 
-      const { error } = await supabase.functions.invoke("upload-signed-contract", {
-        body: { token: contractToken, pdf_base64: base64, file_name: fileName },
+      const { data, error } = await supabase.functions.invoke("upload-signed-contract", {
+        body: { token: contractToken, pdf_base64: base64, file_name: fileName, signer_name: signedBy, signed_at: signedAt },
       });
       if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
       return true;
     } catch (e) {
       console.error("PDF gen failed", e);
@@ -191,6 +201,8 @@ const ContractSign = () => {
 
   const bdcNumber = event?.bdc_number || contract.id.slice(0, 4).toUpperCase();
   const clientName = client?.company_name || proposal?.client_name || "";
+  const eventFormatLabel = contract.event_format || "Conférence";
+  const eventDetails = contract.event_description || "";
 
   return (
     <div className="min-h-screen bg-[#f8f6f1]">
@@ -246,8 +258,8 @@ const ContractSign = () => {
                 <p><span className="text-gray-500">Horaires :</span> {contract.event_time || "À définir"}</p>
                 {event?.audience_size && <p><span className="text-gray-500">Auditoire :</span> {event.audience_size}</p>}
                 {event?.theme && <p><span className="text-gray-500">Thématique :</span> {event.theme}</p>}
-                {contract.event_format && <p><span className="text-gray-500">Format :</span> {contract.event_format}</p>}
-                {contract.event_description && <p className="whitespace-pre-line"><span className="text-gray-500">Détails :</span> {contract.event_description}</p>}
+                <p><span className="text-gray-500">Format :</span> {eventFormatLabel}</p>
+                {eventDetails && <p className="whitespace-pre-line"><span className="text-gray-500">Détails :</span> {eventDetails}</p>}
               </div>
             </div>
 

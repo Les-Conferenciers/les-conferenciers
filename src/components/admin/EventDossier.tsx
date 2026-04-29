@@ -61,6 +61,7 @@ type Contract = {
   signer_name: string | null;
   signed_at: string | null;
   created_at: string;
+  contract_sent_at?: string | null;
   contract_lines: any;
   discount_percent: number | null;
   agency_commission?: number | null;
@@ -671,9 +672,8 @@ Nelly Sabde - Les Conférenciers`);
         },
       });
       if (error) throw error;
-      await supabase.from("contracts").update({ status: "sent" } as any).eq("id", contract.id);
-      // L'étape 1 « Contrat env. » se base sur contracts.created_at — rien à mettre à jour ici.
-      // Ne pas toucher à contract_sent_speaker_at (= étape « Contrat speaker »).
+      await supabase.from("contracts").update({ status: "sent", contract_sent_at: new Date().toISOString() } as any).eq("id", contract.id);
+      // Ne pas toucher à contract_sent_speaker_at (= communication conférencier).
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
       fetchData(); onUpdate();
