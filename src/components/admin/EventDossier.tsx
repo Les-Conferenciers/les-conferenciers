@@ -1567,7 +1567,7 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-sm font-semibold">Lignes de facturation</Label>
               {contractLines.map(line => (
                 <div key={line.id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2 min-w-0">
-                  <div className="flex items-start gap-2 min-w-0">
+                  <div className="flex items-start gap-2 min-w-0 max-w-full overflow-hidden">
                     <span className={cn(
                       "inline-flex shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground",
                       line.type === "speaker" && "bg-primary/10 text-primary"
@@ -1576,16 +1576,16 @@ Nelly Sabde - Les Conférenciers`);
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                  <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm min-w-0" />
+                  <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm min-w-0 max-w-full" />
                   <div className="grid grid-cols-1 gap-2 min-w-0">
                     <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
-                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm min-w-0 max-w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
                     </div>
                     <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">TVA</Label>
                       <Select value={String(line.tva_rate)} onValueChange={v => updateLine(line.id, "tva_rate", Number(v))}>
-                        <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 text-sm max-w-full"><SelectValue /></SelectTrigger>
                         <SelectContent>{TVA_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
