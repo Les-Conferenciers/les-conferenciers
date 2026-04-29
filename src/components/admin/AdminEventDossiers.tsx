@@ -793,11 +793,11 @@ const AdminEventDossiers = () => {
 
       {/* Direct contract creation dialog */}
       <Dialog open={directOpen} onOpenChange={setDirectOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">Nouveau contrat direct</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto px-6 py-4 flex-1 min-h-0">
             <p className="text-xs text-muted-foreground">
               Créez un dossier sans proposition préalable. Vous pourrez ensuite finaliser le contrat (lignes, montants, conférencier) dans le dossier.
             </p>
