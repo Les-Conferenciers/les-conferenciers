@@ -91,15 +91,32 @@ const SignedContractUpload = ({ contractId }: Props) => {
     if (inputRef.current) inputRef.current.value = "";
   };
 
+  const handlePreview = async (file: SignedFile) => {
+    const { data, error } = await supabase.storage
+      .from("signed-contracts")
+      .createSignedUrl(file.file_path, 60 * 10);
+    if (error || !data?.signedUrl) {
+      toast.error("Impossible d'ouvrir le fichier");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
   const handleDownload = async (file: SignedFile) => {
     const { data, error } = await supabase.storage
       .from("signed-contracts")
-      .createSignedUrl(file.file_path, 60 * 5);
+      .createSignedUrl(file.file_path, 60 * 10, { download: file.file_name });
     if (error || !data?.signedUrl) {
       toast.error("Impossible de télécharger");
       return;
     }
-    window.open(data.signedUrl, "_blank");
+    // Force download via temporary anchor
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.download = file.file_name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleDelete = async (file: SignedFile) => {
