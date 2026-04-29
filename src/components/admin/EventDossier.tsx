@@ -215,6 +215,12 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonTechNeeds, setLiaisonTechNeeds] = useState("");
   const [liaisonArrival, setLiaisonArrival] = useState("");
   const [liaisonSalleSetup, setLiaisonSalleSetup] = useState("");
+  // Liaison editable contract/event fields
+  const [liaisonEventDate, setLiaisonEventDate] = useState("");
+  const [liaisonEventLocation, setLiaisonEventLocation] = useState("");
+  const [liaisonEventTime, setLiaisonEventTime] = useState("");
+  const [liaisonAudience, setLiaisonAudience] = useState("");
+  const [liaisonTheme, setLiaisonTheme] = useState("");
   const [sendingLiaison, setSendingLiaison] = useState(false);
   const [liaisonClientSubject, setLiaisonClientSubject] = useState("");
   const [liaisonClientBody, setLiaisonClientBody] = useState("");
@@ -726,10 +732,15 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
-    setLiaisonNotes(event?.visio_notes || (contract as any)?.event_description || "");
+    setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "");
     setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur");
     setLiaisonSalleSetup(event?.room_setup || "Salle installée en largeur avec une allée centrale si possible");
     setLiaisonArrival(event?.arrival_info || "");
+    setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
+    setLiaisonEventLocation(contract?.event_location || "");
+    setLiaisonEventTime(contract?.event_time || "");
+    setLiaisonAudience(event?.audience_size || "");
+    setLiaisonTheme(event?.theme || "");
     setLiaisonTab("client");
 
     // Client email template
@@ -764,24 +775,55 @@ Nelly Sabde - Les Conférenciers`);
     setLiaisonDialogOpen(true);
   };
 
+  // Persist editable liaison fields back to contract + event
+  const persistLiaisonFields = async () => {
+    if (contract) {
+      await supabase.from("contracts").update({
+        event_date: liaisonEventDate || null,
+        event_location: liaisonEventLocation || null,
+        event_time: liaisonEventTime || null,
+      } as any).eq("id", contract.id);
+    }
+    if (event) {
+      await supabase.from("events").update({
+        audience_size: liaisonAudience || null,
+        theme: liaisonTheme || null,
+        arrival_info: liaisonArrival || null,
+        tech_needs: liaisonTechNeeds || null,
+        room_setup: liaisonSalleSetup || null,
+        notes: liaisonNotes || null,
+      } as any).eq("id", event.id);
+    }
+  };
+
+  const handlePreviewLiaisonSheet = async () => {
+    await persistLiaisonFields();
+    await fetchData();
+    window.open(`/admin/feuille-liaison/${proposal.id}`, "_blank");
+  };
+
   const handleSendLiaisonSheet = async () => {
     setSendingLiaison(true);
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
-    const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
 
-    // Build liaison sheet content block
+    // Persist edits first so contract & event reflect what's sent
+    await persistLiaisonFields();
+
+    const dateStr = liaisonEventDate ? new Date(liaisonEventDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+    // Build liaison sheet content block (uses dialog values)
     const liaisonContent = `
 
 📋 FEUILLE DE LIAISON
 ${event?.event_title ? `\nÉvénement : ${event.event_title}` : ""}
 📅 Date de l'évènement : ${dateStr}
-📍 Lieu de l'intervention : ${contract?.event_location || ""}
-🕐 Horaires de l'intervention : ${contract?.event_time || ""}
+📍 Lieu de l'intervention : ${liaisonEventLocation || ""}
+🕐 Horaires de l'intervention : ${liaisonEventTime || ""}
 ${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
 ${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
-👥 Auditoire : ${event?.audience_size || ""}
-📋 Thématique : ${event?.theme || ""}
+👥 Auditoire : ${liaisonAudience || ""}
+🎯 Thématique : ${liaisonTheme || ""}
 ${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
 🚗 Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
 ${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
@@ -1587,26 +1629,31 @@ Nelly Sabde - Les Conférenciers`);
           <div className="space-y-5 mt-2">
             {/* Liaison details - matching the DOCX template fields */}
             <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
-              <Label className="text-xs font-semibold">📋 Champs de la feuille de liaison</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Arrivée du conférencier sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Besoins techniques</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">📋 Champs de la feuille de liaison</Label>
+                <p className="text-[10px] text-muted-foreground italic">Ces valeurs mettent à jour le contrat à l'envoi.</p>
               </div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Détails techniques</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Configuration salle, micro HF, écran…" className="h-8 text-sm" /></div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
-              
-              {/* Preview of what the liaison sheet will contain */}
-              <div className="bg-background rounded border border-border p-3 text-[11px] text-muted-foreground space-y-0.5">
-                <p className="font-semibold text-foreground text-xs mb-1">Aperçu de la feuille :</p>
-                <p>📅 Date : {contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR") : "—"}</p>
-                <p>📍 Lieu : {contract?.event_location || "—"}</p>
-                <p>🕐 Horaires : {contract?.event_time || "—"}</p>
-                <p>👥 Auditoire : {event?.audience_size || "—"}</p>
-                <p>🎯 Thématique : {event?.theme || "—"}</p>
-                <p>🚗 Arrivée : {liaisonArrival || "à confirmer"}</p>
-                <p>🔧 Technique : {liaisonTechNeeds || "—"}{liaisonSalleSetup ? `, ${liaisonSalleSetup}` : ""}</p>
-                <p>📞 Client : {proposal.recipient_name || proposal.client_name}</p>
-                <p>📞 Conférencier : {speakerInfo?.name || "—"}{speakerInfo?.phone ? ` - ${speakerInfo.phone}` : ""}</p>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">📅 Date</Label><Input type="date" value={liaisonEventDate} onChange={e => setLiaisonEventDate(e.target.value)} className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🕐 Horaires</Label><Input value={liaisonEventTime} onChange={e => setLiaisonEventTime(e.target.value)} placeholder="9h-12h" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">📍 Lieu</Label><Input value={liaisonEventLocation} onChange={e => setLiaisonEventLocation(e.target.value)} placeholder="Marseille" className="h-8 text-sm" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">👥 Auditoire</Label><Input value={liaisonAudience} onChange={e => setLiaisonAudience(e.target.value)} placeholder="100 personnes" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🎯 Thématique</Label><Input value={liaisonTheme} onChange={e => setLiaisonTheme(e.target.value)} placeholder="Le management" className="h-8 text-sm" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Technique</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🍿 Détails techniques</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Configuration salle, micro HF, écran…" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
+
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={handlePreviewLiaisonSheet} className="gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> Aperçu de la feuille
+                </Button>
               </div>
             </div>
 
