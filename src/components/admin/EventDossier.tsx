@@ -1629,26 +1629,31 @@ Nelly Sabde - Les Conférenciers`);
           <div className="space-y-5 mt-2">
             {/* Liaison details - matching the DOCX template fields */}
             <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
-              <Label className="text-xs font-semibold">📋 Champs de la feuille de liaison</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Arrivée du conférencier sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Besoins techniques</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">📋 Champs de la feuille de liaison</Label>
+                <p className="text-[10px] text-muted-foreground italic">Ces valeurs mettent à jour le contrat à l'envoi.</p>
               </div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Détails techniques</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Configuration salle, micro HF, écran…" className="h-8 text-sm" /></div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
-              
-              {/* Preview of what the liaison sheet will contain */}
-              <div className="bg-background rounded border border-border p-3 text-[11px] text-muted-foreground space-y-0.5">
-                <p className="font-semibold text-foreground text-xs mb-1">Aperçu de la feuille :</p>
-                <p>📅 Date : {contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR") : "—"}</p>
-                <p>📍 Lieu : {contract?.event_location || "—"}</p>
-                <p>🕐 Horaires : {contract?.event_time || "—"}</p>
-                <p>👥 Auditoire : {event?.audience_size || "—"}</p>
-                <p>🎯 Thématique : {event?.theme || "—"}</p>
-                <p>🚗 Arrivée : {liaisonArrival || "à confirmer"}</p>
-                <p>🔧 Technique : {liaisonTechNeeds || "—"}{liaisonSalleSetup ? `, ${liaisonSalleSetup}` : ""}</p>
-                <p>📞 Client : {proposal.recipient_name || proposal.client_name}</p>
-                <p>📞 Conférencier : {speakerInfo?.name || "—"}{speakerInfo?.phone ? ` - ${speakerInfo.phone}` : ""}</p>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">📅 Date</Label><Input type="date" value={liaisonEventDate} onChange={e => setLiaisonEventDate(e.target.value)} className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🕐 Horaires</Label><Input value={liaisonEventTime} onChange={e => setLiaisonEventTime(e.target.value)} placeholder="9h-12h" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">📍 Lieu</Label><Input value={liaisonEventLocation} onChange={e => setLiaisonEventLocation(e.target.value)} placeholder="Marseille" className="h-8 text-sm" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">👥 Auditoire</Label><Input value={liaisonAudience} onChange={e => setLiaisonAudience(e.target.value)} placeholder="100 personnes" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🎯 Thématique</Label><Input value={liaisonTheme} onChange={e => setLiaisonTheme(e.target.value)} placeholder="Le management" className="h-8 text-sm" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Technique</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🍿 Détails techniques</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Configuration salle, micro HF, écran…" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
+
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={handlePreviewLiaisonSheet} className="gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> Aperçu de la feuille
+                </Button>
               </div>
             </div>
 
