@@ -472,7 +472,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
     setContractBdcNumber("");
-    setContractLines(buildInitialLines()); setDiscountPercent(0);
+    setContractLines(buildInitialLines()); setDiscountPercent(0); setAgencyCommission(0);
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
