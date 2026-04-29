@@ -748,11 +748,18 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendSpeakerEmail = async () => {
     setSendingSpeakerEmail(true);
-    const speaker = getSelectedSpeakerInfo();
-    const speakerEmail = speaker?.email;
-    
-    if (!speakerEmail) {
-      toast.error("Pas d'email renseigné pour ce conférencier");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const toList = speakerEmailTo.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    const ccList = speakerEmailCc.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+
+    if (toList.length === 0) {
+      toast.error("Veuillez renseigner au moins un destinataire");
+      setSendingSpeakerEmail(false);
+      return;
+    }
+    const invalid = [...toList, ...ccList].find(e => !emailRegex.test(e));
+    if (invalid) {
+      toast.error(`Email invalide : ${invalid}`);
       setSendingSpeakerEmail(false);
       return;
     }
@@ -760,7 +767,8 @@ Nelly Sabde - Les Conférenciers`);
     try {
       const { error } = await supabase.functions.invoke("send-contact-email", {
         body: {
-          to: speakerEmail,
+          to: toList,
+          cc: ccList.length > 0 ? ccList : undefined,
           subject: speakerEmailSubject,
           body: speakerEmailBody,
           from_name: "Les Conférenciers",
