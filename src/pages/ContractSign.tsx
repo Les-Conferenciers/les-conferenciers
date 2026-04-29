@@ -217,6 +217,8 @@ const ContractSign = () => {
                 <p><span className="text-gray-500">Horaires :</span> {contract.event_time || "À définir"}</p>
                 {event?.audience_size && <p><span className="text-gray-500">Auditoire :</span> {event.audience_size}</p>}
                 {event?.theme && <p><span className="text-gray-500">Thématique :</span> {event.theme}</p>}
+                {contract.event_format && <p><span className="text-gray-500">Format :</span> {contract.event_format}</p>}
+                {contract.event_description && <p className="whitespace-pre-line"><span className="text-gray-500">Détails :</span> {contract.event_description}</p>}
               </div>
             </div>
 
