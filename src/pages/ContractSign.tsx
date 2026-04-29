@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type ContractLine = {
   id: string;
@@ -96,42 +97,46 @@ const ContractSign = () => {
 
   const generateAndUploadPdf = async (contractId: string, contractToken: string, signedBy: string, signedAt: string) => {
     try {
-      const pdf = new jsPDF({ unit: "mm", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 18;
-      let y = 18;
-      const addText = (text: string, size = 10, bold = false) => {
-        pdf.setFont("helvetica", bold ? "bold" : "normal");
-        pdf.setFontSize(size);
-        const lines = pdf.splitTextToSize(text, pageWidth - margin * 2);
-        pdf.text(lines, margin, y);
-        y += lines.length * (size * 0.45) + 3;
-      };
+      const element = document.getElementById("contract-printable");
+      if (!element) throw new Error("Contract DOM element not found");
 
-      addText("LES CONFÉRENCIERS", 16, true);
-      addText(`Bon de commande signé — N° ${event?.bdc_number || contractId.slice(0, 4).toUpperCase()}`, 12, true);
-      y += 4;
-      addText(`Client : ${clientName || proposal?.client_name || "—"}`);
-      addText(`Intervenant : ${speakerGender} ${firstSpeaker?.name || "—"}`);
-      y += 3;
-      addText("Détails de l'événement", 12, true);
-      addText(`Date : ${formatDateLong(contract.event_date)}`);
-      addText(`Lieu : ${contract.event_location || "À définir"}`);
-      addText(`Horaires : ${contract.event_time || "À définir"}`);
-      if (event?.audience_size) addText(`Auditoire : ${event.audience_size}`);
-      if (event?.theme) addText(`Thématique : ${event.theme}`);
-      addText(`Format : ${eventFormatLabel}`);
-      if (eventDetails) addText(`Détails : ${eventDetails}`);
-      y += 3;
-      addText("Montant de la prestation", 12, true);
-      lines.forEach((line) => addText(`${line.type === "speaker" ? "Montant de la prestation de l'intervenant" : line.label} : ${(line.amount_ht * (1 + line.tva_rate / 100)).toLocaleString("fr-FR")} €TTC, soit ${line.amount_ht.toLocaleString("fr-FR")} €HT`));
-      if (discount > 0) addText(`Remise de ${discount}% appliquée`);
-      addText("TVA Les conférenciers : FR - TVA applicable : 20%");
-      y += 6;
-      addText("Signature électronique", 12, true);
-      addText(`Bon pour accord — ${signedBy}`);
-      addText(`Signé électroniquement le ${formatDateLong(signedAt)}`);
-      addText("Les Conférenciers — Bon pour accord — Nelly Sabde");
+      // Force CGV details open for capture
+      const detailsEls = element.querySelectorAll("details");
+      const previousOpen: boolean[] = [];
+      detailsEls.forEach((d) => { previousOpen.push(d.open); d.open = true; });
+
+      // Wait a frame for layout to settle (signature block just rendered)
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        windowWidth: element.scrollWidth,
+      });
+
+      // Restore details state
+      detailsEls.forEach((d, i) => { d.open = previousOpen[i]; });
+
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pageWidthMm = pdf.internal.pageSize.getWidth();
+      const pageHeightMm = pdf.internal.pageSize.getHeight();
+      const imgWidthMm = pageWidthMm;
+      const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+      let heightLeft = imgHeightMm;
+      let position = 0;
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidthMm, imgHeightMm, undefined, "FAST");
+      heightLeft -= pageHeightMm;
+      while (heightLeft > 0) {
+        position -= pageHeightMm;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidthMm, imgHeightMm, undefined, "FAST");
+        heightLeft -= pageHeightMm;
+      }
 
       const base64 = arrayBufferToBase64(pdf.output("arraybuffer"));
       const fileName = `Contrat-signe-${contractId.slice(0, 8)}.pdf`;
@@ -156,9 +161,11 @@ const ContractSign = () => {
       status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: signedAt, client_signed_received_at: signedAt.slice(0, 10),
     } as any).eq("token", token!);
     if (error) { toast.error("Erreur lors de la signature"); setSigning(false); return; }
-    const uploaded = await generateAndUploadPdf(contract.id, contract.token, signerName.trim(), signedAt);
     setContract({ ...contract, status: "signed", signer_name: signerName.trim(), signed_at: signedAt } as ContractData);
     setSigned(true);
+    // Wait for the signature block to appear in the DOM before capturing
+    await new Promise((r) => setTimeout(r, 250));
+    const uploaded = await generateAndUploadPdf(contract.id, contract.token, signerName.trim(), signedAt);
     toast.success(uploaded ? "Contrat signé et PDF archivé." : "Contrat signé, mais le PDF n'a pas pu être archivé automatiquement.");
     setSigning(false);
   };
@@ -212,7 +219,7 @@ const ContractSign = () => {
           <p className="text-sm text-[#1a2332]/60 mt-1">Bon de commande</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div id="contract-printable" className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-[#1a2332] px-6 py-4">
             <div className="flex items-center gap-2 text-white">
               <FileText className="h-5 w-5" />
