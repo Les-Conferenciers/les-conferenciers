@@ -223,6 +223,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
 
   // Speaker info email
   const [speakerEmailOpen, setSpeakerEmailOpen] = useState(false);
+  const [speakerEmailTo, setSpeakerEmailTo] = useState("");
+  const [speakerEmailCc, setSpeakerEmailCc] = useState("");
   const [speakerEmailSubject, setSpeakerEmailSubject] = useState("");
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
