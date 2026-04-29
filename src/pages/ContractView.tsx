@@ -21,9 +21,14 @@ type ContractData = {
   event_format: string | null;
   event_description: string | null;
   status: string;
+  signer_name: string | null;
+  signed_at: string | null;
   created_at: string;
   contract_lines: ContractLine[] | null;
   discount_percent: number | null;
+  agency_commission?: number | null;
+  selected_speaker_id: string | null;
+  selected_speaker?: { name: string; gender: string | null } | null;
   proposal: {
     client_name: string;
     client_email: string;
@@ -73,7 +78,13 @@ const ContractView = () => {
         `)
         .eq("id", id!)
         .single();
-      const c = data as any;
+      let c = data as any;
+
+      // Fetch selected speaker if defined on contract
+      if (c?.selected_speaker_id) {
+        const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", c.selected_speaker_id).maybeSingle();
+        if (sp) c.selected_speaker = sp;
+      }
       setContract(c);
 
       if (c?.proposal?.client_id) {
@@ -95,13 +106,25 @@ const ContractView = () => {
   const proposal = contract.proposal as any;
   const speakers = proposal?.proposal_speakers || [];
   const speakerNames = speakers.map((s: any) => s.speakers?.name || "—").join(", ");
-  const firstSpeaker = speakers[0]?.speakers;
+  // Priority: contract.selected_speaker (manual selection) → first proposal speaker
+  const firstSpeaker = contract.selected_speaker || speakers[0]?.speakers;
   const speakerGender = firstSpeaker?.gender === "female" ? "Madame" : "Monsieur";
 
   // Use contract_lines if available, else fallback
-  const lines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
+  const rawLines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
     ? contract.contract_lines
     : speakers.map((s: any, i: number) => ({ id: String(i), label: s.speakers?.name || `Conférencier ${i + 1}`, amount_ht: s.total_price || 0, tva_rate: 20, type: "speaker" }));
+
+  // Silently distribute the agency commission across speaker lines (proportional to their HT share)
+  const commission = contract.agency_commission || 0;
+  const speakerLinesTotal = rawLines.filter(l => l.type === "speaker").reduce((s, l) => s + l.amount_ht, 0);
+  const lines: ContractLine[] = commission > 0 && speakerLinesTotal > 0
+    ? rawLines.map(l => l.type === "speaker"
+        ? { ...l, amount_ht: l.amount_ht + commission * (l.amount_ht / speakerLinesTotal) }
+        : l)
+    : (commission > 0 && speakerLinesTotal === 0 && rawLines.length > 0
+        ? rawLines.map((l, i) => i === 0 ? { ...l, amount_ht: l.amount_ht + commission } : l)
+        : rawLines);
 
   const discount = contract.discount_percent || 0;
   const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
@@ -182,6 +205,8 @@ const ContractView = () => {
             <p><span className="text-gray-600">Horaires de l'intervention :</span> {contract.event_time || "À définir"}</p>
             {event?.audience_size && <p><span className="text-gray-600">Auditoire :</span> {event.audience_size}</p>}
             {event?.theme && <p><span className="text-gray-600">Thématique :</span> {event.theme}</p>}
+            {contract.event_format && <p><span className="text-gray-600">Format :</span> {contract.event_format}</p>}
+            {contract.event_description && <p className="whitespace-pre-line"><span className="text-gray-600">Détails :</span> {contract.event_description}</p>}
           </div>
         </section>
 
@@ -209,13 +234,26 @@ const ContractView = () => {
 
         {/* Signatures */}
         <div className="grid grid-cols-2 gap-8 mb-12">
-          <div className="border rounded-lg p-6 min-h-[120px]">
+          <div className="border rounded-lg p-6 min-h-[140px]">
             <p className="font-semibold mb-1">Le Client</p>
-            <p className="text-sm text-gray-500">{clientName}</p>
+            <p className="text-sm text-gray-500 mb-2">{clientName}</p>
+            {contract.status === "signed" && contract.signer_name && (
+              <>
+                <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">Bon pour accord</p>
+                <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">{contract.signer_name}</p>
+                <p className="text-[10px] text-gray-400 mt-2">Signé électroniquement le {formatDateLong(contract.signed_at)}</p>
+              </>
+            )}
           </div>
-          <div className="border rounded-lg p-6 min-h-[120px]">
+          <div className="border rounded-lg p-6 min-h-[140px]">
             <p className="font-semibold mb-1">Les Conférenciers</p>
-            <p className="text-sm text-gray-500">Société Eve</p>
+            <p className="text-sm text-gray-500 mb-2">Société Eve</p>
+            {contract.status === "signed" && (
+              <>
+                <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">Bon pour accord</p>
+                <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">Nelly Sabde</p>
+              </>
+            )}
           </div>
         </div>
 

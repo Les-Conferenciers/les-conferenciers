@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const SITE = "https://www.lesconferenciers.com";
@@ -80,12 +80,14 @@ Deno.serve(async (req) => {
 
     const emailHtml = `
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>.email-body p{margin:0 0 16px 0;}.email-body p:last-child{margin-bottom:0;}</style>
+</head>
 <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
     ${emailHeader}
     <div style="padding:30px;">
-      <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
+      <div class="email-body" style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
       <div style="text-align:center;margin:30px 0;">
         <a href="${signUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
           Consulter et signer le contrat
@@ -113,7 +115,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Email send failed", details: errBody }), { status: 500, headers: corsHeaders });
     }
 
-    await adminClient.from("contracts").update({ status: "sent" }).eq("id", contract_id);
+    await adminClient.from("contracts").update({ status: "sent", contract_sent_at: new Date().toISOString() }).eq("id", contract_id);
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {

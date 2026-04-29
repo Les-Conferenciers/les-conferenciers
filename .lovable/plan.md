@@ -1,60 +1,114 @@
-## Constats
+## Plan d'implémentation - Améliorations CRM (Contrats & Leads)
 
-### 1. Image hero
-- Page d'accueil (`/`) : l'image de fond est **toujours présente** (`src/pages/Index.tsx` ligne 191, image `og/lesconferenciers.jpg` avec overlay `bg-primary/80`).
-- Page annuaire (`/conferencier`) — celle où tu te trouves actuellement : **il n'y a pas d'image de fond**, juste un bandeau plat `bg-primary` (`src/pages/Speakers.tsx` lignes 158-165). C'est probablement ce qui te donne l'impression qu'elle a disparu — soit elle n'a jamais été ajoutée, soit elle a sauté lors d'un refacto.
+11 demandes regroupées en 4 zones : Leads, Contrats (création/édition/envoi/signature), Dossier événement, Feuille de liaison.
 
-### 2. Thèmes : 56 canoniques mais 57 affichés
-Vérification base de données : il y a aujourd'hui **57 valeurs distinctes** de thèmes en circulation sur les conférenciers actifs. La liste canonique (`CANONICAL_THEMES` dans `src/lib/parseThemes.ts`) en contient **56** (et non 51 — la mémoire est obsolète).
+---
 
-**6 thèmes hors-liste détectés en base** (à fusionner ou supprimer) :
-- `Excellence` → à mapper sur `Performance`
-- `Innovation et transformation` → à splitter en `Innovation` + `Transformation`
-- `Leadership et management` → à splitter en `Leadership` + `Management`
-- `Performance et croissance` → à mapper sur `Performance`
-- `Progrès` → à mapper sur `Innovation`
-- `Stratégie d'entreprise` → à mapper sur `Stratégie`
+### 1. Leads — Suppression de lignes
+**Fichier :** `src/components/admin/AdminLeads.tsx`
+- Ajouter bouton corbeille par ligne avec `AlertDialog` de confirmation
+- DELETE sur `simulator_leads` (RLS actuelle ne le permet pas → migration pour autoriser DELETE aux authenticated)
 
-**Pourquoi ils existent malgré la normalisation** :
-- Le formulaire "Création manuelle" du CRM (`AdminSpeakersCRM.tsx` ligne 967) accepte un champ texte libre (séparé par virgules) sans aucun filtre.
-- L'éditeur de fiche permet aussi d'ajouter un thème libre via input texte (lignes 1481-1497).
-- L'edge function `import-speakers` (ligne 70-82) insère les thèmes tels quels sans passer par `filterToCanonicalThemes`.
+---
 
-## Plan
+### 2. Contrat — Reprendre la date d'événement de la proposition
+**Fichier :** `src/components/admin/ContractInvoiceManager.tsx` (création contrat)
+- Lors de la création d'un contrat depuis une proposition acceptée, pré-remplir `event_date` depuis `proposals.event_date_text` (parser si possible) sinon laisser vide
+- Pré-remplir aussi `event_location` depuis `proposals.event_location`
 
-### A — Hero /conferencier
-Ajouter l'image de fond `og/lesconferenciers.jpg` avec overlay `bg-primary/80`, dans le bloc lignes 158-165 de `src/pages/Speakers.tsx`, en reprenant exactement le pattern de la page d'accueil (positionnement absolu, `bg-cover bg-center`, contenu en `relative z-10`).
+---
 
-### B — Verrouiller les thèmes à la liste canonique
+### 3. UX édition contrat — Supprimer le scroll horizontal
+**Fichier :** `src/components/admin/ContractInvoiceManager.tsx`
+- Refonte du formulaire d'édition : passage en layout vertical/grille responsive
+- Remplacer les tableaux larges (lignes de contrat) par cartes empilées sur écrans étroits
+- `max-w` adapté au dialog, `overflow-x-hidden`
 
-**B1. Formulaire "Création manuelle" (CRM)**
-Remplacer l'`Input` texte libre (ligne 967) par un sélecteur multi-tags basé sur `CANONICAL_THEMES` (mêmes pastilles cliquables que celles déjà utilisées dans l'éditeur). Plus aucune saisie libre possible.
+---
 
-**B2. Éditeur de fiche conférencier**
-Supprimer le champ `<input>` texte libre (lignes 1481-1497) qui permet d'ajouter un thème non-canonique. Conserver uniquement le `<select>` (ligne 1488) qui propose les thèmes existants. Filtrer les options pour n'afficher que ceux de `CANONICAL_THEMES`.
+### 4. Envoi contrat — Lier automatiquement le destinataire + changer l'intervenant
+**Fichiers :** `src/components/admin/ContractInvoiceManager.tsx`, `supabase/functions/send-contract-email/index.ts`
+- **Envoi :** supprimer le menu déroulant destinataire → utiliser directement `proposals.client_email` / `recipient_name`
+- **Édition :** ajouter un sélecteur d'intervenant dans le formulaire d'édition contrat (parmi `proposal_speakers` initiaux), stocker dans `contracts.selected_speaker_id` (nouvelle colonne) ou réutiliser `events.selected_speaker_id`
 
-**B3. Edge function `import-speakers`**
-Appliquer `filterToCanonicalThemes` sur le tableau `themes` avant insertion (ligne ~75). Les thèmes hors-liste seront silencieusement écartés.
+---
 
-**B4. Edge function `enrich-speakers`** (à vérifier rapidement à l'implémentation)
-S'assurer que la sortie IA passe également par `filterToCanonicalThemes` avant écriture.
+### 5. Mise à jour automatique "Contrat env." (jalon dossier)
+**Fichiers :** `supabase/functions/send-contract-email/index.ts` ou côté client après envoi
+- Après envoi réussi du contrat, UPDATE `events.contract_sent_speaker_at = now()` pour le `proposal_id` correspondant
+- Le jalon "Contrat env." dans `EventDossier` se mettra à jour automatiquement
 
-**B5. Nettoyage des données existantes**
-Migration SQL (via outil migration) pour réécrire les 6 thèmes orphelins :
+---
+
+### 6. Badge rouge "Non signé" dans la vue contrat
+**Fichier :** `src/pages/ContractView.tsx` (et `SpeakerContractView.tsx` si applicable)
+- Si `contracts.status !== 'signed'` (ou `signed_at IS NULL`), afficher bandeau rouge en haut : "⚠ Contrat non signé"
+- Masquer en mode impression (`print:hidden`)
+
+---
+
+### 7. Signature visuelle après signature
+**Fichier :** `src/pages/ContractView.tsx`
+- Dans case "Le client" : afficher "Bon pour accord" + `signer_name` en police manuscrite (Google Font : `Caveat` ou `Dancing Script`)
+- Dans case "Les Conférenciers Société Eve" : placeholder pour signature de Nelly (image à fournir plus tard, on prépare le slot avec un fallback texte)
+- Badge vert en haut : "✓ Contrat signé le [date]"
+- Charger la police dans `index.html` ou via `index.css`
+
+---
+
+### 8. PDF du contrat signé → stocké dans "Contrats signés reçus"
+**Approche :** génération côté client via `html2canvas` + `jsPDF` (ou `react-to-print` → upload)
+- Au moment de la signature (`ContractSign.tsx`) : après UPDATE du contrat, générer un PDF de la vue signée, uploader dans bucket `signed-contracts`, créer une ligne `signed_contract_files`
+- Ajouter dépendances `html2canvas` + `jspdf`
+
+---
+
+### 9. Fusion jalons 4, 5, 6 en "AR speaker"
+**Fichiers :** `src/components/admin/EventDossier.tsx`, schema events
+- Identifier les 3 colonnes actuelles (probablement `info_sent_speaker_at`, `contract_sent_speaker_at`, `speaker_acknowledgment_at` ou `speaker_signed_contract_at`)
+- Garder `speaker_acknowledgment_at` comme jalon unique "AR speaker"
+- Masquer les autres dans l'UI (sans supprimer les colonnes pour préserver l'historique)
+
+⚠ À confirmer avec l'utilisateur : quelles sont précisément les étapes 4, 5, 6 affichées chez lui ?
+
+---
+
+### 10. Étape "Visio" → choisir date + heure
+**Fichier :** `src/components/admin/EventDossier.tsx`
+- Au clic sur le jalon Visio, ouvrir Dialog avec inputs `date` (visio_date) + `time` (visio_time)
+- Save sur `events.visio_date` et `events.visio_time` (colonnes déjà existantes)
+
+---
+
+### 11. Feuille de liaison — renommage + reprise détails + aperçu
+**Fichiers :** `src/components/admin/EventDossier.tsx` (édition), `src/pages/LiaisonSheetView.tsx`
+- Renommer label UI "Configuration de la salle" → "Détails techniques" (`room_setup` reste comme champ DB)
+- Pré-remplir `events.notes` (Commentaires) avec `contracts.event_description` (champ "Détails" du contrat) si vide
+- Bouton "Aperçu" qui ouvre `/feuille-liaison/:id` dans nouvel onglet avant envoi (déjà la route existante)
+
+---
+
+## Migrations DB nécessaires
+
 ```sql
-UPDATE speakers SET themes = array_replace(themes, 'Excellence', 'Performance');
-UPDATE speakers SET themes = array_replace(themes, 'Performance et croissance', 'Performance');
-UPDATE speakers SET themes = array_replace(themes, 'Stratégie d''entreprise', 'Stratégie');
-UPDATE speakers SET themes = array_replace(themes, 'Progrès', 'Innovation');
--- Pour les composés, retirer + ajouter les 2 cibles
+-- 1. Permettre DELETE sur simulator_leads
+CREATE POLICY "Authenticated can delete leads" ON simulator_leads FOR DELETE TO authenticated USING (true);
+
+-- 4. Stocker l'intervenant choisi sur le contrat
+ALTER TABLE contracts ADD COLUMN selected_speaker_id uuid;
 ```
-Après migration : déduplication des arrays.
 
-### C — Mise à jour mémoire
-Corriger la mémoire `theme-normalization` : le compte est désormais **56 catégories** (et non 51).
+---
 
-## Résultat attendu
+## Dépendances à ajouter
+- `html2canvas`, `jspdf` (génération PDF signé)
+- Police Caveat (signature manuscrite) via Google Fonts
 
-- Page `/conferencier` : bandeau hero avec photo de fond, identique au look de la page d'accueil.
-- Plus aucune création possible de thème hors-liste depuis l'admin (création manuelle, édition, import IA).
-- Base nettoyée : 56 thèmes max affichés sur le site, alignés sur la liste canonique.
+---
+
+## Questions avant implémentation
+1. **Point 9** : Peux-tu me confirmer les libellés actuels des étapes 4, 5, 6 dans le suivi du dossier ? (pour être sûr de fusionner les bonnes)
+2. **Point 7** : OK pour utiliser la police Google "Caveat" en attendant la vraie signature image de Nelly ?
+3. **Point 8** : OK pour génération PDF côté navigateur au moment de la signature (rapide, pas de coût serveur) ?
+
+Je peux démarrer immédiatement sur 1, 2, 3, 5, 6, 10, 11 qui sont sans ambiguïté, et attendre tes réponses pour 4, 7, 8, 9 si tu préfères. Dis-moi si je fonce sur tout.

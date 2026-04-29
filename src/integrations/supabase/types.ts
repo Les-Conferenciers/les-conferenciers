@@ -61,8 +61,10 @@ export type Database = {
       }
       contracts: {
         Row: {
+          agency_commission: number | null
           client_signed_received_at: string | null
           contract_lines: Json | null
+          contract_sent_at: string | null
           created_at: string
           discount_percent: number | null
           event_date: string | null
@@ -72,6 +74,7 @@ export type Database = {
           event_time: string | null
           id: string
           proposal_id: string
+          selected_speaker_id: string | null
           signed_at: string | null
           signer_ip: string | null
           signer_name: string | null
@@ -79,8 +82,10 @@ export type Database = {
           token: string | null
         }
         Insert: {
+          agency_commission?: number | null
           client_signed_received_at?: string | null
           contract_lines?: Json | null
+          contract_sent_at?: string | null
           created_at?: string
           discount_percent?: number | null
           event_date?: string | null
@@ -90,6 +95,7 @@ export type Database = {
           event_time?: string | null
           id?: string
           proposal_id: string
+          selected_speaker_id?: string | null
           signed_at?: string | null
           signer_ip?: string | null
           signer_name?: string | null
@@ -97,8 +103,10 @@ export type Database = {
           token?: string | null
         }
         Update: {
+          agency_commission?: number | null
           client_signed_received_at?: string | null
           contract_lines?: Json | null
+          contract_sent_at?: string | null
           created_at?: string
           discount_percent?: number | null
           event_date?: string | null
@@ -108,6 +116,7 @@ export type Database = {
           event_time?: string | null
           id?: string
           proposal_id?: string
+          selected_speaker_id?: string | null
           signed_at?: string | null
           signer_ip?: string | null
           signer_name?: string | null
@@ -654,6 +663,7 @@ export type Database = {
           audience_size: string | null
           budget: string | null
           company: string | null
+          confirmation_message_id: string | null
           created_at: string
           email: string
           event_date: string | null
@@ -673,6 +683,7 @@ export type Database = {
           audience_size?: string | null
           budget?: string | null
           company?: string | null
+          confirmation_message_id?: string | null
           created_at?: string
           email: string
           event_date?: string | null
@@ -692,6 +703,7 @@ export type Database = {
           audience_size?: string | null
           budget?: string | null
           company?: string | null
+          confirmation_message_id?: string | null
           created_at?: string
           email?: string
           event_date?: string | null

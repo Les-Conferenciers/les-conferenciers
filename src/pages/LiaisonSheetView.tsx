@@ -13,13 +13,13 @@ const LiaisonSheetView = () => {
     const fetchAll = async () => {
       const { data: ev } = await supabase
         .from("events")
-        .select("*, proposal:proposals(client_name, recipient_name, client_email, proposal_speakers(speakers(name, phone)))")
+        .select("*, proposal:proposals(client_name, recipient_name, client_email, proposal_speakers(speaker_id, speakers(name, phone)))")
         .eq("proposal_id", id!)
         .maybeSingle();
 
       const { data: contract } = await supabase
         .from("contracts")
-        .select("event_date, event_location, event_time")
+        .select("event_date, event_location, event_time, event_description")
         .eq("proposal_id", id!)
         .maybeSingle();
 
@@ -67,17 +67,24 @@ const LiaisonSheetView = () => {
             <p><span className="font-medium">Horaires de l'intervention :</span> {contract?.event_time || "À définir"}</p>
             <p><span className="font-medium">Auditoire :</span> {ev.audience_size || "À définir"}</p>
             <p><span className="font-medium">Thématique :</span> {ev.theme || "À définir"}</p>
-            <p><span className="font-medium">Arrivée du conférencier sur place :</span> {ev.visio_notes || "À confirmer"}</p>
+            <p><span className="font-medium">Arrivée du conférencier sur place :</span> {ev.arrival_info || "À confirmer"}</p>
           </div>
         </section>
 
         {/* Besoins techniques */}
         <section className="mb-8">
           <h3 className="font-bold text-lg mb-3">Besoins techniques :</h3>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Vidéoprojecteur</li>
-            <li>Salle installée en largeur avec une allée centrale si possible</li>
-          </ul>
+          {ev.tech_needs || ev.room_setup ? (
+            <ul className="list-disc pl-5 space-y-1">
+              {ev.tech_needs && <li>{ev.tech_needs}</li>}
+              {ev.room_setup && <li>{ev.room_setup}</li>}
+            </ul>
+          ) : (
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Vidéoprojecteur</li>
+              <li>Salle installée en largeur avec une allée centrale si possible</li>
+            </ul>
+          )}
         </section>
 
         {/* Contact */}
@@ -88,10 +95,10 @@ const LiaisonSheetView = () => {
         </section>
 
         {/* Commentaires */}
-        {ev.notes && (
+        {(ev.notes || contract?.event_description) && (
           <section className="mb-8">
             <h3 className="font-bold text-lg mb-3">Commentaires :</h3>
-            <p>{ev.notes}</p>
+            <p className="whitespace-pre-line">{ev.notes || contract?.event_description}</p>
           </section>
         )}
       </div>

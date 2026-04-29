@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 type ContractLine = {
   id: string;
@@ -32,6 +33,7 @@ type ContractData = {
   created_at: string;
   contract_lines: ContractLine[] | null;
   discount_percent: number | null;
+  agency_commission?: number | null;
   proposal: {
     client_name: string;
     client_email: string;
@@ -43,6 +45,16 @@ type ContractData = {
       speakers: { name: string; gender: string | null } | null;
     }[];
   };
+};
+
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 };
 
 const ContractSign = () => {
@@ -65,7 +77,10 @@ const ContractSign = () => {
         .single();
       const c = data as any;
       setContract(c);
-      if (c?.status === "signed") setSigned(true);
+      if (c?.status === "signed") {
+        setSigned(true);
+        if (c.signer_name) setSignerName(c.signer_name);
+      }
 
       if (c?.proposal?.client_id) {
         const { data: cl } = await supabase.from("clients").select("company_name, contact_name, address, city, siret").eq("id", c.proposal.client_id).single();
@@ -79,13 +94,72 @@ const ContractSign = () => {
     fetchAll();
   }, [token]);
 
+  const generateAndUploadPdf = async (contractId: string, contractToken: string, signedBy: string, signedAt: string) => {
+    try {
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 18;
+      let y = 18;
+      const addText = (text: string, size = 10, bold = false) => {
+        pdf.setFont("helvetica", bold ? "bold" : "normal");
+        pdf.setFontSize(size);
+        const lines = pdf.splitTextToSize(text, pageWidth - margin * 2);
+        pdf.text(lines, margin, y);
+        y += lines.length * (size * 0.45) + 3;
+      };
+
+      addText("LES CONFÉRENCIERS", 16, true);
+      addText(`Bon de commande signé — N° ${event?.bdc_number || contractId.slice(0, 4).toUpperCase()}`, 12, true);
+      y += 4;
+      addText(`Client : ${clientName || proposal?.client_name || "—"}`);
+      addText(`Intervenant : ${speakerGender} ${firstSpeaker?.name || "—"}`);
+      y += 3;
+      addText("Détails de l'événement", 12, true);
+      addText(`Date : ${formatDateLong(contract.event_date)}`);
+      addText(`Lieu : ${contract.event_location || "À définir"}`);
+      addText(`Horaires : ${contract.event_time || "À définir"}`);
+      if (event?.audience_size) addText(`Auditoire : ${event.audience_size}`);
+      if (event?.theme) addText(`Thématique : ${event.theme}`);
+      addText(`Format : ${eventFormatLabel}`);
+      if (eventDetails) addText(`Détails : ${eventDetails}`);
+      y += 3;
+      addText("Montant de la prestation", 12, true);
+      lines.forEach((line) => addText(`${line.type === "speaker" ? "Montant de la prestation de l'intervenant" : line.label} : ${(line.amount_ht * (1 + line.tva_rate / 100)).toLocaleString("fr-FR")} €TTC, soit ${line.amount_ht.toLocaleString("fr-FR")} €HT`));
+      if (discount > 0) addText(`Remise de ${discount}% appliquée`);
+      addText("TVA Les conférenciers : FR - TVA applicable : 20%");
+      y += 6;
+      addText("Signature électronique", 12, true);
+      addText(`Bon pour accord — ${signedBy}`);
+      addText(`Signé électroniquement le ${formatDateLong(signedAt)}`);
+      addText("Les Conférenciers — Bon pour accord — Nelly Sabde");
+
+      const base64 = arrayBufferToBase64(pdf.output("arraybuffer"));
+      const fileName = `Contrat-signe-${contractId.slice(0, 8)}.pdf`;
+
+      const { data, error } = await supabase.functions.invoke("upload-signed-contract", {
+        body: { token: contractToken, pdf_base64: base64, file_name: fileName, signer_name: signedBy, signed_at: signedAt },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return true;
+    } catch (e) {
+      console.error("PDF gen failed", e);
+      return false;
+    }
+  };
+
   const handleSign = async () => {
     if (!contract || !signerName.trim() || !accepted) return;
     setSigning(true);
+    const signedAt = new Date().toISOString();
     const { error } = await supabase.from("contracts").update({
-      status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: new Date().toISOString(),
+      status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: signedAt, client_signed_received_at: signedAt.slice(0, 10),
     } as any).eq("token", token!);
-    if (error) { toast.error("Erreur lors de la signature"); } else { setSigned(true); toast.success("Contrat signé avec succès !"); }
+    if (error) { toast.error("Erreur lors de la signature"); setSigning(false); return; }
+    const uploaded = await generateAndUploadPdf(contract.id, contract.token, signerName.trim(), signedAt);
+    setContract({ ...contract, status: "signed", signer_name: signerName.trim(), signed_at: signedAt } as ContractData);
+    setSigned(true);
+    toast.success(uploaded ? "Contrat signé et PDF archivé." : "Contrat signé, mais le PDF n'a pas pu être archivé automatiquement.");
     setSigning(false);
   };
 
@@ -97,9 +171,20 @@ const ContractSign = () => {
   const firstSpeaker = speakers[0]?.speakers;
   const speakerGender = firstSpeaker?.gender === "female" ? "Madame" : "Monsieur";
 
-  const lines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
+  const rawLines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
     ? contract.contract_lines
     : speakers.map((s: any, i: number) => ({ id: String(i), label: s.speakers?.name || `Conférencier ${i + 1}`, amount_ht: s.total_price || 0, tva_rate: 20, type: "speaker" }));
+
+  // Silently distribute the agency commission across speaker lines (proportional to their HT share)
+  const commission = contract.agency_commission || 0;
+  const speakerLinesTotal = rawLines.filter(l => l.type === "speaker").reduce((s, l) => s + l.amount_ht, 0);
+  const lines: ContractLine[] = commission > 0 && speakerLinesTotal > 0
+    ? rawLines.map(l => l.type === "speaker"
+        ? { ...l, amount_ht: l.amount_ht + commission * (l.amount_ht / speakerLinesTotal) }
+        : l)
+    : (commission > 0 && speakerLinesTotal === 0 && rawLines.length > 0
+        ? rawLines.map((l, i) => i === 0 ? { ...l, amount_ht: l.amount_ht + commission } : l)
+        : rawLines);
 
   const discount = contract.discount_percent || 0;
   const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
@@ -116,6 +201,8 @@ const ContractSign = () => {
 
   const bdcNumber = event?.bdc_number || contract.id.slice(0, 4).toUpperCase();
   const clientName = client?.company_name || proposal?.client_name || "";
+  const eventFormatLabel = contract.event_format || "Conférence";
+  const eventDetails = contract.event_description || "";
 
   return (
     <div className="min-h-screen bg-[#f8f6f1]">
@@ -171,6 +258,8 @@ const ContractSign = () => {
                 <p><span className="text-gray-500">Horaires :</span> {contract.event_time || "À définir"}</p>
                 {event?.audience_size && <p><span className="text-gray-500">Auditoire :</span> {event.audience_size}</p>}
                 {event?.theme && <p><span className="text-gray-500">Thématique :</span> {event.theme}</p>}
+                <p><span className="text-gray-500">Format :</span> {eventFormatLabel}</p>
+                {eventDetails && <p className="whitespace-pre-line"><span className="text-gray-500">Détails :</span> {eventDetails}</p>}
               </div>
             </div>
 
@@ -214,13 +303,41 @@ const ContractSign = () => {
           {/* Signature section */}
           <div className="border-t border-gray-200 p-6">
             {signed ? (
-              <div className="text-center space-y-3">
-                <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-3 rounded-full text-sm font-medium">
-                  <CheckCircle className="h-5 w-5" />
-                  Contrat signé{contract.signer_name ? ` par ${contract.signer_name}` : ""}
-                  {contract.signed_at ? ` le ${formatDateLong(contract.signed_at)}` : ""}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-3 rounded-full text-sm font-medium">
+                    <CheckCircle className="h-5 w-5" />
+                    Contrat signé{contract.signer_name ? ` par ${contract.signer_name}` : ""}
+                    {contract.signed_at ? ` le ${formatDateLong(contract.signed_at)}` : ""}
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500">Vous recevrez une confirmation par email.</p>
+                {/* Bloc signature manuscrite (utilisé pour la génération PDF) */}
+                <div className="grid grid-cols-2 gap-6 mt-4">
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50/50 min-h-[140px]">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Le Client</p>
+                    <p className="text-[11px] text-gray-500 mb-2">{clientName}</p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">
+                      Bon pour accord
+                    </p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">
+                      {contract.signer_name || signerName}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-2">
+                      Signé électroniquement le {contract.signed_at ? formatDateLong(contract.signed_at) : formatDateLong(new Date().toISOString())}
+                    </p>
+                  </div>
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50/50 min-h-[140px]">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Les Conférenciers</p>
+                    <p className="text-[11px] text-gray-500 mb-2">Société Eve</p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">
+                      Bon pour accord
+                    </p>
+                    <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">
+                      Nelly Sabde
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-2">Vous recevrez une confirmation par email avec le contrat signé en pièce jointe.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -232,13 +349,18 @@ const ContractSign = () => {
                   <div className="space-y-2">
                     <Label>Votre nom complet (signature)</Label>
                     <Input value={signerName} onChange={e => setSignerName(e.target.value)} placeholder="Prénom NOM" className="text-center text-lg font-serif" />
+                    {signerName && (
+                      <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] text-center mt-2">
+                        Bon pour accord — {signerName}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-lg">
                     <Checkbox id="accept" checked={accepted} onCheckedChange={(v) => setAccepted(v === true)} />
                     <label htmlFor="accept" className="text-sm leading-relaxed cursor-pointer">
                       Je soussigné(e) <strong>{signerName || "___"}</strong>, représentant la société <strong>{clientName}</strong>,
                       déclare avoir pris connaissance des conditions ci-dessus et les accepte sans réserve.
-                      <br /><span className="text-xs text-gray-500">Mention « Bon pour accord »</span>
+                      <br /><span className="text-xs text-gray-500">La mention « Bon pour accord » sera apposée automatiquement.</span>
                     </label>
                   </div>
                   <Button className="w-full py-6 text-base" onClick={handleSign} disabled={signing || !signerName.trim() || !accepted}>

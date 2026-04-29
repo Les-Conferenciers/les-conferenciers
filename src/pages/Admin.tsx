@@ -160,16 +160,18 @@ const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmo
   const hasEventContext = eventDateText || eventLocation || audienceSize;
   const contextParts: string[] = [];
   if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
-  if (eventLocation) contextParts.push(`à <strong>${eventLocation}</strong>`);
-  if (audienceSize) contextParts.push(`pour <strong>${audienceSize} personnes</strong>`);
+  if (eventLocation) contextParts.push(`qui aura lieu à <strong>${eventLocation}</strong>`);
+  if (audienceSize) contextParts.push(`pour un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
   
   const introPhrase = hasEventContext
-    ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants ${contextParts.join(" ")} et vous adresse, comme convenu, le profil de ${speakerName}.`
+    ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${contextParts.join(", ")}, et vous adresse, comme convenu, le profil de ${speakerName}.`
     : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}.`;
 
-  const alternativePhrase = hasEventContext
+  const alternativePhrase = audienceSize
     ? `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>`
-    : `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>`;
+    : `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>
+
+<p><strong>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</strong></p>`;
 
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
@@ -444,7 +446,7 @@ const EmailPreviewCard = ({
           <span style={{ color: "#f5f0e8", fontSize: "20px", fontWeight: "bold", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
         </div>
         <div style={{ padding: "30px 30px 20px" }}>
-          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} className="[&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+          <div style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }} className="[&_p]:mt-0 [&_p]:mb-4 [&_p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           {showProposalButton && (
             <>
               <div style={{ textAlign: "center", margin: "30px 0" }}>
@@ -595,9 +597,11 @@ const AdminProposalsContent = () => {
     return () => clearTimeout(timer);
   }, [clientEmail, proposals, allClients]);
 
-  // Load leads matching the client email — to consult their original message while drafting the proposal
+  // Load leads matching the client email — to consult their original message while drafting/editing the proposal.
+  // Also auto-prefill event details (date, location, audience size) from the most recent lead, when those fields are empty.
   useEffect(() => {
-    if (!clientEmail || clientEmail.length < 5 || !clientEmail.includes("@")) {
+    const targetEmail = editDialogOpen ? editClientEmail : clientEmail;
+    if (!targetEmail || targetEmail.length < 5 || !targetEmail.includes("@")) {
       setMatchingLeads([]);
       return;
     }
@@ -605,12 +609,22 @@ const AdminProposalsContent = () => {
       const { data } = await supabase
         .from("simulator_leads")
         .select("*")
-        .ilike("email", clientEmail.trim())
+        .ilike("email", targetEmail.trim())
         .order("created_at", { ascending: false });
-      setMatchingLeads((data as any[]) || []);
+      const leads = (data as any[]) || [];
+      setMatchingLeads(leads);
+
+      // Auto-prefill from latest lead (only when creating, and only empty fields)
+      if (!editDialogOpen && leads.length > 0) {
+        const latest = leads[0];
+        if (latest.event_date && !eventDateText) setEventDateText(latest.event_date);
+        if (latest.location && !eventLocation) setEventLocation(latest.location);
+        if (latest.audience_size && !audienceSize) setAudienceSize(latest.audience_size);
+      }
     }, 350);
     return () => clearTimeout(timer);
-  }, [clientEmail]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientEmail, editClientEmail, editDialogOpen]);
 
   const fetchProposals = async () => {
     setLoading(true);
@@ -1041,6 +1055,7 @@ const AdminProposalsContent = () => {
       setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
     }
     setEditSelectedSpeakers(proposalSpeakers);
+    setShowLeadsPanel(true);
     setEditDialogOpen(true);
   };
 
@@ -1387,12 +1402,18 @@ const AdminProposalsContent = () => {
         </div>
         {(eventDateText || eventLocation || audienceSize) && (() => {
           const contextParts: string[] = [];
-          if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
-          if (eventLocation) contextParts.push(`à <strong>${eventLocation}</strong>`);
-          if (audienceSize) contextParts.push(`pour <strong>${audienceSize} personnes</strong>`);
+          if (proposalType === "unique") {
+            if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+            if (eventLocation) contextParts.push(`qui aura lieu à <strong>${eventLocation}</strong>`);
+            if (audienceSize) contextParts.push(`pour un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
+          } else {
+            if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+            if (eventLocation) contextParts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
+            if (audienceSize) contextParts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
+          }
           const previewText = proposalType === "unique"
-            ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants ${contextParts.join(" ")}...`
-            : `Vous trouverez ci-joint une sélection de conférenciers pour votre événement ${contextParts.join(", ")}.`;
+            ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${contextParts.join(", ")}...`
+            : `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${contextParts.join(", ")}.`;
           return (
             <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic" dangerouslySetInnerHTML={{ __html: previewText }} />
           );
@@ -2151,6 +2172,51 @@ const AdminProposalsContent = () => {
                   <div className="border-t border-border pt-4">
                     <h3 className="font-medium text-sm mb-3">🎤 Conférenciers et tarifs</h3>
                     {renderSpeakerSelectionEditor(editSelectedSpeakers, setEditSelectedSpeakers)}
+                  </div>
+                )}
+
+                {matchingLeads.length > 0 && (
+                  <div className="border-t border-border pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm">📨 Messages reçus du client ({matchingLeads.length})</Label>
+                      <button type="button" onClick={() => setShowLeadsPanel(v => !v)} className="text-[10px] text-muted-foreground hover:text-foreground underline">
+                        {showLeadsPanel ? "Masquer" : "Afficher"}
+                      </button>
+                    </div>
+                    {showLeadsPanel && (
+                      <div className="border border-border rounded-md bg-muted/20 max-h-[300px] overflow-y-auto divide-y divide-border">
+                        {matchingLeads.map((lead) => {
+                          const date = new Date(lead.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+                          const fullName = `${lead.first_name || ""} ${lead.last_name || ""}`.trim();
+                          return (
+                            <div key={lead.id} className="p-2.5 text-xs space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium">{fullName || "Sans nom"}</span>
+                                <span className="text-[10px] text-muted-foreground">{date}</span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground flex flex-wrap gap-x-2">
+                                <span className="bg-background px-1.5 rounded">{lead.lead_type}</span>
+                                {lead.company && <span>🏢 {lead.company}</span>}
+                                {lead.phone && <span>📞 {lead.phone}</span>}
+                              </div>
+                              {(lead.event_date || lead.location || lead.audience_size || lead.budget) && (
+                                <div className="text-[10px] text-muted-foreground">
+                                  {lead.event_date && <span>📅 {lead.event_date}</span>}
+                                  {lead.location && <span> · 📍 {lead.location}</span>}
+                                  {lead.audience_size && <span> · 👥 {lead.audience_size}</span>}
+                                  {lead.budget && <span> · 💶 {lead.budget}</span>}
+                                </div>
+                              )}
+                              {lead.additional_info && (
+                                <div className="bg-background border border-border rounded p-1.5 mt-1 whitespace-pre-wrap text-foreground/90">
+                                  {lead.additional_info}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 

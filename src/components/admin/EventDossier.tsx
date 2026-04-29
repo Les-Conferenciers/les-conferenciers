@@ -61,9 +61,20 @@ type Contract = {
   signer_name: string | null;
   signed_at: string | null;
   created_at: string;
+  contract_sent_at?: string | null;
   contract_lines: any;
   discount_percent: number | null;
+  agency_commission?: number | null;
   client_signed_received_at?: string | null;
+};
+
+type SpeakerCRM = {
+  id: string;
+  name: string;
+  base_fee: number | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
 };
 
 type Invoice = {
@@ -154,6 +165,8 @@ const TVA_OPTIONS = [
   { value: "20", label: "20%" },
 ];
 
+const parseAmountInput = (value: string) => Number(value.replace(/\s/g, "").replace(",", ".")) || 0;
+
 const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contract, setContract] = useState<Contract | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -172,7 +185,13 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractBdcNumber, setContractBdcNumber] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [agencyCommission, setAgencyCommission] = useState<number>(0);
+  const [agencyCommissionText, setAgencyCommissionText] = useState("0");
   const [saving, setSaving] = useState(false);
+  // CRM speaker picker for contract lines
+  const [allSpeakers, setAllSpeakers] = useState<SpeakerCRM[]>([]);
+  const [speakerPickerOpen, setSpeakerPickerOpen] = useState(false);
+  const [speakerPickerSearch, setSpeakerPickerSearch] = useState("");
   // Client for contract creation
   const [contractClientId, setContractClientId] = useState<string>("");
   const [showCreateClientInContract, setShowCreateClientInContract] = useState(false);
@@ -215,6 +234,12 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonTechNeeds, setLiaisonTechNeeds] = useState("");
   const [liaisonArrival, setLiaisonArrival] = useState("");
   const [liaisonSalleSetup, setLiaisonSalleSetup] = useState("");
+  // Liaison editable contract/event fields
+  const [liaisonEventDate, setLiaisonEventDate] = useState("");
+  const [liaisonEventLocation, setLiaisonEventLocation] = useState("");
+  const [liaisonEventTime, setLiaisonEventTime] = useState("");
+  const [liaisonAudience, setLiaisonAudience] = useState("");
+  const [liaisonTheme, setLiaisonTheme] = useState("");
   const [sendingLiaison, setSendingLiaison] = useState(false);
   const [liaisonClientSubject, setLiaisonClientSubject] = useState("");
   const [liaisonClientBody, setLiaisonClientBody] = useState("");
@@ -305,6 +330,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const fetchClients = async () => {
     const { data } = await supabase.from("clients").select("id, company_name, contact_name, email, phone, siret, address, city").order("company_name");
     setClients((data as any) || []);
+    const { data: sp } = await supabase.from("speakers").select("id, name, base_fee, email, phone, city").eq("archived", false).order("name");
+    setAllSpeakers((sp as any) || []);
   };
 
   // ─── Auto-create event if missing ───
@@ -347,15 +374,20 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   // ─── Compute totals ───
-  const computeTotals = (lines: ContractLine[], discount: number) => {
-    const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
+  // The agency commission is added to the global HT (silent — not shown as a separate line in the contract)
+  const computeTotals = (lines: ContractLine[], discount: number, commission: number = 0) => {
+    const linesSubtotal = lines.reduce((sum, l) => sum + l.amount_ht, 0);
+    const subtotalHT = linesSubtotal + (commission || 0);
     const discountAmount = subtotalHT * (discount / 100);
     const totalHTAfterDiscount = subtotalHT - discountAmount;
-    const totalTVA = lines.reduce((sum, l) => {
-      const lineShare = subtotalHT > 0 ? l.amount_ht / subtotalHT : 0;
-      const lineHTAfterDiscount = l.amount_ht - (discountAmount * lineShare);
+    // TVA computed on the merged base, prorated against original line TVA mix (commission inherits 20%)
+    const commissionTVA = (commission || 0) * 0.20;
+    const linesTVA = lines.reduce((sum, l) => {
+      const lineShare = linesSubtotal > 0 ? l.amount_ht / linesSubtotal : 0;
+      const lineHTAfterDiscount = l.amount_ht - (discountAmount * (linesSubtotal / (subtotalHT || 1)) * lineShare);
       return sum + lineHTAfterDiscount * (l.tva_rate / 100);
     }, 0);
+    const totalTVA = linesTVA + commissionTVA * (1 - discount / 100);
     const totalTTC = totalHTAfterDiscount + totalTVA;
     return { subtotalHT, discountAmount, totalHTAfterDiscount, totalTVA, totalTTC };
   };
@@ -378,8 +410,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   const effectiveDiscount = contract?.discount_percent || 0;
+  const effectiveCommission = (contract as any)?.agency_commission || 0;
   const effectiveLines = getEffectiveLines();
-  const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount);
+  const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount, effectiveCommission);
 
   const selectedSpeaker = getSelectedSpeaker();
   const speakerInfo = getSelectedSpeakerInfo();
@@ -409,23 +442,65 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
   };
   const removeLine = (id: string) => setContractLines(prev => prev.filter(l => l.id !== id));
+  const updateAgencyCommission = (value: string) => {
+    setAgencyCommissionText(value);
+    setAgencyCommission(parseAmountInput(value));
+  };
+  const resetAgencyCommission = () => {
+    setAgencyCommission(0);
+    setAgencyCommissionText("0");
+  };
   const addLine = (type: ContractLine["type"]) => {
+    if (type === "speaker") {
+      setSpeakerPickerSearch("");
+      setSpeakerPickerOpen(true);
+      return;
+    }
     const defaults: Record<string, string> = { speaker: "Conférencier", travel: "Frais de déplacement", custom: "Prestation complémentaire" };
     setContractLines(prev => [...prev, { id: generateId(), label: defaults[type], amount_ht: 0, tva_rate: 20, type }]);
   };
+  const addSpeakerLineFromCRM = (sp: SpeakerCRM) => {
+    setContractLines(prev => [...prev, {
+      id: generateId(),
+      label: sp.name,
+      amount_ht: sp.base_fee || 0,
+      tva_rate: 20,
+      type: "speaker",
+    }]);
+    setSpeakerPickerOpen(false);
+    toast.success(`${sp.name} ajouté`);
+  };
 
   // ─── Contract CRUD ───
+  const parseProposalEventDate = (): string => {
+    const txt = proposal.event_date_text || "";
+    if (!txt) return "";
+    // Try to find an ISO-style date YYYY-MM-DD
+    const isoMatch = txt.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return isoMatch[0];
+    // Try DD/MM/YYYY or DD-MM-YYYY
+    const frMatch = txt.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+    if (frMatch) {
+      const day = frMatch[1].padStart(2, "0");
+      const month = frMatch[2].padStart(2, "0");
+      let year = frMatch[3];
+      if (year.length === 2) year = "20" + year;
+      return `${year}-${month}-${day}`;
+    }
+    return "";
+  };
+
   const openCreateContract = () => {
     setEditingContract(false);
     // Auto-fill from proposal data
-    setEventDate(""); 
-    setEventLocation(proposal.event_location || ""); 
-    setEventTime(""); 
-    setEventFormat("Conférence"); 
+    setEventDate(parseProposalEventDate());
+    setEventLocation(proposal.event_location || "");
+    setEventTime("");
+    setEventFormat("Conférence");
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
     setContractBdcNumber("");
-    setContractLines(buildInitialLines()); setDiscountPercent(0);
+    setContractLines(buildInitialLines()); setDiscountPercent(0); setAgencyCommission(0); setAgencyCommissionText("0");
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
@@ -437,12 +512,16 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const openEditContract = () => {
     if (!contract) return;
     setEditingContract(true);
-    setEventDate(contract.event_date || ""); setEventLocation(contract.event_location || "");
+    setEventDate(contract.event_date || (parseProposalEventDate()));
+    setEventLocation(contract.event_location || "");
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
     setContractBdcNumber(event?.bdc_number || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
+    const savedCommission = Number((contract as any).agency_commission) || 0;
+    setAgencyCommission(savedCommission);
+    setAgencyCommissionText(savedCommission ? String(savedCommission) : "0");
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
     setContractDialogOpen(true);
@@ -485,6 +564,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       event_description: eventDescription || null,
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
+      agency_commission: agencyCommission || 0,
     };
     // Link client to proposal
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
@@ -509,7 +589,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const openContractEmail = () => {
     if (!contract) return;
     const dateStr = contract.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "à définir";
-    const totals = computeTotals(getEffectiveLines(), contract.discount_percent || 0);
+    const totals = computeTotals(getEffectiveLines(), contract.discount_percent || 0, (contract as any).agency_commission || 0);
 
     // Pre-fill recipient from proposal
     setContractRecipientName(proposal.recipient_name || "");
@@ -578,7 +658,9 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendContractEmail = async () => {
     if (!contract) return;
-    if (!contractRecipientEmail) { toast.error("Email du destinataire requis"); return; }
+    // Auto-use proposal recipient — no manual selector needed
+    const targetEmail = proposal.client_email;
+    if (!targetEmail) { toast.error("Aucun email client sur la proposition"); return; }
     setSendingContract(true);
     try {
       const { error } = await supabase.functions.invoke("send-contract-email", {
@@ -586,11 +668,12 @@ Nelly Sabde - Les Conférenciers`);
           contract_id: contract.id,
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
-          recipient_email: contractRecipientEmail,
+          recipient_email: targetEmail,
         },
       });
       if (error) throw error;
-      await supabase.from("contracts").update({ status: "sent" } as any).eq("id", contract.id);
+      await supabase.from("contracts").update({ status: "sent", contract_sent_at: new Date().toISOString() } as any).eq("id", contract.id);
+      // Ne pas toucher à contract_sent_speaker_at (= communication conférencier).
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
       fetchData(); onUpdate();
@@ -701,10 +784,15 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
-    setLiaisonNotes(event?.visio_notes || "");
+    setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "");
     setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur");
     setLiaisonSalleSetup(event?.room_setup || "Salle installée en largeur avec une allée centrale si possible");
     setLiaisonArrival(event?.arrival_info || "");
+    setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
+    setLiaisonEventLocation(contract?.event_location || "");
+    setLiaisonEventTime(contract?.event_time || "");
+    setLiaisonAudience(event?.audience_size || "");
+    setLiaisonTheme(event?.theme || "");
     setLiaisonTab("client");
 
     // Client email template
@@ -739,24 +827,55 @@ Nelly Sabde - Les Conférenciers`);
     setLiaisonDialogOpen(true);
   };
 
+  // Persist editable liaison fields back to contract + event
+  const persistLiaisonFields = async () => {
+    if (contract) {
+      await supabase.from("contracts").update({
+        event_date: liaisonEventDate || null,
+        event_location: liaisonEventLocation || null,
+        event_time: liaisonEventTime || null,
+      } as any).eq("id", contract.id);
+    }
+    if (event) {
+      await supabase.from("events").update({
+        audience_size: liaisonAudience || null,
+        theme: liaisonTheme || null,
+        arrival_info: liaisonArrival || null,
+        tech_needs: liaisonTechNeeds || null,
+        room_setup: liaisonSalleSetup || null,
+        notes: liaisonNotes || null,
+      } as any).eq("id", event.id);
+    }
+  };
+
+  const handlePreviewLiaisonSheet = async () => {
+    await persistLiaisonFields();
+    await fetchData();
+    window.open(`/admin/feuille-liaison/${proposal.id}`, "_blank");
+  };
+
   const handleSendLiaisonSheet = async () => {
     setSendingLiaison(true);
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
-    const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
 
-    // Build liaison sheet content block
+    // Persist edits first so contract & event reflect what's sent
+    await persistLiaisonFields();
+
+    const dateStr = liaisonEventDate ? new Date(liaisonEventDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+    // Build liaison sheet content block (uses dialog values)
     const liaisonContent = `
 
 📋 FEUILLE DE LIAISON
 ${event?.event_title ? `\nÉvénement : ${event.event_title}` : ""}
 📅 Date de l'évènement : ${dateStr}
-📍 Lieu de l'intervention : ${contract?.event_location || ""}
-🕐 Horaires de l'intervention : ${contract?.event_time || ""}
+📍 Lieu de l'intervention : ${liaisonEventLocation || ""}
+🕐 Horaires de l'intervention : ${liaisonEventTime || ""}
 ${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
 ${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
-👥 Auditoire : ${event?.audience_size || ""}
-📋 Thématique : ${event?.theme || ""}
+👥 Auditoire : ${liaisonAudience || ""}
+🎯 Thématique : ${liaisonTheme || ""}
 ${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
 🚗 Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
 ${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
@@ -1039,7 +1158,7 @@ Nelly Sabde - Les Conférenciers`);
   const getContractSignUrl = () =>
     contract?.token ? `${window.location.origin}/signer-contrat/${contract.token}` : null;
 
-  const dialogTotals = computeTotals(contractLines, discountPercent);
+  const dialogTotals = computeTotals(contractLines, discountPercent, agencyCommission);
 
   if (loading) return <div className="text-muted-foreground text-xs py-2">Chargement…</div>;
 
@@ -1111,13 +1230,14 @@ Nelly Sabde - Les Conférenciers`);
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              contract.status === "signed" ? "bg-green-100 text-green-700" :
-              contract.status === "sent" ? "bg-amber-100 text-amber-700" :
-              "bg-muted text-muted-foreground"
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              contract.status === "signed"
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
             }`}>
-              {contract.status === "signed" ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}` :
-               contract.status === "sent" ? "Envoyé" : "Brouillon"}
+              {contract.status === "signed"
+                ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
+                : (contract.status === "sent" ? "⏳ Non signé (envoyé)" : "⚠️ Non signé (brouillon)")}
             </span>
             {(contract.status === "draft" || contract.status === "sent") && (
               <>
@@ -1288,15 +1408,15 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Contract form dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-w-0 [&_*]:box-border [&_button]:max-w-full [&_input]:max-w-full [&_textarea]:max-w-full [&_select]:max-w-full">
           <DialogHeader>
             <DialogTitle className="font-serif">
               {editingContract ? "Modifier" : "Créer"} le contrat - {proposal.client_name}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-5 mt-2">
+          <div className="space-y-5 mt-2 min-w-0 max-w-full">
             {/* Client selector - mandatory */}
-            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+              <div className="space-y-3 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 min-w-0 max-w-full overflow-hidden">
               <Label className="text-xs font-semibold flex items-center gap-2">
                 <User className="h-3.5 w-3.5" /> Client (obligatoire pour le contrat) *
               </Label>
@@ -1385,12 +1505,55 @@ Nelly Sabde - Les Conférenciers`);
               })()}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* Speaker selector — allows changing the assigned speaker even after contract creation */}
+            {proposal.proposal_speakers.length > 1 && (
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                <Label className="text-xs font-semibold flex items-center gap-2">
+                  <User className="h-3.5 w-3.5" /> Conférencier retenu pour ce contrat
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {proposal.proposal_speakers.map(ps => {
+                    const isSelected = event?.selected_speaker_id === ps.speaker_id;
+                    return (
+                      <button
+                        key={ps.speaker_id}
+                        type="button"
+                        onClick={async () => {
+                          if (!ps.speaker_id || !event) return;
+                          await supabase.from("events").update({ selected_speaker_id: ps.speaker_id } as any).eq("id", event.id);
+                          // Rebuild lines for the newly selected speaker
+                          const newLines = [{
+                            id: generateId(),
+                            label: ps.speakers?.name || "Conférencier",
+                            amount_ht: ps.total_price || 0,
+                            tva_rate: 20,
+                            type: "speaker" as const,
+                          }];
+                          setContractLines(newLines);
+                          fetchData();
+                          toast.success("Conférencier mis à jour");
+                        }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-md border text-xs transition-all",
+                          isSelected ? "border-primary bg-primary text-primary-foreground font-medium" : "border-border bg-background hover:border-primary/50"
+                        )}
+                      >
+                        {ps.speakers?.name || "—"}
+                        {isSelected && <CheckCircle className="h-3 w-3 inline-block ml-1" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground">Modifier ici si le conférencier choisi diffère de la proposition initiale.</p>
+              </div>
+            )}
+
+              <div className="grid grid-cols-1 gap-3 min-w-0">
               <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-xs">Horaires</Label><Input placeholder="14h00 - 15h30" value={eventTime} onChange={e => setEventTime(e.target.value)} /></div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Lieu</Label><Input placeholder="Hôtel Marriott, Paris" value={eventLocation} onChange={e => setEventLocation(e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 min-w-0">
               <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input placeholder="200 personnes" value={contractAudienceSize} onChange={e => setContractAudienceSize(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-xs">N° Bon de commande</Label><Input placeholder="BDC-001" value={contractBdcNumber} onChange={e => setContractBdcNumber(e.target.value)} /></div>
             </div>
@@ -1398,51 +1561,72 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-1"><Label className="text-xs">Détails</Label><Textarea placeholder="Infos complémentaires..." value={eventDescription} onChange={e => setEventDescription(e.target.value)} rows={2} /></div>
 
             {/* Lines */}
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0">
               <Label className="text-sm font-semibold">Lignes de facturation</Label>
               {contractLines.map(line => (
-                <div key={line.id} className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
-                  <div className="flex-1 space-y-2">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                      line.type === "speaker" ? "bg-primary/10 text-primary" :
-                      line.type === "travel" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
-                    }`}>{line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}</span>
-                    <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm" />
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-0.5">
-                        <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
-                        <Input type="number" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <Label className="text-[10px] text-muted-foreground">TVA</Label>
-                        <Select value={String(line.tva_rate)} onValueChange={v => updateLine(line.id, "tva_rate", Number(v))}>
-                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                          <SelectContent>{TVA_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
+                <div key={line.id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2 min-w-0">
+                  <div className="flex items-start gap-2 min-w-0 max-w-full overflow-hidden">
+                    <span className={cn(
+                      "inline-flex shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground",
+                      line.type === "speaker" && "bg-primary/10 text-primary"
+                    )}>{line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}</span>
+                    <Button type="button" size="icon" variant="ghost" className="ml-auto h-7 w-7 shrink-0 text-destructive hover:text-destructive" onClick={() => removeLine(line.id)} title="Supprimer cette ligne" aria-label="Supprimer cette ligne">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm min-w-0 max-w-full" />
+                  <div className="grid grid-cols-1 gap-2 min-w-0">
+                    <div className="space-y-0.5 min-w-0">
+                      <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
+                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm min-w-0 max-w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+                    </div>
+                    <div className="space-y-0.5 min-w-0">
+                      <Label className="text-[10px] text-muted-foreground">TVA</Label>
+                      <Select value={String(line.tva_rate)} onValueChange={v => updateLine(line.id, "tva_rate", Number(v))}>
+                        <SelectTrigger className="h-8 text-sm max-w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>{TVA_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive mt-6" onClick={() => removeLine(line.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
               ))}
-              <div className="flex gap-2 flex-wrap">
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("speaker")}><Plus className="h-3 w-3" /> Conférencier</Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("travel")}><Plus className="h-3 w-3" /> Déplacement</Button>
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => addLine("custom")}><Plus className="h-3 w-3" /> Autre</Button>
+              <div className="grid grid-cols-1 gap-2 min-w-0">
+                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("speaker")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Conférencier</span></Button>
+                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("travel")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Déplacement</span></Button>
+                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("custom")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Autre</span></Button>
+              </div>
+            </div>
+
+            {/* Agency commission (silently merged into the total — never shown as a separate line in the contract) */}
+            <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50 min-w-0">
+              <div className="space-y-1 min-w-0">
+                <Label className="text-xs font-semibold flex items-center gap-2">
+                  <CircleDollarSign className="h-3.5 w-3.5" /> Commission agence HT
+                </Label>
+                <p className="text-[10px] text-muted-foreground">Interne, incluse dans le prix global client.</p>
+              </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 min-w-0 max-w-full overflow-hidden">
+                <div className="relative flex-1 min-w-0">
+                  <Input type="text" inputMode="decimal" value={agencyCommissionText} onChange={e => updateAgencyCommission(e.target.value)} className="h-8 pr-8 text-sm text-right min-w-0" />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">€</span>
+                </div>
+                <Button type="button" size="sm" variant="ghost" className="h-8 shrink-0 px-2 text-xs text-destructive hover:text-destructive" onClick={resetAgencyCommission}>
+                  Retirer
+                </Button>
               </div>
             </div>
 
             {/* Discount */}
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50 min-w-0">
               <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div className="flex-1"><Label className="text-xs">Remise globale (%)</Label></div>
-              <Input type="number" min={0} max={100} value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="w-20 h-8 text-sm text-right" />
+              <div className="flex-1 min-w-0"><Label className="text-xs">Remise globale (%)</Label></div>
+              <Input type="number" min={0} max={100} inputMode="numeric" value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="w-20 h-8 text-sm text-right shrink-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
             </div>
 
             {/* Totals */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+            <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-2 text-sm min-w-0">
+              <div className="flex justify-between text-muted-foreground"><span>Sous-total lignes HT</span><span>{(dialogTotals.subtotalHT - (agencyCommission || 0)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
+              {agencyCommission > 0 && <div className="flex justify-between text-amber-700"><span>+ Commission agence (interne)</span><span>{agencyCommission.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
               <div className="flex justify-between text-muted-foreground"><span>Sous-total HT</span><span>{dialogTotals.subtotalHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
               {discountPercent > 0 && <div className="flex justify-between text-red-600"><span>Remise ({discountPercent}%)</span><span>-{dialogTotals.discountAmount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
               <div className="flex justify-between text-muted-foreground"><span>Total HT</span><span>{dialogTotals.totalHTAfterDiscount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
@@ -1457,88 +1641,65 @@ Nelly Sabde - Les Conférenciers`);
         </DialogContent>
       </Dialog>
 
+      {/* CRM speaker picker for contract lines */}
+      <Dialog open={speakerPickerOpen} onOpenChange={setSpeakerPickerOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-base">Ajouter un conférencier (CRM)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
+            <Input
+              placeholder="Rechercher un conférencier…"
+              value={speakerPickerSearch}
+              onChange={e => setSpeakerPickerSearch(e.target.value)}
+              autoFocus
+            />
+            <div className="flex-1 overflow-y-auto border border-border/60 rounded-md divide-y divide-border/40">
+              {allSpeakers
+                .filter(sp => !speakerPickerSearch || sp.name.toLowerCase().includes(speakerPickerSearch.toLowerCase()) || (sp.city || "").toLowerCase().includes(speakerPickerSearch.toLowerCase()))
+                .slice(0, 200)
+                .map(sp => (
+                  <button
+                    key={sp.id}
+                    type="button"
+                    onClick={() => addSpeakerLineFromCRM(sp)}
+                    className="w-full text-left px-3 py-2 hover:bg-muted/60 transition flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{sp.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {sp.city || "—"}{sp.email ? ` · ${sp.email}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-primary shrink-0">
+                      {sp.base_fee ? `${sp.base_fee.toLocaleString("fr-FR")} €` : "—"}
+                    </span>
+                  </button>
+                ))}
+              {allSpeakers.length === 0 && (
+                <p className="p-4 text-xs text-muted-foreground italic text-center">Chargement des conférenciers…</p>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground">Le tarif de base et le nom seront pré-remplis depuis la fiche CRM.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Contract email dialog with client selector */}
       <Dialog open={contractEmailOpen} onOpenChange={setContractEmailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
 
-            {/* Client contact selector */}
-            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
-              <Label className="text-xs font-semibold flex items-center gap-2">
-                <User className="h-3.5 w-3.5" /> Destinataire du contrat
-              </Label>
-              <div className="flex gap-2">
-                <select
-                  className="flex-1 rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
-                  value={selectedClientId}
-                  onChange={e => {
-                    if (e.target.value === "__new__") {
-                      setShowCreateClient(true);
-                      setSelectedClientId("");
-                    } else if (e.target.value) {
-                      handleSelectClient(e.target.value);
-                    } else {
-                      setSelectedClientId("");
-                      setContractRecipientName(proposal.recipient_name || "");
-                      setContractRecipientEmail(proposal.client_email);
-                    }
-                  }}
-                >
-                  <option value="">- Utiliser les infos de la proposition -</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.company_name}{c.contact_name ? ` - ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
-                    </option>
-                  ))}
-                  <option value="__new__">➕ Créer un nouveau client…</option>
-                </select>
+            {/* Auto-linked recipient from proposal */}
+            <div className="p-3 bg-muted/30 rounded-lg border border-border/50 text-sm">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                <User className="h-3.5 w-3.5" /> Destinataire (lié à la proposition)
               </div>
-
-              {/* Inline create client form */}
-              {showCreateClient && (
-                <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
-                    <UserPlus className="h-3.5 w-3.5" /> Nouveau client
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Société *</Label>
-                      <Input value={newClientCompany} onChange={e => setNewClientCompany(e.target.value)} placeholder="SNCF" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Nom du contact</Label>
-                      <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="Pascal Dupont" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Email</Label>
-                      <Input type="email" value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} placeholder="email@societe.com" className="h-8 text-sm" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Téléphone</Label>
-                      <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="06 XX XX XX XX" className="h-8 text-sm" />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleCreateNewClient} disabled={creatingClient} className="gap-1">
-                      <UserPlus className="h-3 w-3" /> {creatingClient ? "Création…" : "Créer et sélectionner"}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setShowCreateClient(false)}>Annuler</Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Editable recipient fields */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Nom du destinataire</Label>
-                  <Input value={contractRecipientName} onChange={e => setContractRecipientName(e.target.value)} className="h-8 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Email du destinataire</Label>
-                  <Input type="email" value={contractRecipientEmail} onChange={e => setContractRecipientEmail(e.target.value)} className="h-8 text-sm" />
-                </div>
-              </div>
+              <p className="font-medium">
+                {proposal.recipient_name || proposal.client_name}
+                <span className="text-muted-foreground font-normal"> &lt;{proposal.client_email}&gt;</span>
+              </p>
             </div>
 
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={contractEmailSubject} onChange={e => setContractEmailSubject(e.target.value)} /></div>
@@ -1546,7 +1707,6 @@ Nelly Sabde - Les Conférenciers`);
 
             {/* Recap */}
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>📧 <strong>Destinataire :</strong> {contractRecipientName || "—"} &lt;{contractRecipientEmail || "—"}&gt;</p>
               <p>🎤 <strong>Conférencier :</strong> {speakerSummary}</p>
               {getContractSignUrl() && <p>🔗 <strong>Lien signature :</strong> {getContractSignUrl()}</p>}
             </div>
@@ -1586,26 +1746,31 @@ Nelly Sabde - Les Conférenciers`);
           <div className="space-y-5 mt-2">
             {/* Liaison details - matching the DOCX template fields */}
             <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
-              <Label className="text-xs font-semibold">📋 Champs de la feuille de liaison</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Arrivée du conférencier sur place</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Besoins techniques</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">📋 Champs de la feuille de liaison</Label>
+                <p className="text-[10px] text-muted-foreground italic">Ces valeurs mettent à jour le contrat à l'envoi.</p>
               </div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Configuration de la salle</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Salle en largeur avec allée centrale" className="h-8 text-sm" /></div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
-              
-              {/* Preview of what the liaison sheet will contain */}
-              <div className="bg-background rounded border border-border p-3 text-[11px] text-muted-foreground space-y-0.5">
-                <p className="font-semibold text-foreground text-xs mb-1">Aperçu de la feuille :</p>
-                <p>📅 Date : {contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR") : "—"}</p>
-                <p>📍 Lieu : {contract?.event_location || "—"}</p>
-                <p>🕐 Horaires : {contract?.event_time || "—"}</p>
-                <p>👥 Auditoire : {event?.audience_size || "—"}</p>
-                <p>🎯 Thématique : {event?.theme || "—"}</p>
-                <p>🚗 Arrivée : {liaisonArrival || "à confirmer"}</p>
-                <p>🔧 Technique : {liaisonTechNeeds || "—"}{liaisonSalleSetup ? `, ${liaisonSalleSetup}` : ""}</p>
-                <p>📞 Client : {proposal.recipient_name || proposal.client_name}</p>
-                <p>📞 Conférencier : {speakerInfo?.name || "—"}{speakerInfo?.phone ? ` - ${speakerInfo.phone}` : ""}</p>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">📅 Date</Label><Input type="date" value={liaisonEventDate} onChange={e => setLiaisonEventDate(e.target.value)} className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🕐 Horaires</Label><Input value={liaisonEventTime} onChange={e => setLiaisonEventTime(e.target.value)} placeholder="9h-12h" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">📍 Lieu</Label><Input value={liaisonEventLocation} onChange={e => setLiaisonEventLocation(e.target.value)} placeholder="Marseille" className="h-8 text-sm" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">👥 Auditoire</Label><Input value={liaisonAudience} onChange={e => setLiaisonAudience(e.target.value)} placeholder="100 personnes" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🎯 Thématique</Label><Input value={liaisonTheme} onChange={e => setLiaisonTheme(e.target.value)} placeholder="Le management" className="h-8 text-sm" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
+                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Technique</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🍿 Détails techniques</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Configuration salle, micro HF, écran…" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
+
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={handlePreviewLiaisonSheet} className="gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> Aperçu de la feuille
+                </Button>
               </div>
             </div>
 

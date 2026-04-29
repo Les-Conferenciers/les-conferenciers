@@ -84,11 +84,19 @@ Deno.serve(async (req) => {
         .replace(/\n/g, "<br>");
     };
 
+    const eventContextParts: string[] = [];
+    if (proposal.event_date_text) eventContextParts.push(`du <strong>${proposal.event_date_text}</strong>`);
+    if (proposal.event_location) eventContextParts.push(`qui se tiendra à <strong>${proposal.event_location}</strong>`);
+    if (proposal.audience_size) eventContextParts.push(`devant un auditoire d'environ <strong>${proposal.audience_size} personnes</strong>`);
+    const classicSelectionLine = eventContextParts.length
+      ? `<p>Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${eventContextParts.join(", ")}.</p>`
+      : `<p>Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour ${proposal.client_name || "votre événement"}.</p>`;
+
     const defaultClassicBody = `<p>Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},</p>
 
 <p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
 
-<p>Vous trouverez ci-dessous une sélection de conférenciers soigneusement choisis pour ${proposal.client_name || "votre événement"}, sous réserve de leur disponibilité.</p>
+${classicSelectionLine}
 
 <p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
@@ -99,15 +107,26 @@ Deno.serve(async (req) => {
 <p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
 
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+    const uniqueContextParts: string[] = [];
+    if (proposal.event_date_text) uniqueContextParts.push(`du <strong>${proposal.event_date_text}</strong>`);
+    if (proposal.event_location) uniqueContextParts.push(`qui aura lieu à <strong>${proposal.event_location}</strong>`);
+    if (proposal.audience_size) uniqueContextParts.push(`pour un auditoire d'environ <strong>${proposal.audience_size} personnes</strong>`);
+    const uniqueIntroPhrase = uniqueContextParts.length
+      ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${uniqueContextParts.join(", ")}, et vous adresse, comme convenu, le profil de ${uniqueSpeakerName}.`
+      : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${uniqueSpeakerName}.`;
+
     const defaultUniqueBody = `<p>Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},</p>
 
 <p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p>
 
-<p>Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${uniqueSpeakerName}. Le tarif de son intervention est de ${uniqueSpeakerTotal} € HT, hors frais VHR.</p>
+<p>${uniqueIntroPhrase} Le tarif de son intervention est de ${uniqueSpeakerTotal} € HT, hors frais VHR.</p>
 
 ${uniqueProfileUrl ? `<p><strong>👉 <a href="${uniqueProfileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${uniqueSpeakerName}</a></strong> (sous réserve de sa disponibilité)</p>` : ""}
 
-<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.<br>À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</p>
+<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>
+${proposal.audience_size ? "" : `
+<p><strong>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</strong></p>
+`}
 
 <p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p>
 
@@ -146,7 +165,9 @@ Nelly Sabde - Les Conférenciers
 
     const emailHtml = `
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>.email-body p{margin:0 0 16px 0;}.email-body p:last-child{margin-bottom:0;}</style>
+</head>
 <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
     <!-- Header -->
@@ -156,7 +177,7 @@ Nelly Sabde - Les Conférenciers
     </div>
     
     <div style="padding:30px 30px 20px;">
-      <div style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
+      <div class="email-body" style="color:#333;font-size:15px;line-height:1.6;">${bodyHtml}</div>
       ${showProposalButton ? `<div style="text-align:center;margin:30px 0;">
         <a href="${proposalUrl}" style="display:inline-block;background:#1a2332;color:#f5f0e8;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">
           Consulter la proposition complète
@@ -180,6 +201,27 @@ Nelly Sabde - Les Conférenciers
   </div>
 </body></html>`;
 
+    // Look up the most recent lead for this client email to thread the proposal email as a reply
+    const { data: latestLead } = await adminClient
+      .from("simulator_leads")
+      .select("confirmation_message_id")
+      .ilike("email", proposal.client_email.trim())
+      .not("confirmation_message_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // We store the full Message-ID header (with angle brackets) when sending the lead confirmation.
+    // For older leads where only the raw Resend API id was stored, fall back to building one with the sending domain.
+    const buildMessageIdRef = (rawId: string) => {
+      const trimmed = rawId.trim();
+      if (!trimmed) return null;
+      if (trimmed.startsWith("<") && trimmed.endsWith(">")) return trimmed;
+      const idCore = trimmed.includes("@") ? trimmed : `${trimmed}@lesconferenciers.com`;
+      return `<${idCore}>`;
+    };
+    const inReplyToRef = latestLead?.confirmation_message_id ? buildMessageIdRef(latestLead.confirmation_message_id) : null;
+
     const emailPayload: any = {
       from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
       to: [proposal.client_email],
@@ -188,6 +230,12 @@ Nelly Sabde - Les Conférenciers
     };
     if (ccList.length > 0) {
       emailPayload.cc = ccList;
+    }
+    if (inReplyToRef) {
+      emailPayload.headers = {
+        "In-Reply-To": inReplyToRef,
+        "References": inReplyToRef,
+      };
     }
 
     const resendRes = await fetch("https://api.resend.com/emails", {

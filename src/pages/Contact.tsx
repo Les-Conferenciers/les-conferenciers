@@ -20,7 +20,8 @@ const contactSchema = z.object({
   company: z.string().trim().max(100).optional().or(z.literal("")),
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   eventDate: z.string().optional().or(z.literal("")),
-  eventType: z.string().trim().max(200).optional().or(z.literal("")),
+  eventLocation: z.string().trim().max(200).optional().or(z.literal("")),
+  audienceSize: z.string().trim().max(20).optional().or(z.literal("")),
   message: z.string().trim().min(1, "Le message est requis").max(2000, "2000 caractères max"),
 });
 
@@ -217,9 +218,22 @@ const Contact = () => {
                       <Input id="eventDate" type="date" {...register("eventDate")} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="eventType">Type d'événement</Label>
-                      <Input id="eventType" placeholder="Séminaire, conférence…" {...register("eventType")} />
+                      <Label htmlFor="eventLocation">Lieu de l'intervention</Label>
+                      <Input id="eventLocation" placeholder="Paris, Lyon, Marseille…" {...register("eventLocation")} />
                     </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="audienceSize">Taille de l'auditoire</Label>
+                    <Input
+                      id="audienceSize"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      placeholder="200"
+                      onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                      {...register("audienceSize")}
+                    />
                   </div>
 
                   <div className="space-y-1.5">
