@@ -182,7 +182,12 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractBdcNumber, setContractBdcNumber] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [agencyCommission, setAgencyCommission] = useState<number>(0);
   const [saving, setSaving] = useState(false);
+  // CRM speaker picker for contract lines
+  const [allSpeakers, setAllSpeakers] = useState<SpeakerCRM[]>([]);
+  const [speakerPickerOpen, setSpeakerPickerOpen] = useState(false);
+  const [speakerPickerSearch, setSpeakerPickerSearch] = useState("");
   // Client for contract creation
   const [contractClientId, setContractClientId] = useState<string>("");
   const [showCreateClientInContract, setShowCreateClientInContract] = useState(false);
