@@ -1758,11 +1758,12 @@ Nelly Sabde - Les Conférenciers`);
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label className="text-xs">À</Label><Input value={speakerEmailTo} onChange={e => setSpeakerEmailTo(e.target.value)} placeholder="email@exemple.com" /></div>
+              <div className="space-y-2"><Label className="text-xs">Cc (séparés par virgule)</Label><Input value={speakerEmailCc} onChange={e => setSpeakerEmailCc(e.target.value)} placeholder="copie1@exemple.com, copie2@exemple.com" /></div>
+            </div>
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={speakerEmailSubject} onChange={e => setSpeakerEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={speakerEmailBody} onChange={e => setSpeakerEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
-            <p className="text-[10px] text-muted-foreground">
-              📧 Sera envoyé à : {speakerInfo?.email || "Pas d'email renseigné"}
-            </p>
             <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
               <Send className="h-4 w-4 mr-2" />{sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
             </Button>
