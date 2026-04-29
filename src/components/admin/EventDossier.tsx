@@ -775,24 +775,55 @@ Nelly Sabde - Les Conférenciers`);
     setLiaisonDialogOpen(true);
   };
 
+  // Persist editable liaison fields back to contract + event
+  const persistLiaisonFields = async () => {
+    if (contract) {
+      await supabase.from("contracts").update({
+        event_date: liaisonEventDate || null,
+        event_location: liaisonEventLocation || null,
+        event_time: liaisonEventTime || null,
+      } as any).eq("id", contract.id);
+    }
+    if (event) {
+      await supabase.from("events").update({
+        audience_size: liaisonAudience || null,
+        theme: liaisonTheme || null,
+        arrival_info: liaisonArrival || null,
+        tech_needs: liaisonTechNeeds || null,
+        room_setup: liaisonSalleSetup || null,
+        notes: liaisonNotes || null,
+      } as any).eq("id", event.id);
+    }
+  };
+
+  const handlePreviewLiaisonSheet = async () => {
+    await persistLiaisonFields();
+    await fetchData();
+    window.open(`/liaison-sheet/${proposal.id}`, "_blank");
+  };
+
   const handleSendLiaisonSheet = async () => {
     setSendingLiaison(true);
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
-    const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
 
-    // Build liaison sheet content block
+    // Persist edits first so contract & event reflect what's sent
+    await persistLiaisonFields();
+
+    const dateStr = liaisonEventDate ? new Date(liaisonEventDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+    // Build liaison sheet content block (uses dialog values)
     const liaisonContent = `
 
 📋 FEUILLE DE LIAISON
 ${event?.event_title ? `\nÉvénement : ${event.event_title}` : ""}
 📅 Date de l'évènement : ${dateStr}
-📍 Lieu de l'intervention : ${contract?.event_location || ""}
-🕐 Horaires de l'intervention : ${contract?.event_time || ""}
+📍 Lieu de l'intervention : ${liaisonEventLocation || ""}
+🕐 Horaires de l'intervention : ${liaisonEventTime || ""}
 ${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
 ${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
-👥 Auditoire : ${event?.audience_size || ""}
-📋 Thématique : ${event?.theme || ""}
+👥 Auditoire : ${liaisonAudience || ""}
+🎯 Thématique : ${liaisonTheme || ""}
 ${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
 🚗 Arrivée du conférencier sur place : ${liaisonArrival || "à confirmer"}
 ${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
