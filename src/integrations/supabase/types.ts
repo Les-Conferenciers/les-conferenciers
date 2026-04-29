@@ -61,6 +61,7 @@ export type Database = {
       }
       contracts: {
         Row: {
+          agency_commission: number | null
           client_signed_received_at: string | null
           contract_lines: Json | null
           created_at: string
@@ -80,6 +81,7 @@ export type Database = {
           token: string | null
         }
         Insert: {
+          agency_commission?: number | null
           client_signed_received_at?: string | null
           contract_lines?: Json | null
           created_at?: string
@@ -99,6 +101,7 @@ export type Database = {
           token?: string | null
         }
         Update: {
+          agency_commission?: number | null
           client_signed_received_at?: string | null
           contract_lines?: Json | null
           created_at?: string
