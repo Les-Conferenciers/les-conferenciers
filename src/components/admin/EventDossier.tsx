@@ -799,7 +799,7 @@ Nelly Sabde - Les Conférenciers`);
   const handlePreviewLiaisonSheet = async () => {
     await persistLiaisonFields();
     await fetchData();
-    window.open(`/liaison-sheet/${proposal.id}`, "_blank");
+    window.open(`/admin/feuille-liaison/${proposal.id}`, "_blank");
   };
 
   const handleSendLiaisonSheet = async () => {
