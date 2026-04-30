@@ -543,6 +543,41 @@ const AdminProposalsContent = () => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks(), fetchLeads()]);
   }, []);
 
+  // Pre-fill proposal dialog from a lead draft (handed off via sessionStorage by AdminLeads)
+  const [draftConsumed, setDraftConsumed] = useState(false);
+  useEffect(() => {
+    if (draftConsumed) return;
+    const raw = sessionStorage.getItem("pendingProposalDraft");
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw);
+      resetForm();
+      setProposalType("classique");
+      setClientName(draft.clientName || "");
+      setClientEmail(draft.clientEmail || "");
+      setRecipientName(draft.recipientName || "");
+      setClientPhone(draft.clientPhone || "");
+      setEventLocation(draft.eventLocation || "");
+      setEventDateText(draft.eventDateText || "");
+      setAudienceSize(draft.audienceSize || "");
+      if (draft.message) setMessage(draft.message);
+      setEmailSubject(getDefaultEmailSubject(draft.clientName || ""));
+      setEmailBody(getDefaultEmailBody(draft.recipientName || "", draft.clientName || ""));
+      if (draft.clientId) {
+        setSelectedClientId(draft.clientId);
+        setClientMode("search");
+      } else {
+        setClientMode("new");
+      }
+      setDialogOpen(true);
+      sessionStorage.removeItem("pendingProposalDraft");
+      setDraftConsumed(true);
+    } catch (e) {
+      sessionStorage.removeItem("pendingProposalDraft");
+      setDraftConsumed(true);
+    }
+  }, [draftConsumed]);
+
   const fetchLeads = async () => {
     const { data } = await supabase.from("simulator_leads").select("*").order("created_at", { ascending: false });
     setAllLeads((data as any) || []);
@@ -2286,19 +2321,21 @@ const AdminProposalsContent = () => {
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
-                        <Input
-                          type="date"
-                          value={task.due_date}
-                          onChange={e => {
-                            const updated = [...editingTasks];
-                            updated[idx] = { ...updated[idx], due_date: e.target.value };
-                            setEditingTasks(updated);
-                          }}
-                        />
-                      </div>
+                    <div className={task.status === "completed" ? "" : "grid grid-cols-2 gap-3"}>
+                      {task.status !== "completed" && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                          <Input
+                            type="date"
+                            value={task.due_date}
+                            onChange={e => {
+                              const updated = [...editingTasks];
+                              updated[idx] = { ...updated[idx], due_date: e.target.value };
+                              setEditingTasks(updated);
+                            }}
+                          />
+                        </div>
+                      )}
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Note</Label>
                         <Input
