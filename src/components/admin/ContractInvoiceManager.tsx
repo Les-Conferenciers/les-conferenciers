@@ -100,6 +100,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [eventDescription, setEventDescription] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [depositRequired, setDepositRequired] = useState(true);
+  const [customClauses, setCustomClauses] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Contract email
