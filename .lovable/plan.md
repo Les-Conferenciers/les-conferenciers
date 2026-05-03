@@ -1,73 +1,83 @@
 ## Objectif
 
-Dans l'onglet **Leads** (Admin), remplacer le bouton "Répondre par email" par **"Créer la proposition"** qui ouvre directement le formulaire de création de proposition pré-rempli avec les infos du lead, et qui rattache automatiquement le client existant ou prépare la création d'un nouveau client.
+Dans l'onglet **Propositions → sous-onglet "Envoyées"**, regrouper les propositions partageant le même `client_id` CRM, et permettre de créer une nouvelle proposition pré-remplie pour un client existant après son retour (changement de speaker, prix, lieu, etc.).
 
 ## Comportement attendu
 
-1. Dans la modale "Détail du lead", le bouton bas devient **"Créer la proposition"** (icône FileText).
-2. Au clic :
-   - On cherche un client existant dans la base (`clients`) dont l'email correspond à celui du lead (recherche insensible à la casse).
-   - **Si trouvé** : la proposition s'ouvre en mode "client existant" avec ce client pré-sélectionné.
-   - **Sinon** : la proposition s'ouvre en mode "nouveau client", avec les champs pré-remplis (nom société, email, téléphone, contact). À la soumission, le client sera créé automatiquement (logique déjà existante).
-3. Les champs de l'événement sont aussi pré-remplis : lieu, date, taille de l'auditoire, message du client (collé dans le champ message interne de la proposition pour contexte).
-4. La modale de détail du lead se ferme et l'utilisateur bascule sur l'onglet **Propositions** avec le dialogue de création ouvert.
+### 1. Regroupement par client (sous-onglet "Envoyées" uniquement)
 
-## Mapping lead → proposition
+- Les propositions ayant le **même `client_id`** sont regroupées en une **ligne accordéon** (style cohérent avec l'accordéon déjà utilisé pour les détails post-acceptation).
+- Les propositions **sans `client_id`** restent affichées en lignes individuelles (pas de regroupement par email — décision validée).
+- L'en-tête de groupe affiche :
+  - Nom du client CRM (`company_name` + `contact_name` si dispo)
+  - Compteur : "N propositions"
+  - Date de la dernière proposition
+  - Statut le plus avancé (ex : si une est `accepted`, badge "Accepté" prioritaire ; sinon le statut de la dernière)
+  - Bouton **"Nouvelle proposition"** (icône Plus)
+- Au déploiement de l'accordéon : on voit toutes les propositions du client, **triées par date décroissante**, avec les mêmes lignes/actions qu'aujourd'hui (envoyer, dupliquer, relance, accepter, voir, etc.).
+- Tri global du sous-onglet : par **date de la proposition la plus récente** de chaque groupe (respecte le toggle `dateSortAsc` existant).
+- La recherche (`proposalSearch`) et le filtre type continuent de fonctionner : un groupe est visible si **au moins une** de ses propositions matche.
+- Pagination (`pageSize`) : compte les **groupes** (et les propositions orphelines sans client_id) plutôt que les lignes individuelles.
 
-| Lead (simulator_leads) | Proposition |
-|---|---|
-| `company` (ou "first_name last_name" si vide) | `client_name` (nom société) |
-| `first_name + last_name` | `recipient_name` (interlocuteur) |
-| `email` | `client_email` |
-| `phone` | `client_phone` |
-| `location` | `event_location` |
-| `event_date` | `event_date_text` |
-| `audience_size` | `audience_size` |
-| `additional_info` + `objective` + `themes` | `message` (récap concaténé) |
+Les sous-onglets **Brouillons** et **Archivées** restent en liste plate inchangée.
 
-Le `proposal_type` reste **"classique"** par défaut (l'utilisateur peut basculer ensuite).
+### 2. Bouton "Nouvelle proposition" sur un groupe client
 
-## Implémentation technique
+Au clic sur le bouton dans l'en-tête d'un groupe :
 
-### 1. Mécanisme de transmission Leads → Propositions
+- Ouverture de la **modale de création** existante (`setDialogOpen(true)`).
+- Pré-remplissage automatique à partir de la proposition la plus récente du client :
+  - Mode client = `"search"` avec `selectedClientId` = client_id du groupe → infos client (nom, email, téléphone, interlocuteur) chargées depuis la fiche CRM
+  - **Lieu** (`event_location`), **date texte** (`event_date_text`), **taille auditoire** (`audience_size`) repris de la dernière proposition (modifiables)
+  - **Type de proposition** (`proposal_type`) repris de la dernière (modifiable)
+  - **Speakers** : non recopiés par défaut (le client veut souvent changer) — l'utilisateur sélectionne fraîchement. Sinon il peut s'appuyer sur les modèles ou refaire sa sélection.
+  - **Message interne** et **email** : valeurs par défaut (regénérées comme pour une nouvelle proposition)
+- L'utilisateur ajuste librement (speakers, prix, lieu…) puis envoie comme une proposition normale.
 
-Comme les deux onglets sont des composants frères dans `Admin.tsx`, on utilise **`sessionStorage`** comme tampon (clé `pendingProposalDraft`) + navigation via `setSearchParams({ tab: "propositions" })`.
+### 3. Effets de bord à préserver
 
-- `AdminLeads.tsx` : au clic sur "Créer la proposition", recherche du client puis :
-  ```ts
-  sessionStorage.setItem("pendingProposalDraft", JSON.stringify({
-    clientId, clientName, clientEmail, recipientName, clientPhone,
-    eventLocation, eventDateText, audienceSize, message,
-  }));
-  // navigate vers ?tab=propositions
-  ```
+- L'avertissement "Email déjà connu" reste actif (utile pour visualiser l'historique côté UI).
+- Le pipeline post-acceptation et les tâches de relance fonctionnent toujours par proposition individuelle.
+- Aucun changement de schéma DB.
 
-- `AdminProposalsContent` (dans `Admin.tsx`) : un `useEffect` au montage lit `sessionStorage`, applique les setters, ouvre `setDialogOpen(true)`, puis efface l'entrée.
+## Détails techniques
 
-### 2. Détection du client existant
+**Fichier modifié :** `src/pages/Admin.tsx` (composant `AdminProposalsContent`).
 
-Requête simple côté client :
+### Construction des groupes
+
+Dans le rendu du sous-onglet `sent` uniquement :
+
 ```ts
-const { data } = await supabase
-  .from("clients")
-  .select("id, company_name, contact_name, email, phone")
-  .ilike("email", lead.email)
-  .limit(1)
-  .maybeSingle();
+type SentGroup =
+  | { kind: "group"; clientId: string; clientLabel: string; items: Proposal[] }
+  | { kind: "single"; proposal: Proposal };
+
+// 1. Séparer ceux avec client_id et sans
+// 2. Regrouper par client_id, label = allClients.find(...).company_name (+ contact_name)
+// 3. Trier les items du groupe par created_at desc
+// 4. Construire un tableau ordonné selon date la plus récente de chaque entrée
+// 5. Appliquer recherche/filtre type AVANT regroupement, ou filtrer les groupes après
 ```
-Si résultat → mode `"search"` + `selectedClientId` rempli. Sinon → mode `"new"`.
 
-### 3. UI du bouton (AdminLeads.tsx)
+### Rendu
 
-Remplace le `<a href="mailto:...">` par un `<Button onClick={handleCreateProposal}>` avec icône `FileText` (lucide-react). On garde aussi un petit lien secondaire "Envoyer un email" optionnel ? **Non** — la demande est claire : on remplace.
+- Réutilise `renderProposalRow(p, "sent")` à l'intérieur de l'accordéon (zéro régression sur les actions par ligne).
+- En-tête d'accordéon : composant local inline avec `Collapsible` (déjà importé via shadcn) ou un simple `useState` `expandedGroupId`.
+- Bouton "Nouvelle proposition" appelle un nouveau handler `handleNewProposalForClient(clientId, latestProposal)` qui :
+  - `resetForm()`
+  - `setClientMode("search")` + `setSelectedClientId(clientId)`
+  - charge le client depuis `allClients`, set `setClientName/Email/Phone/RecipientName`
+  - copie `event_location/event_date_text/audience_size/proposal_type` depuis `latestProposal`
+  - `setDialogOpen(true)`
 
-## Fichiers modifiés
+### Pagination
 
-- `src/components/admin/AdminLeads.tsx` — remplace le bouton, ajoute la fonction `handleCreateProposal` (lookup client + sessionStorage + navigation).
-- `src/pages/Admin.tsx` (`AdminProposalsContent`) — ajoute un `useEffect` qui détecte un brouillon en sessionStorage au montage et ouvre le dialogue pré-rempli.
+Remplacer `items.slice(0, pageSize)` par un slice sur le tableau d'entrées groupées pour le sous-onglet `sent`. Drafts et archived inchangés.
 
 ## Hors périmètre
 
-- Pas de changement de schéma de DB.
-- Pas de suppression du lead après création de la proposition (l'utilisateur peut continuer à le voir dans l'onglet Leads).
-- Pas de lien "logique" persistant entre `simulator_leads` et `proposals` (juste un pré-remplissage one-shot).
+- Pas de regroupement dans Brouillons ni Archivées.
+- Pas de fusion de propositions ni de lien "version de" persistant en DB.
+- Pas de duplication automatique de la sélection de speakers (l'objectif est justement d'en changer).
+- Pas de regroupement pour les propositions sans client_id (orphelines en lignes plates).
