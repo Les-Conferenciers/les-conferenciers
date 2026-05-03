@@ -647,6 +647,36 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
 
+            {/* Acompte requis */}
+            <div className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+              <div>
+                <Label className="text-xs">Acompte client requis (50%)</Label>
+                <p className="text-[10px] text-muted-foreground">Désactiver pour facturer 100% en une seule fois</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={depositRequired}
+                onClick={() => setDepositRequired(v => !v)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${depositRequired ? "bg-primary" : "bg-muted-foreground/30"}`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${depositRequired ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+            </div>
+
+            {/* Clauses personnalisées */}
+            <div className="space-y-1">
+              <Label className="text-xs">Clauses personnalisées (ajoutées au contrat)</Label>
+              <Textarea
+                placeholder={`Ex : Article 4.3 — Captation autorisée uniquement à des fins internes…\n\nLaisser vide pour utiliser le contrat standard.`}
+                value={customClauses}
+                onChange={e => setCustomClauses(e.target.value)}
+                rows={5}
+                className="text-sm font-mono"
+              />
+              <p className="text-[10px] text-muted-foreground">Ces clauses apparaîtront dans une section « Conditions particulières » du contrat (visible côté client).</p>
+            </div>
+
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
               {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour le contrat" : "Créer le contrat"}
             </Button>
