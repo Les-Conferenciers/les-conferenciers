@@ -2484,18 +2484,17 @@ const AdminProposalsContent = () => {
                           />
                         </div>
                       )}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Note</Label>
-                        <Input
-                          value={task.note || ""}
-                          onChange={e => {
-                            const updated = [...editingTasks];
-                            updated[idx] = { ...updated[idx], note: e.target.value };
-                            setEditingTasks(updated);
-                          }}
-                          placeholder="Ajouter une note…"
-                        />
-                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Note</Label>
+                      <SimpleRichTextEditor
+                        value={task.note || ""}
+                        onChange={(val) => {
+                          const updated = [...editingTasks];
+                          updated[idx] = { ...updated[idx], note: val };
+                          setEditingTasks(updated);
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
