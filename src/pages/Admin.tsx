@@ -538,6 +538,7 @@ const AdminProposalsContent = () => {
   const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks(), fetchLeads()]);
