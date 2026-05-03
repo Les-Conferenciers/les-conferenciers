@@ -46,6 +46,8 @@ type Contract = {
   created_at: string;
   contract_lines: any;
   discount_percent: number | null;
+  deposit_required?: boolean | null;
+  custom_clauses?: any;
 };
 
 type Invoice = {
