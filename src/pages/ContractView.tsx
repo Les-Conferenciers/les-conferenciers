@@ -312,9 +312,22 @@ const ContractView = () => {
 
             <div>
               <h3 className="font-bold mb-2">Article 5. MODALITÉS FINANCIÈRES</h3>
-              <p><strong>5.1 Prix de la Prestation.</strong> Le montant de la Prestation est détaillé au Bon de commande. Le Client s'engage à verser 50% du montant total dans les 30 jours suivants la signature. 100% du montant devra être reçu au plus tard sept jours avant la tenue de l'Événement.</p>
+              {contract.deposit_required === false ? (
+                <p><strong>5.1 Prix de la Prestation.</strong> Le montant de la Prestation est détaillé au Bon de commande. Le Client s'engage à régler 100% du montant total au plus tard sept jours avant la tenue de l'Événement.</p>
+              ) : (
+                <p><strong>5.1 Prix de la Prestation.</strong> Le montant de la Prestation est détaillé au Bon de commande. Le Client s'engage à verser 50% du montant total dans les 30 jours suivants la signature. 100% du montant devra être reçu au plus tard sept jours avant la tenue de l'Événement.</p>
+              )}
               <p className="mt-1"><strong>5.2 Frais de déplacement et hébergement.</strong> Les Conférenciers prendra en charge la réservation des transports nécessaires. Les Conférenciers facturera les frais avancés au Client sur présentation de justificatif.</p>
             </div>
+
+            {contract.custom_clauses && (typeof contract.custom_clauses === "string" ? contract.custom_clauses : contract.custom_clauses?.text) && (
+              <div>
+                <h3 className="font-bold mb-2">CONDITIONS PARTICULIÈRES</h3>
+                <div className="whitespace-pre-wrap text-[13px]">
+                  {typeof contract.custom_clauses === "string" ? contract.custom_clauses : contract.custom_clauses.text}
+                </div>
+              </div>
+            )}
 
             <div>
               <h3 className="font-bold mb-2">Article 6. DURÉE DU CONTRAT</h3>
