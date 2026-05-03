@@ -1369,6 +1369,16 @@ const AdminSpeakersCRM = () => {
                 <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} />
               </div>
 
+              {/* Catégorie interne CRM */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">🏷️ Catégorie interne (CRM uniquement, non visible publiquement)</Label>
+                <Input
+                  value={(editForm as any).internal_category || ""}
+                  onChange={e => setEditForm(p => ({ ...p, internal_category: e.target.value }))}
+                />
+                <p className="text-[10px] text-muted-foreground">Ex : « Top 10 », « VIP », « À relancer », « Éco »… Sert au tri/filtrage interne.</p>
+              </div>
+
               {/* Contact conférencier */}
               <div className="rounded-lg border border-border/60 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">📋 Contact conférencier</p>
