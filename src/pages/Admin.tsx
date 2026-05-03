@@ -2236,7 +2236,10 @@ const AdminProposalsContent = () => {
           { key: "sent", items: sent, mode: "sent" as const, allowDelete: false },
           { key: "archived", items: archived, mode: "sent" as const, allowDelete: true },
         ]).map(({ key, items, mode, allowDelete }) => {
+          const isSent = key === "sent";
+          const sentEntries = isSent ? buildSentEntries(items) : [];
           const paginated = items.slice(0, pageSize);
+          const paginatedEntries = isSent ? sentEntries.slice(0, pageSize) : [];
           return (
             <TabsContent key={key} value={key}>
               {key === "archived" ? (
