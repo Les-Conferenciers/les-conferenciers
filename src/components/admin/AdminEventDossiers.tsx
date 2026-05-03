@@ -478,68 +478,44 @@ const AdminEventDossiers = () => {
         </div>
       </div>
 
-      {/* Dashboard : KPI + Alertes + Calendrier (uniquement onglet En cours) */}
+      {/* Calendrier 30j (uniquement onglet En cours) */}
       {tab === "en_cours" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* KPI compteurs */}
-          <div className="lg:col-span-2 border border-border rounded-xl p-3 bg-card">
-            <div className="flex items-center gap-2 mb-2">
-              <ClipboardList className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">À traiter par étape</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {stageKpis.map((k) => (
-                <div key={k.key} className="rounded-lg border border-border bg-background px-2.5 py-2 hover:border-primary/40 transition-colors">
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground leading-tight">
-                    <k.icon className="h-3 w-3 shrink-0" />
-                    <span>{k.label}</span>
-                  </div>
-                  <div className={cn("text-2xl font-bold mt-0.5", k.count > 0 ? "text-primary" : "text-muted-foreground/40")}>
-                    {k.count}
-                  </div>
-                </div>
-              ))}
-            </div>
+        <div className="border border-border rounded-xl p-3 bg-card">
+          <div className="flex items-center gap-2 mb-2">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Prochains événements (30j)</h3>
           </div>
-
-          {/* Calendrier 30j */}
-          <div className="border border-border rounded-xl p-3 bg-card">
-            <div className="flex items-center gap-2 mb-2">
-              <CalendarDays className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">Prochains événements (30j)</h3>
-            </div>
-            {upcoming30.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-3 text-center">Aucun événement à venir</div>
-            ) : (
-              <ul className="space-y-1.5 max-h-[180px] overflow-y-auto">
-                {upcoming30.map((r) => {
-                  const days = Math.ceil((r.eventDate!.getTime() - Date.now()) / 86400000);
-                  return (
-                    <li key={r.proposal.id}>
-                      <button
-                        type="button"
-                        onClick={() => setExpandedId(r.proposal.id)}
-                        className="w-full flex items-center justify-between gap-2 text-left rounded-md px-2 py-1.5 hover:bg-muted/60 transition-colors"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-xs font-medium truncate">{r.proposal.client_name}</div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {r.eventDate!.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
-                          </div>
+          {upcoming30.length === 0 ? (
+            <div className="text-xs text-muted-foreground/70 py-3 text-center">Aucun événement à venir</div>
+          ) : (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-[180px] overflow-y-auto">
+              {upcoming30.map((r) => {
+                const days = Math.ceil((r.eventDate!.getTime() - Date.now()) / 86400000);
+                return (
+                  <li key={r.proposal.id}>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(r.proposal.id)}
+                      className="w-full flex items-center justify-between gap-2 text-left rounded-md px-2 py-1.5 hover:bg-muted/60 transition-colors border border-transparent hover:border-border"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium truncate">{r.proposal.client_name}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {r.eventDate!.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
                         </div>
-                        <span className={cn(
-                          "text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0",
-                          days <= 7 ? "bg-orange-100 text-orange-700" : "bg-muted text-muted-foreground",
-                        )}>
-                          J-{days}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0",
+                        days <= 7 ? "bg-orange-100 text-orange-700" : "bg-muted text-muted-foreground",
+                      )}>
+                        J-{days}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       )}
 
