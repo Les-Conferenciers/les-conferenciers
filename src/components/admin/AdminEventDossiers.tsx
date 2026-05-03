@@ -589,7 +589,6 @@ const AdminEventDossiers = () => {
                 <TableHead className="w-[200px]">Client</TableHead>
                 <TableHead className="whitespace-nowrap w-[130px]">Date événement</TableHead>
                 <TableHead>Pipeline</TableHead>
-                <TableHead className="w-[140px]">Progression</TableHead>
                 <TableHead className="text-right w-[120px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
