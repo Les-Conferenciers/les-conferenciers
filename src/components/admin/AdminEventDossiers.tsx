@@ -340,6 +340,9 @@ const AdminEventDossiers = () => {
     let list = enriched;
     if (tab === "en_cours") {
       list = list.filter((r) => !r.isArchived);
+    } else if (tab === "attente_paiement") {
+      // Facture envoyée mais pas encore payée (côté client) — non archivés
+      list = list.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient);
     } else {
       list = list.filter((r) => r.isArchived);
       if (archiveFilter !== "all") {
