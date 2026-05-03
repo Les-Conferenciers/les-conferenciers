@@ -59,7 +59,7 @@ const AdminEventDossiers = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"en_cours" | "archives">("en_cours");
+  const [tab, setTab] = useState<"en_cours" | "attente_paiement" | "archives">("en_cours");
   const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu">("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
