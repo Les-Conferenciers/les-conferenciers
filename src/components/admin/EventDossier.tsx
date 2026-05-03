@@ -1239,24 +1239,6 @@ Nelly Sabde - Les Conférenciers`);
               );
             })}
           </div>
-          {event?.selected_speaker_id && speakerInfo && (
-            <p className="text-[10px] text-muted-foreground mt-2">
-              📧 Email : {speakerInfo.email || "non renseigné"} · 📞 Tél : {speakerInfo.phone || "non renseigné"}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Single speaker display */}
-      {proposal.proposal_speakers.length === 1 && speakerInfo && (
-        <div className="bg-muted/30 rounded-lg p-3 flex items-center gap-3">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <div className="text-sm">
-            <span className="font-medium">{speakerInfo.name}</span>
-            <span className="text-muted-foreground text-xs ml-2">
-              📧 {speakerInfo.email || "—"} · 📞 {speakerInfo.phone || "—"}
-            </span>
-          </div>
         </div>
       )}
 

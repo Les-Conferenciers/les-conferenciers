@@ -59,7 +59,7 @@ const AdminEventDossiers = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"en_cours" | "archives">("en_cours");
+  const [tab, setTab] = useState<"en_cours" | "attente_paiement" | "archives">("en_cours");
   const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu">("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -340,6 +340,9 @@ const AdminEventDossiers = () => {
     let list = enriched;
     if (tab === "en_cours") {
       list = list.filter((r) => !r.isArchived);
+    } else if (tab === "attente_paiement") {
+      // Facture envoyée mais pas encore payée (côté client) — non archivés
+      list = list.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient);
     } else {
       list = list.filter((r) => r.isArchived);
       if (archiveFilter !== "all") {
@@ -367,6 +370,7 @@ const AdminEventDossiers = () => {
 
   const counts = useMemo(() => ({
     enCours: enriched.filter((r) => !r.isArchived).length,
+    attentePaiement: enriched.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient).length,
     archives: enriched.filter((r) => r.isArchived).length,
     gagnes: enriched.filter((r) => r.archiveStatus === "gagne").length,
     perdus: enriched.filter((r) => r.archiveStatus === "perdu").length,
@@ -548,6 +552,9 @@ const AdminEventDossiers = () => {
         <TabsList className="mb-4">
           <TabsTrigger value="en_cours" className="gap-1.5 text-xs">
             📂 En cours <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.enCours}</span>
+          </TabsTrigger>
+          <TabsTrigger value="attente_paiement" className="gap-1.5 text-xs">
+            💰 En attente de paiement <span className="ml-1 bg-amber-100 text-amber-700 rounded-full px-1.5 text-[10px]">{counts.attentePaiement}</span>
           </TabsTrigger>
           <TabsTrigger value="archives" className="gap-1.5 text-xs">
             📦 Archivés <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.archives}</span>
