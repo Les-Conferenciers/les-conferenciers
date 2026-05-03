@@ -45,6 +45,7 @@ type Speaker = {
   agent_name: string | null;
   agent_phone: string | null;
   agent_email: string | null;
+  internal_category: string | null;
 };
 
 type Review = {
@@ -145,7 +146,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email")
+      .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category")
       .order("name");
     setSpeakers((data as any) || []);
     setLoading(false);
@@ -329,6 +330,7 @@ const AdminSpeakersCRM = () => {
         agent_name: (editForm as any).agent_name || null,
         agent_phone: (editForm as any).agent_phone || null,
         agent_email: (editForm as any).agent_email || null,
+        internal_category: (editForm as any).internal_category || null,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
@@ -849,7 +851,7 @@ const AdminSpeakersCRM = () => {
       toast.success(`Fiche enrichie ! ${updatedFields.length > 0 ? "Champs : " + updatedFields.join(", ") : "Aucun nouveau champ"}`);
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email")
+        .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
@@ -1366,6 +1368,16 @@ const AdminSpeakersCRM = () => {
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📋 Détails des tarifs (tous les tarifs : physique, distanciel, province…)</Label>
                 <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} />
+              </div>
+
+              {/* Catégorie interne CRM */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">🏷️ Catégorie interne (CRM uniquement, non visible publiquement)</Label>
+                <Input
+                  value={(editForm as any).internal_category || ""}
+                  onChange={e => setEditForm(p => ({ ...p, internal_category: e.target.value }))}
+                />
+                <p className="text-[10px] text-muted-foreground">Ex : « Top 10 », « VIP », « À relancer », « Éco »… Sert au tri/filtrage interne.</p>
               </div>
 
               {/* Contact conférencier */}

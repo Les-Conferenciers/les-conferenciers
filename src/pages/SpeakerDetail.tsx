@@ -25,7 +25,7 @@ const DEFAULT_IMAGE = null;
 // Strip inline styles and unwanted span wrappers from HTML to ensure consistent typography
 // Preserve width/height on images so they render at their intended size
 const sanitizeConferenceHtml = (html: string): string => {
-  // Whitelist of style props we keep on <img> so float/wrap layouts work as configured in admin
+  // Whitelist of style props we keep on <img>/<figure> so float/wrap layouts work as configured in admin
   const ALLOWED_IMG_STYLES = /^(width|height|max-width|max-height|float|margin|margin-top|margin-bottom|margin-left|margin-right|border-radius|display)$/i;
   const filterImgStyle = (style: string) =>
     style
@@ -38,18 +38,56 @@ const sanitizeConferenceHtml = (html: string): string => {
       })
       .join('; ');
 
-  return html
+  // Pass 1: clean inline styles on img / figure
+  let out = html
     .replace(/<img([^>]*)style="([^"]*)"/gi, (_m, before, style) => {
       const kept = filterImgStyle(style);
       return kept ? `<img${before}style="${kept}"` : `<img${before}`;
     })
-    // Preserve float/margin on <figure> wrappers as well so text wraps around them
     .replace(/<figure([^>]*)style="([^"]*)"/gi, (_m, before, style) => {
       const kept = filterImgStyle(style);
       return kept ? `<figure${before}style="${kept}"` : `<figure${before}`;
     })
     .replace(/<(?!img|figure)([^>]*)\s*style="[^"]*"/gi, '<$1')
     .replace(/<span>(.*?)<\/span>/gi, '$1');
+
+  // Pass 2: when a <figure> wraps an <img> with float, propagate the float (+ width)
+  // to the <figure> itself so the text actually wraps around it (figures are block-level by default).
+  out = out.replace(/<figure([^>]*?)>\s*(<img[^>]*>)/gi, (match, figAttrs, imgTag) => {
+    const imgStyleMatch = imgTag.match(/style="([^"]*)"/i);
+    if (!imgStyleMatch) return match;
+    const imgStyle = imgStyleMatch[1];
+    const floatMatch = imgStyle.match(/float\s*:\s*(left|right)/i);
+    if (!floatMatch) return match;
+    const floatVal = floatMatch[1];
+    const widthMatch = imgStyle.match(/width\s*:\s*([^;]+)/i);
+    const marginRightMatch = imgStyle.match(/margin-right\s*:\s*([^;]+)/i);
+    const marginLeftMatch = imgStyle.match(/margin-left\s*:\s*([^;]+)/i);
+    const marginBottomMatch = imgStyle.match(/margin-bottom\s*:\s*([^;]+)/i);
+    let figStyle = `float: ${floatVal}; max-width: 100%;`;
+    if (widthMatch) figStyle += ` width: ${widthMatch[1].trim()};`;
+    if (marginRightMatch) figStyle += ` margin-right: ${marginRightMatch[1].trim()};`;
+    if (marginLeftMatch) figStyle += ` margin-left: ${marginLeftMatch[1].trim()};`;
+    if (marginBottomMatch) figStyle += ` margin-bottom: ${marginBottomMatch[1].trim()};`;
+    // Strip pre-existing style on figure tag, replace with merged style
+    const cleanedFigAttrs = figAttrs.replace(/\s*style="[^"]*"/i, '');
+    // Inner img: keep width but remove float/margins (now on figure)
+    const newImgTag = imgTag.replace(/style="[^"]*"/i, () => {
+      const keep = imgStyle
+        .split(';')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .filter(decl => {
+          const p = decl.split(':')[0]?.trim().toLowerCase();
+          return p && !['float', 'margin-right', 'margin-left', 'margin-bottom', 'margin'].includes(p);
+        })
+        .join('; ');
+      return keep ? `style="${keep}"` : '';
+    });
+    return `<figure${cleanedFigAttrs} style="${figStyle}">${newImgTag}`;
+  });
+
+  return out;
 };
 
 // Gender helpers

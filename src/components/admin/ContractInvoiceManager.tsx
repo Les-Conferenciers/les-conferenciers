@@ -46,6 +46,8 @@ type Contract = {
   created_at: string;
   contract_lines: any;
   discount_percent: number | null;
+  deposit_required?: boolean | null;
+  custom_clauses?: any;
 };
 
 type Invoice = {
@@ -100,6 +102,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [eventDescription, setEventDescription] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [depositRequired, setDepositRequired] = useState(true);
+  const [customClauses, setCustomClauses] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Contract email
@@ -229,6 +233,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setEventDescription("");
     setContractLines(buildInitialLines());
     setDiscountPercent(0);
+    setDepositRequired(true);
+    setCustomClauses("");
     setContractDialogOpen(true);
   };
 
@@ -242,6 +248,9 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setEventDescription(contract.event_description || "");
     setContractLines(buildInitialLines());
     setDiscountPercent(contract.discount_percent || 0);
+    setDepositRequired(contract.deposit_required !== false);
+    const cc = (contract as any).custom_clauses;
+    setCustomClauses(typeof cc === "string" ? cc : (cc?.text || ""));
     setContractDialogOpen(true);
   };
 
@@ -255,6 +264,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       event_description: eventDescription || null,
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
+      deposit_required: depositRequired,
+      custom_clauses: customClauses ? { text: customClauses } : {},
     };
 
     if (editingContract && contract) {
@@ -634,6 +645,36 @@ Nelly Sabde - Les Conférenciers`);
                 <span>Total TTC</span>
                 <span>{dialogTotals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
+            </div>
+
+            {/* Acompte requis */}
+            <div className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+              <div>
+                <Label className="text-xs">Acompte client requis (50%)</Label>
+                <p className="text-[10px] text-muted-foreground">Désactiver pour facturer 100% en une seule fois</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={depositRequired}
+                onClick={() => setDepositRequired(v => !v)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${depositRequired ? "bg-primary" : "bg-muted-foreground/30"}`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${depositRequired ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+            </div>
+
+            {/* Clauses personnalisées */}
+            <div className="space-y-1">
+              <Label className="text-xs">Clauses personnalisées (ajoutées au contrat)</Label>
+              <Textarea
+                placeholder={`Ex : Article 4.3 — Captation autorisée uniquement à des fins internes…\n\nLaisser vide pour utiliser le contrat standard.`}
+                value={customClauses}
+                onChange={e => setCustomClauses(e.target.value)}
+                rows={5}
+                className="text-sm font-mono"
+              />
+              <p className="text-[10px] text-muted-foreground">Ces clauses apparaîtront dans une section « Conditions particulières » du contrat (visible côté client).</p>
             </div>
 
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
