@@ -15,7 +15,7 @@ const parseAxis = (value?: string, fallback = 50) => {
   if (normalized === "right" || normalized === "bottom") return 100;
 
   const numeric = Number.parseFloat(normalized.replace("%", ""));
-  return Number.isFinite(numeric) ? clamp(numeric, 0, 100) : fallback;
+  return Number.isFinite(numeric) ? clamp(numeric, -50, 150) : fallback;
 };
 
 export const parseImagePosition = (value?: string | null): ParsedImagePosition => {
