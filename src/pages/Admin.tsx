@@ -2469,9 +2469,9 @@ const AdminProposalsContent = () => {
                         )}
                       </div>
                     </div>
-                    <div className={task.status === "completed" ? "" : "grid grid-cols-2 gap-3"}>
+                    <div className="space-y-3">
                       {task.status !== "completed" && (
-                        <div className="space-y-1">
+                        <div className="space-y-1 max-w-xs">
                           <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
                           <Input
                             type="date"
@@ -2486,14 +2486,13 @@ const AdminProposalsContent = () => {
                       )}
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Note</Label>
-                        <Input
+                        <SimpleRichTextEditor
                           value={task.note || ""}
-                          onChange={e => {
+                          onChange={(val) => {
                             const updated = [...editingTasks];
-                            updated[idx] = { ...updated[idx], note: e.target.value };
+                            updated[idx] = { ...updated[idx], note: val };
                             setEditingTasks(updated);
                           }}
-                          placeholder="Ajouter une note…"
                         />
                       </div>
                     </div>
