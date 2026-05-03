@@ -1069,6 +1069,30 @@ const AdminProposalsContent = () => {
     setCcEmails("");
   };
 
+  const handleNewProposalForClient = (clientId: string, latest: Proposal) => {
+    const client = allClients.find(c => c.id === clientId);
+    resetForm();
+    const pType = ((latest as any).proposal_type || "classique") as ProposalType;
+    setProposalType(pType);
+    setClientMode("search");
+    setSelectedClientId(clientId);
+    const cName = client?.company_name || latest.client_name || "";
+    const cEmail = client?.email || latest.client_email || "";
+    const cPhone = client?.phone || (latest as any).client_phone || "";
+    const rName = client?.contact_name || latest.recipient_name || "";
+    setClientName(cName);
+    setClientEmail(cEmail);
+    setClientPhone(cPhone);
+    setRecipientName(rName);
+    setEventLocation((latest as any).event_location || "");
+    setEventDateText((latest as any).event_date_text || "");
+    setAudienceSize((latest as any).audience_size || "");
+    setMessage(getDefaultMessage(rName, cName));
+    setEmailSubject(getDefaultEmailSubject(cName));
+    setEmailBody(getDefaultEmailBody(rName, cName));
+    setDialogOpen(true);
+  };
+
   const openEditDialog = (p: Proposal) => {
     setEditingProposal(p);
     setEditClientName(p.client_name); setEditClientEmail(p.client_email);
