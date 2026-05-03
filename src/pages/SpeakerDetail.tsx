@@ -25,15 +25,30 @@ const DEFAULT_IMAGE = null;
 // Strip inline styles and unwanted span wrappers from HTML to ensure consistent typography
 // Preserve width/height on images so they render at their intended size
 const sanitizeConferenceHtml = (html: string): string => {
+  // Whitelist of style props we keep on <img> so float/wrap layouts work as configured in admin
+  const ALLOWED_IMG_STYLES = /^(width|height|max-width|max-height|float|margin|margin-top|margin-bottom|margin-left|margin-right|border-radius|display)$/i;
+  const filterImgStyle = (style: string) =>
+    style
+      .split(';')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .filter(decl => {
+        const prop = decl.split(':')[0]?.trim();
+        return prop && ALLOWED_IMG_STYLES.test(prop);
+      })
+      .join('; ');
+
   return html
-    .replace(/<img([^>]*)style="([^"]*)"/gi, (match, before, style) => {
-      // Keep only width and height from the style
-      const widthMatch = style.match(/width\s*:\s*[^;]+/i);
-      const heightMatch = style.match(/height\s*:\s*[^;]+/i);
-      const kept = [widthMatch?.[0], heightMatch?.[0]].filter(Boolean).join(';');
+    .replace(/<img([^>]*)style="([^"]*)"/gi, (_m, before, style) => {
+      const kept = filterImgStyle(style);
       return kept ? `<img${before}style="${kept}"` : `<img${before}`;
     })
-    .replace(/<(?!img)([^>]*)\s*style="[^"]*"/gi, '<$1')
+    // Preserve float/margin on <figure> wrappers as well so text wraps around them
+    .replace(/<figure([^>]*)style="([^"]*)"/gi, (_m, before, style) => {
+      const kept = filterImgStyle(style);
+      return kept ? `<figure${before}style="${kept}"` : `<figure${before}`;
+    })
+    .replace(/<(?!img|figure)([^>]*)\s*style="[^"]*"/gi, '<$1')
     .replace(/<span>(.*?)<\/span>/gi, '$1');
 };
 
