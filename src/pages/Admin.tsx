@@ -2303,6 +2303,8 @@ const AdminProposalsContent = () => {
                     </TableBody>
                   </Table>
                 </div>
+              ) : isSent ? (
+                renderGroupedSentTable(paginatedEntries)
               ) : (
                 renderTable(paginated, mode)
               )}
