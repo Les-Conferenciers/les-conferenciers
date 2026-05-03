@@ -695,7 +695,9 @@ const SpeakerDetail = () => {
                               [&_ul>li]:before:content-[''] [&_ul>li]:before:absolute [&_ul>li]:before:left-0 [&_ul>li]:before:top-[0.6em] [&_ul>li]:before:w-1.5 [&_ul>li]:before:h-1.5 [&_ul>li]:before:rounded-full [&_ul>li]:before:bg-accent/60
                               [&_ol]:list-decimal [&_ol]:pl-5
                               [&_em]:italic
-                              [&_img]:rounded-xl [&_img]:shadow-sm [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto"
+                              [&_img]:rounded-xl [&_img]:shadow-sm [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto
+                              [&_figure]:my-4 [&_figure]:max-w-full
+                              [&>*:last-child]:after:content-[''] [&>*:last-child]:after:block [&>*:last-child]:after:clear-both"
                             dangerouslySetInnerHTML={{ __html: sanitizeConferenceHtml(conf.description) }}
                           />
                         )}
