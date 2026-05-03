@@ -45,6 +45,7 @@ type Speaker = {
   agent_name: string | null;
   agent_phone: string | null;
   agent_email: string | null;
+  internal_category: string | null;
 };
 
 type Review = {
