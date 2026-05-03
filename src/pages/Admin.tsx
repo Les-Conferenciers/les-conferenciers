@@ -156,13 +156,32 @@ ${eventContext ? `<p>${eventContext}</p>
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 };
 
+const formatFrenchEventDate = (text?: string): string => {
+  if (!text) return "";
+  const trimmed = text.trim();
+  // ISO YYYY-MM-DD
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (iso) {
+    const d = new Date(`${trimmed}T12:00:00`);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  }
+  // DD/MM/YYYY
+  const fr = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
+  if (fr) {
+    const d = new Date(Number(fr[3]), Number(fr[2]) - 1, Number(fr[1]), 12);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  }
+  return trimmed;
+};
+
 const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string, eventDateText?: string, eventLocation?: string, audienceSize?: string) => {
-  const hasEventContext = eventDateText || eventLocation || audienceSize;
+  const formattedDate = formatFrenchEventDate(eventDateText);
+  const hasEventContext = formattedDate || eventLocation || audienceSize;
   const contextParts: string[] = [];
-  if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+  if (formattedDate) contextParts.push(`du <strong>${formattedDate}</strong>`);
   if (eventLocation) contextParts.push(`qui aura lieu à <strong>${eventLocation}</strong>`);
   if (audienceSize) contextParts.push(`pour un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
-  
+
   const introPhrase = hasEventContext
     ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${contextParts.join(", ")}, et vous adresse, comme convenu, le profil de ${speakerName}.`
     : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}.`;
