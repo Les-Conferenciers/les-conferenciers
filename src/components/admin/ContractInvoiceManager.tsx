@@ -264,6 +264,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       event_description: eventDescription || null,
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
+      deposit_required: depositRequired,
+      custom_clauses: customClauses ? { text: customClauses } : {},
     };
 
     if (editingContract && contract) {
