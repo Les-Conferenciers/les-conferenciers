@@ -553,6 +553,9 @@ const AdminEventDossiers = () => {
           <TabsTrigger value="en_cours" className="gap-1.5 text-xs">
             📂 En cours <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.enCours}</span>
           </TabsTrigger>
+          <TabsTrigger value="attente_paiement" className="gap-1.5 text-xs">
+            💰 En attente de paiement <span className="ml-1 bg-amber-100 text-amber-700 rounded-full px-1.5 text-[10px]">{counts.attentePaiement}</span>
+          </TabsTrigger>
           <TabsTrigger value="archives" className="gap-1.5 text-xs">
             📦 Archivés <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.archives}</span>
           </TabsTrigger>
