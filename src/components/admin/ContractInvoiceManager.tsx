@@ -233,6 +233,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setEventDescription("");
     setContractLines(buildInitialLines());
     setDiscountPercent(0);
+    setDepositRequired(true);
+    setCustomClauses("");
     setContractDialogOpen(true);
   };
 
@@ -246,6 +248,9 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setEventDescription(contract.event_description || "");
     setContractLines(buildInitialLines());
     setDiscountPercent(contract.discount_percent || 0);
+    setDepositRequired(contract.deposit_required !== false);
+    const cc = (contract as any).custom_clauses;
+    setCustomClauses(typeof cc === "string" ? cc : (cc?.text || ""));
     setContractDialogOpen(true);
   };
 
