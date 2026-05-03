@@ -632,28 +632,6 @@ const AdminEventDossiers = () => {
                           onCustomAction={(key) => { if (key === "visio") openVisioPicker(r.event); }}
                         />
                       </TableCell>
-                      <TableCell className="py-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between gap-2 text-[10px]">
-                            <span className="text-muted-foreground font-medium">{r.completedCount}/{r.stages.length}</span>
-                            <span className="text-muted-foreground">{r.progress}%</span>
-                          </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={cn(
-                                "h-full transition-all",
-                                r.progress === 100 ? "bg-emerald-500" : "bg-primary",
-                              )}
-                              style={{ width: `${r.progress}%` }}
-                            />
-                          </div>
-                          {r.nextStage && (
-                            <div className="text-[10px] text-muted-foreground truncate" title={r.nextStage.label}>
-                              ➜ {r.nextStage.label}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
                       <TableCell className="text-right py-3">
                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           {!r.isArchived && (
