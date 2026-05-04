@@ -254,6 +254,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setDepositRequired(contract.deposit_required !== false);
     const cc = (contract as any).custom_clauses;
     setCustomClauses(typeof cc === "string" ? cc : (cc?.text || ""));
+    setArticleOverrides(cc && typeof cc === "object" && cc.articles ? { ...cc.articles } : {});
     setContractDialogOpen(true);
   };
 
