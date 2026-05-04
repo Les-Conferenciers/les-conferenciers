@@ -20,6 +20,7 @@ import {
   Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon, UserPlus, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
 
@@ -188,6 +189,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [agencyCommission, setAgencyCommission] = useState<number>(0);
   const [agencyCommissionText, setAgencyCommissionText] = useState("0");
   const [saving, setSaving] = useState(false);
+  const [depositRequired, setDepositRequired] = useState(true);
+  const [customClauses, setCustomClauses] = useState("");
+  const [articleOverrides, setArticleOverrides] = useState<Record<string, string>>({});
   // CRM speaker picker for contract lines
   const [allSpeakers, setAllSpeakers] = useState<SpeakerCRM[]>([]);
   const [speakerPickerOpen, setSpeakerPickerOpen] = useState(false);
@@ -517,6 +521,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setShowCreateClientInContract(false);
     setNewContractClientCompany(""); setNewContractClientContact(""); setNewContractClientEmail("");
     setNewContractClientPhone(""); setNewContractClientSiret(""); setNewContractClientAddress(""); setNewContractClientCity("");
+    setDepositRequired(true);
+    setCustomClauses("");
+    setArticleOverrides({});
     setContractDialogOpen(true);
   };
 
@@ -535,6 +542,10 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setAgencyCommissionText(savedCommission ? String(savedCommission) : "0");
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
+    setDepositRequired((contract as any).deposit_required !== false);
+    const cc = (contract as any).custom_clauses;
+    setCustomClauses(typeof cc === "string" ? cc : (cc?.text || ""));
+    setArticleOverrides(cc && typeof cc === "object" && cc.articles ? { ...cc.articles } : {});
     setContractDialogOpen(true);
   };
 
@@ -576,6 +587,17 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
       agency_commission: agencyCommission || 0,
+      deposit_required: depositRequired,
+      custom_clauses: (() => {
+        const cleanedOverrides: Record<string, string> = {};
+        Object.entries(articleOverrides).forEach(([k, v]) => {
+          if (v && v.trim()) cleanedOverrides[k] = v;
+        });
+        const obj: any = {};
+        if (customClauses) obj.text = customClauses;
+        if (Object.keys(cleanedOverrides).length) obj.articles = cleanedOverrides;
+        return obj;
+      })(),
     };
     // Link client to proposal
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
@@ -1678,6 +1700,83 @@ Nelly Sabde - Les Conférenciers`);
               <div className="flex justify-between text-muted-foreground"><span>TVA</span><span>{dialogTotals.totalTVA.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
               <div className="border-t border-border pt-2 flex justify-between font-bold text-base"><span>Total TTC</span><span>{dialogTotals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
             </div>
+
+            {/* Acompte requis */}
+            <div className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+              <div>
+                <Label className="text-xs">Acompte client requis (50%)</Label>
+                <p className="text-[10px] text-muted-foreground">Désactiver pour facturer 100% en une seule fois</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={depositRequired}
+                onClick={() => setDepositRequired(v => !v)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${depositRequired ? "bg-primary" : "bg-muted-foreground/30"}`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${depositRequired ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+            </div>
+
+            {/* Conditions particulières (texte libre) */}
+            <div className="space-y-1">
+              <Label className="text-xs">Conditions particulières (ajoutées au contrat)</Label>
+              <Textarea
+                value={customClauses}
+                onChange={e => setCustomClauses(e.target.value)}
+                rows={4}
+                className="text-sm font-mono"
+              />
+              <p className="text-[10px] text-muted-foreground">Apparaît dans une section « Conditions particulières » du contrat (visible côté client). Vide = aucune.</p>
+            </div>
+
+            {/* Édition des articles standards des CG */}
+            <details open className="border-2 border-primary/40 rounded-md bg-primary/5">
+              <summary className="cursor-pointer px-3 py-2 text-sm font-semibold select-none flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-primary" />
+                Modifier le texte des articles du contrat (clauses internes)
+              </summary>
+              <div className="p-3 space-y-4">
+                <p className="text-[10px] text-muted-foreground">
+                  Vide = texte standard. Modifiez uniquement les articles à ajuster (ex : droit à l'image).
+                  Le HTML est accepté (balises <code>{'<p>'}</code>, <code>{'<strong>'}</code>, <code>{'<ul>'}</code>…).
+                  Pour l'article 5, conservez <code>{'{{PRICE_CLAUSE}}'}</code> où la clause de prix doit s'insérer.
+                </p>
+                {DEFAULT_CLAUSES.map((clause) => {
+                  const value = articleOverrides[clause.key] ?? "";
+                  const isOverridden = value.trim().length > 0;
+                  return (
+                    <div key={clause.key} className="space-y-1 border-l-2 pl-3" style={{ borderColor: isOverridden ? "hsl(var(--primary))" : "hsl(var(--border))" }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs font-semibold">{clause.title}</Label>
+                        <div className="flex gap-1">
+                          {!isOverridden && (
+                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
+                              onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: clause.defaultHtml }))}>
+                              Personnaliser
+                            </Button>
+                          )}
+                          {isOverridden && (
+                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
+                              onClick={() => setArticleOverrides(o => { const n = { ...o }; delete n[clause.key as ClauseKey]; return n; })}>
+                              Réinitialiser
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {isOverridden && (
+                        <Textarea
+                          value={value}
+                          onChange={e => setArticleOverrides(o => ({ ...o, [clause.key]: e.target.value }))}
+                          rows={Math.min(14, Math.max(4, value.split("\n").length))}
+                          className="text-[11px] font-mono"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
 
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
               {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour" : "Créer le contrat"}
