@@ -105,6 +105,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [discountPercent, setDiscountPercent] = useState(0);
   const [depositRequired, setDepositRequired] = useState(true);
   const [customClauses, setCustomClauses] = useState("");
+  const [articleOverrides, setArticleOverrides] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   // Contract email
