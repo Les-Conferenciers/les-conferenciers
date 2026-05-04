@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { COMPANY } from "@/lib/companyConfig";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
-import { DEFAULT_CLAUSES, getClauseHtml, getCustomClausesText } from "@/lib/contractClauses";
+import { DEFAULT_CLAUSES, getClauseHtml, getCustomClausesText, isClauseRemoved } from "@/lib/contractClauses";
 
 type ContractLine = {
   id: string;
