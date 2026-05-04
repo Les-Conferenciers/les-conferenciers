@@ -691,9 +691,10 @@ Nelly Sabde - Les Conférenciers`);
             </div>
 
             {/* Édition des articles standards des CG */}
-            <details className="border rounded-md bg-muted/20">
-              <summary className="cursor-pointer px-3 py-2 text-xs font-semibold select-none">
-                Modifier les articles des Conditions générales (avancé)
+            <details open className="border-2 border-primary/40 rounded-md bg-primary/5">
+              <summary className="cursor-pointer px-3 py-2 text-sm font-semibold select-none flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-primary" />
+                Modifier le texte des articles du contrat (clauses internes)
               </summary>
               <div className="p-3 space-y-4">
                 <p className="text-[10px] text-muted-foreground">
