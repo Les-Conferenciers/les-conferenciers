@@ -20,6 +20,7 @@ import {
   Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon, UserPlus, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
 
