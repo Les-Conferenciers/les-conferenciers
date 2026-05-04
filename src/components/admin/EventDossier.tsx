@@ -542,6 +542,10 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setAgencyCommissionText(savedCommission ? String(savedCommission) : "0");
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
+    setDepositRequired((contract as any).deposit_required !== false);
+    const cc = (contract as any).custom_clauses;
+    setCustomClauses(typeof cc === "string" ? cc : (cc?.text || ""));
+    setArticleOverrides(cc && typeof cc === "object" && cc.articles ? { ...cc.articles } : {});
     setContractDialogOpen(true);
   };
 
