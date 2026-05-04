@@ -189,6 +189,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [agencyCommission, setAgencyCommission] = useState<number>(0);
   const [agencyCommissionText, setAgencyCommissionText] = useState("0");
   const [saving, setSaving] = useState(false);
+  const [depositRequired, setDepositRequired] = useState(true);
+  const [customClauses, setCustomClauses] = useState("");
+  const [articleOverrides, setArticleOverrides] = useState<Record<string, string>>({});
   // CRM speaker picker for contract lines
   const [allSpeakers, setAllSpeakers] = useState<SpeakerCRM[]>([]);
   const [speakerPickerOpen, setSpeakerPickerOpen] = useState(false);
