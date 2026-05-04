@@ -14,6 +14,7 @@ import {
   FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil, Ban, CircleDollarSign, Trash2, Percent,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
 
 type Proposal = {
   id: string;
@@ -104,6 +105,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [discountPercent, setDiscountPercent] = useState(0);
   const [depositRequired, setDepositRequired] = useState(true);
   const [customClauses, setCustomClauses] = useState("");
+  const [articleOverrides, setArticleOverrides] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   // Contract email
@@ -235,6 +237,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setDiscountPercent(0);
     setDepositRequired(true);
     setCustomClauses("");
+    setArticleOverrides({});
     setContractDialogOpen(true);
   };
 
@@ -251,6 +254,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setDepositRequired(contract.deposit_required !== false);
     const cc = (contract as any).custom_clauses;
     setCustomClauses(typeof cc === "string" ? cc : (cc?.text || ""));
+    setArticleOverrides(cc && typeof cc === "object" && cc.articles ? { ...cc.articles } : {});
     setContractDialogOpen(true);
   };
 
@@ -265,7 +269,16 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
       deposit_required: depositRequired,
-      custom_clauses: customClauses ? { text: customClauses } : {},
+      custom_clauses: (() => {
+        const cleanedOverrides: Record<string, string> = {};
+        Object.entries(articleOverrides).forEach(([k, v]) => {
+          if (v && v.trim()) cleanedOverrides[k] = v;
+        });
+        const obj: any = {};
+        if (customClauses) obj.text = customClauses;
+        if (Object.keys(cleanedOverrides).length) obj.articles = cleanedOverrides;
+        return obj;
+      })(),
     };
 
     if (editingContract && contract) {
@@ -676,6 +689,53 @@ Nelly Sabde - Les Conférenciers`);
               />
               <p className="text-[10px] text-muted-foreground">Ces clauses apparaîtront dans une section « Conditions particulières » du contrat (visible côté client).</p>
             </div>
+
+            {/* Édition des articles standards des CG */}
+            <details className="border rounded-md bg-muted/20">
+              <summary className="cursor-pointer px-3 py-2 text-xs font-semibold select-none">
+                Modifier les articles des Conditions générales (avancé)
+              </summary>
+              <div className="p-3 space-y-4">
+                <p className="text-[10px] text-muted-foreground">
+                  Vide = texte standard. Modifiez uniquement les articles à ajuster (ex : droit à l'image).
+                  Le HTML est accepté (balises <code>{'<p>'}</code>, <code>{'<strong>'}</code>, <code>{'<ul>'}</code>…).
+                  Pour l'article 5, conservez <code>{'{{PRICE_CLAUSE}}'}</code> où la clause de prix doit s'insérer.
+                </p>
+                {DEFAULT_CLAUSES.map((clause) => {
+                  const value = articleOverrides[clause.key] ?? "";
+                  const isOverridden = value.trim().length > 0;
+                  return (
+                    <div key={clause.key} className="space-y-1 border-l-2 pl-3" style={{ borderColor: isOverridden ? "hsl(var(--primary))" : "hsl(var(--border))" }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs font-semibold">{clause.title}</Label>
+                        <div className="flex gap-1">
+                          {!isOverridden && (
+                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
+                              onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: clause.defaultHtml }))}>
+                              Personnaliser
+                            </Button>
+                          )}
+                          {isOverridden && (
+                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
+                              onClick={() => setArticleOverrides(o => { const n = { ...o }; delete n[clause.key as ClauseKey]; return n; })}>
+                              Réinitialiser
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {isOverridden && (
+                        <Textarea
+                          value={value}
+                          onChange={e => setArticleOverrides(o => ({ ...o, [clause.key]: e.target.value }))}
+                          rows={Math.min(14, Math.max(4, value.split("\n").length))}
+                          className="text-[11px] font-mono"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
 
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
               {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour le contrat" : "Créer le contrat"}
