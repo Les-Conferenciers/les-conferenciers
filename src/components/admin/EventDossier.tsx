@@ -1283,8 +1283,8 @@ Nelly Sabde - Les Conférenciers`);
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
                 : (contract.status === "sent" ? "⏳ Non signé (envoyé)" : "⚠️ Non signé (brouillon)")}
             </span>
-            <Button size="sm" variant="ghost" onClick={openEditContract} title="Éditer les informations du contrat">
-              <Pencil className="h-3 w-3" />
+            <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openEditContract} title="Éditer les informations du contrat">
+              <Pencil className="h-3 w-3" /> Modifier
             </Button>
             {contract.status === "draft" && (
               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
