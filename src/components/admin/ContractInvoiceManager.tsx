@@ -237,6 +237,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setDiscountPercent(0);
     setDepositRequired(true);
     setCustomClauses("");
+    setArticleOverrides({});
     setContractDialogOpen(true);
   };
 
