@@ -1283,8 +1283,8 @@ Nelly Sabde - Les Conférenciers`);
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
                 : (contract.status === "sent" ? "⏳ Non signé (envoyé)" : "⚠️ Non signé (brouillon)")}
             </span>
-            <Button size="sm" variant="ghost" onClick={openEditContract} title="Éditer les informations du contrat">
-              <Pencil className="h-3 w-3" />
+            <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openEditContract} title="Éditer les informations du contrat">
+              <Pencil className="h-3 w-3" /> Modifier
             </Button>
             {contract.status === "draft" && (
               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
@@ -1346,6 +1346,9 @@ Nelly Sabde - Les Conférenciers`);
           <ClipboardList className="h-4 w-4" /> Feuille de liaison
         </h3>
         <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openLiaisonDialog}>
+            <Pencil className="h-3 w-3" /> Modifier
+          </Button>
           <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openLiaisonDialog}>
             <Send className="h-3 w-3" /> {event?.liaison_sheet_sent_at ? "Renvoyer" : "Envoyer"}
           </Button>
