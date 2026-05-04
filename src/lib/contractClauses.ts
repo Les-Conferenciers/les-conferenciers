@@ -148,3 +148,15 @@ export function getCustomClausesText(customClauses: any): string {
   if (typeof customClauses === "object" && customClauses.text) return String(customClauses.text);
   return "";
 }
+
+export const REMOVED_CLAUSE_MARKER = "__REMOVED__";
+
+/** Indique si un article a été marqué comme supprimé via les overrides. */
+export function isClauseRemoved(key: ClauseKey, customClauses: any): boolean {
+  const overrides =
+    customClauses && typeof customClauses === "object" && customClauses.articles
+      ? customClauses.articles
+      : {};
+  return overrides[key] === REMOVED_CLAUSE_MARKER;
+}
+

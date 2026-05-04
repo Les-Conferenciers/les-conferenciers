@@ -23,6 +23,9 @@ import { toast } from "sonner";
 import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
+import RichTextEditor from "@/components/admin/RichTextEditor";
+
+const REMOVED_CLAUSE = "__REMOVED__";
 
 
 // ── Types ──
@@ -1730,53 +1733,103 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">Apparaît dans une section « Conditions particulières » du contrat (visible côté client). Vide = aucune.</p>
             </div>
 
-            {/* Édition des articles standards des CG */}
-            <details open className="border-2 border-primary/40 rounded-md bg-primary/5">
-              <summary className="cursor-pointer px-3 py-2 text-sm font-semibold select-none flex items-center gap-2">
-                <Pencil className="h-4 w-4 text-primary" />
-                Modifier le texte des articles du contrat (clauses internes)
+            {/* Édition des articles standards des CG (cas rares) */}
+            <details className="border border-border/60 rounded-md bg-muted/30">
+              <summary className="cursor-pointer px-3 py-2 text-sm font-medium select-none flex items-center gap-2 hover:bg-muted/50 transition">
+                <Pencil className="h-4 w-4 text-muted-foreground" />
+                Personnaliser les articles du contrat (avancé)
+                {Object.keys(articleOverrides).length > 0 && (
+                  <span className="ml-auto text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    {Object.keys(articleOverrides).length} modif.
+                  </span>
+                )}
               </summary>
               <div className="p-3 space-y-4">
-                <p className="text-[10px] text-muted-foreground">
-                  Vide = texte standard. Modifiez uniquement les articles à ajuster (ex : droit à l'image).
-                  Le HTML est accepté (balises <code>{'<p>'}</code>, <code>{'<strong>'}</code>, <code>{'<ul>'}</code>…).
-                  Pour l'article 5, conservez <code>{'{{PRICE_CLAUSE}}'}</code> où la clause de prix doit s'insérer.
+                <p className="text-[11px] text-muted-foreground">
+                  Modifiez ou supprimez uniquement les articles à ajuster (ex : droit à l'image).
+                  Les articles supprimés ne seront pas affichés et la numérotation sera mise à jour automatiquement.
                 </p>
-                {DEFAULT_CLAUSES.map((clause) => {
-                  const value = articleOverrides[clause.key] ?? "";
-                  const isOverridden = value.trim().length > 0;
+                {DEFAULT_CLAUSES.map((clause, idx) => {
+                  const raw = articleOverrides[clause.key] ?? "";
+                  const isRemoved = raw === REMOVED_CLAUSE;
+                  const isOverridden = !isRemoved && raw.trim().length > 0;
+                  const visibleIndex = DEFAULT_CLAUSES
+                    .slice(0, idx + 1)
+                    .filter(c => articleOverrides[c.key] !== REMOVED_CLAUSE).length;
+                  const dynamicTitle = isRemoved
+                    ? clause.title
+                    : clause.title.replace(/^Article\s+\d+\./i, `Article ${visibleIndex}.`);
                   return (
-                    <div key={clause.key} className="space-y-1 border-l-2 pl-3" style={{ borderColor: isOverridden ? "hsl(var(--primary))" : "hsl(var(--border))" }}>
-                      <div className="flex items-center justify-between gap-2">
-                        <Label className="text-xs font-semibold">{clause.title}</Label>
+                    <div
+                      key={clause.key}
+                      className="space-y-2 border-l-2 pl-3"
+                      style={{
+                        borderColor: isRemoved
+                          ? "hsl(var(--destructive))"
+                          : isOverridden
+                          ? "hsl(var(--primary))"
+                          : "hsl(var(--border))",
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <Label className={cn("text-xs font-semibold", isRemoved && "line-through text-muted-foreground")}>
+                          {dynamicTitle}
+                          {isRemoved && <span className="ml-2 text-[10px] text-destructive">(supprimé)</span>}
+                          {isOverridden && <span className="ml-2 text-[10px] text-primary">(modifié)</span>}
+                        </Label>
                         <div className="flex gap-1">
-                          {!isOverridden && (
-                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
-                              onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: clause.defaultHtml }))}>
-                              Personnaliser
-                            </Button>
+                          {!isOverridden && !isRemoved && (
+                            <>
+                              <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
+                                onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: clause.defaultHtml }))}>
+                                Modifier
+                              </Button>
+                              <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
+                                onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: REMOVED_CLAUSE }))}>
+                                Supprimer
+                              </Button>
+                            </>
                           )}
                           {isOverridden && (
-                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
+                            <>
+                              <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
+                                onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: REMOVED_CLAUSE }))}>
+                                Supprimer
+                              </Button>
+                              <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
+                                onClick={() => setArticleOverrides(o => { const n = { ...o }; delete n[clause.key as ClauseKey]; return n; })}>
+                                Réinitialiser
+                              </Button>
+                            </>
+                          )}
+                          {isRemoved && (
+                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
                               onClick={() => setArticleOverrides(o => { const n = { ...o }; delete n[clause.key as ClauseKey]; return n; })}>
-                              Réinitialiser
+                              Restaurer
                             </Button>
                           )}
                         </div>
                       </div>
                       {isOverridden && (
-                        <Textarea
-                          value={value}
-                          onChange={e => setArticleOverrides(o => ({ ...o, [clause.key]: e.target.value }))}
-                          rows={Math.min(14, Math.max(4, value.split("\n").length))}
-                          className="text-[11px] font-mono"
-                        />
+                        <>
+                          <RichTextEditor
+                            value={raw}
+                            onChange={(html) => setArticleOverrides(o => ({ ...o, [clause.key]: html }))}
+                            minHeight="160px"
+                          />
+                          {clause.key === "art5" && (
+                            <p className="text-[10px] text-muted-foreground">
+                              Astuce : la mention <code>{'{{PRICE_CLAUSE}}'}</code> est remplacée automatiquement par la clause d'acompte.
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   );
                 })}
               </div>
             </details>
+
 
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
               {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour" : "Créer le contrat"}
