@@ -521,6 +521,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setShowCreateClientInContract(false);
     setNewContractClientCompany(""); setNewContractClientContact(""); setNewContractClientEmail("");
     setNewContractClientPhone(""); setNewContractClientSiret(""); setNewContractClientAddress(""); setNewContractClientCity("");
+    setDepositRequired(true);
+    setCustomClauses("");
+    setArticleOverrides({});
     setContractDialogOpen(true);
   };
 
