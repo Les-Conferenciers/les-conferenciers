@@ -587,6 +587,17 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
       agency_commission: agencyCommission || 0,
+      deposit_required: depositRequired,
+      custom_clauses: (() => {
+        const cleanedOverrides: Record<string, string> = {};
+        Object.entries(articleOverrides).forEach(([k, v]) => {
+          if (v && v.trim()) cleanedOverrides[k] = v;
+        });
+        const obj: any = {};
+        if (customClauses) obj.text = customClauses;
+        if (Object.keys(cleanedOverrides).length) obj.articles = cleanedOverrides;
+        return obj;
+      })(),
     };
     // Link client to proposal
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
