@@ -156,13 +156,32 @@ ${eventContext ? `<p>${eventContext}</p>
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 };
 
+const formatFrenchEventDate = (text?: string): string => {
+  if (!text) return "";
+  const trimmed = text.trim();
+  // ISO YYYY-MM-DD
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (iso) {
+    const d = new Date(`${trimmed}T12:00:00`);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  }
+  // DD/MM/YYYY
+  const fr = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
+  if (fr) {
+    const d = new Date(Number(fr[3]), Number(fr[2]) - 1, Number(fr[1]), 12);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  }
+  return trimmed;
+};
+
 const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmount: string, speakerSlug: string, eventDateText?: string, eventLocation?: string, audienceSize?: string) => {
-  const hasEventContext = eventDateText || eventLocation || audienceSize;
+  const formattedDate = formatFrenchEventDate(eventDateText);
+  const hasEventContext = formattedDate || eventLocation || audienceSize;
   const contextParts: string[] = [];
-  if (eventDateText) contextParts.push(`du <strong>${eventDateText}</strong>`);
+  if (formattedDate) contextParts.push(`du <strong>${formattedDate}</strong>`);
   if (eventLocation) contextParts.push(`qui aura lieu à <strong>${eventLocation}</strong>`);
   if (audienceSize) contextParts.push(`pour un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
-  
+
   const introPhrase = hasEventContext
     ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${contextParts.join(", ")}, et vous adresse, comme convenu, le profil de ${speakerName}.`
     : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}.`;
@@ -538,6 +557,7 @@ const AdminProposalsContent = () => {
   const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks(), fetchLeads()]);
@@ -1066,6 +1086,30 @@ const AdminProposalsContent = () => {
     setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
     setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("new");
     setCcEmails("");
+  };
+
+  const handleNewProposalForClient = (clientId: string, latest: Proposal) => {
+    const client = allClients.find(c => c.id === clientId);
+    resetForm();
+    const pType = ((latest as any).proposal_type || "classique") as ProposalType;
+    setProposalType(pType);
+    setClientMode("search");
+    setSelectedClientId(clientId);
+    const cName = client?.company_name || latest.client_name || "";
+    const cEmail = client?.email || latest.client_email || "";
+    const cPhone = client?.phone || (latest as any).client_phone || "";
+    const rName = client?.contact_name || latest.recipient_name || "";
+    setClientName(cName);
+    setClientEmail(cEmail);
+    setClientPhone(cPhone);
+    setRecipientName(rName);
+    setEventLocation((latest as any).event_location || "");
+    setEventDateText((latest as any).event_date_text || "");
+    setAudienceSize((latest as any).audience_size || "");
+    setMessage(getDefaultMessage(rName, cName));
+    setEmailSubject(getDefaultEmailSubject(cName));
+    setEmailBody(getDefaultEmailBody(rName, cName));
+    setDialogOpen(true);
   };
 
   const openEditDialog = (p: Proposal) => {
@@ -1999,6 +2043,124 @@ const AdminProposalsContent = () => {
     </div>
   );
 
+  // Build groups for "Envoyées" tab: group by client_id, keep orphans (no client_id) as singles.
+  type SentEntry =
+    | { kind: "group"; clientId: string; label: string; sublabel?: string; items: Proposal[]; latest: Proposal }
+    | { kind: "single"; proposal: Proposal };
+
+  const buildSentEntries = (items: Proposal[]): SentEntry[] => {
+    const groupsMap = new Map<string, Proposal[]>();
+    const singles: Proposal[] = [];
+    for (const p of items) {
+      if (p.client_id) {
+        const arr = groupsMap.get(p.client_id) || [];
+        arr.push(p);
+        groupsMap.set(p.client_id, arr);
+      } else {
+        singles.push(p);
+      }
+    }
+    const entries: SentEntry[] = [];
+    for (const [clientId, props] of groupsMap.entries()) {
+      const sorted = [...props].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const client = allClients.find(c => c.id === clientId);
+      const label = client?.company_name || sorted[0].client_name;
+      const sublabel = client?.contact_name || sorted[0].recipient_name || sorted[0].client_email;
+      if (props.length === 1) {
+        entries.push({ kind: "single", proposal: sorted[0] });
+      } else {
+        entries.push({ kind: "group", clientId, label, sublabel: sublabel || undefined, items: sorted, latest: sorted[0] });
+      }
+    }
+    for (const p of singles) entries.push({ kind: "single", proposal: p });
+    // Sort by most recent date (respecting dateSortAsc)
+    entries.sort((a, b) => {
+      const da = a.kind === "group" ? new Date(a.latest.created_at).getTime() : new Date(a.proposal.created_at).getTime();
+      const db = b.kind === "group" ? new Date(b.latest.created_at).getTime() : new Date(b.proposal.created_at).getTime();
+      return dateSortAsc ? da - db : db - da;
+    });
+    return entries;
+  };
+
+  const renderGroupedSentTable = (entries: SentEntry[]) => (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Client</TableHead>
+            <TableHead>Conférenciers</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {entries.map(entry => {
+            if (entry.kind === "single") return renderProposalRow(entry.proposal, "sent");
+            const isOpen = expandedGroupId === entry.clientId;
+            const hasAccepted = entry.items.some(p => p.status === "accepted");
+            const latest = entry.latest;
+            return (
+              <React.Fragment key={`group-${entry.clientId}`}>
+                <TableRow className="bg-muted/40 hover:bg-muted/60 cursor-pointer" onClick={() => setExpandedGroupId(isOpen ? null : entry.clientId)}>
+                  <TableCell className="text-xs whitespace-nowrap font-medium">
+                    <div className="flex items-center gap-1.5">
+                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {formatDate(latest.created_at)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-semibold text-sm flex items-center gap-2">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      {entry.label}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                        {entry.items.length} propositions
+                      </span>
+                    </div>
+                    {entry.sublabel && <div className="text-xs text-muted-foreground">{entry.sublabel}</div>}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground italic">— historique groupé —</TableCell>
+                  <TableCell>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      {(latest as any).proposal_type === "unique" ? "🎤" : (latest as any).proposal_type === "info" ? "📝" : "📋"} dernière
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {hasAccepted ? (
+                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Accepté</span>
+                    ) : (
+                      <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Suivi</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                      onClick={(e) => { e.stopPropagation(); handleNewProposalForClient(entry.clientId, latest); }}
+                      title="Créer une nouvelle proposition pour ce client"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Nouvelle proposition
+                    </Button>
+                  </TableCell>
+                </TableRow>
+                {isOpen && entry.items.map(p => renderProposalRow(p, "sent"))}
+              </React.Fragment>
+            );
+          })}
+          {entries.length === 0 && !loading && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                Aucune proposition envoyée.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   const renderTable = (items: Proposal[], mode: "draft" | "sent" | "completed") => (
     <div className="border border-border rounded-xl overflow-hidden">
       <Table>
@@ -2093,7 +2255,10 @@ const AdminProposalsContent = () => {
           { key: "sent", items: sent, mode: "sent" as const, allowDelete: false },
           { key: "archived", items: archived, mode: "sent" as const, allowDelete: true },
         ]).map(({ key, items, mode, allowDelete }) => {
+          const isSent = key === "sent";
+          const sentEntries = isSent ? buildSentEntries(items) : [];
           const paginated = items.slice(0, pageSize);
+          const paginatedEntries = isSent ? sentEntries.slice(0, pageSize) : [];
           return (
             <TabsContent key={key} value={key}>
               {key === "archived" ? (
@@ -2157,6 +2322,8 @@ const AdminProposalsContent = () => {
                     </TableBody>
                   </Table>
                 </div>
+              ) : isSent ? (
+                renderGroupedSentTable(paginatedEntries)
               ) : (
                 renderTable(paginated, mode)
               )}
@@ -2321,9 +2488,9 @@ const AdminProposalsContent = () => {
                         )}
                       </div>
                     </div>
-                    <div className={task.status === "completed" ? "" : "grid grid-cols-2 gap-3"}>
+                    <div className="space-y-3">
                       {task.status !== "completed" && (
-                        <div className="space-y-1">
+                        <div className="space-y-1 max-w-xs">
                           <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
                           <Input
                             type="date"
@@ -2338,14 +2505,13 @@ const AdminProposalsContent = () => {
                       )}
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Note</Label>
-                        <Input
+                        <SimpleRichTextEditor
                           value={task.note || ""}
-                          onChange={e => {
+                          onChange={(val) => {
                             const updated = [...editingTasks];
-                            updated[idx] = { ...updated[idx], note: e.target.value };
+                            updated[idx] = { ...updated[idx], note: val };
                             setEditingTasks(updated);
                           }}
-                          placeholder="Ajouter une note…"
                         />
                       </div>
                     </div>

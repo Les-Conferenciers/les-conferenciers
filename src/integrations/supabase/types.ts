@@ -66,6 +66,8 @@ export type Database = {
           contract_lines: Json | null
           contract_sent_at: string | null
           created_at: string
+          custom_clauses: Json | null
+          deposit_required: boolean
           discount_percent: number | null
           event_date: string | null
           event_description: string | null
@@ -87,6 +89,8 @@ export type Database = {
           contract_lines?: Json | null
           contract_sent_at?: string | null
           created_at?: string
+          custom_clauses?: Json | null
+          deposit_required?: boolean
           discount_percent?: number | null
           event_date?: string | null
           event_description?: string | null
@@ -108,6 +112,8 @@ export type Database = {
           contract_lines?: Json | null
           contract_sent_at?: string | null
           created_at?: string
+          custom_clauses?: Json | null
+          deposit_required?: boolean
           discount_percent?: number | null
           event_date?: string | null
           event_description?: string | null
@@ -781,6 +787,7 @@ export type Database = {
           id: string
           image_position: string | null
           image_url: string | null
+          internal_category: string | null
           interview_only: boolean | null
           key_points: string[] | null
           languages: string[] | null
@@ -816,6 +823,7 @@ export type Database = {
           id?: string
           image_position?: string | null
           image_url?: string | null
+          internal_category?: string | null
           interview_only?: boolean | null
           key_points?: string[] | null
           languages?: string[] | null
@@ -851,6 +859,7 @@ export type Database = {
           id?: string
           image_position?: string | null
           image_url?: string | null
+          internal_category?: string | null
           interview_only?: boolean | null
           key_points?: string[] | null
           languages?: string[] | null

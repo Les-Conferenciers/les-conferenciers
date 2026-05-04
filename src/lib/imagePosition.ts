@@ -15,7 +15,7 @@ const parseAxis = (value?: string, fallback = 50) => {
   if (normalized === "right" || normalized === "bottom") return 100;
 
   const numeric = Number.parseFloat(normalized.replace("%", ""));
-  return Number.isFinite(numeric) ? clamp(numeric, 0, 100) : fallback;
+  return Number.isFinite(numeric) ? clamp(numeric, -50, 150) : fallback;
 };
 
 export const parseImagePosition = (value?: string | null): ParsedImagePosition => {
@@ -33,8 +33,8 @@ export const parseImagePosition = (value?: string | null): ParsedImagePosition =
 };
 
 export const stringifyImagePosition = (x: number, y: number, zoom = 1) => {
-  const safeX = clamp(Math.round(x), 0, 100);
-  const safeY = clamp(Math.round(y), 0, 100);
+  const safeX = clamp(Math.round(x), -50, 150);
+  const safeY = clamp(Math.round(y), -50, 150);
   const safeZoom = clamp(Number(zoom.toFixed(2)), 1, 3);
   return `${safeX}% ${safeY}%|${safeZoom}`;
 };

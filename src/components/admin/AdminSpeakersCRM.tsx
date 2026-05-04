@@ -45,6 +45,7 @@ type Speaker = {
   agent_name: string | null;
   agent_phone: string | null;
   agent_email: string | null;
+  internal_category: string | null;
 };
 
 type Review = {
@@ -145,7 +146,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email")
+      .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category")
       .order("name");
     setSpeakers((data as any) || []);
     setLoading(false);
@@ -329,6 +330,7 @@ const AdminSpeakersCRM = () => {
         agent_name: (editForm as any).agent_name || null,
         agent_phone: (editForm as any).agent_phone || null,
         agent_email: (editForm as any).agent_email || null,
+        internal_category: (editForm as any).internal_category || null,
       } as any)
       .eq("id", editSpeaker.id);
     setSaving(false);
@@ -849,7 +851,7 @@ const AdminSpeakersCRM = () => {
       toast.success(`Fiche enrichie ! ${updatedFields.length > 0 ? "Champs : " + updatedFields.join(", ") : "Aucun nouveau champ"}`);
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email")
+        .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
@@ -1233,13 +1235,12 @@ const AdminSpeakersCRM = () => {
                 </div>
                 {editForm.image_url && (() => {
                   const imageSettings = parseImagePosition((editForm as any).image_position);
-                  const xVal = imageSettings.x;
+                  // Ne conserver que la position verticale ; horizontale = 50, zoom = 1.
                   const yVal = imageSettings.y;
-                  const currentZoom = imageSettings.zoom;
-                  const updateImagePosition = (x: number, y: number, zoom = currentZoom) => {
+                  const updateY = (y: number) => {
                     setEditForm((p) => ({
                       ...p,
-                      image_position: stringifyImagePosition(x, y, zoom),
+                      image_position: stringifyImagePosition(50, y, 1),
                     }));
                   };
 
@@ -1248,18 +1249,18 @@ const AdminSpeakersCRM = () => {
                     const container = e.currentTarget;
                     container.setPointerCapture(e.pointerId);
 
-                    const updateFromPointer = (clientX: number, clientY: number) => {
+                    const updateFromPointer = (clientY: number) => {
                       const rect = container.getBoundingClientRect();
-                      const nextX = ((clientX - rect.left) / rect.width) * 100;
                       const nextY = ((clientY - rect.top) / rect.height) * 100;
-                      updateImagePosition(nextX, nextY, currentZoom);
+                      // Plage élargie pour donner du mou (au-delà de 0-100%)
+                      updateY(Math.max(-50, Math.min(150, nextY)));
                     };
 
-                    updateFromPointer(e.clientX, e.clientY);
+                    updateFromPointer(e.clientY);
 
                     const handlePointerMove = (moveEvent: PointerEvent) => {
                       moveEvent.preventDefault();
-                      updateFromPointer(moveEvent.clientX, moveEvent.clientY);
+                      updateFromPointer(moveEvent.clientY);
                     };
 
                     const handlePointerUp = () => {
@@ -1276,63 +1277,42 @@ const AdminSpeakersCRM = () => {
                     window.addEventListener('pointercancel', handlePointerUp);
                   };
 
-                  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-                    e.preventDefault();
-                    const delta = e.deltaY > 0 ? -0.08 : 0.08;
-                    updateImagePosition(xVal, yVal, Math.max(1, Math.min(3, currentZoom + delta)));
-                  };
+                  const previewSettings = { x: 50, y: yVal, zoom: 1 };
 
                   return (
                     <div className="space-y-3">
-                      <Label className="text-xs text-muted-foreground">Ajuster la photo — glissez dans l'aperçu ou utilisez les curseurs</Label>
+                      <Label className="text-xs text-muted-foreground">Ajuster la photo verticalement — glissez dans l'aperçu ou utilisez le curseur</Label>
                       <div className="flex items-start gap-4">
                         <div
-                          className="w-48 h-48 rounded-xl overflow-hidden border-2 border-primary/30 bg-muted cursor-move relative select-none touch-none"
+                          className="w-48 h-64 rounded-xl overflow-hidden border-2 border-primary/30 bg-muted cursor-ns-resize relative select-none touch-none"
                           onPointerDown={handlePointerDown}
-                          onWheel={handleWheel}
                         >
                           <img
                             src={editForm.image_url}
                             alt=""
                             className="w-full h-full object-cover pointer-events-none"
                             draggable={false}
-                            style={getImagePositionStyle(imageSettings)}
+                            style={getImagePositionStyle(previewSettings)}
                           />
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10">
-                            <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">↕ ↔ Glisser</span>
+                            <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">↕ Glisser</span>
                           </div>
                         </div>
                         <div className="space-y-2">
                           <span className="text-[10px] text-muted-foreground block">Aperçu médaillon</span>
                           <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-accent/30 bg-muted">
-                            <img src={editForm.image_url} alt="" className="w-full h-full object-cover pointer-events-none" draggable={false} style={getImagePositionStyle(imageSettings)} />
+                            <img src={editForm.image_url} alt="" className="w-full h-full object-cover pointer-events-none" draggable={false} style={getImagePositionStyle(previewSettings)} />
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-3 max-w-sm">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                            <span>Zoom</span>
-                            <span>{Math.round(currentZoom * 100)}%</span>
-                          </div>
-                          <input type="range" min="100" max="300" step="1" value={Math.round(currentZoom * 100)} onChange={e => updateImagePosition(xVal, yVal, Number(e.target.value) / 100)} className="w-full h-2 accent-primary" />
+                      <div className="space-y-1 max-w-sm">
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>Vertical</span>
+                          <span>{Math.round(yVal)}%</span>
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                            <span>Horizontal</span>
-                            <span>{Math.round(xVal)}%</span>
-                          </div>
-                          <input type="range" min="0" max="100" step="1" value={Math.round(xVal)} onChange={e => updateImagePosition(Number(e.target.value), yVal, currentZoom)} className="w-full h-2 accent-primary" />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                            <span>Vertical</span>
-                            <span>{Math.round(yVal)}%</span>
-                          </div>
-                          <input type="range" min="0" max="100" step="1" value={Math.round(yVal)} onChange={e => updateImagePosition(xVal, Number(e.target.value), currentZoom)} className="w-full h-2 accent-primary" />
-                        </div>
+                        <input type="range" min="-50" max="150" step="1" value={Math.round(yVal)} onChange={e => updateY(Number(e.target.value))} className="w-full h-2 accent-primary" />
                       </div>
-                      <Button variant="ghost" size="sm" className="text-xs" onClick={() => updateImagePosition(50, 50, 1)}>
+                      <Button variant="ghost" size="sm" className="text-xs" onClick={() => updateY(50)}>
                         Réinitialiser
                       </Button>
                     </div>
@@ -1366,6 +1346,16 @@ const AdminSpeakersCRM = () => {
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">📋 Détails des tarifs (tous les tarifs : physique, distanciel, province…)</Label>
                 <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} />
+              </div>
+
+              {/* Catégorie interne CRM */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">🏷️ Catégorie interne (CRM uniquement, non visible publiquement)</Label>
+                <Input
+                  value={(editForm as any).internal_category || ""}
+                  onChange={e => setEditForm(p => ({ ...p, internal_category: e.target.value }))}
+                />
+                <p className="text-[10px] text-muted-foreground">Ex : « Top 10 », « VIP », « À relancer », « Éco »… Sert au tri/filtrage interne.</p>
               </div>
 
               {/* Contact conférencier */}

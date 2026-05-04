@@ -25,16 +25,69 @@ const DEFAULT_IMAGE = null;
 // Strip inline styles and unwanted span wrappers from HTML to ensure consistent typography
 // Preserve width/height on images so they render at their intended size
 const sanitizeConferenceHtml = (html: string): string => {
-  return html
-    .replace(/<img([^>]*)style="([^"]*)"/gi, (match, before, style) => {
-      // Keep only width and height from the style
-      const widthMatch = style.match(/width\s*:\s*[^;]+/i);
-      const heightMatch = style.match(/height\s*:\s*[^;]+/i);
-      const kept = [widthMatch?.[0], heightMatch?.[0]].filter(Boolean).join(';');
+  // Whitelist of style props we keep on <img>/<figure> so float/wrap layouts work as configured in admin
+  const ALLOWED_IMG_STYLES = /^(width|height|max-width|max-height|float|margin|margin-top|margin-bottom|margin-left|margin-right|border-radius|display)$/i;
+  const filterImgStyle = (style: string) =>
+    style
+      .split(';')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .filter(decl => {
+        const prop = decl.split(':')[0]?.trim();
+        return prop && ALLOWED_IMG_STYLES.test(prop);
+      })
+      .join('; ');
+
+  // Pass 1: clean inline styles on img / figure
+  let out = html
+    .replace(/<img([^>]*)style="([^"]*)"/gi, (_m, before, style) => {
+      const kept = filterImgStyle(style);
       return kept ? `<img${before}style="${kept}"` : `<img${before}`;
     })
-    .replace(/<(?!img)([^>]*)\s*style="[^"]*"/gi, '<$1')
+    .replace(/<figure([^>]*)style="([^"]*)"/gi, (_m, before, style) => {
+      const kept = filterImgStyle(style);
+      return kept ? `<figure${before}style="${kept}"` : `<figure${before}`;
+    })
+    .replace(/<(?!img|figure)([^>]*)\s*style="[^"]*"/gi, '<$1')
     .replace(/<span>(.*?)<\/span>/gi, '$1');
+
+  // Pass 2: when a <figure> wraps an <img> with float, propagate the float (+ width)
+  // to the <figure> itself so the text actually wraps around it (figures are block-level by default).
+  out = out.replace(/<figure([^>]*?)>\s*(<img[^>]*>)/gi, (match, figAttrs, imgTag) => {
+    const imgStyleMatch = imgTag.match(/style="([^"]*)"/i);
+    if (!imgStyleMatch) return match;
+    const imgStyle = imgStyleMatch[1];
+    const floatMatch = imgStyle.match(/float\s*:\s*(left|right)/i);
+    if (!floatMatch) return match;
+    const floatVal = floatMatch[1];
+    const widthMatch = imgStyle.match(/width\s*:\s*([^;]+)/i);
+    const marginRightMatch = imgStyle.match(/margin-right\s*:\s*([^;]+)/i);
+    const marginLeftMatch = imgStyle.match(/margin-left\s*:\s*([^;]+)/i);
+    const marginBottomMatch = imgStyle.match(/margin-bottom\s*:\s*([^;]+)/i);
+    let figStyle = `float: ${floatVal}; max-width: 100%;`;
+    if (widthMatch) figStyle += ` width: ${widthMatch[1].trim()};`;
+    if (marginRightMatch) figStyle += ` margin-right: ${marginRightMatch[1].trim()};`;
+    if (marginLeftMatch) figStyle += ` margin-left: ${marginLeftMatch[1].trim()};`;
+    if (marginBottomMatch) figStyle += ` margin-bottom: ${marginBottomMatch[1].trim()};`;
+    // Strip pre-existing style on figure tag, replace with merged style
+    const cleanedFigAttrs = figAttrs.replace(/\s*style="[^"]*"/i, '');
+    // Inner img: keep width but remove float/margins (now on figure)
+    const newImgTag = imgTag.replace(/style="[^"]*"/i, () => {
+      const keep = imgStyle
+        .split(';')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .filter(decl => {
+          const p = decl.split(':')[0]?.trim().toLowerCase();
+          return p && !['float', 'margin-right', 'margin-left', 'margin-bottom', 'margin'].includes(p);
+        })
+        .join('; ');
+      return keep ? `style="${keep}"` : '';
+    });
+    return `<figure${cleanedFigAttrs} style="${figStyle}">${newImgTag}`;
+  });
+
+  return out;
 };
 
 // Gender helpers
@@ -680,7 +733,9 @@ const SpeakerDetail = () => {
                               [&_ul>li]:before:content-[''] [&_ul>li]:before:absolute [&_ul>li]:before:left-0 [&_ul>li]:before:top-[0.6em] [&_ul>li]:before:w-1.5 [&_ul>li]:before:h-1.5 [&_ul>li]:before:rounded-full [&_ul>li]:before:bg-accent/60
                               [&_ol]:list-decimal [&_ol]:pl-5
                               [&_em]:italic
-                              [&_img]:rounded-xl [&_img]:shadow-sm [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto"
+                              [&_img]:rounded-xl [&_img]:shadow-sm [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto
+                              [&_figure]:my-4 [&_figure]:max-w-full
+                              [&>*:last-child]:after:content-[''] [&>*:last-child]:after:block [&>*:last-child]:after:clear-both"
                             dangerouslySetInnerHTML={{ __html: sanitizeConferenceHtml(conf.description) }}
                           />
                         )}
