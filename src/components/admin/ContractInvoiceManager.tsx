@@ -14,6 +14,7 @@ import {
   FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil, Ban, CircleDollarSign, Trash2, Percent,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
 
 type Proposal = {
   id: string;
