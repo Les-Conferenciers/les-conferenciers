@@ -690,9 +690,53 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">Ces clauses apparaîtront dans une section « Conditions particulières » du contrat (visible côté client).</p>
             </div>
 
-            <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
-              {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour le contrat" : "Créer le contrat"}
-            </Button>
+            {/* Édition des articles standards des CG */}
+            <details className="border rounded-md bg-muted/20">
+              <summary className="cursor-pointer px-3 py-2 text-xs font-semibold select-none">
+                Modifier les articles des Conditions générales (avancé)
+              </summary>
+              <div className="p-3 space-y-4">
+                <p className="text-[10px] text-muted-foreground">
+                  Vide = texte standard. Modifiez uniquement les articles à ajuster (ex : droit à l'image).
+                  Le HTML est accepté (balises <code>{'<p>'}</code>, <code>{'<strong>'}</code>, <code>{'<ul>'}</code>…).
+                  Pour l'article 5, conservez <code>{'{{PRICE_CLAUSE}}'}</code> où la clause de prix doit s'insérer.
+                </p>
+                {DEFAULT_CLAUSES.map((clause) => {
+                  const value = articleOverrides[clause.key] ?? "";
+                  const isOverridden = value.trim().length > 0;
+                  return (
+                    <div key={clause.key} className="space-y-1 border-l-2 pl-3" style={{ borderColor: isOverridden ? "hsl(var(--primary))" : "hsl(var(--border))" }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs font-semibold">{clause.title}</Label>
+                        <div className="flex gap-1">
+                          {!isOverridden && (
+                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
+                              onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: clause.defaultHtml }))}>
+                              Personnaliser
+                            </Button>
+                          )}
+                          {isOverridden && (
+                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
+                              onClick={() => setArticleOverrides(o => { const n = { ...o }; delete n[clause.key as ClauseKey]; return n; })}>
+                              Réinitialiser
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {isOverridden && (
+                        <Textarea
+                          value={value}
+                          onChange={e => setArticleOverrides(o => ({ ...o, [clause.key]: e.target.value }))}
+                          rows={Math.min(14, Math.max(4, value.split("\n").length))}
+                          className="text-[11px] font-mono"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+
           </div>
         </DialogContent>
       </Dialog>
