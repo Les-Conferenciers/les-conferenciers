@@ -1778,6 +1778,8 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </details>
 
+            <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
+              {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour" : "Créer le contrat"}
             </Button>
           </div>
         </DialogContent>
