@@ -269,7 +269,16 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       contract_lines: contractLines,
       discount_percent: discountPercent || 0,
       deposit_required: depositRequired,
-      custom_clauses: customClauses ? { text: customClauses } : {},
+      custom_clauses: (() => {
+        const cleanedOverrides: Record<string, string> = {};
+        Object.entries(articleOverrides).forEach(([k, v]) => {
+          if (v && v.trim()) cleanedOverrides[k] = v;
+        });
+        const obj: any = {};
+        if (customClauses) obj.text = customClauses;
+        if (Object.keys(cleanedOverrides).length) obj.articles = cleanedOverrides;
+        return obj;
+      })(),
     };
 
     if (editingContract && contract) {
