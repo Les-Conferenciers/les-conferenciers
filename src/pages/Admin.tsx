@@ -121,8 +121,14 @@ import { toast } from "sonner";
 const getDefaultMessage = (recipientName: string, clientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-joint un fichier PDF présentant une sélection de conférenciers, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers`;
 
+const getFollowUpMessage = (recipientName: string, clientName: string) =>
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à notre récent échange, je suis ravie de vous adresser une nouvelle sélection de conférenciers qui, je l'espère, correspondra davantage à vos attentes.\n\nVous trouverez ci-joint un fichier PDF présentant cette nouvelle sélection, sous réserve de la disponibilité des intervenants.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers`;
+
 const getDefaultEmailSubject = (clientName: string) =>
   `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
+
+const getFollowUpEmailSubject = (clientName: string) =>
+  `Votre nouvelle sélection de conférenciers - ${clientName || "Les Conférenciers"}`;
 
 const buildEventContextLine = (eventLocation: string, eventDateText: string, audienceSize: string) => {
   if (!eventLocation && !eventDateText && !audienceSize) return "";
@@ -150,6 +156,24 @@ ${eventContext ? `<p>${eventContext}</p>
 ` : ""}<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
 
 <p><strong>👉 Cliquez sur le bouton ci-dessous pour découvrir votre sélection.</strong></p>
+
+<p>Je reste bien entendu à votre disposition pour tout complément d'information.</p>
+
+<p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
+};
+
+const getFollowUpEmailBody = (recipientName: string, clientName: string, eventContext?: string, _templateName?: string) => {
+  return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
+
+<p>Suite à notre récent échange, je suis ravie de vous adresser une <strong>nouvelle sélection de conférenciers</strong> qui, je l'espère, correspondra davantage à vos attentes.</p>
+
+${eventContext ? `<p>${eventContext}</p>
+
+` : ""}<p>Les tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.</p>
+
+<p><strong>👉 Cliquez sur le bouton ci-dessous pour découvrir votre nouvelle sélection.</strong></p>
 
 <p>Je reste bien entendu à votre disposition pour tout complément d'information.</p>
 
