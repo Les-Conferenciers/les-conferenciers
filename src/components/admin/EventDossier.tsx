@@ -513,7 +513,23 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     return "";
   };
 
-  const openCreateContract = () => {
+  const generateNextBdcNumber = async (): Promise<string> => {
+    const { data } = await supabase
+      .from("events")
+      .select("bdc_number")
+      .not("bdc_number", "is", null);
+    let max = 0;
+    (data || []).forEach((row: any) => {
+      const m = /^BDC-(\d+)$/i.exec((row.bdc_number || "").trim());
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    });
+    return `BDC-${String(max + 1).padStart(3, "0")}`;
+  };
+
+  const openCreateContract = async () => {
     setEditingContract(false);
     // Auto-fill from proposal data
     setEventDate(event?.event_date || parseProposalEventDate());
@@ -522,7 +538,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventFormat("Conférence");
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
-    setContractBdcNumber("");
+    const nextBdc = await generateNextBdcNumber();
+    setContractBdcNumber(event?.bdc_number || nextBdc);
     // Pre-fill agency commission from proposal (selected speaker if any, else sum across speakers)
     const speakersForCommission = event?.selected_speaker_id
       ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
