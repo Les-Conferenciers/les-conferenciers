@@ -1161,25 +1161,26 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEmailInvoice(inv);
     const typeLabel = inv.invoice_type === "acompte" ? "d'acompte" : inv.invoice_type === "solde" ? "de solde" : "";
     const isDepositInvoice = inv.invoice_type === "acompte";
-    
-    setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
-    
+    const firstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
+    const eventDateLong = contract?.event_date
+      ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+      : "—";
+
     if (isDepositInvoice) {
-      setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+      setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
+      setInvoiceEmailBody(`Bonjour${firstName ? ` ${firstName}` : ""},
 
-Veuillez trouver ci-dessous votre facture ${typeLabel} pour la prestation de conférence.
+Suite à nos précédents échanges, vous trouverez ci-dessous comme convenu la facture d'acompte pour l'intervention de ${speakerSummary}.
 
-📄 Facture n° ${inv.invoice_number}
-• Conférencier(s) : ${speakerSummary}
-• Montant HT : ${inv.amount_ht.toLocaleString("fr-FR")} €
-• TVA ${inv.tva_rate}% : ${(inv.amount_ttc - inv.amount_ht).toLocaleString("fr-FR")} €
-• Montant TTC : ${inv.amount_ttc.toLocaleString("fr-FR")} €
+Cliquez sur le bouton ci-dessous pour consulter et télécharger votre facture.
 
-👉 Cliquez sur le bouton ci-dessous pour consulter et télécharger votre facture.
+Je reste bien évidemment à votre disposition si besoin est.
 
-Bien cordialement,
+Dans l'attente de nos prochains échanges, je vous souhaite une excellente journée.
+
 Nelly Sabde - Les Conférenciers`);
     } else {
+      setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
       setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
 Avant toute chose, je tenais à vous remercier pour la confiance que vous m'avez accordée et pour la qualité de nos échanges lors de cette collaboration !
