@@ -126,7 +126,8 @@ const getDefaultEmailSubject = (clientName: string) =>
 const buildEventContextLine = (eventLocation: string, eventDateText: string, audienceSize: string) => {
   if (!eventLocation && !eventDateText && !audienceSize) return "";
   const parts: string[] = [];
-  if (eventDateText) parts.push(`du <strong>${eventDateText}</strong>`);
+  const formattedDate = formatFrenchEventDate(eventDateText);
+  if (formattedDate) parts.push(`du <strong>${formattedDate}</strong>`);
   if (eventLocation) parts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
   if (audienceSize) parts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
   return `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${parts.join(", ")}.`;
