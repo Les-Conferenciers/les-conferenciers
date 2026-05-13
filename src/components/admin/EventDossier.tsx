@@ -209,6 +209,16 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [newContractClientSiret, setNewContractClientSiret] = useState("");
   const [newContractClientAddress, setNewContractClientAddress] = useState("");
   const [newContractClientCity, setNewContractClientCity] = useState("");
+  // Inline edit of selected client inside contract dialog
+  const [editClientInContract, setEditClientInContract] = useState(false);
+  const [editClientCompany, setEditClientCompany] = useState("");
+  const [editClientContact, setEditClientContact] = useState("");
+  const [editClientEmail, setEditClientEmail] = useState("");
+  const [editClientPhone, setEditClientPhone] = useState("");
+  const [editClientSiret, setEditClientSiret] = useState("");
+  const [editClientAddress, setEditClientAddress] = useState("");
+  const [editClientCity, setEditClientCity] = useState("");
+  const [savingClientEdit, setSavingClientEdit] = useState(false);
 
   // Contract email
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
