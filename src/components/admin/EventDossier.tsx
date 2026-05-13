@@ -1228,6 +1228,8 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     const eventDateLong = contract?.event_date
       ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
       : "—";
+    setInvoiceRecipientEmail(proposal.client_email || "");
+    setInvoiceRecipientName(proposal.recipient_name || "");
 
     if (inv.invoice_type === "acompte") {
       setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
@@ -1284,10 +1286,17 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
+    if (!invoiceRecipientEmail.trim()) { toast.error("Email destinataire requis"); return; }
     setSendingInvoice(true);
     try {
       const { error } = await supabase.functions.invoke("send-invoice-email", {
-        body: { invoice_id: emailInvoice.id, email_subject: invoiceEmailSubject, email_body: invoiceEmailBody },
+        body: {
+          invoice_id: emailInvoice.id,
+          email_subject: invoiceEmailSubject,
+          email_body: invoiceEmailBody,
+          to: invoiceRecipientEmail,
+          recipient_name: invoiceRecipientName,
+        },
       });
       if (error) throw error;
       await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", emailInvoice.id);
