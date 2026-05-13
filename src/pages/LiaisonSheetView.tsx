@@ -28,7 +28,7 @@ const LiaisonSheetView = () => {
   const loadData = async () => {
     const { data: ev } = await supabase
       .from("events")
-      .select("*, proposal:proposals(client_name, recipient_name, client_email, proposal_speakers(speaker_id, speakers(name, phone)))")
+      .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
       .eq("proposal_id", id!)
       .maybeSingle();
 
