@@ -28,6 +28,7 @@ const InvoiceView = () => {
   const [event, setEvent] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [speaker, setSpeaker] = useState<any>(null);
+  const [bdcNumber, setBdcNumber] = useState("—");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,16 +41,18 @@ const InvoiceView = () => {
       if (!inv) { setLoading(false); return; }
       setInvoice(inv as any);
 
-      const [propRes, contractRes, eventRes] = await Promise.all([
+      const [propRes, contractRes, eventRes, bdcRes] = await Promise.all([
         supabase.from("proposals").select("*, proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(id, name))").eq("id", (inv as any).proposal_id).maybeSingle(),
         (inv as any).contract_id
           ? supabase.from("contracts").select("*").eq("id", (inv as any).contract_id).maybeSingle()
           : supabase.from("contracts").select("*").eq("proposal_id", (inv as any).proposal_id).maybeSingle(),
         supabase.from("events").select("*").eq("proposal_id", (inv as any).proposal_id).maybeSingle(),
+        (supabase as any).rpc("get_invoice_bdc", { _invoice_id: (inv as any).id }),
       ]);
       setProposal(propRes.data);
       setContract(contractRes.data);
       setEvent(eventRes.data);
+      setBdcNumber((eventRes.data as any)?.bdc_number || (bdcRes.data as string | null) || "—");
 
       const clientId = (propRes.data as any)?.client_id;
       if (clientId) {
@@ -86,8 +89,6 @@ const InvoiceView = () => {
   const eventDate = contract?.event_date || event?.event_date;
   const eventLocation = contract?.event_location || "—";
   const eventTime = contract?.event_time || "—";
-  const bdcNumber = event?.bdc_number || "—";
-
   // Single designation line: prestation totale (cachet + commission + déplacement fusionnés)
   const totalPrestationHT = invoice.amount_ht; // already prorated for the invoice (acompte/solde/total)
   const vhr = invoice.vhr_estimate || 0;

@@ -293,6 +293,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
   const [invoiceEmailSubject, setInvoiceEmailSubject] = useState("");
   const [invoiceEmailBody, setInvoiceEmailBody] = useState("");
+  const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState("");
+  const [invoiceRecipientName, setInvoiceRecipientName] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
 
@@ -1226,6 +1228,8 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     const eventDateLong = contract?.event_date
       ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
       : "—";
+    setInvoiceRecipientEmail(proposal.client_email || "");
+    setInvoiceRecipientName(proposal.recipient_name || "");
 
     if (inv.invoice_type === "acompte") {
       setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
@@ -1282,10 +1286,17 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
+    if (!invoiceRecipientEmail.trim()) { toast.error("Email destinataire requis"); return; }
     setSendingInvoice(true);
     try {
       const { error } = await supabase.functions.invoke("send-invoice-email", {
-        body: { invoice_id: emailInvoice.id, email_subject: invoiceEmailSubject, email_body: invoiceEmailBody },
+        body: {
+          invoice_id: emailInvoice.id,
+          email_subject: invoiceEmailSubject,
+          email_body: invoiceEmailBody,
+          to: invoiceRecipientEmail,
+          recipient_name: invoiceRecipientName,
+        },
       });
       if (error) throw error;
       await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", emailInvoice.id);
@@ -2327,9 +2338,19 @@ Nelly Sabde - Les Conférenciers`);
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Envoyer {emailInvoice?.invoice_number} - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label className="text-xs">À</Label><Input value={invoiceRecipientEmail} onChange={e => setInvoiceRecipientEmail(e.target.value)} className="text-sm" /></div>
+              <div className="space-y-2"><Label className="text-xs">Contact</Label><Input value={invoiceRecipientName} onChange={e => setInvoiceRecipientName(e.target.value)} className="text-sm" /></div>
+            </div>
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={invoiceEmailSubject} onChange={e => setInvoiceEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={invoiceEmailBody} onChange={e => setInvoiceEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
-            <p className="text-[10px] text-muted-foreground">📧 Sera envoyé à : {proposal.client_email}</p>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Aperçu du mail</Label>
+              <div className="border rounded-md p-4 bg-background max-h-64 overflow-y-auto text-sm whitespace-pre-wrap">
+                {invoiceEmailBody || "—"}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Le bouton « Consulter la facture » est ajouté automatiquement.</p>
+            </div>
             <Button className="w-full" onClick={handleSendInvoiceEmail} disabled={sendingInvoice}>
               <Send className="h-4 w-4 mr-2" />{sendingInvoice ? "Envoi…" : `Envoyer la facture`}
             </Button>
