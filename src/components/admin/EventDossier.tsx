@@ -95,6 +95,7 @@ type Invoice = {
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
+  vhr_estimate?: number | null;
 };
 
 type EventData = {
@@ -286,6 +287,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editAmountHT, setEditAmountHT] = useState(0);
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
+  const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
@@ -1141,6 +1143,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   const openEditInvoice = (inv: Invoice) => {
     setEditingInvoice(inv); setEditAmountHT(inv.amount_ht); setEditTvaRate(inv.tva_rate); setEditDueDate(inv.due_date || "");
+    setEditVhrEstimate(inv.vhr_estimate ?? "");
     setEditInvoiceOpen(true);
   };
 
@@ -1152,7 +1155,8 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       tva_rate: editTvaRate,
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: editDueDate || null,
-    }).eq("id", editingInvoice.id);
+      vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
+    } as any).eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
     setEditInvoiceOpen(false); fetchData();
   };
@@ -1161,25 +1165,26 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEmailInvoice(inv);
     const typeLabel = inv.invoice_type === "acompte" ? "d'acompte" : inv.invoice_type === "solde" ? "de solde" : "";
     const isDepositInvoice = inv.invoice_type === "acompte";
-    
-    setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
-    
+    const firstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
+    const eventDateLong = contract?.event_date
+      ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+      : "—";
+
     if (isDepositInvoice) {
-      setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+      setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
+      setInvoiceEmailBody(`Bonjour${firstName ? ` ${firstName}` : ""},
 
-Veuillez trouver ci-dessous votre facture ${typeLabel} pour la prestation de conférence.
+Suite à nos précédents échanges, vous trouverez ci-dessous comme convenu la facture d'acompte pour l'intervention de ${speakerSummary}.
 
-📄 Facture n° ${inv.invoice_number}
-• Conférencier(s) : ${speakerSummary}
-• Montant HT : ${inv.amount_ht.toLocaleString("fr-FR")} €
-• TVA ${inv.tva_rate}% : ${(inv.amount_ttc - inv.amount_ht).toLocaleString("fr-FR")} €
-• Montant TTC : ${inv.amount_ttc.toLocaleString("fr-FR")} €
+Cliquez sur le bouton ci-dessous pour consulter et télécharger votre facture.
 
-👉 Cliquez sur le bouton ci-dessous pour consulter et télécharger votre facture.
+Je reste bien évidemment à votre disposition si besoin est.
 
-Bien cordialement,
+Dans l'attente de nos prochains échanges, je vous souhaite une excellente journée.
+
 Nelly Sabde - Les Conférenciers`);
     } else {
+      setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
       setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
 Avant toute chose, je tenais à vous remercier pour la confiance que vous m'avez accordée et pour la qualité de nos échanges lors de cette collaboration !
@@ -2228,8 +2233,20 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Date d'échéance</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Estimation frais VHR (€) — optionnel</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={editVhrEstimate}
+                onChange={e => setEditVhrEstimate(e.target.value === "" ? "" : Number(e.target.value))}
+                onWheel={e => (e.target as HTMLInputElement).blur()}
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <p className="text-[10px] text-muted-foreground">Voyage / Hébergement / Restauration. Ajoutée à la facture si renseignée.</p>
+            </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
-              <span>Total TTC</span><span>{(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              <span>Total TTC</span><span>{((editAmountHT + (Number(editVhrEstimate) || 0)) * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
             </div>
             <Button className="w-full" onClick={handleSaveInvoice}>Mettre à jour</Button>
           </div>
