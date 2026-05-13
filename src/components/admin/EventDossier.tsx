@@ -2066,11 +2066,10 @@ Nelly Sabde - Les Conférenciers`);
               <div className="space-y-1"><Label className="text-xs">Hôtel</Label><Input value={editHotelInfo} onChange={e => setEditHotelInfo(e.target.value)} placeholder="Hôtel Marriott - réservation confirmée" /></div>
             </div>
 
-            {/* Section: Technique */}
+            {/* Section: Besoins logistiques */}
             <div className="space-y-3">
-              <Label className="text-sm font-semibold flex items-center gap-1.5">🔧 Technique & salle</Label>
-              <div className="space-y-1"><Label className="text-xs">Besoins techniques</Label><Textarea value={editTechNeeds} onChange={e => setEditTechNeeds(e.target.value)} rows={2} placeholder="Micro HF, écran, clicker…" /></div>
-              <div className="space-y-1"><Label className="text-xs">Configuration de salle</Label><Textarea value={editRoomSetup} onChange={e => setEditRoomSetup(e.target.value)} rows={2} placeholder="En théâtre, 200 places, scène…" /></div>
+              <Label className="text-sm font-semibold flex items-center gap-1.5">🔧 Besoins logistiques</Label>
+              <div className="space-y-1"><Textarea value={editTechNeeds} onChange={e => { setEditTechNeeds(e.target.value); setEditRoomSetup(""); }} rows={3} placeholder="Vidéoprojecteur, micro casque, configuration salle…" /></div>
             </div>
 
             {/* Section: Visio prépa */}
