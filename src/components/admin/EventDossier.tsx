@@ -1100,6 +1100,19 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   const handleSaveEvent = async () => {
     if (!event) return;
+    // Pre-check BDC uniqueness if changed
+    if (editBdcNumber && editBdcNumber !== event.bdc_number) {
+      const { data: dup } = await supabase
+        .from("events")
+        .select("id")
+        .eq("bdc_number", editBdcNumber)
+        .neq("id", event.id)
+        .maybeSingle();
+      if (dup) {
+        toast.error(`Le numéro de BDC "${editBdcNumber}" existe déjà`);
+        return;
+      }
+    }
     const { error } = await supabase.from("events").update({
       bdc_number: editBdcNumber || null,
       audience_size: editAudienceSize || null,
