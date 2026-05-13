@@ -635,10 +635,32 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
     // Also update event with audience_size and bdc_number
     if (event) {
-      await supabase.from("events").update({ 
+      // Pre-check BDC uniqueness if changed
+      if (contractBdcNumber && contractBdcNumber !== event.bdc_number) {
+        const { data: dup } = await supabase
+          .from("events")
+          .select("id")
+          .eq("bdc_number", contractBdcNumber)
+          .neq("id", event.id)
+          .maybeSingle();
+        if (dup) {
+          toast.error(`Le numéro de BDC "${contractBdcNumber}" existe déjà`);
+          setSaving(false);
+          return;
+        }
+      }
+      const { error: evErr } = await supabase.from("events").update({ 
         audience_size: contractAudienceSize || null,
         bdc_number: contractBdcNumber || null,
       } as any).eq("id", event.id);
+      if (evErr) {
+        const msg = (evErr as any).code === "23505" || /duplicate/i.test(evErr.message)
+          ? `Le numéro de BDC "${contractBdcNumber}" existe déjà`
+          : "Erreur mise à jour du dossier";
+        toast.error(msg);
+        setSaving(false);
+        return;
+      }
     }
     if (editingContract && contract) {
       const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
