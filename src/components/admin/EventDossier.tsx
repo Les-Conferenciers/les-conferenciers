@@ -2233,8 +2233,20 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Date d'échéance</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Estimation frais VHR (€) — optionnel</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={editVhrEstimate}
+                onChange={e => setEditVhrEstimate(e.target.value === "" ? "" : Number(e.target.value))}
+                onWheel={e => (e.target as HTMLInputElement).blur()}
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <p className="text-[10px] text-muted-foreground">Voyage / Hébergement / Restauration. Ajoutée à la facture si renseignée.</p>
+            </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
-              <span>Total TTC</span><span>{(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              <span>Total TTC</span><span>{((editAmountHT + (Number(editVhrEstimate) || 0)) * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
             </div>
             <Button className="w-full" onClick={handleSaveInvoice}>Mettre à jour</Button>
           </div>
