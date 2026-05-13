@@ -2700,10 +2700,40 @@ const AdminProposalsContent = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-};
 
-// (AdminContractsContent moved to src/components/admin/AdminEventDossiers.tsx)
+      {/* Dialog : Archivage avec raison obligatoire */}
+      <Dialog open={!!archiveDialogId} onOpenChange={(o) => { if (!o) setArchiveDialogId(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Archiver la proposition</DialogTitle>
+            <DialogDescription>
+              Indiquez la raison de l'archivage. Les notes et tâches existantes seront conservées et restent consultables.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Catégorie</Label>
+              <Select value={archiveReasonCategory} onValueChange={setArchiveReasonCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="prix">Prix</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="profil">Profil</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Détails (recommandé)</Label>
+              <Textarea value={archiveReasonText} onChange={(e) => setArchiveReasonText(e.target.value)} rows={3} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setArchiveDialogId(null)}>Annuler</Button>
+            <Button onClick={submitArchive} disabled={archiveSubmitting}>{archiveSubmitting ? "Archivage…" : "Archiver"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
 export default Admin;
