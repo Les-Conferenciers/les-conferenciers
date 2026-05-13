@@ -2734,6 +2734,11 @@ const AdminProposalsContent = () => {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
 
+// (AdminContractsContent moved to src/components/admin/AdminEventDossiers.tsx)
 
 export default Admin;
+
