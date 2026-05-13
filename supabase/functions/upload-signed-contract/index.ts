@@ -63,6 +63,51 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Notification email à Nelly à chaque signature de contrat (best-effort)
+    try {
+      const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+      if (RESEND_API_KEY) {
+        const { data: full } = await supabase
+          .from("contracts")
+          .select("id, signer_name, signed_at, event_date, event_location, proposal:proposals(client_name, client_email, recipient_name)")
+          .eq("id", contract.id)
+          .maybeSingle();
+        const p = (full as any)?.proposal;
+        const dateStr = (full as any)?.event_date
+          ? new Date((full as any).event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+          : "à définir";
+        const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:0;">
+          <div style="max-width:600px;margin:0 auto;background:#fff;">
+            <div style="background:#1a2332;padding:18px 24px;color:#f5f0e8;font-family:Georgia,serif;font-size:18px;font-weight:bold;">✅ Contrat signé</div>
+            <div style="padding:24px;color:#333;font-size:14px;line-height:1.6;">
+              <p>Bonjour Nelly,</p>
+              <p>Le contrat <strong>${p?.client_name || ""}</strong> vient d'être signé électroniquement.</p>
+              <ul style="padding-left:18px;">
+                <li><strong>Client :</strong> ${p?.client_name || ""}${p?.recipient_name ? ` (${p.recipient_name})` : ""}</li>
+                <li><strong>Email client :</strong> ${p?.client_email || "—"}</li>
+                <li><strong>Signé par :</strong> ${(full as any)?.signer_name || "—"}</li>
+                <li><strong>Date événement :</strong> ${dateStr}</li>
+                <li><strong>Lieu :</strong> ${(full as any)?.event_location || "à définir"}</li>
+              </ul>
+              <p style="color:#888;font-size:12px;">Notification automatique - Les Conférenciers</p>
+            </div>
+          </div>
+        </body></html>`;
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+          body: JSON.stringify({
+            from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
+            to: ["nellysabde@lesconferenciers.com"],
+            subject: `✅ Contrat signé - ${p?.client_name || contract.id.slice(0, 6)}`,
+            html,
+          }),
+        });
+      }
+    } catch (notifyErr) {
+      console.error("notify-on-sign failed", notifyErr);
+    }
+
     return new Response(JSON.stringify({ success: true, path }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
