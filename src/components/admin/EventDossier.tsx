@@ -830,8 +830,8 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
-    setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "");
-    setLiaisonTechNeeds(event?.tech_needs || "");
+    setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "L'intervenant participera avec plaisir au déjeuner à l'issue de sa conférence.");
+    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur, micro casque");
     setLiaisonSalleSetup(event?.room_setup || "");
     setLiaisonArrival(event?.arrival_info || "");
     setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
@@ -841,13 +841,16 @@ Nelly Sabde - Les Conférenciers`);
     setLiaisonTheme(event?.theme || "");
     setLiaisonTab("client");
 
-    // Client email template
-    setLiaisonClientSubject(`Feuille de liaison - ${speakerName} - ${proposal.client_name}`);
+    // Date FR longue pour les objets de mail
+    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
+
+    // Client email template (nouveau wording, sans prix)
+    setLiaisonClientSubject(`Feuille de liaison - ${speakerName}${eventDateLong ? ` - ${eventDateLong}` : ""}`);
     setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
 
 Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
 
-Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}${speaker?.phone ? " laissant apparaître son numéro de téléphone portable" : ""}.
+Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.
 
 Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
 
@@ -855,25 +858,34 @@ Excellente fin de journée à vous !
 
 Nelly Sabde - Les Conférenciers`);
 
-    // Speaker email template
-    setLiaisonSpeakerSubject(`Feuille de liaison - ${proposal.client_name}`);
+    // Speaker email template — tutoiement si formal_address = false, date dans l'objet
+    setLiaisonSpeakerSubject(`Feuille de liaison${eventDateLong ? ` - ${eventDateLong}` : ""} - ${proposal.client_name}`);
     setLiaisonSpeakerBody(`${speakerFirstName},
 
 ${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
 
-${isFormal ? "À très bientôt !" : "A très vite !"}
+${isFormal ? "À très bientôt !" : "À très vite !"}
 
 Nelly Sabde - Les Conférenciers`);
 
-    // Pre-fill recipients (editable) — client tab CC defaults to speaker, speaker tab CC empty
+    // Pre-fill recipients (editable) — pas de CC conférencier sur le mail client
     const speakerEmail = speaker?.email || "";
     setLiaisonClientTo(proposal.client_email || "");
     setLiaisonSpeakerTo(speakerEmail);
-    setLiaisonClientCc(speakerEmail);
+    setLiaisonClientCc("");
     setLiaisonSpeakerCc("");
 
     setLiaisonDialogOpen(true);
   };
+
+  // Helper: format date longue FR (utilisée pour les objets de mail liaison)
+  function liaisonEventDateFmt(d: string) {
+    if (!d) return "";
+    try {
+      const dt = new Date(d.length === 10 ? d + "T12:00:00" : d);
+      return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    } catch { return ""; }
+  }
 
   // Persist editable liaison fields back to contract + event
   const persistLiaisonFields = async () => {
@@ -933,7 +945,7 @@ ${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
 ${liaisonTechNeeds ? `- ${liaisonTechNeeds}` : ""}
 ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 
-👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""} - ${event?.contact_on_site_email || proposal.client_email}
+👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}
 🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` - ${speaker.phone}` : ""}
 ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
 ${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
@@ -1273,25 +1285,8 @@ Nelly Sabde - Les Conférenciers`);
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <FileText className="h-4 w-4" /> Contrat client
           </h3>
-          {contract && (contract.event_date || contract.event_location || contract.event_format) && (
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-              {contract.event_date && (
-                <span className="inline-flex items-center gap-1">
-                  <CalendarIcon className="h-3 w-3" />
-                  {formatDate(contract.event_date)}
-                  {contract.event_time ? ` · ${contract.event_time}` : ""}
-                </span>
-              )}
-              {contract.event_location && (
-                <span className="inline-flex items-center gap-1">
-                  📍 <span className="truncate max-w-[280px]">{contract.event_location}</span>
-                </span>
-              )}
-              {contract.event_format && (
-                <span className="inline-flex items-center gap-1">🎤 {contract.event_format}</span>
-              )}
-            </div>
-          )}
+          {/* Bandeau date/lieu/format retiré à la demande pour alléger l'aperçu contrat */}
+
         </div>
         {!contract ? (
           <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateContract}>

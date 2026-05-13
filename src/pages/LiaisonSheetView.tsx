@@ -28,7 +28,7 @@ const LiaisonSheetView = () => {
   const loadData = async () => {
     const { data: ev } = await supabase
       .from("events")
-      .select("*, proposal:proposals(client_name, recipient_name, client_email, proposal_speakers(speaker_id, speakers(name, phone)))")
+      .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
       .eq("proposal_id", id!)
       .maybeSingle();
 
@@ -234,8 +234,16 @@ const LiaisonSheetView = () => {
         {/* Contact */}
         <section className="mb-8">
           <h3 className="font-bold text-lg mb-3">Contact :</h3>
-          <p><span className="font-medium">Contact client :</span> {proposal?.recipient_name || proposal?.client_name || "—"}</p>
-          <p><span className="font-medium">Contact conférencier :</span> {speaker?.name || "—"} {speaker?.phone || ""}</p>
+          <p>
+            <span className="font-medium">Contact client :</span>{" "}
+            {proposal?.recipient_name || "—"}
+            {(ev.contact_on_site_phone || proposal?.client_phone) ? ` - ${ev.contact_on_site_phone || proposal?.client_phone}` : ""}
+          </p>
+          <p>
+            <span className="font-medium">Contact conférencier :</span>{" "}
+            {speaker?.name || "—"}
+            {speaker?.phone ? ` - ${speaker.phone}` : ""}
+          </p>
         </section>
 
         {/* Commentaires */}

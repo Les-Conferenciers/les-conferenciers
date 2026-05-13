@@ -111,8 +111,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save, FileText, Bell, CalendarDays, Mail } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
@@ -1268,10 +1269,39 @@ const AdminProposalsContent = () => {
     toast.info("Créez la proposition à partir des informations du client");
   };
 
-  const handleArchive = async (id: string) => {
-    await supabase.from("proposals").update({ status: "archived" }).eq("id", id);
-    toast.success("Proposition archivée"); fetchProposals();
+  // ── Archivage avec raison obligatoire ──
+  const [archiveDialogId, setArchiveDialogId] = useState<string | null>(null);
+  const [archiveReasonCategory, setArchiveReasonCategory] = useState<string>("autre");
+  const [archiveReasonText, setArchiveReasonText] = useState<string>("");
+  const [archiveSubmitting, setArchiveSubmitting] = useState(false);
+
+  const handleArchive = (id: string) => {
+    setArchiveReasonCategory("autre");
+    setArchiveReasonText("");
+    setArchiveDialogId(id);
   };
+
+  const submitArchive = async () => {
+    if (!archiveDialogId) return;
+    if (!archiveReasonText.trim() && archiveReasonCategory === "autre") {
+      toast.error("Merci d'indiquer la raison de l'archivage."); return;
+    }
+    setArchiveSubmitting(true);
+    const labelMap: Record<string, string> = { prix: "Prix", date: "Date", profil: "Profil", autre: "Autre" };
+    const finalReason = `[${labelMap[archiveReasonCategory] || archiveReasonCategory}] ${archiveReasonText.trim()}`.trim();
+    const { error } = await supabase.from("proposals").update({
+      status: "archived",
+      lost_reason: finalReason,
+      lost_at: new Date().toISOString(),
+    } as any).eq("id", archiveDialogId);
+    setArchiveSubmitting(false);
+    if (error) { toast.error("Erreur d'archivage"); return; }
+    toast.success("Proposition archivée");
+    setArchiveDialogId(null);
+    fetchProposals();
+  };
+
+  // (handleNewProposalForClient existant — voir plus haut, conservé)
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer définitivement cette proposition ?")) return;
@@ -1979,6 +2009,11 @@ const AdminProposalsContent = () => {
                   </Button>
                 </>
               )}
+              {mode === "sent" && (p.status === "sent" || p.status === "archived") && (
+                <Button variant="outline" size="sm" className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50" onClick={() => handleNewProposalForClient(p.client_id || "", p)} title="Nouvelle proposition pour ce client">
+                  <Plus className="h-3 w-3" /> Nouvelle
+                </Button>
+              )}
               {mode !== "completed" && p.status !== "archived" && (
                 <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver"><Archive className="h-4 w-4 text-muted-foreground" /></Button>
               )}
@@ -2671,6 +2706,40 @@ const AdminProposalsContent = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog : Archivage avec raison obligatoire */}
+      <Dialog open={!!archiveDialogId} onOpenChange={(o) => { if (!o) setArchiveDialogId(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Archiver la proposition</DialogTitle>
+            <DialogDescription>
+              Indiquez la raison de l'archivage. Les notes et tâches existantes seront conservées et restent consultables.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Catégorie</Label>
+              <Select value={archiveReasonCategory} onValueChange={setArchiveReasonCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="prix">Prix</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="profil">Profil</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Détails (recommandé)</Label>
+              <Textarea value={archiveReasonText} onChange={(e) => setArchiveReasonText(e.target.value)} rows={3} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setArchiveDialogId(null)}>Annuler</Button>
+            <Button onClick={submitArchive} disabled={archiveSubmitting}>{archiveSubmitting ? "Archivage…" : "Archiver"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -2678,3 +2747,4 @@ const AdminProposalsContent = () => {
 // (AdminContractsContent moved to src/components/admin/AdminEventDossiers.tsx)
 
 export default Admin;
+
