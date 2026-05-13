@@ -286,6 +286,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editAmountHT, setEditAmountHT] = useState(0);
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
+  const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
