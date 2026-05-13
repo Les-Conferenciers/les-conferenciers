@@ -123,21 +123,6 @@ ${classicSelectionLine}
 <p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
 
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
-    const formatFrenchEventDate = (text?: string | null): string => {
-      if (!text) return "";
-      const trimmed = String(text).trim();
-      const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-      if (iso) {
-        const d = new Date(`${trimmed}T12:00:00`);
-        if (!isNaN(d.getTime())) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-      }
-      const fr = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
-      if (fr) {
-        const d = new Date(Number(fr[3]), Number(fr[2]) - 1, Number(fr[1]), 12);
-        if (!isNaN(d.getTime())) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-      }
-      return trimmed;
-    };
     const uniqueFormattedDate = formatFrenchEventDate(proposal.event_date_text);
     const uniqueContextParts: string[] = [];
     if (uniqueFormattedDate) uniqueContextParts.push(`du <strong>${uniqueFormattedDate}</strong>`);
