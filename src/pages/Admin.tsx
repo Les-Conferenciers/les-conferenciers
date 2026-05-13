@@ -2009,6 +2009,11 @@ const AdminProposalsContent = () => {
                   </Button>
                 </>
               )}
+              {mode === "sent" && (p.status === "sent" || p.status === "archived") && (
+                <Button variant="outline" size="sm" className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50" onClick={() => handleNewProposalForClient(p.client_id || "", p)} title="Nouvelle proposition pour ce client">
+                  <Plus className="h-3 w-3" /> Nouvelle
+                </Button>
+              )}
               {mode !== "completed" && p.status !== "archived" && (
                 <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver"><Archive className="h-4 w-4 text-muted-foreground" /></Button>
               )}
