@@ -2393,8 +2393,16 @@ const AdminProposalsContent = () => {
           <DialogHeader><DialogTitle className="font-serif">Éditer la proposition</DialogTitle></DialogHeader>
           {(() => {
             const editType = (editingProposal?.proposal_type || "classique") as ProposalType;
+            const isLocked = !!editingProposal && editingProposal.status !== "draft";
+            const sentLabel = editingProposal?.sent_at ? new Date(editingProposal.sent_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : null;
             return (
               <div className="space-y-6 mt-4">
+                {isLocked && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    🔒 Proposition {editingProposal?.status === "lost" || editingProposal?.status === "archived" ? "archivée" : `envoyée${sentLabel ? ` le ${sentLabel}` : ""}`} — formulaire en lecture seule. Utilise le bouton « Nouvelle » pour repartir d'une nouvelle proposition.
+                  </div>
+                )}
+                <fieldset disabled={isLocked} className={isLocked ? "opacity-80 pointer-events-none" : ""}>
                 <div className="text-xs px-3 py-1.5 rounded-full bg-muted text-muted-foreground w-fit">
                   {editType === "unique" ? "🎤 Conférencier unique" : editType === "info" ? "📝 Demande d'infos" : "📋 Classique"}
                 </div>
@@ -2472,15 +2480,16 @@ const AdminProposalsContent = () => {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button className="flex-1 gap-2" onClick={() => handleSaveEdit(true)} disabled={submitting}>
+                  <Button className="flex-1 gap-2" onClick={() => handleSaveEdit(true)} disabled={submitting || isLocked}>
                     <Send className="h-4 w-4" />
                     {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
                   </Button>
-                  <Button variant="outline" className="gap-2" onClick={() => handleSaveEdit(false)} disabled={submitting}>
+                  <Button variant="outline" className="gap-2" onClick={() => handleSaveEdit(false)} disabled={submitting || isLocked}>
                     <Save className="h-4 w-4" />
                     {submitting ? "Sauvegarde…" : "Enregistrer le brouillon"}
                   </Button>
                 </div>
+                </fieldset>
               </div>
             );
           })()}
