@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { COMPANY } from "@/lib/companyConfig";
 import { Button } from "@/components/ui/button";
-import { Printer } from "lucide-react";
+import { Printer, Pencil, Save, X } from "lucide-react";
+import { toast } from "sonner";
 import { DEFAULT_CLAUSES, getClauseHtml, getCustomClausesText, isClauseRemoved } from "@/lib/contractClauses";
 
 type ContractLine = {
@@ -31,6 +32,7 @@ type ContractData = {
   deposit_required?: boolean | null;
   custom_clauses?: any;
   selected_speaker_id: string | null;
+  proposal_id?: string;
   selected_speaker?: { name: string; gender: string | null } | null;
   proposal: {
     client_name: string;
@@ -56,6 +58,7 @@ type ClientData = {
 };
 
 type EventData = {
+  id?: string;
   bdc_number: string | null;
   audience_size: string | null;
   theme: string | null;
@@ -67,58 +70,109 @@ const ContractView = () => {
   const [client, setClient] = useState<ClientData | null>(null);
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Editable fields
+  const [evDate, setEvDate] = useState("");
+  const [evLocation, setEvLocation] = useState("");
+  const [evTime, setEvTime] = useState("");
+  const [evFormat, setEvFormat] = useState("");
+  const [evDescription, setEvDescription] = useState("");
+  const [evAudience, setEvAudience] = useState("");
+  const [evTheme, setEvTheme] = useState("");
+
+  const fetchAll = async () => {
+    const { data } = await supabase
+      .from("contracts")
+      .select(`
+        *,
+        proposal:proposals(
+          client_name, client_email, recipient_name, client_id,
+          proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(name, gender))
+        )
+      `)
+      .eq("id", id!)
+      .single();
+    let c = data as any;
+
+    if (c?.selected_speaker_id) {
+      const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", c.selected_speaker_id).maybeSingle();
+      if (sp) c.selected_speaker = sp;
+    }
+    setContract(c);
+
+    if (c?.proposal?.client_id) {
+      const { data: cl } = await supabase.from("clients").select("company_name, contact_name, address, city, siret").eq("id", c.proposal.client_id).single();
+      setClient(cl as any);
+    }
+
+    const { data: ev } = await supabase.from("events").select("id, bdc_number, audience_size, theme").eq("proposal_id", c?.proposal_id || c?.id).maybeSingle();
+    setEvent(ev as any);
+
+    if (c) {
+      setEvDate(c.event_date || "");
+      setEvLocation(c.event_location || "");
+      setEvTime(c.event_time || "");
+      setEvFormat(c.event_format || "");
+      setEvDescription(c.event_description || "");
+    }
+    if (ev) {
+      setEvAudience((ev as any).audience_size || "");
+      setEvTheme((ev as any).theme || "");
+    }
+
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchAll = async () => {
-      const { data } = await supabase
-        .from("contracts")
-        .select(`
-          *,
-          proposal:proposals(
-            client_name, client_email, recipient_name, client_id,
-            proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(name, gender))
-          )
-        `)
-        .eq("id", id!)
-        .single();
-      let c = data as any;
-
-      // Fetch selected speaker if defined on contract
-      if (c?.selected_speaker_id) {
-        const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", c.selected_speaker_id).maybeSingle();
-        if (sp) c.selected_speaker = sp;
-      }
-      setContract(c);
-
-      if (c?.proposal?.client_id) {
-        const { data: cl } = await supabase.from("clients").select("company_name, contact_name, address, city, siret").eq("id", c.proposal.client_id).single();
-        setClient(cl as any);
-      }
-
-      const { data: ev } = await supabase.from("events").select("bdc_number, audience_size, theme").eq("proposal_id", c?.proposal_id || c?.id).maybeSingle();
-      setEvent(ev as any);
-
-      setLoading(false);
-    };
+    supabase.auth.getSession().then(({ data: { session } }) => setIsAdmin(!!session));
     fetchAll();
   }, [id]);
+
+  const handleSave = async () => {
+    if (!contract) return;
+    setSaving(true);
+    const { error: cErr } = await supabase.from("contracts").update({
+      event_date: evDate || null,
+      event_location: evLocation || null,
+      event_time: evTime || null,
+      event_format: evFormat || null,
+      event_description: evDescription || null,
+    } as any).eq("id", contract.id);
+
+    let evErr: any = null;
+    if (event?.id) {
+      const { error } = await supabase.from("events").update({
+        audience_size: evAudience || null,
+        theme: evTheme || null,
+      } as any).eq("id", event.id);
+      evErr = error;
+    }
+
+    if (cErr || evErr) {
+      toast.error("Erreur de sauvegarde");
+    } else {
+      toast.success("Contrat mis à jour");
+      setEditing(false);
+      await fetchAll();
+    }
+    setSaving(false);
+  };
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Chargement…</div>;
   if (!contract) return <div className="flex items-center justify-center min-h-screen">Contrat introuvable</div>;
 
   const proposal = contract.proposal as any;
   const speakers = proposal?.proposal_speakers || [];
-  const speakerNames = speakers.map((s: any) => s.speakers?.name || "—").join(", ");
-  // Priority: contract.selected_speaker (manual selection) → first proposal speaker
   const firstSpeaker = contract.selected_speaker || speakers[0]?.speakers;
   const speakerGender = firstSpeaker?.gender === "female" ? "Madame" : "Monsieur";
 
-  // Use contract_lines if available, else fallback
   const rawLines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
     ? contract.contract_lines
     : speakers.map((s: any, i: number) => ({ id: String(i), label: s.speakers?.name || `Conférencier ${i + 1}`, amount_ht: s.total_price || 0, tva_rate: 20, type: "speaker" }));
 
-  // Silently distribute the agency commission across speaker lines (proportional to their HT share)
   const commission = contract.agency_commission || 0;
   const speakerLinesTotal = rawLines.filter(l => l.type === "speaker").reduce((s, l) => s + l.amount_ht, 0);
   const lines: ContractLine[] = commission > 0 && speakerLinesTotal > 0
@@ -132,17 +186,9 @@ const ContractView = () => {
   const discount = contract.discount_percent || 0;
   const subtotalHT = lines.reduce((sum, l) => sum + l.amount_ht, 0);
   const discountAmount = subtotalHT * (discount / 100);
-  const totalHT = subtotalHT - discountAmount;
-  const totalTVA = lines.reduce((sum, l) => {
-    const share = subtotalHT > 0 ? l.amount_ht / subtotalHT : 0;
-    const lineHT = l.amount_ht - (discountAmount * share);
-    return sum + lineHT * (l.tva_rate / 100);
-  }, 0);
-  const totalTTC = totalHT + totalTVA;
 
   const formatDate = (d: string | null) =>
     d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "À définir";
-
   const formatDateLong = (d: string | null) =>
     d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
 
@@ -151,10 +197,27 @@ const ContractView = () => {
   const clientAddress = client ? `${client.address || ""} ${client.city || ""}`.trim() : "";
   const clientSiret = client?.siret || "";
 
+  const inputCls = "border border-primary/30 rounded px-2 py-0.5 text-sm bg-yellow-50 focus:outline-none focus:ring-1 focus:ring-primary";
+
   return (
     <div className="min-h-screen bg-white">
-      <div className="print:hidden fixed top-4 right-4 z-50">
-        <Button onClick={() => window.print()} className="gap-2">
+      <div className="print:hidden fixed top-4 right-4 z-50 flex gap-2">
+        {isAdmin && !editing && (
+          <Button onClick={() => setEditing(true)} variant="outline" className="gap-2">
+            <Pencil className="h-4 w-4" /> Modifier
+          </Button>
+        )}
+        {isAdmin && editing && (
+          <>
+            <Button onClick={() => { setEditing(false); fetchAll(); }} variant="outline" className="gap-2">
+              <X className="h-4 w-4" /> Annuler
+            </Button>
+            <Button onClick={handleSave} disabled={saving} className="gap-2">
+              <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Enregistrer"}
+            </Button>
+          </>
+        )}
+        <Button onClick={() => window.print()} className="gap-2" variant={editing ? "outline" : "default"}>
           <Printer className="h-4 w-4" /> Imprimer / PDF
         </Button>
       </div>
@@ -203,13 +266,48 @@ const ContractView = () => {
         <section className="mb-8">
           <h2 className="text-lg font-bold mb-3">Détails de l'événement</h2>
           <div className="space-y-1.5">
-            <p><span className="text-gray-600">Date de l'évènement :</span> {formatDateLong(contract.event_date) || "À définir"}</p>
-            <p><span className="text-gray-600">Lieu de l'intervention :</span> {contract.event_location || "À définir"}</p>
-            <p><span className="text-gray-600">Horaires de l'intervention :</span> {contract.event_time || "À définir"}</p>
-            {event?.audience_size && <p><span className="text-gray-600">Auditoire :</span> {event.audience_size}</p>}
-            {event?.theme && <p><span className="text-gray-600">Thématique :</span> {event.theme}</p>}
-            {contract.event_format && <p><span className="text-gray-600">Format :</span> {contract.event_format}</p>}
-            {contract.event_description && <p className="whitespace-pre-line"><span className="text-gray-600">Détails :</span> {contract.event_description}</p>}
+            <p>
+              <span className="text-gray-600">Date de l'évènement :</span>{" "}
+              {editing
+                ? <input type="date" value={evDate} onChange={e => setEvDate(e.target.value)} className={inputCls} />
+                : (formatDateLong(contract.event_date) || "À définir")}
+            </p>
+            <p>
+              <span className="text-gray-600">Lieu de l'intervention :</span>{" "}
+              {editing
+                ? <input type="text" value={evLocation} onChange={e => setEvLocation(e.target.value)} className={inputCls + " min-w-[260px]"} />
+                : (contract.event_location || "À définir")}
+            </p>
+            <p>
+              <span className="text-gray-600">Horaires de l'intervention :</span>{" "}
+              {editing
+                ? <input type="text" value={evTime} onChange={e => setEvTime(e.target.value)} className={inputCls + " min-w-[200px]"} />
+                : (contract.event_time || "À définir")}
+            </p>
+            <p>
+              <span className="text-gray-600">Auditoire :</span>{" "}
+              {editing
+                ? <input type="text" value={evAudience} onChange={e => setEvAudience(e.target.value)} className={inputCls} />
+                : (event?.audience_size || "—")}
+            </p>
+            <p>
+              <span className="text-gray-600">Thématique :</span>{" "}
+              {editing
+                ? <input type="text" value={evTheme} onChange={e => setEvTheme(e.target.value)} className={inputCls + " min-w-[260px]"} />
+                : (event?.theme || "—")}
+            </p>
+            <p>
+              <span className="text-gray-600">Format :</span>{" "}
+              {editing
+                ? <input type="text" value={evFormat} onChange={e => setEvFormat(e.target.value)} className={inputCls + " min-w-[200px]"} />
+                : (contract.event_format || "—")}
+            </p>
+            <div>
+              <span className="text-gray-600">Détails :</span>{" "}
+              {editing
+                ? <textarea value={evDescription} onChange={e => setEvDescription(e.target.value)} rows={3} className={"block w-full mt-1 " + inputCls} />
+                : (contract.event_description ? <span className="whitespace-pre-line">{contract.event_description}</span> : "—")}
+            </div>
           </div>
         </section>
 
@@ -271,7 +369,6 @@ const ContractView = () => {
               );
               const art5VisibleIndex = visibleClauses.findIndex((c) => c.key === "art5");
               return visibleClauses.map((clause, idx) => {
-                // Article 5 : injecter dynamiquement la clause prix selon deposit_required
                 const displayNum = idx + 1;
                 const priceClause = contract.deposit_required === false
                   ? `<p><strong>${displayNum}.1 Prix de la Prestation.</strong> Le montant de la Prestation est détaillé au Bon de commande. Le Client s'engage à régler 100% du montant total au plus tard sept jours avant la tenue de l'Événement.</p>`
@@ -283,7 +380,6 @@ const ContractView = () => {
                 const insertCustomHere = customText && (
                   art5VisibleIndex >= 0 ? isArt5 : idx === visibleClauses.length - 1
                 );
-                // Renuméroter le titre
                 const dynamicTitle = clause.title.replace(/^Article\s+\d+\./i, `Article ${displayNum}.`);
 
                 return (
@@ -296,7 +392,6 @@ const ContractView = () => {
                       />
                     </div>
 
-                    {/* Conditions particulières insérées juste après l'article 5 (ou en dernier si art5 supprimé) */}
                     {insertCustomHere && (
                       <div className="mt-6">
                         <h3 className="font-bold mb-2">CONDITIONS PARTICULIÈRES</h3>
