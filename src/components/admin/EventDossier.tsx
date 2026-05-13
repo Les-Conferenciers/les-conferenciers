@@ -209,6 +209,16 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [newContractClientSiret, setNewContractClientSiret] = useState("");
   const [newContractClientAddress, setNewContractClientAddress] = useState("");
   const [newContractClientCity, setNewContractClientCity] = useState("");
+  // Inline edit of selected client inside contract dialog
+  const [editClientInContract, setEditClientInContract] = useState(false);
+  const [editClientCompany, setEditClientCompany] = useState("");
+  const [editClientContact, setEditClientContact] = useState("");
+  const [editClientEmail, setEditClientEmail] = useState("");
+  const [editClientPhone, setEditClientPhone] = useState("");
+  const [editClientSiret, setEditClientSiret] = useState("");
+  const [editClientAddress, setEditClientAddress] = useState("");
+  const [editClientCity, setEditClientCity] = useState("");
+  const [savingClientEdit, setSavingClientEdit] = useState(false);
 
   // Contract email
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
@@ -1556,17 +1566,76 @@ Nelly Sabde - Les Conférenciers`);
                 </div>
               )}
 
-              {/* Show selected client info */}
+              {/* Show selected client info (editable) */}
               {contractClientId && (() => {
                 const c = clients.find(cl => cl.id === contractClientId);
-                return c ? (
-                  <div className="text-[10px] text-muted-foreground space-y-0.5 bg-background p-2 rounded border border-border/50">
-                    <p><strong>{c.company_name}</strong>{c.contact_name ? ` - ${c.contact_name}` : ""}</p>
-                    {c.email && <p>📧 {c.email}</p>}
-                    {c.siret && <p>🏢 SIRET : {c.siret}</p>}
-                    {c.address && <p>📍 {c.address}{c.city ? `, ${c.city}` : ""}</p>}
+                if (!c) return null;
+                if (!editClientInContract) {
+                  return (
+                    <div className="text-[10px] text-muted-foreground space-y-0.5 bg-background p-2 rounded border border-border/50">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <p><strong>{c.company_name}</strong>{c.contact_name ? ` - ${c.contact_name}` : ""}</p>
+                          {c.email && <p>📧 {c.email}</p>}
+                          {(c as any).phone && <p>📞 {(c as any).phone}</p>}
+                          {c.siret && <p>🏢 SIRET : {c.siret}</p>}
+                          {c.address && <p>📍 {c.address}{c.city ? `, ${c.city}` : ""}</p>}
+                        </div>
+                        <Button
+                          type="button" size="sm" variant="ghost" className="h-6 px-2 text-[10px]"
+                          onClick={() => {
+                            setEditClientCompany(c.company_name || "");
+                            setEditClientContact(c.contact_name || "");
+                            setEditClientEmail(c.email || "");
+                            setEditClientPhone((c as any).phone || "");
+                            setEditClientSiret(c.siret || "");
+                            setEditClientAddress(c.address || "");
+                            setEditClientCity(c.city || "");
+                            setEditClientInContract(true);
+                          }}
+                        >
+                          ✏️ Modifier
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
+                    <Label className="text-xs font-semibold">✏️ Modifier les informations du client</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Société *</Label><Input value={editClientCompany} onChange={e => setEditClientCompany(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Nom du contact</Label><Input value={editClientContact} onChange={e => setEditClientContact(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Email</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Téléphone</Label><Input value={editClientPhone} onChange={e => setEditClientPhone(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">SIRET</Label><Input value={editClientSiret} onChange={e => setEditClientSiret(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Ville</Label><Input value={editClientCity} onChange={e => setEditClientCity(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="col-span-2 space-y-1"><Label className="text-[10px] text-muted-foreground">Adresse</Label><Input value={editClientAddress} onChange={e => setEditClientAddress(e.target.value)} className="h-8 text-sm" /></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm" disabled={savingClientEdit} className="gap-1"
+                        onClick={async () => {
+                          if (!editClientCompany) { toast.error("Société requise"); return; }
+                          setSavingClientEdit(true);
+                          const { error } = await supabase.from("clients").update({
+                            company_name: editClientCompany,
+                            contact_name: editClientContact || null,
+                            email: editClientEmail || null,
+                            phone: editClientPhone || null,
+                            siret: editClientSiret || null,
+                            address: editClientAddress || null,
+                            city: editClientCity || null,
+                          } as any).eq("id", c.id);
+                          if (error) { toast.error("Erreur de sauvegarde"); }
+                          else { toast.success("Client mis à jour"); await fetchClients(); setEditClientInContract(false); }
+                          setSavingClientEdit(false);
+                        }}
+                      >{savingClientEdit ? "Sauvegarde…" : "Enregistrer"}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditClientInContract(false)}>Annuler</Button>
+                    </div>
                   </div>
-                ) : null;
+                );
               })()}
             </div>
 
