@@ -1152,7 +1152,14 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         client_signed_received_at: editClientSignedReceivedAt || null,
       } as any).eq("id", contract.id);
     }
-    if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
+    if (error) {
+      const msg = (error as any).code === "23505" || /duplicate/i.test(error.message)
+        ? `Le numéro de BDC "${editBdcNumber}" existe déjà`
+        : "Erreur";
+      toast.error(msg);
+      return;
+    }
+    toast.success("Dossier mis à jour");
     setEventEditOpen(false);
     fetchData();
   };
