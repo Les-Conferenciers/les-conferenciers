@@ -126,7 +126,8 @@ const getDefaultEmailSubject = (clientName: string) =>
 const buildEventContextLine = (eventLocation: string, eventDateText: string, audienceSize: string) => {
   if (!eventLocation && !eventDateText && !audienceSize) return "";
   const parts: string[] = [];
-  if (eventDateText) parts.push(`du <strong>${eventDateText}</strong>`);
+  const formattedDate = formatFrenchEventDate(eventDateText);
+  if (formattedDate) parts.push(`du <strong>${formattedDate}</strong>`);
   if (eventLocation) parts.push(`qui se tiendra à <strong>${eventLocation}</strong>`);
   if (audienceSize) parts.push(`devant un auditoire d'environ <strong>${audienceSize} personnes</strong>`);
   return `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${parts.join(", ")}.`;
@@ -186,9 +187,7 @@ const getUniqueEmailBody = (recipientName: string, speakerName: string, totalAmo
     ? `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants concernant votre événement ${contextParts.join(", ")}, et vous adresse, comme convenu, le profil de ${speakerName}.`
     : `Je suis ravie de pouvoir vous accompagner dans votre recherche d'intervenants et vous adresse, comme convenu, le profil de ${speakerName}.`;
 
-  const alternativePhrase = audienceSize
-    ? `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>`
-    : `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>
+  const alternativePhrase = `<p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>
 
 <p><strong>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</strong></p>`;
 

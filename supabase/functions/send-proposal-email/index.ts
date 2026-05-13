@@ -84,8 +84,24 @@ Deno.serve(async (req) => {
         .replace(/\n/g, "<br>");
     };
 
+    const formatFrenchEventDate = (text?: string | null): string => {
+      if (!text) return "";
+      const trimmed = String(text).trim();
+      const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+      if (iso) {
+        const d = new Date(`${trimmed}T12:00:00`);
+        if (!isNaN(d.getTime())) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+      }
+      const fr = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
+      if (fr) {
+        const d = new Date(Number(fr[3]), Number(fr[2]) - 1, Number(fr[1]), 12);
+        if (!isNaN(d.getTime())) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+      }
+      return trimmed;
+    };
+    const classicFormattedDate = formatFrenchEventDate(proposal.event_date_text);
     const eventContextParts: string[] = [];
-    if (proposal.event_date_text) eventContextParts.push(`du <strong>${proposal.event_date_text}</strong>`);
+    if (classicFormattedDate) eventContextParts.push(`du <strong>${classicFormattedDate}</strong>`);
     if (proposal.event_location) eventContextParts.push(`qui se tiendra à <strong>${proposal.event_location}</strong>`);
     if (proposal.audience_size) eventContextParts.push(`devant un auditoire d'environ <strong>${proposal.audience_size} personnes</strong>`);
     const classicSelectionLine = eventContextParts.length
@@ -140,9 +156,8 @@ ${classicSelectionLine}
 ${uniqueProfileUrl ? `<p><strong>👉 <a href="${uniqueProfileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${uniqueSpeakerName}</a></strong> (sous réserve de sa disponibilité)</p>` : ""}
 
 <p>Si toutefois ce profil ne correspondait pas pleinement à vos attentes, je serais heureuse de vous proposer d'autres intervenants adaptés à vos critères.</p>
-${proposal.audience_size ? "" : `
+
 <p><strong>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</strong></p>
-`}
 
 <p>Je reste bien entendu à votre entière disposition pour tout complément d'information.</p>
 
