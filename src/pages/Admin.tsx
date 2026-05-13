@@ -2480,15 +2480,16 @@ const AdminProposalsContent = () => {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button className="flex-1 gap-2" onClick={() => handleSaveEdit(true)} disabled={submitting}>
+                  <Button className="flex-1 gap-2" onClick={() => handleSaveEdit(true)} disabled={submitting || isLocked}>
                     <Send className="h-4 w-4" />
                     {submitting ? "Envoi…" : "Sauvegarder et envoyer"}
                   </Button>
-                  <Button variant="outline" className="gap-2" onClick={() => handleSaveEdit(false)} disabled={submitting}>
+                  <Button variant="outline" className="gap-2" onClick={() => handleSaveEdit(false)} disabled={submitting || isLocked}>
                     <Save className="h-4 w-4" />
                     {submitting ? "Sauvegarde…" : "Enregistrer le brouillon"}
                   </Button>
                 </div>
+                </fieldset>
               </div>
             );
           })()}
