@@ -95,6 +95,7 @@ type Invoice = {
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
+  vhr_estimate?: number | null;
 };
 
 type EventData = {
