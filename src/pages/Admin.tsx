@@ -1130,9 +1130,9 @@ const AdminProposalsContent = () => {
     setEventLocation((latest as any).event_location || "");
     setEventDateText((latest as any).event_date_text || "");
     setAudienceSize((latest as any).audience_size || "");
-    setMessage(getDefaultMessage(rName, cName));
-    setEmailSubject(getDefaultEmailSubject(cName));
-    setEmailBody(getDefaultEmailBody(rName, cName));
+    setMessage(getFollowUpMessage(rName, cName));
+    setEmailSubject(getFollowUpEmailSubject(cName));
+    setEmailBody(getFollowUpEmailBody(rName, cName));
     setDialogOpen(true);
   };
 
