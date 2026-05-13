@@ -1268,9 +1268,54 @@ const AdminProposalsContent = () => {
     toast.info("Créez la proposition à partir des informations du client");
   };
 
-  const handleArchive = async (id: string) => {
-    await supabase.from("proposals").update({ status: "archived" }).eq("id", id);
-    toast.success("Proposition archivée"); fetchProposals();
+  // ── Archivage avec raison obligatoire ──
+  const [archiveDialogId, setArchiveDialogId] = useState<string | null>(null);
+  const [archiveReasonCategory, setArchiveReasonCategory] = useState<string>("autre");
+  const [archiveReasonText, setArchiveReasonText] = useState<string>("");
+  const [archiveSubmitting, setArchiveSubmitting] = useState(false);
+
+  const handleArchive = (id: string) => {
+    setArchiveReasonCategory("autre");
+    setArchiveReasonText("");
+    setArchiveDialogId(id);
+  };
+
+  const submitArchive = async () => {
+    if (!archiveDialogId) return;
+    if (!archiveReasonText.trim() && archiveReasonCategory === "autre") {
+      toast.error("Merci d'indiquer la raison de l'archivage."); return;
+    }
+    setArchiveSubmitting(true);
+    const labelMap: Record<string, string> = { prix: "Prix", date: "Date", profil: "Profil", autre: "Autre" };
+    const finalReason = `[${labelMap[archiveReasonCategory] || archiveReasonCategory}] ${archiveReasonText.trim()}`.trim();
+    const { error } = await supabase.from("proposals").update({
+      status: "archived",
+      lost_reason: finalReason,
+      lost_at: new Date().toISOString(),
+    } as any).eq("id", archiveDialogId);
+    setArchiveSubmitting(false);
+    if (error) { toast.error("Erreur d'archivage"); return; }
+    toast.success("Proposition archivée");
+    setArchiveDialogId(null);
+    fetchProposals();
+  };
+
+  // ── Nouvelle proposition pour le même client (duplication "info" pré-remplie) ──
+  const handleNewProposalForClient = (p: Proposal) => {
+    resetForm();
+    setClientName(p.client_name || "");
+    setClientEmail(p.client_email || "");
+    setRecipientName(p.recipient_name || "");
+    setClientPhone((p as any).client_phone || "");
+    setEventLocation((p as any).event_location || "");
+    setEventDateText((p as any).event_date_text || "");
+    setAudienceSize((p as any).audience_size || "");
+    setProposalType("classique");
+    setSelectedClientId(p.client_id || null);
+    setClientMode(p.client_id ? "search" : "new");
+    setEmailSubject(getDefaultEmailSubject(p.client_name));
+    setEmailBody(`Bonjour${p.recipient_name ? ` ${p.recipient_name.split(" ")[0]}` : ""},\n\nSuite à nos échanges, je reviens vers vous avec une nouvelle proposition adaptée à vos besoins.\n\n${getDefaultEmailBody(p.recipient_name || "", p.client_name).replace(/^[^\n]+\n+/, "")}`);
+    setDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
