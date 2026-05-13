@@ -1163,14 +1163,12 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   const openInvoiceEmail = (inv: Invoice) => {
     setEmailInvoice(inv);
-    const typeLabel = inv.invoice_type === "acompte" ? "d'acompte" : inv.invoice_type === "solde" ? "de solde" : "";
-    const isDepositInvoice = inv.invoice_type === "acompte";
     const firstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
     const eventDateLong = contract?.event_date
       ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
       : "—";
 
-    if (isDepositInvoice) {
+    if (inv.invoice_type === "acompte") {
       setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
       setInvoiceEmailBody(`Bonjour${firstName ? ` ${firstName}` : ""},
 
@@ -1183,29 +1181,41 @@ Je reste bien évidemment à votre disposition si besoin est.
 Dans l'attente de nos prochains échanges, je vous souhaite une excellente journée.
 
 Nelly Sabde - Les Conférenciers`);
-    } else {
-      setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
-      setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+    } else if (inv.invoice_type === "solde") {
+      setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
+      setInvoiceEmailBody(`Bonjour${firstName ? ` ${firstName}` : ""},
 
 Avant toute chose, je tenais à vous remercier pour la confiance que vous m'avez accordée et pour la qualité de nos échanges lors de cette collaboration !
 
-Vous trouverez ci-dessous la facture correspondant à l'intervention de ${speakerSummary}.
+Vous trouverez ci-dessous comme convenu la facture correspondant à l'intervention de ${speakerSummary}.
+
+Comme évoqué, je vous communique également un lien pour laisser un avis sur l'agence.
+
+Les retours des clients récents sont pour nous très précieux :
+https://g.page/r/CZqRK1WOkub-EAI/review
+
+Cliquez sur le bouton ci-dessous pour consulter la facture.
+
+Je reste bien évidemment à votre disposition.
+
+Au plaisir de futurs échanges.
+
+Très belle journée à vous,
+Nelly Sabde - Les Conférenciers`);
+    } else {
+      setInvoiceEmailSubject(`Facture ${inv.invoice_number} - ${proposal.client_name}`);
+      setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+
+Veuillez trouver votre facture ci-dessous.
 
 📄 Facture n° ${inv.invoice_number}
 • Montant HT : ${inv.amount_ht.toLocaleString("fr-FR")} €
 • TVA ${inv.tva_rate}% : ${(inv.amount_ttc - inv.amount_ht).toLocaleString("fr-FR")} €
 • Montant TTC : ${inv.amount_ttc.toLocaleString("fr-FR")} €
 
-Comme évoqué, je vous communique également un lien pour laisser un avis sur l'agence. Les retours des clients récents sont pour nous très précieux :
-https://g.page/r/CZqRK1WOkub-EAI/review
-
 👉 Cliquez sur le bouton ci-dessous pour consulter la facture.
 
-Je reste bien évidemment à votre disposition pour toute nouvelle recherche d'intervenant.
-
-Au plaisir de futurs échanges.
-
-Très belle journée à vous,
+Cordialement,
 Nelly Sabde - Les Conférenciers`);
     }
     setInvoiceEmailOpen(true);
