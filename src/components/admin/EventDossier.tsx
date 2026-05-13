@@ -293,6 +293,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
   const [invoiceEmailSubject, setInvoiceEmailSubject] = useState("");
   const [invoiceEmailBody, setInvoiceEmailBody] = useState("");
+  const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState("");
+  const [invoiceRecipientName, setInvoiceRecipientName] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
 
