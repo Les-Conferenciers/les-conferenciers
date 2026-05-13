@@ -1,83 +1,47 @@
-## Objectif
+# Plan d'évolutions Admin
 
-Dans l'onglet **Propositions → sous-onglet "Envoyées"**, regrouper les propositions partageant le même `client_id` CRM, et permettre de créer une nouvelle proposition pré-remplie pour un client existant après son retour (changement de speaker, prix, lieu, etc.).
+Travail en 3 blocs. Confirme-moi avant que je lance.
 
-## Comportement attendu
+## 1. Propositions
 
-### 1. Regroupement par client (sous-onglet "Envoyées" uniquement)
+- **Date dans l'email** : formater `event_date_text` en français (15 septembre 2026) au lieu de l'ISO brut, partout où il apparaît dans les corps d'email générés (proposition initiale + relances).
+- **Conférencier unique** : ajouter dans le template du mail "unique" la phrase  
+  *"À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?"*  
+  juste après la phrase sur les autres intervenants.
+- **Verrouillage après envoi** : si `status` ≠ `draft`, le formulaire passe en lecture seule (champs disabled, suppression des boutons "Enregistrer brouillon" et "Envoyer"), avec un bandeau "Proposition envoyée le …".
+- **Renvoyer une nouvelle proposition** : nouveau bouton "Nouvelle proposition pour ce client" qui duplique la proposition (client pré-rempli, conférenciers vides) en `draft`, avec un wording d'email adapté du type *"Suite à nos échanges, voici une nouvelle proposition…"*.
+- **Archivage avec raison** : dialog obligatoire demandant la raison (champ libre + select : prix, date, profil, autre). Stockée dans `lost_reason`, `lost_at`. Notes et tâches conservées et consultables même en statut archivé/perdu.
+- **Stop relances** : les jobs de relance (`send-proposal-reminder`, tâches J+7/J+14) ignorent les propositions `lost`/`archived`.
 
-- Les propositions ayant le **même `client_id`** sont regroupées en une **ligne accordéon** (style cohérent avec l'accordéon déjà utilisé pour les détails post-acceptation).
-- Les propositions **sans `client_id`** restent affichées en lignes individuelles (pas de regroupement par email — décision validée).
-- L'en-tête de groupe affiche :
-  - Nom du client CRM (`company_name` + `contact_name` si dispo)
-  - Compteur : "N propositions"
-  - Date de la dernière proposition
-  - Statut le plus avancé (ex : si une est `accepted`, badge "Accepté" prioritaire ; sinon le statut de la dernière)
-  - Bouton **"Nouvelle proposition"** (icône Plus)
-- Au déploiement de l'accordéon : on voit toutes les propositions du client, **triées par date décroissante**, avec les mêmes lignes/actions qu'aujourd'hui (envoyer, dupliquer, relance, accepter, voir, etc.).
-- Tri global du sous-onglet : par **date de la proposition la plus récente** de chaque groupe (respecte le toggle `dateSortAsc` existant).
-- La recherche (`proposalSearch`) et le filtre type continuent de fonctionner : un groupe est visible si **au moins une** de ses propositions matche.
-- Pagination (`pageSize`) : compte les **groupes** (et les propositions orphelines sans client_id) plutôt que les lignes individuelles.
+## 2. Contrats
 
-Les sous-onglets **Brouillons** et **Archivées** restent en liste plate inchangée.
+- **Email auto à Nelly à la signature** : edge function `send-contract-email` (ou nouvelle `notify-contract-signed`) déclenchée quand `contracts.status` passe à `signed`, envoyée à `nellysabde@lesconferenciers.com`.
+- **Infos client éditables à la création du contrat** : dans le dialog de création/édition contrat, ajouter section "Informations client" (adresse, code postal, ville, SIRET/RCS, téléphone, email contact) qui met à jour la table `clients` en plus du contrat.
+- **CRM : autofill depuis les leads** : quand on remplit/édite une fiche client via email, pré-remplir nom contact, téléphone, société depuis le dernier lead correspondant (`simulator_leads.email`).
+- **Aperçu contrat client** : retirer le bandeau "08 mai 2026 · 14h 📍PSG 🎤 Conférence" et la mention "J-156" sur `ContractView.tsx`.
+- **Bouton Modifier sur l'aperçu contrat** : comme la feuille de liaison, ajouter un bouton "Modifier" qui rouvre le dialog d'édition, et garantit que les modifs persistent en base.
+- **Onglet Contrats allégé** : supprimer les blocs "Prochains événements" et "À traiter cette semaine" en haut.
 
-### 2. Bouton "Nouvelle proposition" sur un groupe client
+## 3. Feuille de liaison
 
-Au clic sur le bouton dans l'en-tête d'un groupe :
+- **Un seul onglet "Besoins logistiques"** : fusion des onglets "Technique" et "Détails techniques".
+- **Pré-remplissage** :
+  - besoins techniques : *"vidéoprojecteur, micro casque"*
+  - commentaire : *"L'intervenant participera avec plaisir au déjeuner à l'issue de sa conférence."*
+- **Bloc contacts** :
+  - afficher numéros de téléphone après les noms (conférencier + client)
+  - pour le client, afficher le nom du **contact** (pas la société)
+  - rendre les champs contact éditables directement dans la feuille de liaison
+- **Email client** (sans CC conférencier) : remplacer le wording actuel par le nouveau texte fourni, signé "Nelly Sabde – Les Conférenciers".
+- **Email conférencier** :
+  - tutoiement automatique si `speakers.formal_address = false`
+  - objet inclut la date de l'événement (ex : *"Feuille de liaison – 15 septembre 2026"*)
+- **Confidentialité** : ne pas afficher l'adresse email du client dans la feuille de liaison rendue.
 
-- Ouverture de la **modale de création** existante (`setDialogOpen(true)`).
-- Pré-remplissage automatique à partir de la proposition la plus récente du client :
-  - Mode client = `"search"` avec `selectedClientId` = client_id du groupe → infos client (nom, email, téléphone, interlocuteur) chargées depuis la fiche CRM
-  - **Lieu** (`event_location`), **date texte** (`event_date_text`), **taille auditoire** (`audience_size`) repris de la dernière proposition (modifiables)
-  - **Type de proposition** (`proposal_type`) repris de la dernière (modifiable)
-  - **Speakers** : non recopiés par défaut (le client veut souvent changer) — l'utilisateur sélectionne fraîchement. Sinon il peut s'appuyer sur les modèles ou refaire sa sélection.
-  - **Message interne** et **email** : valeurs par défaut (regénérées comme pour une nouvelle proposition)
-- L'utilisateur ajuste librement (speakers, prix, lieu…) puis envoie comme une proposition normale.
+## Détails techniques (interne)
 
-### 3. Effets de bord à préserver
+- Frontend : `AdminProposals.tsx`, `EventDossier.tsx`, `ContractInvoiceManager.tsx`, `ContractView.tsx`, `LiaisonSheetView.tsx`, `AdminClients.tsx`.
+- Backend : `send-proposal-email`, `send-proposal-reminder`, `send-contract-email` (ajout), `daily-task-recap` (filtrage `lost`).
+- Migration : ajouter colonnes manquantes si besoin sur `proposals` (`lost_reason` existe déjà, ✓), sur `events` (`tech_needs`/`logistics_info` existent ✓, on fusionne côté UI).
 
-- L'avertissement "Email déjà connu" reste actif (utile pour visualiser l'historique côté UI).
-- Le pipeline post-acceptation et les tâches de relance fonctionnent toujours par proposition individuelle.
-- Aucun changement de schéma DB.
-
-## Détails techniques
-
-**Fichier modifié :** `src/pages/Admin.tsx` (composant `AdminProposalsContent`).
-
-### Construction des groupes
-
-Dans le rendu du sous-onglet `sent` uniquement :
-
-```ts
-type SentGroup =
-  | { kind: "group"; clientId: string; clientLabel: string; items: Proposal[] }
-  | { kind: "single"; proposal: Proposal };
-
-// 1. Séparer ceux avec client_id et sans
-// 2. Regrouper par client_id, label = allClients.find(...).company_name (+ contact_name)
-// 3. Trier les items du groupe par created_at desc
-// 4. Construire un tableau ordonné selon date la plus récente de chaque entrée
-// 5. Appliquer recherche/filtre type AVANT regroupement, ou filtrer les groupes après
-```
-
-### Rendu
-
-- Réutilise `renderProposalRow(p, "sent")` à l'intérieur de l'accordéon (zéro régression sur les actions par ligne).
-- En-tête d'accordéon : composant local inline avec `Collapsible` (déjà importé via shadcn) ou un simple `useState` `expandedGroupId`.
-- Bouton "Nouvelle proposition" appelle un nouveau handler `handleNewProposalForClient(clientId, latestProposal)` qui :
-  - `resetForm()`
-  - `setClientMode("search")` + `setSelectedClientId(clientId)`
-  - charge le client depuis `allClients`, set `setClientName/Email/Phone/RecipientName`
-  - copie `event_location/event_date_text/audience_size/proposal_type` depuis `latestProposal`
-  - `setDialogOpen(true)`
-
-### Pagination
-
-Remplacer `items.slice(0, pageSize)` par un slice sur le tableau d'entrées groupées pour le sous-onglet `sent`. Drafts et archived inchangés.
-
-## Hors périmètre
-
-- Pas de regroupement dans Brouillons ni Archivées.
-- Pas de fusion de propositions ni de lien "version de" persistant en DB.
-- Pas de duplication automatique de la sélection de speakers (l'objectif est justement d'en changer).
-- Pas de regroupement pour les propositions sans client_id (orphelines en lignes plates).
+Ok pour que je lance les 3 blocs d'un coup ?

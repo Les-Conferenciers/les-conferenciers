@@ -95,6 +95,7 @@ type Invoice = {
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
+  vhr_estimate?: number | null;
 };
 
 type EventData = {
@@ -209,6 +210,16 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [newContractClientSiret, setNewContractClientSiret] = useState("");
   const [newContractClientAddress, setNewContractClientAddress] = useState("");
   const [newContractClientCity, setNewContractClientCity] = useState("");
+  // Inline edit of selected client inside contract dialog
+  const [editClientInContract, setEditClientInContract] = useState(false);
+  const [editClientCompany, setEditClientCompany] = useState("");
+  const [editClientContact, setEditClientContact] = useState("");
+  const [editClientEmail, setEditClientEmail] = useState("");
+  const [editClientPhone, setEditClientPhone] = useState("");
+  const [editClientSiret, setEditClientSiret] = useState("");
+  const [editClientAddress, setEditClientAddress] = useState("");
+  const [editClientCity, setEditClientCity] = useState("");
+  const [savingClientEdit, setSavingClientEdit] = useState(false);
 
   // Contract email
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
@@ -276,6 +287,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editAmountHT, setEditAmountHT] = useState(0);
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
+  const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
@@ -830,8 +842,8 @@ Nelly Sabde - Les Conférenciers`);
     const isFormal = speaker?.formal_address !== false;
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
-    setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "");
-    setLiaisonTechNeeds(event?.tech_needs || "");
+    setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "L'intervenant participera avec plaisir au déjeuner à l'issue de sa conférence.");
+    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur, micro casque");
     setLiaisonSalleSetup(event?.room_setup || "");
     setLiaisonArrival(event?.arrival_info || "");
     setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
@@ -841,13 +853,16 @@ Nelly Sabde - Les Conférenciers`);
     setLiaisonTheme(event?.theme || "");
     setLiaisonTab("client");
 
-    // Client email template
-    setLiaisonClientSubject(`Feuille de liaison - ${speakerName} - ${proposal.client_name}`);
+    // Date FR longue pour les objets de mail
+    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
+
+    // Client email template (nouveau wording, sans prix)
+    setLiaisonClientSubject(`Feuille de liaison - ${speakerName}${eventDateLong ? ` - ${eventDateLong}` : ""}`);
     setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
 
 Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
 
-Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}${speaker?.phone ? " laissant apparaître son numéro de téléphone portable" : ""}.
+Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.
 
 Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
 
@@ -855,25 +870,34 @@ Excellente fin de journée à vous !
 
 Nelly Sabde - Les Conférenciers`);
 
-    // Speaker email template
-    setLiaisonSpeakerSubject(`Feuille de liaison - ${proposal.client_name}`);
+    // Speaker email template — tutoiement si formal_address = false, date dans l'objet
+    setLiaisonSpeakerSubject(`Feuille de liaison${eventDateLong ? ` - ${eventDateLong}` : ""} - ${proposal.client_name}`);
     setLiaisonSpeakerBody(`${speakerFirstName},
 
 ${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
 
-${isFormal ? "À très bientôt !" : "A très vite !"}
+${isFormal ? "À très bientôt !" : "À très vite !"}
 
 Nelly Sabde - Les Conférenciers`);
 
-    // Pre-fill recipients (editable) — client tab CC defaults to speaker, speaker tab CC empty
+    // Pre-fill recipients (editable) — pas de CC conférencier sur le mail client
     const speakerEmail = speaker?.email || "";
     setLiaisonClientTo(proposal.client_email || "");
     setLiaisonSpeakerTo(speakerEmail);
-    setLiaisonClientCc(speakerEmail);
+    setLiaisonClientCc("");
     setLiaisonSpeakerCc("");
 
     setLiaisonDialogOpen(true);
   };
+
+  // Helper: format date longue FR (utilisée pour les objets de mail liaison)
+  function liaisonEventDateFmt(d: string) {
+    if (!d) return "";
+    try {
+      const dt = new Date(d.length === 10 ? d + "T12:00:00" : d);
+      return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    } catch { return ""; }
+  }
 
   // Persist editable liaison fields back to contract + event
   const persistLiaisonFields = async () => {
@@ -933,7 +957,7 @@ ${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
 ${liaisonTechNeeds ? `- ${liaisonTechNeeds}` : ""}
 ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 
-👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""} - ${event?.contact_on_site_email || proposal.client_email}
+👤 Contact client : ${event?.contact_on_site_name || proposal.recipient_name || proposal.client_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}
 🎤 Contact conférencier : ${speakerName}${speaker?.phone ? ` - ${speaker.phone}` : ""}
 ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
 ${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
@@ -1119,6 +1143,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   const openEditInvoice = (inv: Invoice) => {
     setEditingInvoice(inv); setEditAmountHT(inv.amount_ht); setEditTvaRate(inv.tva_rate); setEditDueDate(inv.due_date || "");
+    setEditVhrEstimate(inv.vhr_estimate ?? "");
     setEditInvoiceOpen(true);
   };
 
@@ -1130,7 +1155,8 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       tva_rate: editTvaRate,
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: editDueDate || null,
-    }).eq("id", editingInvoice.id);
+      vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
+    } as any).eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
     setEditInvoiceOpen(false); fetchData();
   };
@@ -1139,25 +1165,26 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEmailInvoice(inv);
     const typeLabel = inv.invoice_type === "acompte" ? "d'acompte" : inv.invoice_type === "solde" ? "de solde" : "";
     const isDepositInvoice = inv.invoice_type === "acompte";
-    
-    setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
-    
+    const firstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
+    const eventDateLong = contract?.event_date
+      ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+      : "—";
+
     if (isDepositInvoice) {
-      setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+      setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
+      setInvoiceEmailBody(`Bonjour${firstName ? ` ${firstName}` : ""},
 
-Veuillez trouver ci-dessous votre facture ${typeLabel} pour la prestation de conférence.
+Suite à nos précédents échanges, vous trouverez ci-dessous comme convenu la facture d'acompte pour l'intervention de ${speakerSummary}.
 
-📄 Facture n° ${inv.invoice_number}
-• Conférencier(s) : ${speakerSummary}
-• Montant HT : ${inv.amount_ht.toLocaleString("fr-FR")} €
-• TVA ${inv.tva_rate}% : ${(inv.amount_ttc - inv.amount_ht).toLocaleString("fr-FR")} €
-• Montant TTC : ${inv.amount_ttc.toLocaleString("fr-FR")} €
+Cliquez sur le bouton ci-dessous pour consulter et télécharger votre facture.
 
-👉 Cliquez sur le bouton ci-dessous pour consulter et télécharger votre facture.
+Je reste bien évidemment à votre disposition si besoin est.
 
-Bien cordialement,
+Dans l'attente de nos prochains échanges, je vous souhaite une excellente journée.
+
 Nelly Sabde - Les Conférenciers`);
     } else {
+      setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
       setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
 Avant toute chose, je tenais à vous remercier pour la confiance que vous m'avez accordée et pour la qualité de nos échanges lors de cette collaboration !
@@ -1273,25 +1300,8 @@ Nelly Sabde - Les Conférenciers`);
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <FileText className="h-4 w-4" /> Contrat client
           </h3>
-          {contract && (contract.event_date || contract.event_location || contract.event_format) && (
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-              {contract.event_date && (
-                <span className="inline-flex items-center gap-1">
-                  <CalendarIcon className="h-3 w-3" />
-                  {formatDate(contract.event_date)}
-                  {contract.event_time ? ` · ${contract.event_time}` : ""}
-                </span>
-              )}
-              {contract.event_location && (
-                <span className="inline-flex items-center gap-1">
-                  📍 <span className="truncate max-w-[280px]">{contract.event_location}</span>
-                </span>
-              )}
-              {contract.event_format && (
-                <span className="inline-flex items-center gap-1">🎤 {contract.event_format}</span>
-              )}
-            </div>
-          )}
+          {/* Bandeau date/lieu/format retiré à la demande pour alléger l'aperçu contrat */}
+
         </div>
         {!contract ? (
           <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateContract}>
@@ -1561,17 +1571,76 @@ Nelly Sabde - Les Conférenciers`);
                 </div>
               )}
 
-              {/* Show selected client info */}
+              {/* Show selected client info (editable) */}
               {contractClientId && (() => {
                 const c = clients.find(cl => cl.id === contractClientId);
-                return c ? (
-                  <div className="text-[10px] text-muted-foreground space-y-0.5 bg-background p-2 rounded border border-border/50">
-                    <p><strong>{c.company_name}</strong>{c.contact_name ? ` - ${c.contact_name}` : ""}</p>
-                    {c.email && <p>📧 {c.email}</p>}
-                    {c.siret && <p>🏢 SIRET : {c.siret}</p>}
-                    {c.address && <p>📍 {c.address}{c.city ? `, ${c.city}` : ""}</p>}
+                if (!c) return null;
+                if (!editClientInContract) {
+                  return (
+                    <div className="text-[10px] text-muted-foreground space-y-0.5 bg-background p-2 rounded border border-border/50">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <p><strong>{c.company_name}</strong>{c.contact_name ? ` - ${c.contact_name}` : ""}</p>
+                          {c.email && <p>📧 {c.email}</p>}
+                          {(c as any).phone && <p>📞 {(c as any).phone}</p>}
+                          {c.siret && <p>🏢 SIRET : {c.siret}</p>}
+                          {c.address && <p>📍 {c.address}{c.city ? `, ${c.city}` : ""}</p>}
+                        </div>
+                        <Button
+                          type="button" size="sm" variant="ghost" className="h-6 px-2 text-[10px]"
+                          onClick={() => {
+                            setEditClientCompany(c.company_name || "");
+                            setEditClientContact(c.contact_name || "");
+                            setEditClientEmail(c.email || "");
+                            setEditClientPhone((c as any).phone || "");
+                            setEditClientSiret(c.siret || "");
+                            setEditClientAddress(c.address || "");
+                            setEditClientCity(c.city || "");
+                            setEditClientInContract(true);
+                          }}
+                        >
+                          ✏️ Modifier
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
+                    <Label className="text-xs font-semibold">✏️ Modifier les informations du client</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Société *</Label><Input value={editClientCompany} onChange={e => setEditClientCompany(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Nom du contact</Label><Input value={editClientContact} onChange={e => setEditClientContact(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Email</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Téléphone</Label><Input value={editClientPhone} onChange={e => setEditClientPhone(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">SIRET</Label><Input value={editClientSiret} onChange={e => setEditClientSiret(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Ville</Label><Input value={editClientCity} onChange={e => setEditClientCity(e.target.value)} className="h-8 text-sm" /></div>
+                      <div className="col-span-2 space-y-1"><Label className="text-[10px] text-muted-foreground">Adresse</Label><Input value={editClientAddress} onChange={e => setEditClientAddress(e.target.value)} className="h-8 text-sm" /></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm" disabled={savingClientEdit} className="gap-1"
+                        onClick={async () => {
+                          if (!editClientCompany) { toast.error("Société requise"); return; }
+                          setSavingClientEdit(true);
+                          const { error } = await supabase.from("clients").update({
+                            company_name: editClientCompany,
+                            contact_name: editClientContact || null,
+                            email: editClientEmail || null,
+                            phone: editClientPhone || null,
+                            siret: editClientSiret || null,
+                            address: editClientAddress || null,
+                            city: editClientCity || null,
+                          } as any).eq("id", c.id);
+                          if (error) { toast.error("Erreur de sauvegarde"); }
+                          else { toast.success("Client mis à jour"); await fetchClients(); setEditClientInContract(false); }
+                          setSavingClientEdit(false);
+                        }}
+                      >{savingClientEdit ? "Sauvegarde…" : "Enregistrer"}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditClientInContract(false)}>Annuler</Button>
+                    </div>
                   </div>
-                ) : null;
+                );
               })()}
             </div>
 
@@ -1958,11 +2027,8 @@ Nelly Sabde - Les Conférenciers`);
                 <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">👥 Auditoire</Label><Input value={liaisonAudience} onChange={e => setLiaisonAudience(e.target.value)} placeholder="100 personnes" className="h-8 text-sm" /></div>
                 <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🎯 Thématique</Label><Input value={liaisonTheme} onChange={e => setLiaisonTheme(e.target.value)} placeholder="Le management" className="h-8 text-sm" /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Technique</Label><Input value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur" className="h-8 text-sm" /></div>
-              </div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🍿 Détails techniques</Label><Input value={liaisonSalleSetup} onChange={e => setLiaisonSalleSetup(e.target.value)} placeholder="Configuration salle, micro HF, écran…" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Besoins logistiques</Label><Textarea value={liaisonTechNeeds} onChange={e => { setLiaisonTechNeeds(e.target.value); setLiaisonSalleSetup(""); }} placeholder="Vidéoprojecteur, micro casque, configuration salle…" rows={2} className="text-sm" /></div>
               <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
 
               <div className="flex justify-end">
@@ -2074,11 +2140,10 @@ Nelly Sabde - Les Conférenciers`);
               <div className="space-y-1"><Label className="text-xs">Hôtel</Label><Input value={editHotelInfo} onChange={e => setEditHotelInfo(e.target.value)} placeholder="Hôtel Marriott - réservation confirmée" /></div>
             </div>
 
-            {/* Section: Technique */}
+            {/* Section: Besoins logistiques */}
             <div className="space-y-3">
-              <Label className="text-sm font-semibold flex items-center gap-1.5">🔧 Technique & salle</Label>
-              <div className="space-y-1"><Label className="text-xs">Besoins techniques</Label><Textarea value={editTechNeeds} onChange={e => setEditTechNeeds(e.target.value)} rows={2} placeholder="Micro HF, écran, clicker…" /></div>
-              <div className="space-y-1"><Label className="text-xs">Configuration de salle</Label><Textarea value={editRoomSetup} onChange={e => setEditRoomSetup(e.target.value)} rows={2} placeholder="En théâtre, 200 places, scène…" /></div>
+              <Label className="text-sm font-semibold flex items-center gap-1.5">🔧 Besoins logistiques</Label>
+              <div className="space-y-1"><Textarea value={editTechNeeds} onChange={e => { setEditTechNeeds(e.target.value); setEditRoomSetup(""); }} rows={3} placeholder="Vidéoprojecteur, micro casque, configuration salle…" /></div>
             </div>
 
             {/* Section: Visio prépa */}
@@ -2168,8 +2233,20 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Date d'échéance</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Estimation frais VHR (€) — optionnel</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={editVhrEstimate}
+                onChange={e => setEditVhrEstimate(e.target.value === "" ? "" : Number(e.target.value))}
+                onWheel={e => (e.target as HTMLInputElement).blur()}
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <p className="text-[10px] text-muted-foreground">Voyage / Hébergement / Restauration. Ajoutée à la facture si renseignée.</p>
+            </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
-              <span>Total TTC</span><span>{(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              <span>Total TTC</span><span>{((editAmountHT + (Number(editVhrEstimate) || 0)) * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
             </div>
             <Button className="w-full" onClick={handleSaveInvoice}>Mettre à jour</Button>
           </div>

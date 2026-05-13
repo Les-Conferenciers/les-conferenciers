@@ -26,15 +26,21 @@ Deno.serve(async (req) => {
     const todayStr = `${parisDate.getFullYear()}-${String(parisDate.getMonth() + 1).padStart(2, "0")}-${String(parisDate.getDate()).padStart(2, "0")}`;
 
     // Fetch pending tasks due today
-    const { data: tasks, error: tasksErr } = await supabase
+    const { data: rawTasks, error: tasksErr } = await supabase
       .from("proposal_tasks")
-      .select("*, proposals(client_name, client_email, client_phone, recipient_name)")
+      .select("*, proposals(client_name, client_email, client_phone, recipient_name, status)")
       .eq("status", "pending")
       .eq("due_date", todayStr);
 
     if (tasksErr) {
       return new Response(JSON.stringify({ error: tasksErr.message }), { status: 500, headers: corsHeaders });
     }
+
+    // Ignore tasks attached to lost / archived proposals
+    const tasks = (rawTasks || []).filter((t: any) => {
+      const s = t.proposals?.status;
+      return s !== "lost" && s !== "archived";
+    });
 
     if (!tasks || tasks.length === 0) {
       return new Response(JSON.stringify({ success: true, message: "No tasks due today" }), {

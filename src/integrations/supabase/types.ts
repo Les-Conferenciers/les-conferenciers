@@ -331,6 +331,7 @@ export type Database = {
           sent_at: string | null
           status: string
           tva_rate: number
+          vhr_estimate: number | null
         }
         Insert: {
           amount_ht: number
@@ -346,6 +347,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           tva_rate?: number
+          vhr_estimate?: number | null
         }
         Update: {
           amount_ht?: number
@@ -361,6 +363,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           tva_rate?: number
+          vhr_estimate?: number | null
         }
         Relationships: [
           {

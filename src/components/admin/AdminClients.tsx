@@ -456,7 +456,31 @@ const AdminClients = () => {
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@societe.com" />
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onBlur={async () => {
+                    if (!email || editing) return;
+                    const { data: leads } = await supabase
+                      .from("simulator_leads")
+                      .select("first_name, last_name, phone, company")
+                      .ilike("email", email.trim())
+                      .order("created_at", { ascending: false })
+                      .limit(1);
+                    const lead = (leads as any)?.[0];
+                    if (!lead) return;
+                    let filled = false;
+                    if (!contactName) {
+                      const fn = `${lead.first_name || ""} ${lead.last_name || ""}`.trim();
+                      if (fn) { setContactName(fn); filled = true; }
+                    }
+                    if (!phone && lead.phone) { setPhone(lead.phone); filled = true; }
+                    if (!companyName && lead.company) { setCompanyName(lead.company); filled = true; }
+                    if (filled) toast.success("Champs pré-remplis depuis les leads");
+                  }}
+                  placeholder="email@societe.com"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
