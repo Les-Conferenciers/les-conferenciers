@@ -887,6 +887,7 @@ export type Database = {
     }
     Functions: {
       generate_invoice_number: { Args: never; Returns: string }
+      get_invoice_bdc: { Args: { _invoice_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

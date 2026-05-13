@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { invoice_id, email_subject, email_body } = await req.json();
+    const { invoice_id, email_subject, email_body, to, recipient_name } = await req.json();
     if (!invoice_id) {
       return new Response(JSON.stringify({ error: "invoice_id required" }), { status: 400, headers: corsHeaders });
     }
@@ -74,6 +74,12 @@ Deno.serve(async (req) => {
     }
 
     const proposal = invoice.proposal;
+    const recipientEmail = (Array.isArray(to) ? to : String(to || proposal.client_email).split(/[,;]/))
+      .map((email: string) => email.trim())
+      .filter(Boolean);
+    if (recipientEmail.length === 0) {
+      return new Response(JSON.stringify({ error: "recipient required" }), { status: 400, headers: corsHeaders });
+    }
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
@@ -114,7 +120,7 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
         from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
-        to: [proposal.client_email],
+        to: recipientEmail,
         subject,
         html: emailHtml,
       }),

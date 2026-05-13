@@ -293,6 +293,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
   const [invoiceEmailSubject, setInvoiceEmailSubject] = useState("");
   const [invoiceEmailBody, setInvoiceEmailBody] = useState("");
+  const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState("");
+  const [invoiceRecipientName, setInvoiceRecipientName] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
 
@@ -513,7 +515,23 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     return "";
   };
 
-  const openCreateContract = () => {
+  const generateNextBdcNumber = async (): Promise<string> => {
+    const { data } = await supabase
+      .from("events")
+      .select("bdc_number")
+      .not("bdc_number", "is", null);
+    let max = 0;
+    (data || []).forEach((row: any) => {
+      const m = /^BDC-(\d+)$/i.exec((row.bdc_number || "").trim());
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    });
+    return `BDC-${String(max + 1).padStart(3, "0")}`;
+  };
+
+  const openCreateContract = async () => {
     setEditingContract(false);
     // Auto-fill from proposal data
     setEventDate(event?.event_date || parseProposalEventDate());
@@ -522,7 +540,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventFormat("Conférence");
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
-    setContractBdcNumber("");
+    const nextBdc = await generateNextBdcNumber();
+    setContractBdcNumber(event?.bdc_number || nextBdc);
     // Pre-fill agency commission from proposal (selected speaker if any, else sum across speakers)
     const speakersForCommission = event?.selected_speaker_id
       ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
@@ -618,10 +637,32 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
     // Also update event with audience_size and bdc_number
     if (event) {
-      await supabase.from("events").update({ 
+      // Pre-check BDC uniqueness if changed
+      if (contractBdcNumber && contractBdcNumber !== event.bdc_number) {
+        const { data: dup } = await supabase
+          .from("events")
+          .select("id")
+          .eq("bdc_number", contractBdcNumber)
+          .neq("id", event.id)
+          .maybeSingle();
+        if (dup) {
+          toast.error(`Le numéro de BDC "${contractBdcNumber}" existe déjà`);
+          setSaving(false);
+          return;
+        }
+      }
+      const { error: evErr } = await supabase.from("events").update({ 
         audience_size: contractAudienceSize || null,
         bdc_number: contractBdcNumber || null,
       } as any).eq("id", event.id);
+      if (evErr) {
+        const msg = (evErr as any).code === "23505" || /duplicate/i.test(evErr.message)
+          ? `Le numéro de BDC "${contractBdcNumber}" existe déjà`
+          : "Erreur mise à jour du dossier";
+        toast.error(msg);
+        setSaving(false);
+        return;
+      }
     }
     if (editingContract && contract) {
       const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
@@ -1061,6 +1102,19 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   const handleSaveEvent = async () => {
     if (!event) return;
+    // Pre-check BDC uniqueness if changed
+    if (editBdcNumber && editBdcNumber !== event.bdc_number) {
+      const { data: dup } = await supabase
+        .from("events")
+        .select("id")
+        .eq("bdc_number", editBdcNumber)
+        .neq("id", event.id)
+        .maybeSingle();
+      if (dup) {
+        toast.error(`Le numéro de BDC "${editBdcNumber}" existe déjà`);
+        return;
+      }
+    }
     const { error } = await supabase.from("events").update({
       bdc_number: editBdcNumber || null,
       audience_size: editAudienceSize || null,
@@ -1100,7 +1154,14 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         client_signed_received_at: editClientSignedReceivedAt || null,
       } as any).eq("id", contract.id);
     }
-    if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
+    if (error) {
+      const msg = (error as any).code === "23505" || /duplicate/i.test(error.message)
+        ? `Le numéro de BDC "${editBdcNumber}" existe déjà`
+        : "Erreur";
+      toast.error(msg);
+      return;
+    }
+    toast.success("Dossier mis à jour");
     setEventEditOpen(false);
     fetchData();
   };
@@ -1163,14 +1224,14 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   const openInvoiceEmail = (inv: Invoice) => {
     setEmailInvoice(inv);
-    const typeLabel = inv.invoice_type === "acompte" ? "d'acompte" : inv.invoice_type === "solde" ? "de solde" : "";
-    const isDepositInvoice = inv.invoice_type === "acompte";
     const firstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
     const eventDateLong = contract?.event_date
       ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
       : "—";
+    setInvoiceRecipientEmail(proposal.client_email || "");
+    setInvoiceRecipientName(proposal.recipient_name || "");
 
-    if (isDepositInvoice) {
+    if (inv.invoice_type === "acompte") {
       setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
       setInvoiceEmailBody(`Bonjour${firstName ? ` ${firstName}` : ""},
 
@@ -1183,29 +1244,41 @@ Je reste bien évidemment à votre disposition si besoin est.
 Dans l'attente de nos prochains échanges, je vous souhaite une excellente journée.
 
 Nelly Sabde - Les Conférenciers`);
-    } else {
-      setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} - ${proposal.client_name}`);
-      setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+    } else if (inv.invoice_type === "solde") {
+      setInvoiceEmailSubject(`Intervention de ${speakerSummary} du ${eventDateLong}`);
+      setInvoiceEmailBody(`Bonjour${firstName ? ` ${firstName}` : ""},
 
 Avant toute chose, je tenais à vous remercier pour la confiance que vous m'avez accordée et pour la qualité de nos échanges lors de cette collaboration !
 
-Vous trouverez ci-dessous la facture correspondant à l'intervention de ${speakerSummary}.
+Vous trouverez ci-dessous comme convenu la facture correspondant à l'intervention de ${speakerSummary}.
+
+Comme évoqué, je vous communique également un lien pour laisser un avis sur l'agence.
+
+Les retours des clients récents sont pour nous très précieux :
+https://g.page/r/CZqRK1WOkub-EAI/review
+
+Cliquez sur le bouton ci-dessous pour consulter la facture.
+
+Je reste bien évidemment à votre disposition.
+
+Au plaisir de futurs échanges.
+
+Très belle journée à vous,
+Nelly Sabde - Les Conférenciers`);
+    } else {
+      setInvoiceEmailSubject(`Facture ${inv.invoice_number} - ${proposal.client_name}`);
+      setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+
+Veuillez trouver votre facture ci-dessous.
 
 📄 Facture n° ${inv.invoice_number}
 • Montant HT : ${inv.amount_ht.toLocaleString("fr-FR")} €
 • TVA ${inv.tva_rate}% : ${(inv.amount_ttc - inv.amount_ht).toLocaleString("fr-FR")} €
 • Montant TTC : ${inv.amount_ttc.toLocaleString("fr-FR")} €
 
-Comme évoqué, je vous communique également un lien pour laisser un avis sur l'agence. Les retours des clients récents sont pour nous très précieux :
-https://g.page/r/CZqRK1WOkub-EAI/review
-
 👉 Cliquez sur le bouton ci-dessous pour consulter la facture.
 
-Je reste bien évidemment à votre disposition pour toute nouvelle recherche d'intervenant.
-
-Au plaisir de futurs échanges.
-
-Très belle journée à vous,
+Cordialement,
 Nelly Sabde - Les Conférenciers`);
     }
     setInvoiceEmailOpen(true);
@@ -1213,10 +1286,17 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
+    if (!invoiceRecipientEmail.trim()) { toast.error("Email destinataire requis"); return; }
     setSendingInvoice(true);
     try {
       const { error } = await supabase.functions.invoke("send-invoice-email", {
-        body: { invoice_id: emailInvoice.id, email_subject: invoiceEmailSubject, email_body: invoiceEmailBody },
+        body: {
+          invoice_id: emailInvoice.id,
+          email_subject: invoiceEmailSubject,
+          email_body: invoiceEmailBody,
+          to: invoiceRecipientEmail,
+          recipient_name: invoiceRecipientName,
+        },
       });
       if (error) throw error;
       await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", emailInvoice.id);
@@ -2101,7 +2181,7 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-sm font-semibold flex items-center gap-1.5">📋 Événement</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1"><Label className="text-xs">Titre de l'événement</Label><Input value={editEventTitle} onChange={e => setEditEventTitle(e.target.value)} placeholder="Séminaire annuel, Congrès RH…" /></div>
-                <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="971" /></div>
+                <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="BDC-001" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input value={editTheme} onChange={e => setEditTheme(e.target.value)} placeholder="Le management" /></div>
@@ -2258,9 +2338,19 @@ Nelly Sabde - Les Conférenciers`);
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Envoyer {emailInvoice?.invoice_number} - {proposal.client_name}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label className="text-xs">À</Label><Input value={invoiceRecipientEmail} onChange={e => setInvoiceRecipientEmail(e.target.value)} className="text-sm" /></div>
+              <div className="space-y-2"><Label className="text-xs">Contact</Label><Input value={invoiceRecipientName} onChange={e => setInvoiceRecipientName(e.target.value)} className="text-sm" /></div>
+            </div>
             <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={invoiceEmailSubject} onChange={e => setInvoiceEmailSubject(e.target.value)} /></div>
             <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={invoiceEmailBody} onChange={e => setInvoiceEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
-            <p className="text-[10px] text-muted-foreground">📧 Sera envoyé à : {proposal.client_email}</p>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Aperçu du mail</Label>
+              <div className="border rounded-md p-4 bg-background max-h-64 overflow-y-auto text-sm whitespace-pre-wrap">
+                {invoiceEmailBody || "—"}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Le bouton « Consulter la facture » est ajouté automatiquement.</p>
+            </div>
             <Button className="w-full" onClick={handleSendInvoiceEmail} disabled={sendingInvoice}>
               <Send className="h-4 w-4 mr-2" />{sendingInvoice ? "Envoi…" : `Envoyer la facture`}
             </Button>
