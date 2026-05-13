@@ -1273,25 +1273,8 @@ Nelly Sabde - Les Conférenciers`);
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <FileText className="h-4 w-4" /> Contrat client
           </h3>
-          {contract && (contract.event_date || contract.event_location || contract.event_format) && (
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-              {contract.event_date && (
-                <span className="inline-flex items-center gap-1">
-                  <CalendarIcon className="h-3 w-3" />
-                  {formatDate(contract.event_date)}
-                  {contract.event_time ? ` · ${contract.event_time}` : ""}
-                </span>
-              )}
-              {contract.event_location && (
-                <span className="inline-flex items-center gap-1">
-                  📍 <span className="truncate max-w-[280px]">{contract.event_location}</span>
-                </span>
-              )}
-              {contract.event_format && (
-                <span className="inline-flex items-center gap-1">🎤 {contract.event_format}</span>
-              )}
-            </div>
-          )}
+          {/* Bandeau date/lieu/format retiré à la demande pour alléger l'aperçu contrat */}
+
         </div>
         {!contract ? (
           <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateContract}>
