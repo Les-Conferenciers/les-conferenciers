@@ -482,71 +482,7 @@ const AdminEventDossiers = () => {
         </div>
       </div>
 
-      {/* Calendrier 30j (uniquement onglet En cours) */}
-      {tab === "en_cours" && (
-        <div className="border border-border rounded-xl p-3 bg-card">
-          <div className="flex items-center gap-2 mb-2">
-            <CalendarDays className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">Prochains événements (30j)</h3>
-          </div>
-          {upcoming30.length === 0 ? (
-            <div className="text-xs text-muted-foreground/70 py-3 text-center">Aucun événement à venir</div>
-          ) : (
-            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-[180px] overflow-y-auto">
-              {upcoming30.map((r) => {
-                const days = Math.ceil((r.eventDate!.getTime() - Date.now()) / 86400000);
-                return (
-                  <li key={r.proposal.id}>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedId(r.proposal.id)}
-                      className="w-full flex items-center justify-between gap-2 text-left rounded-md px-2 py-1.5 hover:bg-muted/60 transition-colors border border-transparent hover:border-border"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-xs font-medium truncate">{r.proposal.client_name}</div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {r.eventDate!.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
-                        </div>
-                      </div>
-                      <span className={cn(
-                        "text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0",
-                        days <= 7 ? "bg-orange-100 text-orange-700" : "bg-muted text-muted-foreground",
-                      )}>
-                        J-{days}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {/* Alertes "à traiter cette semaine" */}
-      {tab === "en_cours" && weekAlerts.length > 0 && (
-        <div className="border border-orange-200 bg-orange-50 rounded-xl p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <h3 className="text-sm font-semibold text-orange-900">À traiter cette semaine ({weekAlerts.length})</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {weekAlerts.slice(0, 6).map(({ row, alerts }) => (
-              <button
-                key={row.proposal.id}
-                type="button"
-                onClick={() => setExpandedId(row.proposal.id)}
-                className="text-left bg-background rounded-md px-2.5 py-1.5 border border-orange-200/60 hover:border-orange-400 transition-colors"
-              >
-                <div className="text-xs font-medium">{row.proposal.client_name}</div>
-                <div className="text-[10px] text-orange-700 mt-0.5 flex flex-wrap gap-x-2">
-                  {alerts.map((a, i) => <span key={i}>{a}</span>)}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Blocs "Prochains événements (30j)" et "À traiter cette semaine" retirés à la demande pour alléger l'onglet Contrats */}
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setExpandedId(null); }}>
         <TabsList className="mb-4">
