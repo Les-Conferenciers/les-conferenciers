@@ -111,8 +111,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Send, Trash2, ExternalLink, Copy, Check, RefreshCw, Archive, User, ChevronDown, ChevronUp, Pencil, Search, ArrowUpDown, Filter, Eye, EyeOff, Save, FileText, Bell, CalendarDays, Mail } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
