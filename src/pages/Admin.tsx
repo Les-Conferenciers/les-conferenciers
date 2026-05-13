@@ -1300,23 +1300,7 @@ const AdminProposalsContent = () => {
     fetchProposals();
   };
 
-  // ── Nouvelle proposition pour le même client (duplication "info" pré-remplie) ──
-  const handleNewProposalForClient = (p: Proposal) => {
-    resetForm();
-    setClientName(p.client_name || "");
-    setClientEmail(p.client_email || "");
-    setRecipientName(p.recipient_name || "");
-    setClientPhone((p as any).client_phone || "");
-    setEventLocation((p as any).event_location || "");
-    setEventDateText((p as any).event_date_text || "");
-    setAudienceSize((p as any).audience_size || "");
-    setProposalType("classique");
-    setSelectedClientId(p.client_id || null);
-    setClientMode(p.client_id ? "search" : "new");
-    setEmailSubject(getDefaultEmailSubject(p.client_name));
-    setEmailBody(`Bonjour${p.recipient_name ? ` ${p.recipient_name.split(" ")[0]}` : ""},\n\nSuite à nos échanges, je reviens vers vous avec une nouvelle proposition adaptée à vos besoins.\n\n${getDefaultEmailBody(p.recipient_name || "", p.client_name).replace(/^[^\n]+\n+/, "")}`);
-    setDialogOpen(true);
-  };
+  // (handleNewProposalForClient existant — voir plus haut, conservé)
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer définitivement cette proposition ?")) return;
