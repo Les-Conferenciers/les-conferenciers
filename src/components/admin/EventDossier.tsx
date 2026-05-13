@@ -513,7 +513,23 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     return "";
   };
 
-  const openCreateContract = () => {
+  const generateNextBdcNumber = async (): Promise<string> => {
+    const { data } = await supabase
+      .from("events")
+      .select("bdc_number")
+      .not("bdc_number", "is", null);
+    let max = 0;
+    (data || []).forEach((row: any) => {
+      const m = /^BDC-(\d+)$/i.exec((row.bdc_number || "").trim());
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    });
+    return `BDC-${String(max + 1).padStart(3, "0")}`;
+  };
+
+  const openCreateContract = async () => {
     setEditingContract(false);
     // Auto-fill from proposal data
     setEventDate(event?.event_date || parseProposalEventDate());
@@ -522,7 +538,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventFormat("Conférence");
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
-    setContractBdcNumber("");
+    const nextBdc = await generateNextBdcNumber();
+    setContractBdcNumber(event?.bdc_number || nextBdc);
     // Pre-fill agency commission from proposal (selected speaker if any, else sum across speakers)
     const speakersForCommission = event?.selected_speaker_id
       ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
@@ -618,10 +635,32 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
     // Also update event with audience_size and bdc_number
     if (event) {
-      await supabase.from("events").update({ 
+      // Pre-check BDC uniqueness if changed
+      if (contractBdcNumber && contractBdcNumber !== event.bdc_number) {
+        const { data: dup } = await supabase
+          .from("events")
+          .select("id")
+          .eq("bdc_number", contractBdcNumber)
+          .neq("id", event.id)
+          .maybeSingle();
+        if (dup) {
+          toast.error(`Le numéro de BDC "${contractBdcNumber}" existe déjà`);
+          setSaving(false);
+          return;
+        }
+      }
+      const { error: evErr } = await supabase.from("events").update({ 
         audience_size: contractAudienceSize || null,
         bdc_number: contractBdcNumber || null,
       } as any).eq("id", event.id);
+      if (evErr) {
+        const msg = (evErr as any).code === "23505" || /duplicate/i.test(evErr.message)
+          ? `Le numéro de BDC "${contractBdcNumber}" existe déjà`
+          : "Erreur mise à jour du dossier";
+        toast.error(msg);
+        setSaving(false);
+        return;
+      }
     }
     if (editingContract && contract) {
       const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
@@ -1061,6 +1100,19 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   const handleSaveEvent = async () => {
     if (!event) return;
+    // Pre-check BDC uniqueness if changed
+    if (editBdcNumber && editBdcNumber !== event.bdc_number) {
+      const { data: dup } = await supabase
+        .from("events")
+        .select("id")
+        .eq("bdc_number", editBdcNumber)
+        .neq("id", event.id)
+        .maybeSingle();
+      if (dup) {
+        toast.error(`Le numéro de BDC "${editBdcNumber}" existe déjà`);
+        return;
+      }
+    }
     const { error } = await supabase.from("events").update({
       bdc_number: editBdcNumber || null,
       audience_size: editAudienceSize || null,
@@ -1100,7 +1152,14 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         client_signed_received_at: editClientSignedReceivedAt || null,
       } as any).eq("id", contract.id);
     }
-    if (error) toast.error("Erreur"); else toast.success("Dossier mis à jour");
+    if (error) {
+      const msg = (error as any).code === "23505" || /duplicate/i.test(error.message)
+        ? `Le numéro de BDC "${editBdcNumber}" existe déjà`
+        : "Erreur";
+      toast.error(msg);
+      return;
+    }
+    toast.success("Dossier mis à jour");
     setEventEditOpen(false);
     fetchData();
   };
@@ -2111,7 +2170,7 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-sm font-semibold flex items-center gap-1.5">📋 Événement</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1"><Label className="text-xs">Titre de l'événement</Label><Input value={editEventTitle} onChange={e => setEditEventTitle(e.target.value)} placeholder="Séminaire annuel, Congrès RH…" /></div>
-                <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="971" /></div>
+                <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="BDC-001" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input value={editTheme} onChange={e => setEditTheme(e.target.value)} placeholder="Le management" /></div>
