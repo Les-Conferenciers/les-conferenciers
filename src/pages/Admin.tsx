@@ -2574,7 +2574,7 @@ const AdminProposalsContent = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${task.task_type === "relance_1" ? "bg-amber-100 text-amber-700" : "bg-orange-100 text-orange-700"}`}>
-                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2 (J+15)"}
+                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2"}
                         </span>
                         {task.status === "completed" && <span className="text-xs text-green-600">✓ Envoyée</span>}
                         {(reminderProposal as any)[task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"] && (
