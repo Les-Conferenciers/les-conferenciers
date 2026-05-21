@@ -139,6 +139,8 @@ const AdminEventDossiers = () => {
       clientName: proposal?.client_name || "",
       eventDateRaw,
       eventsSentAt: eventRow.visio_emails_sent_at || null,
+      clientSentAt: eventRow.visio_email_client_sent_at || null,
+      speakerSentAt: eventRow.visio_email_speaker_sent_at || null,
       clientTo: proposal?.client_email || "",
       clientCc: "",
       clientSubject: subject,
