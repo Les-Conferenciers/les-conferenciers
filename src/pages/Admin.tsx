@@ -579,6 +579,7 @@ const AdminProposalsContent = () => {
   const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
   const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
   const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
+  const [updatingFromProposalId, setUpdatingFromProposalId] = useState<string | null>(null);
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
