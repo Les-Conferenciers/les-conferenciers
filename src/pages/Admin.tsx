@@ -1125,12 +1125,15 @@ const AdminProposalsContent = () => {
     setClientEmail(cEmail);
     setClientPhone(cPhone);
     setRecipientName(rName);
+    const rawDate = (latest as any).event_date_text || "";
+    const dateFmt = formatFrenchEventDate(rawDate) || rawDate;
     setEventLocation((latest as any).event_location || "");
-    setEventDateText((latest as any).event_date_text || "");
+    setEventDateText(dateFmt);
     setAudienceSize((latest as any).audience_size || "");
+    const ctx = buildEventContextLine((latest as any).event_location || "", dateFmt, (latest as any).audience_size || "");
     setMessage(getFollowUpMessage(rName, cName));
     setEmailSubject(getFollowUpEmailSubject(cName));
-    setEmailBody(getFollowUpEmailBody(rName, cName));
+    setEmailBody(getFollowUpEmailBody(rName, cName, ctx));
     setDialogOpen(true);
   };
 
