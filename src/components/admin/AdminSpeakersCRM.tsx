@@ -305,6 +305,47 @@ const AdminSpeakersCRM = () => {
     } as any);
   };
 
+  // Renumérote en cascade : si l'ancien ordre = oldOrd et le nouveau = newOrd,
+  // on décale les autres conférenciers actifs pour éviter doublons et trous.
+  const shiftDisplayOrder = async (speakerId: string, oldOrd: number, newOrd: number) => {
+    if (oldOrd === newOrd) return;
+    // Récupère tous les conférenciers actifs sauf celui-ci
+    const { data: others } = await supabase
+      .from("speakers")
+      .select("id, display_order")
+      .eq("archived", false)
+      .neq("id", speakerId);
+    if (!others) return;
+    const updates: { id: string; display_order: number }[] = [];
+    for (const o of others as any[]) {
+      const ord = o.display_order ?? 999;
+      if (newOrd < oldOrd && ord >= newOrd && ord < oldOrd) {
+        updates.push({ id: o.id, display_order: ord + 1 });
+      } else if (newOrd > oldOrd && ord > oldOrd && ord <= newOrd) {
+        updates.push({ id: o.id, display_order: ord - 1 });
+      }
+    }
+    await Promise.all(updates.map(u => supabase.from("speakers").update({ display_order: u.display_order } as any).eq("id", u.id)));
+    await supabase.from("speakers").update({ display_order: newOrd } as any).eq("id", speakerId);
+  };
+
+  // Échange un conférencier avec son voisin actif (±1)
+  const handleMoveOrder = async (speaker: Speaker, direction: "up" | "down") => {
+    const currentOrd = (speaker as any).display_order ?? 999;
+    const actives = speakers.filter(s => !s.archived).slice().sort((a, b) => ((a as any).display_order ?? 999) - ((b as any).display_order ?? 999));
+    const idx = actives.findIndex(s => s.id === speaker.id);
+    if (idx < 0) return;
+    const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (neighborIdx < 0 || neighborIdx >= actives.length) return;
+    const neighbor = actives[neighborIdx];
+    const neighborOrd = (neighbor as any).display_order ?? 999;
+    await Promise.all([
+      supabase.from("speakers").update({ display_order: neighborOrd } as any).eq("id", speaker.id),
+      supabase.from("speakers").update({ display_order: currentOrd } as any).eq("id", neighbor.id),
+    ]);
+    fetchSpeakers();
+  };
+
   const handleSave = async () => {
     if (!editSpeaker) return;
     setSaving(true);
