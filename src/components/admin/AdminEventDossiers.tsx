@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import {
   RefreshCw, Search, ChevronDown, ChevronUp, Trash2, Check, X, FilePlus,
-  AlertTriangle, CalendarDays, FileSignature, CreditCard, Video, ClipboardList, Receipt, Wallet,
+  AlertTriangle, CalendarDays, FileSignature, CreditCard, Video, ClipboardList, Receipt, Wallet, Send, Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import EventDossier from "@/components/admin/EventDossier";
