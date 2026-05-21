@@ -115,6 +115,8 @@ const AdminEventDossiers = () => {
     return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   };
 
+  const SIGNATURE_BLOCK = "\n\nNelly Sabde\nAgence Les Conférenciers\n06 95 93 97 91";
+
   const openVisioPicker = (eventRow: any, proposal?: any) => {
     if (!eventRow) { toast.error("Créez d'abord le dossier événement"); return; }
     const speakers = proposal?.proposal_speakers || [];
@@ -140,11 +142,11 @@ const AdminEventDossiers = () => {
       clientTo: proposal?.client_email || "",
       clientCc: "",
       clientSubject: subject,
-      clientBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} vient de vous être adressée.\n\nDans l'attente de nos prochains échanges, je vous souhaite une excellente fin de journée !`,
+      clientBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} vient de vous être adressée.\n\nDans l'attente de nos prochains échanges, je vous souhaite une excellente fin de journée !${SIGNATURE_BLOCK}`,
       speakerTo: speakerData?.email || "",
       speakerCc: "",
       speakerSubject: subject,
-      speakerBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} ${isFormal ? "vient de partir" : "vient de partir"}.\n\nA très vite et belle journée`,
+      speakerBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} vient de partir.\n\nA très vite et belle journée${SIGNATURE_BLOCK}`,
       tab: "client",
     });
   };
