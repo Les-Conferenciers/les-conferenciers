@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import {
   RefreshCw, Search, ChevronDown, ChevronUp, Trash2, Check, X, FilePlus,
-  AlertTriangle, CalendarDays, FileSignature, CreditCard, Video, ClipboardList, Receipt, Wallet,
+  AlertTriangle, CalendarDays, FileSignature, CreditCard, Video, ClipboardList, Receipt, Wallet, Send, Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import EventDossier from "@/components/admin/EventDossier";
@@ -87,15 +87,65 @@ const AdminEventDossiers = () => {
   const [directSpeakerSearch, setDirectSpeakerSearch] = useState("");
 
   // Visio quick scheduler (déclenché depuis la pipeline)
-  const [visioDialog, setVisioDialog] = useState<{ eventId: string; date: string; time: string } | null>(null);
+  const [visioDialog, setVisioDialog] = useState<{
+    eventId: string;
+    date: string;
+    time: string;
+    clientName: string;
+    eventDateRaw: string;
+    eventsSentAt: string | null;
+    // email composer
+    clientTo: string;
+    clientCc: string;
+    clientSubject: string;
+    clientBody: string;
+    speakerTo: string;
+    speakerCc: string;
+    speakerSubject: string;
+    speakerBody: string;
+    tab: "client" | "speaker";
+  } | null>(null);
   const [savingVisio, setSavingVisio] = useState(false);
+  const [sendingVisioEmail, setSendingVisioEmail] = useState<"client" | "speaker" | null>(null);
 
-  const openVisioPicker = (eventRow: any) => {
+  const fmtVisioDateLong = (d: string) => {
+    if (!d) return "";
+    const dt = new Date(d + (d.length === 10 ? "T12:00:00" : ""));
+    if (isNaN(dt.getTime())) return d;
+    return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  };
+
+  const openVisioPicker = (eventRow: any, proposal?: any) => {
     if (!eventRow) { toast.error("Créez d'abord le dossier événement"); return; }
+    const speakers = proposal?.proposal_speakers || [];
+    const selectedSpeakerId = eventRow?.selected_speaker_id;
+    const selSp = (selectedSpeakerId && speakers.find((s: any) => s.speaker_id === selectedSpeakerId)) || speakers[0];
+    const speakerData = selSp?.speakers || null;
+    const isFormal = speakerData?.formal_address !== false;
+
+    const eventDateRaw = eventRow.event_date || proposal?.event_date_text || "";
+    const dateLong = fmtVisioDateLong(eventDateRaw) || (proposal?.event_date_text || "");
+    const timeStr = eventRow.event_time || "";
+    const dateTimeStr = `${dateLong}${timeStr ? ` à ${timeStr}` : ""}`;
+
+    const subject = `Invitation visio préparatoire${dateLong ? ` — ${dateLong}` : ""}`;
+
     setVisioDialog({
       eventId: eventRow.id,
       date: eventRow.visio_date || "",
       time: eventRow.visio_time || "",
+      clientName: proposal?.client_name || "",
+      eventDateRaw,
+      eventsSentAt: eventRow.visio_emails_sent_at || null,
+      clientTo: proposal?.client_email || "",
+      clientCc: "",
+      clientSubject: subject,
+      clientBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} vient de vous être adressée.\n\nDans l'attente de nos prochains échanges, je vous souhaite une excellente fin de journée !`,
+      speakerTo: speakerData?.email || "",
+      speakerCc: "",
+      speakerSubject: subject,
+      speakerBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} ${isFormal ? "vient de partir" : "vient de partir"}.\n\nA très vite et belle journée`,
+      tab: "client",
     });
   };
 
@@ -109,6 +159,31 @@ const AdminEventDossiers = () => {
     if (error) toast.error("Erreur");
     else { toast.success("Visio planifiée"); setVisioDialog(null); fetchData(); }
     setSavingVisio(false);
+  };
+
+  const splitList = (s: string) => s.split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
+
+  const handleSendVisioEmail = async (target: "client" | "speaker") => {
+    if (!visioDialog) return;
+    const to = target === "client" ? splitList(visioDialog.clientTo) : splitList(visioDialog.speakerTo);
+    const cc = target === "client" ? splitList(visioDialog.clientCc) : splitList(visioDialog.speakerCc);
+    const subject = target === "client" ? visioDialog.clientSubject : visioDialog.speakerSubject;
+    const body = target === "client" ? visioDialog.clientBody : visioDialog.speakerBody;
+    if (to.length === 0) { toast.error("Renseignez au moins un destinataire"); return; }
+    setSendingVisioEmail(target);
+    try {
+      const { error } = await supabase.functions.invoke("send-contact-email", {
+        body: { to, subject, body, from_name: "Les Conférenciers", cc: cc.length ? cc : undefined },
+      });
+      if (error) throw error;
+      await supabase.from("events").update({ visio_emails_sent_at: new Date().toISOString() } as any).eq("id", visioDialog.eventId);
+      toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé`);
+      setVisioDialog({ ...visioDialog, eventsSentAt: new Date().toISOString() });
+      fetchData();
+    } catch {
+      toast.error("Erreur d'envoi");
+    }
+    setSendingVisioEmail(null);
   };
 
   const fetchData = async () => {
@@ -572,7 +647,7 @@ const AdminEventDossiers = () => {
                           stages={r.stages}
                           onChange={fetchData}
                           compact
-                          onCustomAction={(key) => { if (key === "visio") openVisioPicker(r.event); }}
+                          onCustomAction={(key) => { if (key === "visio") openVisioPicker(r.event, r.proposal); }}
                         />
                       </TableCell>
                       <TableCell className="text-right py-3">
@@ -869,28 +944,116 @@ const AdminEventDossiers = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Visio quick scheduler */}
+      {/* Visio quick scheduler + emails de confirmation */}
       <Dialog open={!!visioDialog} onOpenChange={(open) => !open && setVisioDialog(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-serif flex items-center gap-2"><Video className="h-4 w-4" /> Planifier la visio préparatoire</DialogTitle>
+            <DialogTitle className="font-serif flex items-center gap-2">
+              <Video className="h-4 w-4" /> Visio préparatoire{visioDialog?.clientName ? ` — ${visioDialog.clientName}` : ""}
+            </DialogTitle>
           </DialogHeader>
           {visioDialog && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Date</Label>
-                  <Input type="date" value={visioDialog.date} onChange={(e) => setVisioDialog({ ...visioDialog, date: e.target.value })} className="h-9" />
+            <div className="space-y-5">
+              {/* Planification */}
+              <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+                <Label className="text-xs font-semibold">📅 Planification</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Date</Label>
+                    <Input type="date" value={visioDialog.date} onChange={(e) => setVisioDialog({ ...visioDialog, date: e.target.value })} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Heure</Label>
+                    <Input type="time" value={visioDialog.time} onChange={(e) => setVisioDialog({ ...visioDialog, time: e.target.value })} className="h-9" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Heure</Label>
-                  <Input type="time" value={visioDialog.time} onChange={(e) => setVisioDialog({ ...visioDialog, time: e.target.value })} className="h-9" />
+                <p className="text-[11px] text-muted-foreground">Renseigner une date marquera l'étape comme planifiée. Laisser vide réinitialisera l'étape.</p>
+                <div className="flex justify-end">
+                  <Button size="sm" onClick={handleSaveVisio} disabled={savingVisio}>
+                    {savingVisio ? "Enregistrement…" : "Enregistrer la planification"}
+                  </Button>
                 </div>
               </div>
-              <p className="text-[11px] text-muted-foreground">Renseigner une date marquera l'étape comme planifiée. Laisser vide réinitialisera l'étape.</p>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={() => setVisioDialog(null)}>Annuler</Button>
-                <Button size="sm" onClick={handleSaveVisio} disabled={savingVisio}>{savingVisio ? "Enregistrement…" : "Enregistrer"}</Button>
+
+              {/* Emails tabs */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5" /> Emails de confirmation
+                  </Label>
+                  {visioDialog.eventsSentAt && (
+                    <span className="text-[11px] text-emerald-600">✓ Invitation envoyée le {formatShortDate(visioDialog.eventsSentAt)}</span>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setVisioDialog({ ...visioDialog, tab: "client" })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${visioDialog.tab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  >
+                    📧 Email Client
+                  </button>
+                  <button
+                    onClick={() => setVisioDialog({ ...visioDialog, tab: "speaker" })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${visioDialog.tab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  >
+                    🎤 Email Conférencier
+                  </button>
+                </div>
+
+                {visioDialog.tab === "client" ? (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">À</Label>
+                      <Input value={visioDialog.clientTo} onChange={(e) => setVisioDialog({ ...visioDialog, clientTo: e.target.value })} className="text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">CC</Label>
+                      <Input value={visioDialog.clientCc} onChange={(e) => setVisioDialog({ ...visioDialog, clientCc: e.target.value })} className="text-sm" />
+                      <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Objet</Label>
+                      <Input value={visioDialog.clientSubject} onChange={(e) => setVisioDialog({ ...visioDialog, clientSubject: e.target.value })} className="text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Corps du mail</Label>
+                      <Textarea value={visioDialog.clientBody} onChange={(e) => setVisioDialog({ ...visioDialog, clientBody: e.target.value })} rows={8} className="text-sm" />
+                    </div>
+                    <Button className="w-full" onClick={() => handleSendVisioEmail("client")} disabled={sendingVisioEmail !== null}>
+                      <Send className="h-4 w-4 mr-2" />
+                      {sendingVisioEmail === "client" ? "Envoi…" : "Envoyer au client"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">À</Label>
+                      <Input value={visioDialog.speakerTo} onChange={(e) => setVisioDialog({ ...visioDialog, speakerTo: e.target.value })} className="text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">CC</Label>
+                      <Input value={visioDialog.speakerCc} onChange={(e) => setVisioDialog({ ...visioDialog, speakerCc: e.target.value })} className="text-sm" />
+                      <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Objet</Label>
+                      <Input value={visioDialog.speakerSubject} onChange={(e) => setVisioDialog({ ...visioDialog, speakerSubject: e.target.value })} className="text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Corps du mail</Label>
+                      <Textarea value={visioDialog.speakerBody} onChange={(e) => setVisioDialog({ ...visioDialog, speakerBody: e.target.value })} rows={8} className="text-sm" />
+                    </div>
+                    <Button className="w-full" onClick={() => handleSendVisioEmail("speaker")} disabled={sendingVisioEmail !== null}>
+                      <Send className="h-4 w-4 mr-2" />
+                      {sendingVisioEmail === "speaker" ? "Envoi…" : "Envoyer au conférencier"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <Button variant="outline" size="sm" onClick={() => setVisioDialog(null)}>Fermer</Button>
               </div>
             </div>
           )}

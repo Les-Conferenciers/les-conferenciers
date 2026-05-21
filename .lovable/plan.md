@@ -1,64 +1,58 @@
-## Plan — Évolutions Propositions (4 points)
+# Emails de confirmation visio (client + conférencier)
 
-### 1. "Nouvelle proposition" pour un même client → Mise à jour (avec historique)
+## Objectif
 
-Aujourd'hui, le bouton "+ Nouvelle" (`handleNewProposalForClient`) ouvre un dialog vide qui crée une 2ᵉ proposition indépendante. Nouveau comportement : on ouvre le dialog en mode **"mise à jour"**, déjà pré-rempli depuis la proposition source, et on garde une trace claire des 2 envois côté admin.
+Sur l'étape **Visio** du suivi contrat, ajouter un dialog permettant d'envoyer deux emails distincts (client / conférencier) confirmant la visio préparatoire, sur le même modèle d'UX que la feuille de liaison (deux onglets, éditeur, To/CC, sujet, corps modifiable).
 
-À faire dans `src/pages/Admin.tsx` :
-- Libellé du bouton : "Mettre à jour & renvoyer" (icône `RefreshCw`).
-- `handleNewProposalForClient(clientId, latest)` : pré-remplir tous les champs (déjà OK) **+ pré-cocher la sélection de conférenciers** depuis `latest.proposal_speakers` comme point de départ modifiable.
-- À l'envoi : créer bien une **nouvelle ligne** `proposals` mais :
-  - **Reporter les notes** de la relance 1 source vers la nouvelle (copie de `proposal_tasks.note`).
-  - **Lier les 2 propositions** via `previous_proposal_id` (migration).
-  - **Archiver automatiquement** la précédente avec `lost_reason = '[Mise à jour] Remplacée par une nouvelle proposition'`, et **supprimer ses tâches de relance pending**.
-- Affichage admin : badge "v2", "v3"... à côté du nom du client (chaîne `previous_proposal_id`). Au clic → dialog "Historique" listant chaque envoi (date, type, conférenciers) en lecture seule.
+## UX (calquée sur la feuille de liaison)
 
-Migration SQL :
-```sql
-ALTER TABLE proposals ADD COLUMN previous_proposal_id uuid REFERENCES proposals(id) ON DELETE SET NULL;
-CREATE INDEX idx_proposals_previous ON proposals(previous_proposal_id);
-```
+Bouton **« Envoyer les invitations »** dans le bloc Visio de `EventDossier.tsx` (à côté du quick picker date/heure existant), ouvrant un Dialog :
 
-### 2. Demande d'infos → Proposition (multiple ou unique) à tout moment
+- Onglets `Client` / `Conférencier`
+- Champs éditables : `À`, `Cc`, `Objet`, `Corps` (Textarea)
+- Pré-remplissage automatique depuis l'événement (date, heure, contact, conférencier)
+- Boutons : `Annuler` / `Envoyer client` / `Envoyer conférencier` (envoi indépendant par onglet, comme la liaison)
+- Tracking : nouvelle colonne `visio_emails_sent_at` (timestamp) — affichée comme "Invitations envoyées le …" sous le bloc visio
 
-À faire :
-- Bouton "▶ Convertir en proposition" (icône `Send`) sur toute ligne `proposal_type === 'info'` (envoyées ou brouillons) qui ouvre `infoAcceptDialogOpen`.
-- `handleInfoAcceptConvert` :
-  - Pré-remplir aussi `eventLocation`, `eventDateText` (formaté FR), `audienceSize` depuis la demande d'infos.
-  - **Supprimer les tâches de relance** rattachées à la demande d'infos avant archivage.
-  - Lier la nouvelle proposition via `previous_proposal_id`.
-  - Garder l'archivage avec `lost_reason = '[Convertie] Transformée en proposition'`.
+## Templates pré-remplis
 
-### 3. Mail "Demande d'infos" — paragraphe enveloppe budgétaire
+**Variables** : `[date de l'événement]` = `event_date` formaté FR long (ex. « 29 mai 2026 »), `[heure de l'evenement]` = `visio_time`.
 
-`getInfoEmailBody` (ligne 236) : retirer la puce "Votre enveloppe budgétaire" de la liste et insérer après la liste :
-
-> "Concernant votre enveloppe budgétaire : le tarif moyen des conférenciers se situe entre 4K et 7K HT, hors frais VHR. L'idéal serait de nous indiquer si votre budget se situe dans cette fourchette, au-dessus ou en-dessous, sachant que les premiers tarifs de notre offre se situent autour des 2,5K HT, hors frais VHR."
-
-### 4. Mail de relance suite à une demande d'infos — nouveau template + relance 2 activée
-
-Dans `supabase/functions/send-proposal-reminder/index.ts`, remplacer le bloc `proposalType === "info"` par (identique pour relance 1 et 2) :
-
+**Client** (objet : `Invitation visio préparatoire — [date]`) :
 ```
 Bonjour,
 
-Je reviens vers vous suite à mon précédent mail.
+Suite à nos précédents échanges, l'invitation teams pour la visio du [date] à [heure] vient de vous être adressée.
 
-Avez-vous pu en prendre connaissance ?
-
-Votre recherche d'intervenant est-elle toujours d'actualité ?
-
-Vous remerciant par avance de votre retour et restant à votre écoute, je vous souhaite une excellente journée.
+Dans l'attente de nos prochains échanges, je vous souhaite une excellente fin de journée !
 ```
 
-**+ Activer la relance 2 pour les demandes d'infos** : dans `createTasksForProposal`, retirer la garde `if (pType !== "info")` afin de créer la tâche `relance_2` avec `due_date = null` (comme pour les autres types — admin la planifie manuellement).
+**Conférencier** (objet : `Invitation visio préparatoire — [date]`, tutoiement/vouvoiement selon `speakers.formal_address`) :
+```
+Bonjour,
 
----
+Suite à nos précédents échanges, l'invitation teams pour la visio du [date] à [heure] vient de partir.
 
-### Détails techniques
+A très vite et belle journée
+```
 
-- **Frontend** : `src/pages/Admin.tsx` — `handleNewProposalForClient`, `handleSubmit` (branche update), `handleInfoAcceptConvert`, `getInfoEmailBody`, `createTasksForProposal`, bouton "Convertir" sur lignes `info`, badge versionnage + dialog historique.
-- **Backend** : `supabase/functions/send-proposal-reminder/index.ts` — bloc `proposalType === "info"`.
-- **Migration SQL** : `proposals.previous_proposal_id` (déjà appliquée).
+> Note : ce sont des emails de notification — l'invitation Teams elle-même reste envoyée manuellement par Nelly depuis Outlook/Teams (le mail confirme juste son envoi).
 
-Ok pour que je lance les 4 points ? (passe en mode build)
+## Implémentation technique
+
+**Fichiers modifiés**
+- `src/components/admin/EventDossier.tsx` : nouveaux states `visioEmail*` (mêmes patterns que `liaison*`), fonction `openVisioEmailDialog()` pré-remplissant les champs, `handleSendVisioEmail(target: 'client'|'speaker')` qui appelle l'edge function existante d'envoi puis upsert `events.visio_emails_sent_at = now()`.
+
+**Edge function**
+- Réutilise `send-contact-email` ou créer un endpoint générique léger. Plus simple : réutiliser le même mécanisme que la feuille de liaison (vérifier quelle fonction elle utilise — probablement Resend via une edge function existante). Aucun nouveau secret nécessaire.
+
+**Migration SQL**
+```sql
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS visio_emails_sent_at timestamptz;
+```
+
+**Expéditeur** : `nellysabde@lesconferenciers.com` (memory: sender-identity).
+
+## Hors scope
+- Pas de génération d'invitation .ics ni d'intégration Teams API (envoi manuel par Nelly inchangé).
+- Pas de modification du quick picker date/heure existant.
