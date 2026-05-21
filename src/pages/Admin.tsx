@@ -1133,6 +1133,10 @@ const AdminProposalsContent = () => {
     setEventLocation((latest as any).event_location || "");
     setEventDateText(dateFmt);
     setAudienceSize((latest as any).audience_size || "");
+    // Pré-remplir les conférenciers depuis la proposition source (point de départ modifiable)
+    setSelectedSpeakers(buildProposalSpeakers(latest.proposal_speakers));
+    // Lier comme "mise à jour" : la précédente sera archivée à l'envoi
+    setUpdatingFromProposalId(latest.id);
     const ctx = buildEventContextLine((latest as any).event_location || "", dateFmt, (latest as any).audience_size || "");
     setMessage(getFollowUpMessage(rName, cName));
     setEmailSubject(getFollowUpEmailSubject(cName));
