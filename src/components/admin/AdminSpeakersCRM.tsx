@@ -380,8 +380,20 @@ const AdminSpeakersCRM = () => {
         internal_category: (editForm as any).internal_category || null,
       } as any)
       .eq("id", editSpeaker.id);
+    if (error) { setSaving(false); toast.error("Erreur de sauvegarde"); return; }
+
+    // Gestion intelligente de l'ordre d'affichage (uniquement si actif)
+    if (!editSpeaker.archived) {
+      const oldOrd = (editSpeaker as any).display_order ?? 999;
+      const newOrdRaw = (editForm as any).display_order;
+      if (newOrdRaw != null && Number(newOrdRaw) !== oldOrd) {
+        const activeCount = speakers.filter(s => !s.archived).length;
+        const clamped = Math.max(1, Math.min(Number(newOrdRaw), activeCount));
+        await shiftDisplayOrder(editSpeaker.id, oldOrd, clamped);
+      }
+    }
+
     setSaving(false);
-    if (error) { toast.error("Erreur de sauvegarde"); return; }
     toast.success("Conférencier mis à jour");
     setEditSpeaker(null);
     fetchSpeakers();
