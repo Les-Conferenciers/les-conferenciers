@@ -2611,6 +2611,24 @@ const AdminProposalsContent = () => {
                   <div className="rounded-md border border-border bg-muted/20 p-2 text-sm">{p.lost_reason || <span className="italic opacity-60">—</span>}</div>
                 </div>
                 <div>
+                  <Label className="text-xs text-muted-foreground">Conférenciers proposés</Label>
+                  {(!p.proposal_speakers || p.proposal_speakers.length === 0) ? (
+                    <p className="text-xs italic text-muted-foreground mt-1">Aucun conférencier.</p>
+                  ) : (
+                    <div className="space-y-1 mt-1">
+                      {[...p.proposal_speakers].sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0)).map((ps: any) => {
+                        const total = Number(ps.total_price) || ((Number(ps.speaker_fee) || 0) + (Number(ps.travel_costs) || 0) + (Number(ps.agency_commission) || 0));
+                        return (
+                          <div key={ps.speaker_id} className="flex items-center justify-between rounded-md border border-border bg-muted/20 px-2 py-1.5 text-xs">
+                            <span className="font-medium">{ps.speakers?.name || "Conférencier"}</span>
+                            <span className="text-muted-foreground">{total > 0 ? `${total.toLocaleString("fr-FR")} € HT` : "—"}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div>
                   <Label className="text-xs text-muted-foreground">Notes des relances</Label>
                   {tasks.length === 0 && <p className="text-xs italic text-muted-foreground">Aucune tâche.</p>}
                   {tasks.map((t: any) => (
