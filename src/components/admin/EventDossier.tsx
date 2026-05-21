@@ -111,6 +111,8 @@ type EventData = {
   visio_time: string | null;
   visio_notes: string | null;
   liaison_sheet_sent_at: string | null;
+  liaison_email_client_sent_at: string | null;
+  liaison_email_speaker_sent_at: string | null;
   speaker_paid_at: string | null;
   notes: string | null;
   selected_speaker_id: string | null;
@@ -967,18 +969,11 @@ Nelly Sabde - Les Conférenciers`);
     window.open(`/admin/feuille-liaison/${proposal.id}`, "_blank");
   };
 
-  const handleSendLiaisonSheet = async () => {
-    setSendingLiaison(true);
+  const buildLiaisonContent = () => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
-
-    // Persist edits first so contract & event reflect what's sent
-    await persistLiaisonFields();
-
     const dateStr = liaisonEventDate ? new Date(liaisonEventDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
-
-    // Build liaison sheet content block (uses dialog values)
-    const liaisonContent = `
+    return `
 
 📋 FEUILLE DE LIAISON
 ${event?.event_title ? `\nÉvénement : ${event.event_title}` : ""}
@@ -1003,64 +998,56 @@ ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
 ${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
+  };
+
+  const handleSendLiaisonEmail = async (target: "client" | "speaker") => {
+    setSendingLiaison(true);
+    await persistLiaisonFields();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const splitList = (s: string) => s.split(/[,;]/).map(e => e.trim()).filter(Boolean);
-    const clientToList = splitList(liaisonClientTo);
-    const clientCcList = splitList(liaisonClientCc);
-    const speakerToList = splitList(liaisonSpeakerTo);
-    const speakerCcList = splitList(liaisonSpeakerCc);
+    const toList = splitList(target === "client" ? liaisonClientTo : liaisonSpeakerTo);
+    const ccList = splitList(target === "client" ? liaisonClientCc : liaisonSpeakerCc);
+    const subject = target === "client" ? liaisonClientSubject : liaisonSpeakerSubject;
+    const body = target === "client" ? liaisonClientBody : liaisonSpeakerBody;
 
-    const allEmails = [...clientToList, ...clientCcList, ...speakerToList, ...speakerCcList];
-    const invalid = allEmails.find(e => !emailRegex.test(e));
+    const invalid = [...toList, ...ccList].find(e => !emailRegex.test(e));
     if (invalid) {
       toast.error(`Email invalide : ${invalid}`);
       setSendingLiaison(false);
       return;
     }
-    if (clientToList.length === 0 && speakerToList.length === 0) {
-      toast.error("Veuillez renseigner au moins un destinataire (client ou conférencier)");
+    if (toList.length === 0) {
+      toast.error(`Veuillez renseigner au moins un destinataire ${target === "client" ? "client" : "conférencier"}`);
       setSendingLiaison(false);
       return;
     }
 
     try {
-      // Send to client
-      if (clientToList.length > 0) {
-        await supabase.functions.invoke("send-contact-email", {
-          body: {
-            to: clientToList,
-            subject: liaisonClientSubject,
-            body: liaisonClientBody + liaisonContent,
-            from_name: "Les Conférenciers",
-            cc: clientCcList.length > 0 ? clientCcList : undefined,
-          },
-        });
-      }
+      await supabase.functions.invoke("send-contact-email", {
+        body: {
+          to: toList,
+          subject,
+          body: body + buildLiaisonContent(),
+          from_name: "Les Conférenciers",
+          cc: ccList.length > 0 ? ccList : undefined,
+        },
+      });
 
-      // Send to speaker
-      if (speakerToList.length > 0) {
-        await supabase.functions.invoke("send-contact-email", {
-          body: {
-            to: speakerToList,
-            subject: liaisonSpeakerSubject,
-            body: liaisonSpeakerBody + liaisonContent,
-            from_name: "Les Conférenciers",
-            cc: speakerCcList.length > 0 ? speakerCcList : undefined,
-          },
-        });
-      }
-
-      // Track
       if (event) {
-        await supabase.from("events").update({ liaison_sheet_sent_at: new Date().toISOString() } as any).eq("id", event.id);
+        const nowIso = new Date().toISOString();
+        const patch: any = target === "client"
+          ? { liaison_email_client_sent_at: nowIso }
+          : { liaison_email_speaker_sent_at: nowIso };
+        if (!event.liaison_sheet_sent_at) patch.liaison_sheet_sent_at = nowIso;
+        await supabase.from("events").update(patch).eq("id", event.id);
       }
-      toast.success("Feuille de liaison envoyée !");
-      setLiaisonDialogOpen(false);
-      fetchData();
+      toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé !`);
+      await fetchData();
     } catch { toast.error("Erreur d'envoi"); }
     setSendingLiaison(false);
   };
+
 
   // ─── Event edit ───
   const openEventEdit = () => {
@@ -2133,42 +2120,62 @@ Nelly Sabde - Les Conférenciers`);
 
             {/* Email tabs */}
             <div className="flex gap-2">
-              <button onClick={() => setLiaisonTab("client")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${liaisonTab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                📧 Email Client
+              <button onClick={() => setLiaisonTab("client")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${liaisonTab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                📧 Email Client {event?.liaison_email_client_sent_at && <CheckCircle className="h-3 w-3 text-emerald-500" />}
               </button>
-              <button onClick={() => setLiaisonTab("speaker")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${liaisonTab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                🎤 Email Conférencier
+              <button onClick={() => setLiaisonTab("speaker")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${liaisonTab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                🎤 Email Conférencier {event?.liaison_email_speaker_sent_at && <CheckCircle className="h-3 w-3 text-emerald-500" />}
               </button>
             </div>
 
             {liaisonTab === "client" ? (
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">À</Label>
-                  <Input value={liaisonClientTo} onChange={e => setLiaisonClientTo(e.target.value)} placeholder="client@email.com" className="text-sm" />
+              event?.liaison_email_client_sent_at ? (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Email client envoyé le {formatDate(event.liaison_email_client_sent_at)}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">CC (copie pour le mail client)</Label>
-                  <Input value={liaisonClientCc} onChange={e => setLiaisonClientCc(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
-                  <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">À</Label>
+                    <Input value={liaisonClientTo} onChange={e => setLiaisonClientTo(e.target.value)} placeholder="client@email.com" className="text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">CC (copie pour le mail client)</Label>
+                    <Input value={liaisonClientCc} onChange={e => setLiaisonClientCc(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
+                    <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+                  </div>
+                  <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
+                  <Button className="w-full" onClick={() => handleSendLiaisonEmail("client")} disabled={sendingLiaison}>
+                    <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer au client"}
+                  </Button>
                 </div>
-                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
-              </div>
+              )
             ) : (
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">À</Label>
-                  <Input value={liaisonSpeakerTo} onChange={e => setLiaisonSpeakerTo(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
+              event?.liaison_email_speaker_sent_at ? (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Email conférencier envoyé le {formatDate(event.liaison_email_speaker_sent_at)}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">CC (copie pour le mail conférencier)</Label>
-                  <Input value={liaisonSpeakerCc} onChange={e => setLiaisonSpeakerCc(e.target.value)} placeholder="client@email.com" className="text-sm" />
-                  <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">À</Label>
+                    <Input value={liaisonSpeakerTo} onChange={e => setLiaisonSpeakerTo(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">CC (copie pour le mail conférencier)</Label>
+                    <Input value={liaisonSpeakerCc} onChange={e => setLiaisonSpeakerCc(e.target.value)} placeholder="client@email.com" className="text-sm" />
+                    <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+                  </div>
+                  <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
+                  <Button className="w-full" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
+                    <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer au conférencier"}
+                  </Button>
                 </div>
-                <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
-              </div>
+              )
             )}
 
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
@@ -2176,9 +2183,6 @@ Nelly Sabde - Les Conférenciers`);
               <p>🎤 <strong>Conférencier :</strong> {liaisonSpeakerTo || "—"}{liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}</p>
             </div>
 
-            <Button className="w-full" onClick={handleSendLiaisonSheet} disabled={sendingLiaison}>
-              <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer la feuille de liaison"}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
