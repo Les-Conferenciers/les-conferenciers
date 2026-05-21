@@ -189,23 +189,23 @@ const LiaisonSheetView = () => {
             </p>
             <p>
               <span className="font-medium">Lieu de l'intervention :</span>{" "}
-              <Field value={eventLocation} onChange={setEventLocation} placeholder="À définir" />
+              <Field editing={editing} value={eventLocation} onChange={setEventLocation} placeholder="À définir" />
             </p>
             <p>
               <span className="font-medium">Horaires de l'intervention :</span>{" "}
-              <Field value={eventTime} onChange={setEventTime} placeholder="À définir" />
+              <Field editing={editing} value={eventTime} onChange={setEventTime} placeholder="À définir" />
             </p>
             <p>
               <span className="font-medium">Auditoire :</span>{" "}
-              <Field value={eventAudience} onChange={setEventAudience} placeholder="À définir" />
+              <Field editing={editing} value={eventAudience} onChange={setEventAudience} placeholder="À définir" />
             </p>
             <p>
               <span className="font-medium">Thématique :</span>{" "}
-              <Field value={eventTheme} onChange={setEventTheme} placeholder="À définir" />
+              <Field editing={editing} value={eventTheme} onChange={setEventTheme} placeholder="À définir" />
             </p>
             <p>
               <span className="font-medium">Arrivée du conférencier sur place :</span>{" "}
-              <Field value={eventArrival} onChange={setEventArrival} placeholder="À confirmer" />
+              <Field editing={editing} value={eventArrival} onChange={setEventArrival} placeholder="À confirmer" />
             </p>
           </div>
         </section>
@@ -217,11 +217,11 @@ const LiaisonSheetView = () => {
             <div className="space-y-2">
               <div>
                 <label className="text-xs text-gray-500">Besoins techniques</label>
-                <TextArea value={eventTechNeeds} onChange={setEventTechNeeds} placeholder="Vidéoprojecteur, micro…" rows={2} />
+                <TextArea editing={editing} value={eventTechNeeds} onChange={setEventTechNeeds} placeholder="Vidéoprojecteur, micro…" rows={2} />
               </div>
               <div>
                 <label className="text-xs text-gray-500">Configuration de salle</label>
-                <TextArea value={eventRoomSetup} onChange={setEventRoomSetup} placeholder="Salle installée en largeur…" rows={2} />
+                <TextArea editing={editing} value={eventRoomSetup} onChange={setEventRoomSetup} placeholder="Salle installée en largeur…" rows={2} />
               </div>
             </div>
           ) : eventTechNeeds || eventRoomSetup ? (
@@ -256,7 +256,7 @@ const LiaisonSheetView = () => {
         <section className="mb-8">
           <h3 className="font-bold text-lg mb-3">Commentaires :</h3>
           {editing ? (
-            <TextArea value={eventNotes} onChange={setEventNotes} placeholder="Commentaires libres…" rows={4} />
+            <TextArea editing={editing} value={eventNotes} onChange={setEventNotes} placeholder="Commentaires libres…" rows={4} />
           ) : (
             <p className="whitespace-pre-line">{eventNotes || contract?.event_description || "—"}</p>
           )}
