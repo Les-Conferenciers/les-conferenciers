@@ -666,13 +666,15 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
         return;
       }
     }
+    const payloadWithSpeaker = { ...payload, selected_speaker_id: event?.selected_speaker_id || null };
     if (editingContract && contract) {
-      const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
+      const { error } = await supabase.from("contracts").update(payloadWithSpeaker as any).eq("id", contract.id);
       if (error) toast.error("Erreur mise à jour"); else toast.success("Contrat mis à jour !");
     } else {
-      const { error } = await supabase.from("contracts").insert({ proposal_id: proposal.id, ...payload } as any);
+      const { error } = await supabase.from("contracts").insert({ proposal_id: proposal.id, ...payloadWithSpeaker } as any);
       if (error) { toast.error("Erreur création contrat"); console.error(error); } else toast.success("Contrat créé !");
     }
+
     setContractDialogOpen(false); fetchData(); onUpdate(); setSaving(false);
   };
 
