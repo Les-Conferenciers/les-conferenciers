@@ -73,7 +73,7 @@ const ContractSign = () => {
     const fetchAll = async () => {
       const { data } = await supabase
         .from("contracts")
-        .select(`*, proposal:proposals(client_name, client_email, recipient_name, client_id, proposal_speakers(speaker_fee, total_price, speakers(name, gender)))`)
+        .select(`*, proposal:proposals(client_name, client_email, recipient_name, client_id, proposal_speakers(speaker_id, speaker_fee, total_price, speakers(name, gender)))`)
         .eq("token", token!)
         .single();
       const c = data as any;
