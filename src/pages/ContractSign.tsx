@@ -73,7 +73,7 @@ const ContractSign = () => {
     const fetchAll = async () => {
       const { data } = await supabase
         .from("contracts")
-        .select(`*, proposal:proposals(client_name, client_email, recipient_name, client_id, proposal_speakers(speaker_fee, total_price, speakers(name, gender)))`)
+        .select(`*, proposal:proposals(client_name, client_email, recipient_name, client_id, proposal_speakers(speaker_id, speaker_fee, total_price, speakers(name, gender)))`)
         .eq("token", token!)
         .single();
       const c = data as any;
@@ -87,8 +87,9 @@ const ContractSign = () => {
         const { data: cl } = await supabase.from("clients").select("company_name, contact_name, address, city, siret").eq("id", c.proposal.client_id).single();
         setClient(cl);
       }
-      const { data: ev } = await supabase.from("events").select("bdc_number, audience_size, theme").eq("proposal_id", c?.proposal_id).maybeSingle();
+      const { data: ev } = await supabase.from("events").select("bdc_number, audience_size, theme, selected_speaker_id").eq("proposal_id", c?.proposal_id).maybeSingle();
       setEvent(ev);
+
 
       setLoading(false);
     };
@@ -175,8 +176,10 @@ const ContractSign = () => {
 
   const proposal = contract.proposal as any;
   const speakers = proposal?.proposal_speakers || [];
-  const firstSpeaker = speakers[0]?.speakers;
+  const effectiveSpeakerId = (contract as any).selected_speaker_id || event?.selected_speaker_id;
+  const firstSpeaker = (effectiveSpeakerId && speakers.find((s: any) => s.speakers && (s.speaker_id === effectiveSpeakerId))?.speakers) || speakers[0]?.speakers;
   const speakerGender = firstSpeaker?.gender === "female" ? "Madame" : "Monsieur";
+
 
   const rawLines: ContractLine[] = (contract.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0)
     ? contract.contract_lines

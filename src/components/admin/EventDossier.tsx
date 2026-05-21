@@ -374,7 +374,11 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   // Auto-select speaker if only one
   useEffect(() => {
     if (event && !event.selected_speaker_id && proposal.proposal_speakers.length === 1 && proposal.proposal_speakers[0]?.speaker_id) {
-      supabase.from("events").update({ selected_speaker_id: proposal.proposal_speakers[0].speaker_id } as any).eq("id", event.id).then(() => fetchData());
+      const spId = proposal.proposal_speakers[0].speaker_id;
+      supabase.from("events").update({ selected_speaker_id: spId } as any).eq("id", event.id).then(async () => {
+        if (contract) await supabase.from("contracts").update({ selected_speaker_id: spId } as any).eq("id", contract.id);
+        fetchData();
+      });
     }
   }, [event?.id, event?.selected_speaker_id]);
 
@@ -396,9 +400,11 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const handleSelectSpeaker = async (speakerId: string) => {
     if (!event) return;
     await supabase.from("events").update({ selected_speaker_id: speakerId } as any).eq("id", event.id);
+    if (contract) await supabase.from("contracts").update({ selected_speaker_id: speakerId } as any).eq("id", contract.id);
     toast.success("Conférencier sélectionné");
     fetchData();
   };
+
 
   // ─── Compute totals ───
   // The agency commission is added to the global HT (silent — not shown as a separate line in the contract)
@@ -666,13 +672,15 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
         return;
       }
     }
+    const payloadWithSpeaker = { ...payload, selected_speaker_id: event?.selected_speaker_id || null };
     if (editingContract && contract) {
-      const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
+      const { error } = await supabase.from("contracts").update(payloadWithSpeaker as any).eq("id", contract.id);
       if (error) toast.error("Erreur mise à jour"); else toast.success("Contrat mis à jour !");
     } else {
-      const { error } = await supabase.from("contracts").insert({ proposal_id: proposal.id, ...payload } as any);
+      const { error } = await supabase.from("contracts").insert({ proposal_id: proposal.id, ...payloadWithSpeaker } as any);
       if (error) { toast.error("Erreur création contrat"); console.error(error); } else toast.success("Contrat créé !");
     }
+
     setContractDialogOpen(false); fetchData(); onUpdate(); setSaving(false);
   };
 
@@ -1727,7 +1735,9 @@ Nelly Sabde - Les Conférenciers`);
                         onClick={async () => {
                           if (!ps.speaker_id || !event) return;
                           await supabase.from("events").update({ selected_speaker_id: ps.speaker_id } as any).eq("id", event.id);
+                          if (contract) await supabase.from("contracts").update({ selected_speaker_id: ps.speaker_id } as any).eq("id", contract.id);
                           // Rebuild lines for the newly selected speaker
+
                           const newLines = [{
                             id: generateId(),
                             label: ps.speakers?.name || "Conférencier",
