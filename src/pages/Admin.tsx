@@ -1149,6 +1149,7 @@ const AdminProposalsContent = () => {
     setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("new");
     setCcEmails("");
     setUpdatingFromProposalId(null);
+    setInternalNotes("");
   };
 
   const handleNewProposalForClient = (clientId: string, latest: Proposal) => {
