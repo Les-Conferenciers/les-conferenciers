@@ -1074,6 +1074,7 @@ const AdminProposalsContent = () => {
         proposal_type: proposalType, client_id: clientId,
         event_location: eventLocation || null, event_date_text: eventDateText || null,
         audience_size: audienceSize || null, client_phone: clientPhone || null,
+        previous_proposal_id: updatingFromProposalId || null,
       } as any)
       .select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
