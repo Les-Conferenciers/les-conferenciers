@@ -1156,6 +1156,9 @@ const AdminSpeakersCRM = () => {
       <div className="border border-border rounded-xl overflow-hidden">
         {/* Table header */}
         <div className="hidden md:flex items-center gap-4 px-3 py-2.5 bg-muted/50 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <button onClick={() => { setSortBy("display_order"); setSortDir(d => sortBy === "display_order" ? (d === "asc" ? "desc" : "asc") : "asc"); }} className="w-12 flex-shrink-0 flex items-center gap-1 hover:text-foreground transition-colors">
+            N° {sortBy === "display_order" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+          </button>
           <span className="w-10 flex-shrink-0"></span>
           <button onClick={() => { setSortBy("name"); setSortDir(d => sortBy === "name" ? (d === "asc" ? "desc" : "asc") : "asc"); }} className="flex-grow min-w-0 flex items-center gap-1 hover:text-foreground transition-colors text-left">
             Nom {sortBy === "name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
