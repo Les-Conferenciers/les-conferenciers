@@ -2577,6 +2577,51 @@ const AdminProposalsContent = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Archive details dialog */}
+      <Dialog open={!!archiveDetailsId} onOpenChange={(o) => !o && setArchiveDetailsId(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-serif">Détails de la proposition archivée</DialogTitle></DialogHeader>
+          {(() => {
+            const p: any = proposals.find(x => x.id === archiveDetailsId);
+            if (!p) return null;
+            const tasks = getTasksForProposal(p.id);
+            const fmt = (d?: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
+            return (
+              <div className="space-y-4 mt-2 text-sm">
+                <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                  <p><strong>Client :</strong> {p.client_name}</p>
+                  <p><strong>Email :</strong> {p.client_email}</p>
+                  {p.recipient_name && <p><strong>Destinataire :</strong> {p.recipient_name}</p>}
+                  {p.client_phone && <p><strong>Tél :</strong> {p.client_phone}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div><span className="text-muted-foreground">Créée le :</span> {fmt(p.created_at)}</div>
+                  <div><span className="text-muted-foreground">Envoyée le :</span> {fmt(p.sent_at)}</div>
+                  <div><span className="text-muted-foreground">Relance 1 :</span> {fmt(p.reminder1_sent_at)}</div>
+                  <div><span className="text-muted-foreground">Relance 2 :</span> {fmt(p.reminder2_sent_at)}</div>
+                  <div><span className="text-muted-foreground">Archivée le :</span> {fmt(p.lost_at)}</div>
+                  <div><span className="text-muted-foreground">Expire :</span> {fmt(p.expires_at)}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Raison de l'archivage</Label>
+                  <div className="rounded-md border border-border bg-muted/20 p-2 text-sm">{p.lost_reason || <span className="italic opacity-60">—</span>}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Notes des relances</Label>
+                  {tasks.length === 0 && <p className="text-xs italic text-muted-foreground">Aucune tâche.</p>}
+                  {tasks.map((t: any) => (
+                    <div key={t.id} className="rounded-md border border-border p-2 mt-2 text-xs">
+                      <div className="font-medium mb-1">{t.task_type === "relance_1" ? "Relance 1" : "Relance 2"} · échéance {fmt(t.due_date)} {t.status === "completed" && <span className="text-emerald-600">✓</span>}</div>
+                      {t.note ? <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: t.note }} /> : <span className="italic text-muted-foreground">Aucune note.</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* Reminder Dialog */}
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
