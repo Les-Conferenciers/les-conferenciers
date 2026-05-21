@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import {
   FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil,
-  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon, UserPlus, Eye,
+  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon, UserPlus, Eye, Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
@@ -2111,7 +2111,19 @@ Nelly Sabde - Les Conférenciers`);
               <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Besoins logistiques</Label><Textarea value={liaisonTechNeeds} onChange={e => { setLiaisonTechNeeds(e.target.value); setLiaisonSalleSetup(""); }} placeholder="Vidéoprojecteur, micro casque, configuration salle…" rows={2} className="text-sm" /></div>
               <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={async () => {
+                    await persistLiaisonFields();
+                    toast.success("Modifications enregistrées");
+                  }}
+                  className="gap-1.5"
+                >
+                  <Save className="h-3.5 w-3.5" /> Enregistrer les modifications
+                </Button>
                 <Button type="button" variant="outline" size="sm" onClick={handlePreviewLiaisonSheet} className="gap-1.5">
                   <FileText className="h-3.5 w-3.5" /> Aperçu de la feuille
                 </Button>
