@@ -111,6 +111,8 @@ type EventData = {
   visio_time: string | null;
   visio_notes: string | null;
   liaison_sheet_sent_at: string | null;
+  liaison_email_client_sent_at: string | null;
+  liaison_email_speaker_sent_at: string | null;
   speaker_paid_at: string | null;
   notes: string | null;
   selected_speaker_id: string | null;
