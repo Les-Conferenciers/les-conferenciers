@@ -2378,6 +2378,7 @@ const AdminProposalsContent = () => {
                         <TableHead>Client</TableHead>
                         <TableHead>Conférenciers</TableHead>
                         <TableHead>Type</TableHead>
+                        <TableHead>Raison</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -2405,11 +2406,17 @@ const AdminProposalsContent = () => {
                               {(p as any).proposal_type === "unique" ? "🎤 Unique" : (p as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
                             </span>
                           </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate" title={(p as any).lost_reason || ""}>
+                            {(p as any).lost_reason || <span className="italic opacity-60">—</span>}
+                          </TableCell>
                           <TableCell>
                             <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée</span>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => setArchiveDetailsId(p.id)} title="Voir détails">
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="sm" asChild title="Voir en ligne">
                                 <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
                               </Button>
@@ -2422,7 +2429,7 @@ const AdminProposalsContent = () => {
                       ))}
                       {paginated.length === 0 && !loading && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                             Aucune proposition archivée.
                           </TableCell>
                         </TableRow>
