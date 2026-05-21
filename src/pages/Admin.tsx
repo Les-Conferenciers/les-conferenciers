@@ -2066,6 +2066,11 @@ const AdminProposalsContent = () => {
                   <Send className="h-3 w-3" />{sending === p.id ? "Envoi…" : "Envoyer"}
                 </Button>
               )}
+              {mode === "draft" && (
+                <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:bg-emerald-50" onClick={() => handleMarkAsSent(p)} title="Marquer comme envoyée (sans envoi d'email)">
+                  <Check className="h-3 w-3" />
+                </Button>
+              )}
               {mode === "sent" && p.status === "sent" && (
                 <>
                   {!expired && (
