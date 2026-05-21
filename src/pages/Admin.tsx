@@ -2134,8 +2134,8 @@ const AdminProposalsContent = () => {
                 </Button>
               )}
               {mode === "sent" && (p.status === "sent" || p.status === "archived") && (
-                <Button variant="outline" size="sm" className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50" onClick={() => handleNewProposalForClient(p.client_id || "", p)} title="Nouvelle proposition pour ce client">
-                  <Plus className="h-3 w-3" /> Nouvelle
+                <Button variant="outline" size="sm" className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50" onClick={() => handleNewProposalForClient(p.client_id || "", p)} title="Mettre à jour & renvoyer une nouvelle proposition">
+                  <RefreshCw className="h-3 w-3" /> Mettre à jour
                 </Button>
               )}
               {mode !== "completed" && p.status !== "archived" && (
