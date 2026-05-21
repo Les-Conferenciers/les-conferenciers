@@ -1212,7 +1212,17 @@ const AdminSpeakersCRM = () => {
                   {speaker.base_fee ? `${speaker.base_fee.toLocaleString("fr-FR")} €` : "—"}
                 </span>
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0 w-[100px] justify-end">
+              <div className="flex items-center gap-1 flex-shrink-0 w-[140px] justify-end">
+                {!speaker.archived && (
+                  <>
+                    <Button variant="ghost" size="icon" className="h-8 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); handleMoveOrder(speaker, "up"); }} title="Monter">
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); handleMoveOrder(speaker, "down"); }} title="Descendre">
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); handleArchive(speaker); }} title={speaker.archived ? "Restaurer" : "Archiver"}>
                   {speaker.archived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
                 </Button>
