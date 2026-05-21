@@ -539,6 +539,8 @@ const AdminProposalsContent = () => {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [selectedSpeakers, setSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
+  const [internalNotes, setInternalNotes] = useState("");
+  const [editInternalNotes, setEditInternalNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [pipelineTab, setPipelineTab] = useState("drafts");
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
