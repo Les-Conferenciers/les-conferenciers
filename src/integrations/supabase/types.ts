@@ -440,7 +440,7 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
-          due_date: string
+          due_date: string | null
           id: string
           note: string | null
           proposal_id: string
@@ -451,7 +451,7 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string
-          due_date: string
+          due_date?: string | null
           id?: string
           note?: string | null
           proposal_id: string
@@ -462,7 +462,7 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string
-          due_date?: string
+          due_date?: string | null
           id?: string
           note?: string | null
           proposal_id?: string

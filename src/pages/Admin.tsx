@@ -499,7 +499,7 @@ const EmailPreviewCard = ({
               </div>
               <div style={{ background: "#f0f7ff", border: "1px solid #d0e3f7", borderRadius: "8px", padding: "16px", margin: "20px 0" }}>
                 <p style={{ color: "#1a5276", fontSize: "13px", margin: 0, textAlign: "center" }}>
-                  📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
+                  📅 Cette proposition est <strong>valable 90 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
                 </p>
               </div>
             </>
@@ -750,18 +750,16 @@ const AdminProposalsContent = () => {
     const sentDate = new Date(sentAt);
     const relance1Date = new Date(sentDate);
     relance1Date.setDate(relance1Date.getDate() + 7);
-    
+
     const tasks: any[] = [
       { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
     ];
-    
-    // No relance 2 for "info" type
+
+    // Relance 2 sans date par défaut (admin la planifie manuellement). Pas de relance 2 pour "info".
     if (pType !== "info") {
-      const relance2Date = new Date(sentDate);
-      relance2Date.setDate(relance2Date.getDate() + 15);
-      tasks.push({ proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] });
+      tasks.push({ proposal_id: proposalId, task_type: "relance_2", due_date: null });
     }
-    
+
     await supabase.from("proposal_tasks").insert(tasks as any);
     fetchTasks();
   };
@@ -1127,12 +1125,15 @@ const AdminProposalsContent = () => {
     setClientEmail(cEmail);
     setClientPhone(cPhone);
     setRecipientName(rName);
+    const rawDate = (latest as any).event_date_text || "";
+    const dateFmt = formatFrenchEventDate(rawDate) || rawDate;
     setEventLocation((latest as any).event_location || "");
-    setEventDateText((latest as any).event_date_text || "");
+    setEventDateText(dateFmt);
     setAudienceSize((latest as any).audience_size || "");
+    const ctx = buildEventContextLine((latest as any).event_location || "", dateFmt, (latest as any).audience_size || "");
     setMessage(getFollowUpMessage(rName, cName));
     setEmailSubject(getFollowUpEmailSubject(cName));
-    setEmailBody(getFollowUpEmailBody(rName, cName));
+    setEmailBody(getFollowUpEmailBody(rName, cName, ctx));
     setDialogOpen(true);
   };
 
@@ -1334,6 +1335,22 @@ const AdminProposalsContent = () => {
     toast.success("Proposition supprimée"); fetchProposals();
   };
 
+  // Marquer un brouillon comme envoyé manuellement (sans envoi de mail)
+  const handleMarkAsSent = async (proposal: Proposal) => {
+    if (!confirm("Marquer cette proposition comme envoyée (sans envoi d'email) ?")) return;
+    const sentAt = new Date().toISOString();
+    const { error } = await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
+    if (error) { toast.error("Erreur"); return; }
+    await createTasksForProposal(proposal.id, sentAt, (proposal as any).proposal_type);
+    toast.success("Proposition marquée comme envoyée");
+    fetchProposals();
+  };
+
+  // Détails d'une proposition archivée (lecture seule)
+  const [archiveDetailsId, setArchiveDetailsId] = useState<string | null>(null);
+
+
+
   const getProposalUrl = (token: string) => `${window.location.origin}/proposition/${token}`;
   const copyLink = (proposal: Proposal) => {
     navigator.clipboard.writeText(getProposalUrl(proposal.token));
@@ -1376,7 +1393,8 @@ const AdminProposalsContent = () => {
       setMessage("");
       setEmailSubject(`Votre conférencier sur mesure - ${clientName || "Les Conférenciers"}`);
     } else {
-      setEmailBody(getDefaultEmailBody(recipientName, clientName));
+      const ctx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+      setEmailBody(getDefaultEmailBody(recipientName, clientName, ctx));
       setMessage(getDefaultMessage(recipientName, clientName));
       setEmailSubject(getDefaultEmailSubject(clientName));
     }
@@ -1398,13 +1416,40 @@ const AdminProposalsContent = () => {
     });
   };
 
-  const selectExistingClient = (client: any) => {
+  const selectExistingClient = async (client: any) => {
     setSelectedClientId(client.id);
     setClientName(client.company_name);
     setClientEmail(client.email || "");
     setRecipientName(client.contact_name || "");
     setClientPhone(client.phone || "");
     setClientMode("search");
+    // Préremplir les détails événement depuis la dernière proposition de ce client
+    try {
+      const { data: latest } = await supabase
+        .from("proposals")
+        .select("event_location, event_date_text, audience_size")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latest) {
+        const loc = (latest as any).event_location || "";
+        const rawDate = (latest as any).event_date_text || "";
+        const dateFmt = formatFrenchEventDate(rawDate) || rawDate;
+        const aud = (latest as any).audience_size || "";
+        if (loc && !eventLocation) setEventLocation(loc);
+        if (dateFmt && !eventDateText) setEventDateText(dateFmt);
+        if (aud && !audienceSize) setAudienceSize(aud);
+        // Regénérer sujet + corps du mail avec contexte
+        const ctx = buildEventContextLine(loc, dateFmt, aud);
+        const rName = client.contact_name || "";
+        const cName = client.company_name || "";
+        setEmailSubject(getDefaultEmailSubject(cName));
+        setEmailBody(getDefaultEmailBody(rName, cName, ctx));
+      }
+    } catch (e) {
+      console.warn("Prefill last proposal failed", e);
+    }
   };
 
   const filteredClients = clientSearchQuery.trim()
@@ -1967,9 +2012,9 @@ const AdminProposalsContent = () => {
                 {(p as any).reminder2_sent_at && <div className="text-[10px] text-blue-600">Relance 2 ✓</div>}
                 {(() => {
                   const tasks = getTasksForProposal(p.id);
-                  const pendingTasks = tasks.filter((t: any) => t.status === "pending");
+                  const pendingTasks = tasks.filter((t: any) => t.status === "pending" && t.due_date);
                   if (pendingTasks.length === 0) return null;
-                  const nextTask = pendingTasks.sort((a: any, b: any) => a.due_date.localeCompare(b.due_date))[0];
+                  const nextTask = pendingTasks.sort((a: any, b: any) => (a.due_date || "").localeCompare(b.due_date || ""))[0];
                   const dueDate = new Date(nextTask.due_date);
                   const today = new Date(); today.setHours(0,0,0,0);
                   const isOverdue = dueDate < today;
@@ -2019,6 +2064,11 @@ const AdminProposalsContent = () => {
               {mode === "draft" && (
                 <Button variant="outline" size="sm" className="gap-1" onClick={() => handleSend(p)} disabled={sending === p.id}>
                   <Send className="h-3 w-3" />{sending === p.id ? "Envoi…" : "Envoyer"}
+                </Button>
+              )}
+              {mode === "draft" && (
+                <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:bg-emerald-50" onClick={() => handleMarkAsSent(p)} title="Marquer comme envoyée (sans envoi d'email)">
+                  <Check className="h-3 w-3" />
                 </Button>
               )}
               {mode === "sent" && p.status === "sent" && (
@@ -2328,6 +2378,7 @@ const AdminProposalsContent = () => {
                         <TableHead>Client</TableHead>
                         <TableHead>Conférenciers</TableHead>
                         <TableHead>Type</TableHead>
+                        <TableHead>Raison</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -2355,11 +2406,17 @@ const AdminProposalsContent = () => {
                               {(p as any).proposal_type === "unique" ? "🎤 Unique" : (p as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
                             </span>
                           </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate" title={(p as any).lost_reason || ""}>
+                            {(p as any).lost_reason || <span className="italic opacity-60">—</span>}
+                          </TableCell>
                           <TableCell>
                             <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée</span>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => setArchiveDetailsId(p.id)} title="Voir détails">
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="sm" asChild title="Voir en ligne">
                                 <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
                               </Button>
@@ -2372,7 +2429,7 @@ const AdminProposalsContent = () => {
                       ))}
                       {paginated.length === 0 && !loading && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                             Aucune proposition archivée.
                           </TableCell>
                         </TableRow>
@@ -2520,6 +2577,51 @@ const AdminProposalsContent = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Archive details dialog */}
+      <Dialog open={!!archiveDetailsId} onOpenChange={(o) => !o && setArchiveDetailsId(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-serif">Détails de la proposition archivée</DialogTitle></DialogHeader>
+          {(() => {
+            const p: any = proposals.find(x => x.id === archiveDetailsId);
+            if (!p) return null;
+            const tasks = getTasksForProposal(p.id);
+            const fmt = (d?: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
+            return (
+              <div className="space-y-4 mt-2 text-sm">
+                <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                  <p><strong>Client :</strong> {p.client_name}</p>
+                  <p><strong>Email :</strong> {p.client_email}</p>
+                  {p.recipient_name && <p><strong>Destinataire :</strong> {p.recipient_name}</p>}
+                  {p.client_phone && <p><strong>Tél :</strong> {p.client_phone}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div><span className="text-muted-foreground">Créée le :</span> {fmt(p.created_at)}</div>
+                  <div><span className="text-muted-foreground">Envoyée le :</span> {fmt(p.sent_at)}</div>
+                  <div><span className="text-muted-foreground">Relance 1 :</span> {fmt(p.reminder1_sent_at)}</div>
+                  <div><span className="text-muted-foreground">Relance 2 :</span> {fmt(p.reminder2_sent_at)}</div>
+                  <div><span className="text-muted-foreground">Archivée le :</span> {fmt(p.lost_at)}</div>
+                  <div><span className="text-muted-foreground">Expire :</span> {fmt(p.expires_at)}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Raison de l'archivage</Label>
+                  <div className="rounded-md border border-border bg-muted/20 p-2 text-sm">{p.lost_reason || <span className="italic opacity-60">—</span>}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Notes des relances</Label>
+                  {tasks.length === 0 && <p className="text-xs italic text-muted-foreground">Aucune tâche.</p>}
+                  {tasks.map((t: any) => (
+                    <div key={t.id} className="rounded-md border border-border p-2 mt-2 text-xs">
+                      <div className="font-medium mb-1">{t.task_type === "relance_1" ? "Relance 1" : "Relance 2"} · échéance {fmt(t.due_date)} {t.status === "completed" && <span className="text-emerald-600">✓</span>}</div>
+                      {t.note ? <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: t.note }} /> : <span className="italic text-muted-foreground">Aucune note.</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* Reminder Dialog */}
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -2545,7 +2647,7 @@ const AdminProposalsContent = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${task.task_type === "relance_1" ? "bg-amber-100 text-amber-700" : "bg-orange-100 text-orange-700"}`}>
-                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2 (J+15)"}
+                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2"}
                         </span>
                         {task.status === "completed" && <span className="text-xs text-green-600">✓ Envoyée</span>}
                         {(reminderProposal as any)[task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"] && (
@@ -2558,29 +2660,33 @@ const AdminProposalsContent = () => {
                     <div className="space-y-3">
                       {task.status !== "completed" && (
                         <div className="space-y-1 max-w-xs">
-                          <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                          <Label className="text-xs text-muted-foreground">
+                            Date de relance prévue {task.task_type === "relance_2" && !task.due_date && <span className="italic">(non planifiée)</span>}
+                          </Label>
                           <Input
                             type="date"
-                            value={task.due_date}
+                            value={task.due_date || ""}
                             onChange={e => {
                               const updated = [...editingTasks];
-                              updated[idx] = { ...updated[idx], due_date: e.target.value };
+                              updated[idx] = { ...updated[idx], due_date: e.target.value || null };
                               setEditingTasks(updated);
                             }}
                           />
                         </div>
                       )}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Note</Label>
-                        <SimpleRichTextEditor
-                          value={task.note || ""}
-                          onChange={(val) => {
-                            const updated = [...editingTasks];
-                            updated[idx] = { ...updated[idx], note: val };
-                            setEditingTasks(updated);
-                          }}
-                        />
-                      </div>
+                      {task.task_type === "relance_1" && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Notes</Label>
+                          <SimpleRichTextEditor
+                            value={task.note || ""}
+                            onChange={(val) => {
+                              const updated = [...editingTasks];
+                              updated[idx] = { ...updated[idx], note: val };
+                              setEditingTasks(updated);
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

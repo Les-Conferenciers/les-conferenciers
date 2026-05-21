@@ -201,7 +201,7 @@ Nelly Sabde - Les Conférenciers
       </div>
       <div style="background:#f0f7ff;border:1px solid #d0e3f7;border-radius:8px;padding:16px;margin:20px 0;">
         <p style="color:#1a5276;font-size:13px;margin:0;text-align:center;">
-          📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
+          📅 Cette proposition est <strong>valable 90 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
         </p>
       </div>` : ""}
     </div>
