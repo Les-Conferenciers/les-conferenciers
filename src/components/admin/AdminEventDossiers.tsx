@@ -94,6 +94,8 @@ const AdminEventDossiers = () => {
     clientName: string;
     eventDateRaw: string;
     eventsSentAt: string | null;
+    clientSentAt: string | null;
+    speakerSentAt: string | null;
     // email composer
     clientTo: string;
     clientCc: string;
