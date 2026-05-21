@@ -1108,7 +1108,7 @@ const AdminProposalsContent = () => {
         if (sendErr) throw sendErr;
         const sentAt = new Date().toISOString();
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
-        await createTasksForProposal(proposal.id, sentAt, proposalType);
+        await createTasksForProposal(proposal.id, sentAt, proposalType, internalNotes.trim() || null);
 
         // Mise à jour d'une proposition précédente : archiver + copier notes + supprimer tâches pending
         if (updatingFromProposalId) {
