@@ -1110,6 +1110,7 @@ const AdminProposalsContent = () => {
     setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
     setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("new");
     setCcEmails("");
+    setUpdatingFromProposalId(null);
   };
 
   const handleNewProposalForClient = (clientId: string, latest: Proposal) => {
