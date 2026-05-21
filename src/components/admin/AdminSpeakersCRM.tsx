@@ -1815,8 +1815,8 @@ const AdminSpeakersCRM = () => {
                   </label>
                   {editForm.featured && (
                     <div className="flex items-center gap-2">
-                      <Label className="text-xs text-muted-foreground">Position carrousel (1-5)</Label>
-                      <Input type="number" min={1} max={5} value={(editForm as any).featured_order ?? ""} onChange={e => setEditForm(p => ({ ...p, featured_order: e.target.value ? Number(e.target.value) : null }))} className="w-20 h-8 text-sm" />
+                      <Label className="text-xs text-muted-foreground">Position carrousel (1-20)</Label>
+                      <Input type="number" min={1} max={20} value={(editForm as any).featured_order ?? ""} onChange={e => setEditForm(p => ({ ...p, featured_order: e.target.value ? Number(e.target.value) : null }))} className="w-20 h-8 text-sm" />
                     </div>
                   )}
                   <div className="flex items-center gap-2">
