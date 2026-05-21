@@ -1305,25 +1305,36 @@ const AdminProposalsContent = () => {
     if (!infoAcceptProposalId) return;
     const original = proposals.find(p => p.id === infoAcceptProposalId);
     if (!original) return;
-    // Pre-fill a new proposal creation form with the client info
+    // Pre-fill a new proposal creation form with the client + event info
     resetForm();
     setClientName(original.client_name);
     setClientEmail(original.client_email);
     setRecipientName(original.recipient_name || "");
     setClientPhone((original as any).client_phone || "");
+    // Pré-remplir les détails de l'événement
+    const rawDate = (original as any).event_date_text || "";
+    const dateFmt = formatFrenchEventDate(rawDate) || rawDate;
+    setEventLocation((original as any).event_location || "");
+    setEventDateText(dateFmt);
+    setAudienceSize((original as any).audience_size || "");
     setProposalType(newType);
     // Set email defaults
     if (newType === "classique") {
       setEmailSubject(getDefaultEmailSubject(original.client_name));
       setEmailBody(getDefaultEmailBody(original.recipient_name || "", original.client_name));
     }
-    setClientMode("new");
+    // Préselection du client si déjà rattaché
+    if ((original as any).client_id) {
+      setClientMode("search");
+      setSelectedClientId((original as any).client_id);
+    } else {
+      setClientMode("new");
+    }
+    // Lier comme mise à jour (la demande d'infos sera archivée à l'envoi via handleCreate)
+    setUpdatingFromProposalId(infoAcceptProposalId);
     setInfoAcceptDialogOpen(false);
     setDialogOpen(true);
-    // Mark the info proposal as archived
-    await supabase.from("proposals").update({ status: "archived" }).eq("id", infoAcceptProposalId);
-    fetchProposals();
-    toast.info("Créez la proposition à partir des informations du client");
+    toast.info("Complétez la proposition à partir des informations du client");
   };
 
   // ── Archivage avec raison obligatoire ──
