@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
           messageText = `Bonjour,\n\nJe reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants. 🙂\n\nJe souhaitais savoir si l'intervention de ${speakerName} était toujours d'actualité.\n\nJe reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.\n\nDans l'attente de votre retour, je vous souhaite une très belle fin de journée.\n\nBien à vous,`;
         }
       } else if (proposalType === "info") {
-        messageText = `Bonjour,\n\nJe reviens vers vous suite à votre retour et je me réjouis de notre future collaboration.\n\nAfin d'avancer sur l'organisation de la venue de ${speakerName}, pouvez-vous me communiquer le numéro de RCS de l'entité à facturer, la taille de l'auditoire et les horaires souhaités.\n\nNous pourrons dans un second temps prévoir un échange avec l'intervenant.\n\nRestant à votre écoute et dans l'attente de votre retour, je vous souhaite une excellente journée.`;
+        messageText = `Bonjour,\n\nJe reviens vers vous suite à mon précédent mail.\n\nAvez-vous pu en prendre connaissance ?\n\nVotre recherche d'intervenant est-elle toujours d'actualité ?\n\nVous remerciant par avance de votre retour et restant à votre écoute, je vous souhaite une excellente journée.`;
       } else {
         // classique
         if (reminderNum === 1) {

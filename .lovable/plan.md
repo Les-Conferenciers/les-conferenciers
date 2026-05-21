@@ -1,68 +1,64 @@
-## Plan d'évolutions Propositions (8 points)
+## Plan — Évolutions Propositions (4 points)
 
-### 1. Préremplissage complet quand on choisit un client existant
-Aujourd'hui, dans le dialog « + Nouvelle proposition », `selectExistingClient` (≈ ligne 1401 de `src/pages/Admin.tsx`) ne pré-remplit que société / email / contact / téléphone. Les détails événement ne se remplissent que via un lead matché par email.
+### 1. "Nouvelle proposition" pour un même client → Mise à jour (avec historique)
 
-À faire dans `selectExistingClient` :
-- Récupérer la **dernière proposition** de ce `client_id` (`proposals` triée par `created_at desc`, limit 1).
-- Si trouvée, pré-remplir `eventLocation`, `eventDateText`, `audienceSize` (sans écraser une saisie déjà présente).
-- Formater `eventDateText` au format français `jj mois aaaa` (via `formatFrenchEventDate`) avant de l'injecter dans le champ.
-- Re-générer le sujet et le corps du mail (`getDefaultEmailSubject`, `getDefaultEmailBody`) avec ces nouvelles valeurs, en utilisant le `recipientName` du client.
-- Garder en parallèle l'autofill existant par leads (email) en fallback si pas de proposition précédente.
+Aujourd'hui, le bouton "+ Nouvelle" (`handleNewProposalForClient`) ouvre un dialog vide qui crée une 2ᵉ proposition indépendante. Nouveau comportement : on ouvre le dialog en mode **"mise à jour"**, déjà pré-rempli depuis la proposition source, et on garde une trace claire des 2 envois côté admin.
 
-### 2. Remettre la phrase de contexte événement dans le mail « classique »
-`getDefaultEmailBody` / `getFollowUpEmailBody` reçoivent un `eventContext` mais il n'est plus passé à l'ouverture du dialog ni dans `handleNewProposalForClient`.
-- Construire `eventContext = buildEventContextLine(eventLocation, eventDateText, audienceSize)` quand on appelle `setEmailBody(...)` / `setEditEmailBody(...)`, et le passer en 3e argument.
-- Quand l'admin modifie un des 3 champs événement, re-générer le corps **uniquement si** le corps actuel correspond au template (sinon respecter la perso manuelle).
-- Idem pour la prévisualisation : utiliser les valeurs courantes du formulaire.
+À faire dans `src/pages/Admin.tsx` :
+- Libellé du bouton : "Mettre à jour & renvoyer" (icône `RefreshCw`).
+- `handleNewProposalForClient(clientId, latest)` : pré-remplir tous les champs (déjà OK) **+ pré-cocher la sélection de conférenciers** depuis `latest.proposal_speakers` comme point de départ modifiable.
+- À l'envoi : créer bien une **nouvelle ligne** `proposals` mais :
+  - **Reporter les notes** de la relance 1 source vers la nouvelle (copie de `proposal_tasks.note`).
+  - **Lier les 2 propositions** via `previous_proposal_id` (migration).
+  - **Archiver automatiquement** la précédente avec `lost_reason = '[Mise à jour] Remplacée par une nouvelle proposition'`, et **supprimer ses tâches de relance pending**.
+- Affichage admin : badge "v2", "v3"... à côté du nom du client (chaîne `previous_proposal_id`). Au clic → dialog "Historique" listant chaque envoi (date, type, conférenciers) en lecture seule.
 
-### 3. Une seule zone de notes (sous Relance 1)
-Dialog « Tâches de relance » (≈ ligne 2543) :
-- Masquer le bloc `Note` pour `task.task_type === "relance_2"`.
-- Sous Relance 1, libellé « Notes » (s'applique à toute la proposition).
-- `saveTaskEdits` continue de persister la note sur la tâche 1.
+Migration SQL :
+```sql
+ALTER TABLE proposals ADD COLUMN previous_proposal_id uuid REFERENCES proposals(id) ON DELETE SET NULL;
+CREATE INDEX idx_proposals_previous ON proposals(previous_proposal_id);
+```
 
-### 4. Date de relance 2 : pas de valeur par défaut
-- `createTasksForProposal` : créer la tâche `relance_2` avec `due_date = null`.
-- Migration : `ALTER TABLE proposal_tasks ALTER COLUMN due_date DROP NOT NULL;`.
-- UI : afficher « Non planifiée » si vide, input date toujours éditable.
+### 2. Demande d'infos → Proposition (multiple ou unique) à tout moment
 
-### 5. Validité 90 jours (au lieu de 30)
-- Migration : `ALTER TABLE proposals ALTER COLUMN expires_at SET DEFAULT (now() + interval '90 days');`.
-- Recaler `expires_at = created_at + 90 days` pour les propositions actives (`status ∈ {draft, sent}`) encore sur l'ancien défaut 30 jours (via tool insert).
-- Front : adapter les libellés codés en dur (« valable X jours »).
+À faire :
+- Bouton "▶ Convertir en proposition" (icône `Send`) sur toute ligne `proposal_type === 'info'` (envoyées ou brouillons) qui ouvre `infoAcceptDialogOpen`.
+- `handleInfoAcceptConvert` :
+  - Pré-remplir aussi `eventLocation`, `eventDateText` (formaté FR), `audienceSize` depuis la demande d'infos.
+  - **Supprimer les tâches de relance** rattachées à la demande d'infos avant archivage.
+  - Lier la nouvelle proposition via `previous_proposal_id`.
+  - Garder l'archivage avec `lost_reason = '[Convertie] Transformée en proposition'`.
 
-### 6. Auto-archivage 7 jours après Relance 2
-- Nouvelle edge function `auto-archive-proposals` :
-  - Sélectionne `status = 'sent'` ET `reminder2_sent_at < now() - interval '7 days'`.
-  - Update `status = 'archived'`, `lost_at = now()`, `lost_reason = 'Pas de réponse après relances'` si vide.
-  - N'archive jamais une proposition sans relance 2 envoyée.
-- Planifiée quotidiennement (08h) via `pg_cron` (créé via tool insert, contient anon key).
+### 3. Mail "Demande d'infos" — paragraphe enveloppe budgétaire
 
-### 7. Accès complet aux archives
-Sur la table « Archivées » :
-- Ajouter colonne **Raison** (`lost_reason`).
-- Ajouter bouton « Voir détails » → dialog lecture seule listant : date d'envoi, dates relance 1 & 2, date d'archivage, raison, et notes de relance (rendu HTML).
-- Garder le bouton `Bell` (tâches/notes) actif en lecture seule sur les archives.
+`getInfoEmailBody` (ligne 236) : retirer la puce "Votre enveloppe budgétaire" de la liste et insérer après la liste :
 
-### 8. Passage manuel brouillon → envoyée
-Sur les lignes en `status = 'draft'` :
-- Bouton « Marquer comme envoyée » (icône `Check`) avec confirmation :
-  - Update `status = 'sent'`, `sent_at = now()`.
-  - Appelle `createTasksForProposal(id, now, proposal_type)`.
-  - Aucun email envoyé.
+> "Concernant votre enveloppe budgétaire : le tarif moyen des conférenciers se situe entre 4K et 7K HT, hors frais VHR. L'idéal serait de nous indiquer si votre budget se situe dans cette fourchette, au-dessus ou en-dessous, sachant que les premiers tarifs de notre offre se situent autour des 2,5K HT, hors frais VHR."
+
+### 4. Mail de relance suite à une demande d'infos — nouveau template + relance 2 activée
+
+Dans `supabase/functions/send-proposal-reminder/index.ts`, remplacer le bloc `proposalType === "info"` par (identique pour relance 1 et 2) :
+
+```
+Bonjour,
+
+Je reviens vers vous suite à mon précédent mail.
+
+Avez-vous pu en prendre connaissance ?
+
+Votre recherche d'intervenant est-elle toujours d'actualité ?
+
+Vous remerciant par avance de votre retour et restant à votre écoute, je vous souhaite une excellente journée.
+```
+
+**+ Activer la relance 2 pour les demandes d'infos** : dans `createTasksForProposal`, retirer la garde `if (pType !== "info")` afin de créer la tâche `relance_2` avec `due_date = null` (comme pour les autres types — admin la planifie manuellement).
 
 ---
 
-### Détails techniques (interne)
+### Détails techniques
 
-- **Frontend** : `src/pages/Admin.tsx` (point 1 → `selectExistingClient` + fetch dernière proposition, point 2 → contextes mail, point 3 → dialog relances, point 4 → tâche relance 2, point 5 → libellés, point 7 → archives, point 8 → bouton draft→sent).
-- **Backend** :
-  - Edge function `supabase/functions/auto-archive-proposals/index.ts`.
-  - Cron quotidien via `supabase--insert`.
-- **Migrations** :
-  - `proposal_tasks.due_date` nullable.
-  - `proposals.expires_at` défaut 90 jours.
-- **Data update** : recaler `expires_at` des propositions actives.
+- **Frontend** : `src/pages/Admin.tsx` — `handleNewProposalForClient`, `handleSubmit` (branche update), `handleInfoAcceptConvert`, `getInfoEmailBody`, `createTasksForProposal`, bouton "Convertir" sur lignes `info`, badge versionnage + dialog historique.
+- **Backend** : `supabase/functions/send-proposal-reminder/index.ts` — bloc `proposalType === "info"`.
+- **Migration SQL** : `proposals.previous_proposal_id` (déjà appliquée).
 
-Ok pour que je lance les 8 points ?
+Ok pour que je lance les 4 points ? (passe en mode build)
