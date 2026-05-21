@@ -2183,9 +2183,6 @@ Nelly Sabde - Les Conférenciers`);
               <p>🎤 <strong>Conférencier :</strong> {liaisonSpeakerTo || "—"}{liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}</p>
             </div>
 
-            <Button className="w-full" onClick={handleSendLiaisonSheet} disabled={sendingLiaison}>
-              <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer la feuille de liaison"}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
