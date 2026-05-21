@@ -1335,6 +1335,22 @@ const AdminProposalsContent = () => {
     toast.success("Proposition supprimée"); fetchProposals();
   };
 
+  // Marquer un brouillon comme envoyé manuellement (sans envoi de mail)
+  const handleMarkAsSent = async (proposal: Proposal) => {
+    if (!confirm("Marquer cette proposition comme envoyée (sans envoi d'email) ?")) return;
+    const sentAt = new Date().toISOString();
+    const { error } = await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
+    if (error) { toast.error("Erreur"); return; }
+    await createTasksForProposal(proposal.id, sentAt, (proposal as any).proposal_type);
+    toast.success("Proposition marquée comme envoyée");
+    fetchProposals();
+  };
+
+  // Détails d'une proposition archivée (lecture seule)
+  const [archiveDetailsId, setArchiveDetailsId] = useState<string | null>(null);
+
+
+
   const getProposalUrl = (token: string) => `${window.location.origin}/proposition/${token}`;
   const copyLink = (proposal: Proposal) => {
     navigator.clipboard.writeText(getProposalUrl(proposal.token));
