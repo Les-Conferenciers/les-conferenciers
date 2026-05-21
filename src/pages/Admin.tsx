@@ -1978,7 +1978,16 @@ const AdminProposalsContent = () => {
         <TableRow className={expired && mode !== "completed" ? "opacity-50" : ""}>
           <TableCell className="text-xs whitespace-nowrap">{formatDate(p.created_at)}</TableCell>
           <TableCell>
-            <div className="font-medium text-sm">{p.client_name}</div>
+            <div className="font-medium text-sm flex items-center gap-1.5">
+              {p.client_name}
+              {(() => {
+                let v = 1; let cur: any = p;
+                const byId = new Map(proposals.map((x: any) => [x.id, x]));
+                while (cur?.previous_proposal_id && byId.has(cur.previous_proposal_id)) { v++; cur = byId.get(cur.previous_proposal_id); }
+                if (v > 1) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-semibold" title="Proposition mise à jour">v{v}</span>;
+                return null;
+              })()}
+            </div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
               <span>{p.client_email}</span>
               {(() => {
