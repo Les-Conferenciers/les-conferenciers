@@ -539,6 +539,8 @@ const AdminProposalsContent = () => {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [selectedSpeakers, setSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
+  const [internalNotes, setInternalNotes] = useState("");
+  const [editInternalNotes, setEditInternalNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [pipelineTab, setPipelineTab] = useState("drafts");
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
@@ -583,6 +585,7 @@ const AdminProposalsContent = () => {
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [expandedArchivedGroupId, setExpandedArchivedGroupId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchProposals(), fetchSpeakers(), fetchConferences(), fetchClients(), fetchTemplates(), fetchTasks(), fetchLeads()]);
@@ -751,15 +754,16 @@ const AdminProposalsContent = () => {
     setProposalTasks((data as any) || []);
   };
 
-  const createTasksForProposal = async (proposalId: string, sentAt: string, pType?: string) => {
+  const createTasksForProposal = async (proposalId: string, sentAt: string, pType?: string, seedNote?: string | null) => {
     const sentDate = new Date(sentAt);
     const relance1Date = new Date(sentDate);
     relance1Date.setDate(relance1Date.getDate() + 7);
 
+    const note = seedNote && seedNote.trim() ? seedNote.trim() : null;
     const tasks: any[] = [
-      { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
+      { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0], note },
       // Relance 2 sans date par défaut (admin la planifie manuellement) — y compris pour "info".
-      { proposal_id: proposalId, task_type: "relance_2", due_date: null },
+      { proposal_id: proposalId, task_type: "relance_2", due_date: null, note },
     ];
 
     await supabase.from("proposal_tasks").insert(tasks as any);
@@ -840,8 +844,16 @@ const AdminProposalsContent = () => {
         note: task.note || null,
       } as any).eq("id", task.id);
     }
+    // Sync internal_notes on the proposal with the relance_1 note (single source of truth across versions)
+    if (reminderProposal) {
+      const r1 = editingTasks.find((t: any) => t.task_type === "relance_1");
+      const r2 = editingTasks.find((t: any) => t.task_type === "relance_2");
+      const noteToSync = (r1?.note && r1.note.trim()) || (r2?.note && r2.note.trim()) || null;
+      await supabase.from("proposals").update({ internal_notes: noteToSync } as any).eq("id", reminderProposal.id);
+    }
     toast.success("Tâches mises à jour");
     fetchTasks();
+    fetchProposals();
   };
 
   const applyTemplate = (templateId: string) => {
@@ -1075,6 +1087,7 @@ const AdminProposalsContent = () => {
         event_location: eventLocation || null, event_date_text: eventDateText || null,
         audience_size: audienceSize || null, client_phone: clientPhone || null,
         previous_proposal_id: updatingFromProposalId || null,
+        internal_notes: internalNotes.trim() || null,
       } as any)
       .select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
@@ -1095,7 +1108,7 @@ const AdminProposalsContent = () => {
         if (sendErr) throw sendErr;
         const sentAt = new Date().toISOString();
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
-        await createTasksForProposal(proposal.id, sentAt, proposalType);
+        await createTasksForProposal(proposal.id, sentAt, proposalType, internalNotes.trim() || null);
 
         // Mise à jour d'une proposition précédente : archiver + copier notes + supprimer tâches pending
         if (updatingFromProposalId) {
@@ -1136,6 +1149,7 @@ const AdminProposalsContent = () => {
     setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("new");
     setCcEmails("");
     setUpdatingFromProposalId(null);
+    setInternalNotes("");
   };
 
   const handleNewProposalForClient = (clientId: string, latest: Proposal) => {
@@ -1166,6 +1180,22 @@ const AdminProposalsContent = () => {
     setMessage(getFollowUpMessage(rName, cName));
     setEmailSubject(getFollowUpEmailSubject(cName));
     setEmailBody(getFollowUpEmailBody(rName, cName, ctx));
+    // Reporter les notes internes de la version précédente (avec fallback sur la note de relance_1)
+    (async () => {
+      const previousNotes = ((latest as any).internal_notes || "").trim();
+      if (previousNotes) {
+        setInternalNotes(previousNotes);
+      } else {
+        const { data: prevTasks } = await supabase
+          .from("proposal_tasks")
+          .select("note, task_type")
+          .eq("proposal_id", latest.id);
+        const r1 = (prevTasks || []).find((t: any) => t.task_type === "relance_1");
+        const r2 = (prevTasks || []).find((t: any) => t.task_type === "relance_2");
+        const fallback = (r1?.note && r1.note.trim()) || (r2?.note && r2.note.trim()) || "";
+        if (fallback) setInternalNotes(fallback);
+      }
+    })();
     setDialogOpen(true);
   };
 
@@ -1191,6 +1221,7 @@ const AdminProposalsContent = () => {
       setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
     }
     setEditSelectedSpeakers(proposalSpeakers);
+    setEditInternalNotes(((p as any).internal_notes || "") as string);
     setShowLeadsPanel(true);
     setEditDialogOpen(true);
   };
@@ -1213,6 +1244,7 @@ const AdminProposalsContent = () => {
       recipient_name: editRecipientName || null,
       message: pType === "classique" ? (editEmailBody || null) : null,
       email_subject: editEmailSubject || null, email_body: editEmailBody || null,
+      internal_notes: editInternalNotes.trim() || null,
     } as any).eq("id", editingProposal.id);
     if (error) { toast.error("Erreur"); setSubmitting(false); return; }
 
@@ -1245,7 +1277,7 @@ const AdminProposalsContent = () => {
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", editingProposal.id);
         // Create tasks if not yet existing
         const existingTasks = getTasksForProposal(editingProposal.id);
-        if (existingTasks.length === 0) await createTasksForProposal(editingProposal.id, sentAt, (editingProposal as any).proposal_type);
+        if (existingTasks.length === 0) await createTasksForProposal(editingProposal.id, sentAt, (editingProposal as any).proposal_type, editInternalNotes.trim() || null);
         toast.success("Proposition sauvegardée et envoyée !");
       } catch { toast.error("Sauvegardée mais erreur d'envoi"); }
     } else {
@@ -1864,6 +1896,14 @@ const AdminProposalsContent = () => {
         )}
       </div>
 
+      <div className="border-t border-border pt-4 space-y-2">
+        <Label className="text-sm font-medium">🗒️ Notes internes (relances et suivi)</Label>
+        <p className="text-[11px] text-muted-foreground">Visible uniquement en interne. Sauvegardée dès le brouillon et reportée automatiquement aux prochaines versions de cette proposition.</p>
+        <Textarea value={internalNotes} onChange={e => setInternalNotes(e.target.value)} rows={4} />
+      </div>
+
+
+
       <div className="flex gap-3">
         <Button className="flex-1 gap-2" onClick={() => handleCreate(true)} disabled={submitting}>
           <Send className="h-4 w-4" />
@@ -2428,75 +2468,149 @@ const AdminProposalsContent = () => {
           const paginatedEntries = isSent ? sentEntries.slice(0, pageSize) : [];
           return (
             <TabsContent key={key} value={key}>
-              {key === "archived" ? (
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Conférenciers</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Raison</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginated.map(p => (
-                        <TableRow key={p.id}>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                            {new Date(p.created_at).toLocaleDateString("fr-FR")}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium text-sm">{p.client_name}</div>
-                            <div className="text-xs text-muted-foreground">{p.client_email}</div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 flex-wrap text-xs text-muted-foreground">
-                              {(p.proposal_speakers || []).slice(0, 3).map((ps: any, i: number) => (
-                                <span key={i}>{ps.speakers?.name}{i < Math.min(2, (p.proposal_speakers || []).length - 1) ? "," : ""}</span>
-                              ))}
-                              {(p.proposal_speakers || []).length > 3 && <span>+{(p.proposal_speakers || []).length - 3}</span>}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                              {(p as any).proposal_type === "unique" ? "🎤 Unique" : (p as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate" title={(p as any).lost_reason || ""}>
-                            {(p as any).lost_reason || <span className="italic opacity-60">—</span>}
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => setArchiveDetailsId(p.id)} title="Voir détails">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" asChild title="Voir en ligne">
-                                <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer définitivement">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {paginated.length === 0 && !loading && (
+              {key === "archived" ? (() => {
+                // Regrouper les propositions archivées via la chaîne previous_proposal_id
+                const archivedById = new Map<string, any>(paginated.map(p => [p.id, p]));
+                // Pour chaque archivée, remonter au plus ancien archivé de la chaîne
+                const rootOf = new Map<string, string>();
+                for (const p of paginated) {
+                  let cur: any = p;
+                  while (cur && cur.previous_proposal_id && archivedById.has(cur.previous_proposal_id)) {
+                    cur = archivedById.get(cur.previous_proposal_id);
+                  }
+                  rootOf.set(p.id, cur.id);
+                }
+                const groupsMap = new Map<string, any[]>();
+                for (const p of paginated) {
+                  const r = rootOf.get(p.id) || p.id;
+                  const arr = groupsMap.get(r) || [];
+                  arr.push(p);
+                  groupsMap.set(r, arr);
+                }
+                type ArchEntry = { kind: "single"; p: any } | { kind: "group"; rootId: string; items: any[]; latest: any };
+                const entries: ArchEntry[] = [];
+                for (const [rootId, group] of groupsMap.entries()) {
+                  const sorted = [...group].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                  if (sorted.length === 1) entries.push({ kind: "single", p: sorted[0] });
+                  else entries.push({ kind: "group", rootId, items: sorted, latest: sorted[0] });
+                }
+                entries.sort((a, b) => {
+                  const da = a.kind === "single" ? new Date(a.p.created_at).getTime() : new Date(a.latest.created_at).getTime();
+                  const db = b.kind === "single" ? new Date(b.p.created_at).getTime() : new Date(b.latest.created_at).getTime();
+                  return dateSortAsc ? da - db : db - da;
+                });
+
+                const renderArchivedRow = (p: any, opts?: { indent?: boolean; versionLabel?: string }) => (
+                  <TableRow key={p.id} className={opts?.indent ? "bg-background" : ""}>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {opts?.indent && <span className="inline-block w-4" />}
+                      {opts?.versionLabel && <span className="text-[10px] mr-2 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{opts.versionLabel}</span>}
+                      {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium text-sm">{p.client_name}</div>
+                      <div className="text-xs text-muted-foreground">{p.client_email}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 flex-wrap text-xs text-muted-foreground">
+                        {(p.proposal_speakers || []).slice(0, 3).map((ps: any, i: number) => (
+                          <span key={i}>{ps.speakers?.name}{i < Math.min(2, (p.proposal_speakers || []).length - 1) ? "," : ""}</span>
+                        ))}
+                        {(p.proposal_speakers || []).length > 3 && <span>+{(p.proposal_speakers || []).length - 3}</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        {(p as any).proposal_type === "unique" ? "🎤 Unique" : (p as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate" title={(p as any).lost_reason || ""}>
+                      {(p as any).lost_reason || <span className="italic opacity-60">—</span>}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => setArchiveDetailsId(p.id)} title="Voir détails">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild title="Voir en ligne">
+                          <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer définitivement">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+
+                return (
+                  <div className="border border-border rounded-xl overflow-hidden">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                            Aucune proposition archivée.
-                          </TableCell>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Client</TableHead>
+                          <TableHead>Conférenciers</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Raison</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : isSent ? (
+                      </TableHeader>
+                      <TableBody>
+                        {entries.map(entry => {
+                          if (entry.kind === "single") return renderArchivedRow(entry.p);
+                          const isOpen = expandedArchivedGroupId === entry.rootId;
+                          const latest = entry.latest;
+                          return (
+                            <React.Fragment key={`arch-group-${entry.rootId}`}>
+                              <TableRow className="bg-muted/40 hover:bg-muted/60 cursor-pointer" onClick={() => setExpandedArchivedGroupId(isOpen ? null : entry.rootId)}>
+                                <TableCell className="text-xs whitespace-nowrap font-medium">
+                                  <div className="flex items-center gap-1.5">
+                                    {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                    {new Date(latest.created_at).toLocaleDateString("fr-FR")}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium text-sm">{latest.client_name}</div>
+                                  <div className="text-xs text-muted-foreground">{latest.client_email}</div>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {entry.items.length} versions
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                    {(latest as any).proposal_type === "unique" ? "🎤 Unique" : (latest as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground italic">
+                                  Chaîne de mises à jour
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée ×{entry.items.length}</span>
+                                </TableCell>
+                                <TableCell />
+                              </TableRow>
+                              {isOpen && entry.items.map((it, idx) => renderArchivedRow(it, { indent: true, versionLabel: `v${entry.items.length - idx}` }))}
+                            </React.Fragment>
+                          );
+                        })}
+                        {entries.length === 0 && !loading && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                              Aucune proposition archivée.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })()
+              : isSent ? (
                 renderGroupedSentTable(paginatedEntries)
               ) : (
                 renderTable(paginated, mode)
@@ -2618,6 +2732,14 @@ const AdminProposalsContent = () => {
                      </div>
                   </div>
                 </div>
+
+                <div className="border-t border-border pt-4 space-y-2">
+                  <Label className="text-sm font-medium">🗒️ Notes internes (relances et suivi)</Label>
+                  <p className="text-[11px] text-muted-foreground">Visible uniquement en interne. Reportée automatiquement aux prochaines versions de cette proposition.</p>
+                  <Textarea value={editInternalNotes} onChange={e => setEditInternalNotes(e.target.value)} rows={4} disabled={isLocked} />
+                </div>
+
+
 
                 <div className="flex gap-3">
                   <Button className="flex-1 gap-2" onClick={() => handleSaveEdit(true)} disabled={submitting || isLocked}>
