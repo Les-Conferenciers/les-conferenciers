@@ -182,9 +182,16 @@ const AdminEventDossiers = () => {
         body: { to, subject, body, from_name: "Les Conférenciers", cc: cc.length ? cc : undefined },
       });
       if (error) throw error;
-      await supabase.from("events").update({ visio_emails_sent_at: new Date().toISOString() } as any).eq("id", visioDialog.eventId);
+      const nowIso = new Date().toISOString();
+      const patch: any = target === "client"
+        ? { visio_email_client_sent_at: nowIso }
+        : { visio_email_speaker_sent_at: nowIso };
+      await supabase.from("events").update(patch).eq("id", visioDialog.eventId);
       toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé`);
-      setVisioDialog({ ...visioDialog, eventsSentAt: new Date().toISOString() });
+      setVisioDialog({
+        ...visioDialog,
+        ...(target === "client" ? { clientSentAt: nowIso } : { speakerSentAt: nowIso }),
+      });
       fetchData();
     } catch {
       toast.error("Erreur d'envoi");
