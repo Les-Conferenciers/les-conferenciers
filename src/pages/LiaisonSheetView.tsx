@@ -142,19 +142,6 @@ const LiaisonSheetView = () => {
 
   const formatDate = (d: string | null) => d ? new Date(d.length === 10 ? d + "T12:00:00" : d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "À définir";
 
-  const Field = ({ value, onChange, type = "text", placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) =>
-    editing ? (
-      <EditableField value={value} onChange={onChange} type={type} placeholder={placeholder} />
-    ) : (
-      <span>{value || (placeholder || "À définir")}</span>
-    );
-
-  const TextArea = ({ value, onChange, placeholder, rows = 3 }: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) =>
-    editing ? (
-      <EditableTextArea value={value} onChange={onChange} placeholder={placeholder} rows={rows} />
-    ) : (
-      <span className="whitespace-pre-line">{value || (placeholder || "—")}</span>
-    );
 
   return (
     <div className="min-h-screen bg-white">
