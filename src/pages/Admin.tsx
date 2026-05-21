@@ -1096,12 +1096,36 @@ const AdminProposalsContent = () => {
         const sentAt = new Date().toISOString();
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
         await createTasksForProposal(proposal.id, sentAt, proposalType);
-        toast.success("Proposition créée et envoyée !");
+
+        // Mise à jour d'une proposition précédente : archiver + copier notes + supprimer tâches pending
+        if (updatingFromProposalId) {
+          const { data: prevTasks } = await supabase
+            .from("proposal_tasks")
+            .select("task_type, note")
+            .eq("proposal_id", updatingFromProposalId);
+          const notesToCopy = (prevTasks || []).filter((t: any) => t.note && t.note.trim());
+          if (notesToCopy.length > 0) {
+            for (const t of notesToCopy as any[]) {
+              await supabase
+                .from("proposal_tasks")
+                .update({ note: t.note })
+                .eq("proposal_id", proposal.id)
+                .eq("task_type", t.task_type);
+            }
+          }
+          await supabase.from("proposal_tasks").delete().eq("proposal_id", updatingFromProposalId).eq("status", "pending");
+          await supabase.from("proposals").update({
+            status: "archived",
+            lost_reason: "[Mise à jour] Remplacée par une nouvelle proposition",
+            lost_at: new Date().toISOString(),
+          } as any).eq("id", updatingFromProposalId);
+        }
+        toast.success(updatingFromProposalId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !");
       } catch { toast.error("Proposition créée mais erreur d'envoi"); }
     } else {
       toast.success("Brouillon enregistré !");
     }
-    setDialogOpen(false); resetForm(); fetchProposals(); fetchClients(); setSubmitting(false);
+    setDialogOpen(false); resetForm(); fetchProposals(); fetchClients(); fetchTasks(); setSubmitting(false);
   };
 
   const resetForm = () => {
