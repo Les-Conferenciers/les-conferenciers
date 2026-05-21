@@ -46,6 +46,7 @@ type Speaker = {
   agent_phone: string | null;
   agent_email: string | null;
   internal_category: string | null;
+  display_order: number | null;
 };
 
 type Review = {
@@ -89,7 +90,7 @@ const AdminSpeakersCRM = () => {
   const [profileFilter, setProfileFilter] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "online" | "offline">("all");
-  const [sortBy, setSortBy] = useState<"name" | "created_at" | "base_fee">("name");
+  const [sortBy, setSortBy] = useState<"name" | "created_at" | "base_fee" | "display_order">("display_order");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   // Import state
@@ -146,8 +147,8 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category")
-      .order("name");
+      .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category, display_order")
+      .order("display_order");
     setSpeakers((data as any) || []);
     setLoading(false);
   };
@@ -258,6 +259,11 @@ const AdminSpeakersCRM = () => {
         const bFee = b.base_fee ?? (sortDir === "asc" ? Infinity : -Infinity);
         return (aFee - bFee) * dir;
       }
+      if (sortBy === "display_order") {
+        const aOrd = (a as any).display_order ?? 999999;
+        const bOrd = (b as any).display_order ?? 999999;
+        return (aOrd - bOrd) * dir;
+      }
       return 0;
     });
   }, [speakers, search, themeFilter, cityFilter, feeFilter, feeMinFilter, feeMaxFilter, genderFilter, profileFilter, showArchived, visibilityFilter, sortBy, sortDir]);
@@ -299,6 +305,47 @@ const AdminSpeakersCRM = () => {
     } as any);
   };
 
+  // Renumérote en cascade : si l'ancien ordre = oldOrd et le nouveau = newOrd,
+  // on décale les autres conférenciers actifs pour éviter doublons et trous.
+  const shiftDisplayOrder = async (speakerId: string, oldOrd: number, newOrd: number) => {
+    if (oldOrd === newOrd) return;
+    // Récupère tous les conférenciers actifs sauf celui-ci
+    const { data: others } = await supabase
+      .from("speakers")
+      .select("id, display_order")
+      .eq("archived", false)
+      .neq("id", speakerId);
+    if (!others) return;
+    const updates: { id: string; display_order: number }[] = [];
+    for (const o of others as any[]) {
+      const ord = o.display_order ?? 999;
+      if (newOrd < oldOrd && ord >= newOrd && ord < oldOrd) {
+        updates.push({ id: o.id, display_order: ord + 1 });
+      } else if (newOrd > oldOrd && ord > oldOrd && ord <= newOrd) {
+        updates.push({ id: o.id, display_order: ord - 1 });
+      }
+    }
+    await Promise.all(updates.map(u => supabase.from("speakers").update({ display_order: u.display_order } as any).eq("id", u.id)));
+    await supabase.from("speakers").update({ display_order: newOrd } as any).eq("id", speakerId);
+  };
+
+  // Échange un conférencier avec son voisin actif (±1)
+  const handleMoveOrder = async (speaker: Speaker, direction: "up" | "down") => {
+    const currentOrd = (speaker as any).display_order ?? 999;
+    const actives = speakers.filter(s => !s.archived).slice().sort((a, b) => ((a as any).display_order ?? 999) - ((b as any).display_order ?? 999));
+    const idx = actives.findIndex(s => s.id === speaker.id);
+    if (idx < 0) return;
+    const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (neighborIdx < 0 || neighborIdx >= actives.length) return;
+    const neighbor = actives[neighborIdx];
+    const neighborOrd = (neighbor as any).display_order ?? 999;
+    await Promise.all([
+      supabase.from("speakers").update({ display_order: neighborOrd } as any).eq("id", speaker.id),
+      supabase.from("speakers").update({ display_order: currentOrd } as any).eq("id", neighbor.id),
+    ]);
+    fetchSpeakers();
+  };
+
   const handleSave = async () => {
     if (!editSpeaker) return;
     setSaving(true);
@@ -319,7 +366,7 @@ const AdminSpeakersCRM = () => {
         languages: editForm.languages || [],
         featured: editForm.featured ?? false,
         featured_order: (editForm as any).featured_order || null,
-        display_order: (editForm as any).display_order != null ? (editForm as any).display_order : (editSpeaker as any).display_order ?? 999,
+        // display_order géré séparément via shiftDisplayOrder ci-dessous
         gender: editForm.gender || 'male',
         why_expertise: editForm.why_expertise || null,
         why_impact: editForm.why_impact || null,
@@ -333,8 +380,20 @@ const AdminSpeakersCRM = () => {
         internal_category: (editForm as any).internal_category || null,
       } as any)
       .eq("id", editSpeaker.id);
+    if (error) { setSaving(false); toast.error("Erreur de sauvegarde"); return; }
+
+    // Gestion intelligente de l'ordre d'affichage (uniquement si actif)
+    if (!editSpeaker.archived) {
+      const oldOrd = (editSpeaker as any).display_order ?? 999;
+      const newOrdRaw = (editForm as any).display_order;
+      if (newOrdRaw != null && Number(newOrdRaw) !== oldOrd) {
+        const activeCount = speakers.filter(s => !s.archived).length;
+        const clamped = Math.max(1, Math.min(Number(newOrdRaw), activeCount));
+        await shiftDisplayOrder(editSpeaker.id, oldOrd, clamped);
+      }
+    }
+
     setSaving(false);
-    if (error) { toast.error("Erreur de sauvegarde"); return; }
     toast.success("Conférencier mis à jour");
     setEditSpeaker(null);
     fetchSpeakers();
@@ -1097,6 +1156,9 @@ const AdminSpeakersCRM = () => {
       <div className="border border-border rounded-xl overflow-hidden">
         {/* Table header */}
         <div className="hidden md:flex items-center gap-4 px-3 py-2.5 bg-muted/50 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <button onClick={() => { setSortBy("display_order"); setSortDir(d => sortBy === "display_order" ? (d === "asc" ? "desc" : "asc") : "asc"); }} className="w-12 flex-shrink-0 flex items-center gap-1 hover:text-foreground transition-colors">
+            N° {sortBy === "display_order" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+          </button>
           <span className="w-10 flex-shrink-0"></span>
           <button onClick={() => { setSortBy("name"); setSortDir(d => sortBy === "name" ? (d === "asc" ? "desc" : "asc") : "asc"); }} className="flex-grow min-w-0 flex items-center gap-1 hover:text-foreground transition-colors text-left">
             Nom {sortBy === "name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
@@ -1121,6 +1183,9 @@ const AdminSpeakersCRM = () => {
               className={`flex items-center gap-4 p-3 hover:bg-muted/30 transition-colors cursor-pointer group ${speaker.archived ? "opacity-60" : ""}`}
               onClick={() => openEdit(speaker)}
             >
+              <div className="w-12 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-muted-foreground tabular-nums">
+                {speaker.archived ? "—" : ((speaker as any).display_order ?? "—")}
+              </div>
               {imageUrl ? (
                 <img src={imageUrl} alt={speaker.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
               ) : (
@@ -1147,7 +1212,17 @@ const AdminSpeakersCRM = () => {
                   {speaker.base_fee ? `${speaker.base_fee.toLocaleString("fr-FR")} €` : "—"}
                 </span>
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0 w-[100px] justify-end">
+              <div className="flex items-center gap-1 flex-shrink-0 w-[140px] justify-end">
+                {!speaker.archived && (
+                  <>
+                    <Button variant="ghost" size="icon" className="h-8 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); handleMoveOrder(speaker, "up"); }} title="Monter">
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); handleMoveOrder(speaker, "down"); }} title="Descendre">
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); handleArchive(speaker); }} title={speaker.archived ? "Restaurer" : "Archiver"}>
                   {speaker.archived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
                 </Button>
