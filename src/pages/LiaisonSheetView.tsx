@@ -25,6 +25,20 @@ const EditableTextArea = ({ value, onChange, placeholder, rows = 3 }: { value: s
   />
 );
 
+const Field = ({ editing, value, onChange, type = "text", placeholder }: { editing: boolean; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) =>
+  editing ? (
+    <EditableField value={value} onChange={onChange} type={type} placeholder={placeholder} />
+  ) : (
+    <span>{value || (placeholder || "À définir")}</span>
+  );
+
+const TextArea = ({ editing, value, onChange, placeholder, rows = 3 }: { editing: boolean; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) =>
+  editing ? (
+    <EditableTextArea value={value} onChange={onChange} placeholder={placeholder} rows={rows} />
+  ) : (
+    <span className="whitespace-pre-line">{value || (placeholder || "—")}</span>
+  );
+
 const LiaisonSheetView = () => {
   const { id } = useParams(); // proposal_id
   const [data, setData] = useState<any>(null);
