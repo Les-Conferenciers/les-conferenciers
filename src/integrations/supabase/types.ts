@@ -528,6 +528,7 @@ export type Database = {
           event_location: string | null
           expires_at: string
           id: string
+          internal_notes: string | null
           lost_at: string | null
           lost_reason: string | null
           message: string | null
@@ -554,6 +555,7 @@ export type Database = {
           event_location?: string | null
           expires_at?: string
           id?: string
+          internal_notes?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           message?: string | null
@@ -580,6 +582,7 @@ export type Database = {
           event_location?: string | null
           expires_at?: string
           id?: string
+          internal_notes?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           message?: string | null
