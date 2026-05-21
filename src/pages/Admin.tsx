@@ -2628,7 +2628,7 @@ const AdminProposalsContent = () => {
                     </div>
                   )}
                 </div>
-
+                <div>
                   <Label className="text-xs text-muted-foreground">Notes des relances</Label>
                   {tasks.length === 0 && <p className="text-xs italic text-muted-foreground">Aucune tâche.</p>}
                   {tasks.map((t: any) => (
