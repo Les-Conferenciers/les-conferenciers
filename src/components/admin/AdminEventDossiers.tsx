@@ -94,6 +94,8 @@ const AdminEventDossiers = () => {
     clientName: string;
     eventDateRaw: string;
     eventsSentAt: string | null;
+    clientSentAt: string | null;
+    speakerSentAt: string | null;
     // email composer
     clientTo: string;
     clientCc: string;
@@ -139,6 +141,8 @@ const AdminEventDossiers = () => {
       clientName: proposal?.client_name || "",
       eventDateRaw,
       eventsSentAt: eventRow.visio_emails_sent_at || null,
+      clientSentAt: eventRow.visio_email_client_sent_at || null,
+      speakerSentAt: eventRow.visio_email_speaker_sent_at || null,
       clientTo: proposal?.client_email || "",
       clientCc: "",
       clientSubject: subject,
@@ -178,9 +182,16 @@ const AdminEventDossiers = () => {
         body: { to, subject, body, from_name: "Les Conférenciers", cc: cc.length ? cc : undefined },
       });
       if (error) throw error;
-      await supabase.from("events").update({ visio_emails_sent_at: new Date().toISOString() } as any).eq("id", visioDialog.eventId);
+      const nowIso = new Date().toISOString();
+      const patch: any = target === "client"
+        ? { visio_email_client_sent_at: nowIso }
+        : { visio_email_speaker_sent_at: nowIso };
+      await supabase.from("events").update(patch).eq("id", visioDialog.eventId);
       toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé`);
-      setVisioDialog({ ...visioDialog, eventsSentAt: new Date().toISOString() });
+      setVisioDialog({
+        ...visioDialog,
+        ...(target === "client" ? { clientSentAt: nowIso } : { speakerSentAt: nowIso }),
+      });
       fetchData();
     } catch {
       toast.error("Erreur d'envoi");
@@ -978,92 +989,93 @@ const AdminEventDossiers = () => {
               </div>
 
               {/* Emails tabs */}
-              <div className={cn("space-y-3 relative", visioDialog.eventsSentAt && "opacity-50 pointer-events-none")}>
+              <div className="space-y-3 relative">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <Mail className="h-3.5 w-3.5" /> Emails de confirmation
                   </Label>
-                  {visioDialog.eventsSentAt && (
-                    <span className="text-[11px] text-emerald-600 font-medium">✓ Emails envoyés le {formatShortDate(visioDialog.eventsSentAt)}</span>
-                  )}
                 </div>
 
-                {!visioDialog.eventsSentAt && (
-                  <>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setVisioDialog({ ...visioDialog, tab: "client" })}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${visioDialog.tab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                      >
-                        📧 Email Client
-                      </button>
-                      <button
-                        onClick={() => setVisioDialog({ ...visioDialog, tab: "speaker" })}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${visioDialog.tab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                      >
-                        🎤 Email Conférencier
-                      </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setVisioDialog({ ...visioDialog, tab: "client" })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${visioDialog.tab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  >
+                    📧 Email Client {visioDialog.clientSentAt && <Check className="h-3 w-3 text-emerald-500" />}
+                  </button>
+                  <button
+                    onClick={() => setVisioDialog({ ...visioDialog, tab: "speaker" })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${visioDialog.tab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  >
+                    🎤 Email Conférencier {visioDialog.speakerSentAt && <Check className="h-3 w-3 text-emerald-500" />}
+                  </button>
+                </div>
+
+                {visioDialog.tab === "client" ? (
+                  visioDialog.clientSentAt ? (
+                    <div className="flex items-center justify-center py-8 text-sm text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border">
+                      <Check className="h-4 w-4 text-emerald-500 mr-2" />
+                      Email client envoyé le {formatShortDate(visioDialog.clientSentAt)}
                     </div>
-
-                    {visioDialog.tab === "client" ? (
-                      <div className="space-y-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">À</Label>
-                          <Input value={visioDialog.clientTo} onChange={(e) => setVisioDialog({ ...visioDialog, clientTo: e.target.value })} className="text-sm" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">CC</Label>
-                          <Input value={visioDialog.clientCc} onChange={(e) => setVisioDialog({ ...visioDialog, clientCc: e.target.value })} className="text-sm" />
-                          <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Objet</Label>
-                          <Input value={visioDialog.clientSubject} onChange={(e) => setVisioDialog({ ...visioDialog, clientSubject: e.target.value })} className="text-sm" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Corps du mail</Label>
-                          <Textarea value={visioDialog.clientBody} onChange={(e) => setVisioDialog({ ...visioDialog, clientBody: e.target.value })} rows={8} className="text-sm" />
-                        </div>
-                        <Button className="w-full" onClick={() => handleSendVisioEmail("client")} disabled={sendingVisioEmail !== null}>
-                          <Send className="h-4 w-4 mr-2" />
-                          {sendingVisioEmail === "client" ? "Envoi…" : "Envoyer au client"}
-                        </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">À</Label>
+                        <Input value={visioDialog.clientTo} onChange={(e) => setVisioDialog({ ...visioDialog, clientTo: e.target.value })} className="text-sm" />
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">À</Label>
-                          <Input value={visioDialog.speakerTo} onChange={(e) => setVisioDialog({ ...visioDialog, speakerTo: e.target.value })} className="text-sm" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">CC</Label>
-                          <Input value={visioDialog.speakerCc} onChange={(e) => setVisioDialog({ ...visioDialog, speakerCc: e.target.value })} className="text-sm" />
-                          <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Objet</Label>
-                          <Input value={visioDialog.speakerSubject} onChange={(e) => setVisioDialog({ ...visioDialog, speakerSubject: e.target.value })} className="text-sm" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Corps du mail</Label>
-                          <Textarea value={visioDialog.speakerBody} onChange={(e) => setVisioDialog({ ...visioDialog, speakerBody: e.target.value })} rows={8} className="text-sm" />
-                        </div>
-                        <Button className="w-full" onClick={() => handleSendVisioEmail("speaker")} disabled={sendingVisioEmail !== null}>
-                          <Send className="h-4 w-4 mr-2" />
-                          {sendingVisioEmail === "speaker" ? "Envoi…" : "Envoyer au conférencier"}
-                        </Button>
+                      <div className="space-y-1">
+                        <Label className="text-xs">CC</Label>
+                        <Input value={visioDialog.clientCc} onChange={(e) => setVisioDialog({ ...visioDialog, clientCc: e.target.value })} className="text-sm" />
+                        <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                       </div>
-                    )}
-                  </>
-                )}
-
-                {visioDialog.eventsSentAt && (
-                  <div className="flex items-center justify-center py-8 text-sm text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border">
-                    <Check className="h-4 w-4 text-emerald-500 mr-2" />
-                    Les invitations ont été envoyées le {formatShortDate(visioDialog.eventsSentAt)}
-                  </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Objet</Label>
+                        <Input value={visioDialog.clientSubject} onChange={(e) => setVisioDialog({ ...visioDialog, clientSubject: e.target.value })} className="text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Corps du mail</Label>
+                        <Textarea value={visioDialog.clientBody} onChange={(e) => setVisioDialog({ ...visioDialog, clientBody: e.target.value })} rows={8} className="text-sm" />
+                      </div>
+                      <Button className="w-full" onClick={() => handleSendVisioEmail("client")} disabled={sendingVisioEmail !== null}>
+                        <Send className="h-4 w-4 mr-2" />
+                        {sendingVisioEmail === "client" ? "Envoi…" : "Envoyer au client"}
+                      </Button>
+                    </div>
+                  )
+                ) : (
+                  visioDialog.speakerSentAt ? (
+                    <div className="flex items-center justify-center py-8 text-sm text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border">
+                      <Check className="h-4 w-4 text-emerald-500 mr-2" />
+                      Email conférencier envoyé le {formatShortDate(visioDialog.speakerSentAt)}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">À</Label>
+                        <Input value={visioDialog.speakerTo} onChange={(e) => setVisioDialog({ ...visioDialog, speakerTo: e.target.value })} className="text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">CC</Label>
+                        <Input value={visioDialog.speakerCc} onChange={(e) => setVisioDialog({ ...visioDialog, speakerCc: e.target.value })} className="text-sm" />
+                        <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Objet</Label>
+                        <Input value={visioDialog.speakerSubject} onChange={(e) => setVisioDialog({ ...visioDialog, speakerSubject: e.target.value })} className="text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Corps du mail</Label>
+                        <Textarea value={visioDialog.speakerBody} onChange={(e) => setVisioDialog({ ...visioDialog, speakerBody: e.target.value })} rows={8} className="text-sm" />
+                      </div>
+                      <Button className="w-full" onClick={() => handleSendVisioEmail("speaker")} disabled={sendingVisioEmail !== null}>
+                        <Send className="h-4 w-4 mr-2" />
+                        {sendingVisioEmail === "speaker" ? "Envoi…" : "Envoyer au conférencier"}
+                      </Button>
+                    </div>
+                  )
                 )}
               </div>
+
 
               <div className="flex justify-end pt-1">
                 <Button variant="outline" size="sm" onClick={() => setVisioDialog(null)}>Fermer</Button>
