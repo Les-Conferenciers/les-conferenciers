@@ -499,7 +499,7 @@ const EmailPreviewCard = ({
               </div>
               <div style={{ background: "#f0f7ff", border: "1px solid #d0e3f7", borderRadius: "8px", padding: "16px", margin: "20px 0" }}>
                 <p style={{ color: "#1a5276", fontSize: "13px", margin: 0, textAlign: "center" }}>
-                  📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
+                  📅 Cette proposition est <strong>valable 90 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
                 </p>
               </div>
             </>
