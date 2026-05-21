@@ -1,47 +1,23 @@
-# Plan d'évolutions Admin
+## 20 profils featured sur la home
 
-Travail en 3 blocs. Confirme-moi avant que je lance.
+### Constat
+- La section Home utilise déjà un **carrousel** (`FeaturedSpeakers.tsx`) qui charge tous les conférenciers `featured = true` triés par `featured_order`. Il affiche 5 cartes visibles sur desktop, 3 sur tablette, ~2 sur mobile, avec autoplay (5s) et boucle.
+- La seule vraie limite "5" est dans le CRM admin : le champ `featured_order` a un `max={5}`, ce qui bloque l'utilisateur à 5 mises en avant.
 
-## 1. Propositions
+### Changement proposé (UX cohérente)
+Garder strictement le **même carrousel** (même style de cartes, même autoplay, mêmes flèches), juste avec plus de slides — c'est déjà l'UX la plus cohérente avec le site, et ça évite une grille géante qui alourdirait la home.
 
-- **Date dans l'email** : formater `event_date_text` en français (15 septembre 2026) au lieu de l'ISO brut, partout où il apparaît dans les corps d'email générés (proposition initiale + relances).
-- **Conférencier unique** : ajouter dans le template du mail "unique" la phrase  
-  *"À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?"*  
-  juste après la phrase sur les autres intervenants.
-- **Verrouillage après envoi** : si `status` ≠ `draft`, le formulaire passe en lecture seule (champs disabled, suppression des boutons "Enregistrer brouillon" et "Envoyer"), avec un bandeau "Proposition envoyée le …".
-- **Renvoyer une nouvelle proposition** : nouveau bouton "Nouvelle proposition pour ce client" qui duplique la proposition (client pré-rempli, conférenciers vides) en `draft`, avec un wording d'email adapté du type *"Suite à nos échanges, voici une nouvelle proposition…"*.
-- **Archivage avec raison** : dialog obligatoire demandant la raison (champ libre + select : prix, date, profil, autre). Stockée dans `lost_reason`, `lost_at`. Notes et tâches conservées et consultables même en statut archivé/perdu.
-- **Stop relances** : les jobs de relance (`send-proposal-reminder`, tâches J+7/J+14) ignorent les propositions `lost`/`archived`.
+1. **Lever la limite admin** : `featured_order` passe de `max={5}` à `max={20}` dans `AdminSpeakersCRM.tsx`. Le label passe de "1 à 5" à "1 à 20".
+2. **Rythme du carrousel** : conserver `basis-1/5` (5 cartes visibles desktop). Avec 20 profils, l'utilisateur fait défiler 4 "pages". Loop déjà actif, autoplay déjà actif. Rien d'autre à toucher.
+3. **Skeleton de chargement** : passer de 4 à 5 placeholders pour matcher le carrousel (cohérence visuelle pendant le chargement).
+4. **Mémoire projet** : mettre à jour `mem://features/featured-speakers` (6 → 20).
 
-## 2. Contrats
+### Hors scope
+- Pas de refonte de la grille / pas de nouveau layout.
+- Pas de changement sur la page `/conferenciers`.
+- Pas de modification de `SpeakerCard`.
 
-- **Email auto à Nelly à la signature** : edge function `send-contract-email` (ou nouvelle `notify-contract-signed`) déclenchée quand `contracts.status` passe à `signed`, envoyée à `nellysabde@lesconferenciers.com`.
-- **Infos client éditables à la création du contrat** : dans le dialog de création/édition contrat, ajouter section "Informations client" (adresse, code postal, ville, SIRET/RCS, téléphone, email contact) qui met à jour la table `clients` en plus du contrat.
-- **CRM : autofill depuis les leads** : quand on remplit/édite une fiche client via email, pré-remplir nom contact, téléphone, société depuis le dernier lead correspondant (`simulator_leads.email`).
-- **Aperçu contrat client** : retirer le bandeau "08 mai 2026 · 14h 📍PSG 🎤 Conférence" et la mention "J-156" sur `ContractView.tsx`.
-- **Bouton Modifier sur l'aperçu contrat** : comme la feuille de liaison, ajouter un bouton "Modifier" qui rouvre le dialog d'édition, et garantit que les modifs persistent en base.
-- **Onglet Contrats allégé** : supprimer les blocs "Prochains événements" et "À traiter cette semaine" en haut.
-
-## 3. Feuille de liaison
-
-- **Un seul onglet "Besoins logistiques"** : fusion des onglets "Technique" et "Détails techniques".
-- **Pré-remplissage** :
-  - besoins techniques : *"vidéoprojecteur, micro casque"*
-  - commentaire : *"L'intervenant participera avec plaisir au déjeuner à l'issue de sa conférence."*
-- **Bloc contacts** :
-  - afficher numéros de téléphone après les noms (conférencier + client)
-  - pour le client, afficher le nom du **contact** (pas la société)
-  - rendre les champs contact éditables directement dans la feuille de liaison
-- **Email client** (sans CC conférencier) : remplacer le wording actuel par le nouveau texte fourni, signé "Nelly Sabde – Les Conférenciers".
-- **Email conférencier** :
-  - tutoiement automatique si `speakers.formal_address = false`
-  - objet inclut la date de l'événement (ex : *"Feuille de liaison – 15 septembre 2026"*)
-- **Confidentialité** : ne pas afficher l'adresse email du client dans la feuille de liaison rendue.
-
-## Détails techniques (interne)
-
-- Frontend : `AdminProposals.tsx`, `EventDossier.tsx`, `ContractInvoiceManager.tsx`, `ContractView.tsx`, `LiaisonSheetView.tsx`, `AdminClients.tsx`.
-- Backend : `send-proposal-email`, `send-proposal-reminder`, `send-contract-email` (ajout), `daily-task-recap` (filtrage `lost`).
-- Migration : ajouter colonnes manquantes si besoin sur `proposals` (`lost_reason` existe déjà, ✓), sur `events` (`tech_needs`/`logistics_info` existent ✓, on fusionne côté UI).
-
-Ok pour que je lance les 3 blocs d'un coup ?
+### Fichiers touchés
+- `src/components/FeaturedSpeakers.tsx` (skeleton x5)
+- `src/components/admin/AdminSpeakersCRM.tsx` (max 20 sur `featured_order`)
+- `mem://features/featured-speakers`

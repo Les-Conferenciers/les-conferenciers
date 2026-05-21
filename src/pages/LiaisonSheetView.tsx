@@ -5,6 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Printer, Pencil, Save, X } from "lucide-react";
 import { toast } from "sonner";
 
+const EditableField = ({ value, onChange, type = "text", placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) => (
+  <input
+    type={type}
+    value={value}
+    onChange={e => onChange(e.target.value)}
+    placeholder={placeholder}
+    className="border border-primary/30 rounded px-2 py-0.5 text-sm bg-yellow-50 focus:outline-none focus:ring-1 focus:ring-primary min-w-[200px]"
+  />
+);
+
+const EditableTextArea = ({ value, onChange, placeholder, rows = 3 }: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) => (
+  <textarea
+    value={value}
+    onChange={e => onChange(e.target.value)}
+    placeholder={placeholder}
+    rows={rows}
+    className="block w-full border border-primary/30 rounded px-2 py-1 text-sm bg-yellow-50 focus:outline-none focus:ring-1 focus:ring-primary"
+  />
+);
+
 const LiaisonSheetView = () => {
   const { id } = useParams(); // proposal_id
   const [data, setData] = useState<any>(null);
@@ -108,34 +128,19 @@ const LiaisonSheetView = () => {
 
   const formatDate = (d: string | null) => d ? new Date(d.length === 10 ? d + "T12:00:00" : d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "À définir";
 
-  // Helper: champ éditable (input ou texte)
-  const Field = ({ value, onChange, type = "text", placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) => (
+  const Field = ({ value, onChange, type = "text", placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) =>
     editing ? (
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="border border-primary/30 rounded px-2 py-0.5 text-sm bg-yellow-50 focus:outline-none focus:ring-1 focus:ring-primary min-w-[200px]"
-      />
+      <EditableField value={value} onChange={onChange} type={type} placeholder={placeholder} />
     ) : (
       <span>{value || (placeholder || "À définir")}</span>
-    )
-  );
+    );
 
-  const TextArea = ({ value, onChange, placeholder, rows = 3 }: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) => (
+  const TextArea = ({ value, onChange, placeholder, rows = 3 }: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) =>
     editing ? (
-      <textarea
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className="block w-full border border-primary/30 rounded px-2 py-1 text-sm bg-yellow-50 focus:outline-none focus:ring-1 focus:ring-primary"
-      />
+      <EditableTextArea value={value} onChange={onChange} placeholder={placeholder} rows={rows} />
     ) : (
       <span className="whitespace-pre-line">{value || (placeholder || "—")}</span>
-    )
-  );
+    );
 
   return (
     <div className="min-h-screen bg-white">

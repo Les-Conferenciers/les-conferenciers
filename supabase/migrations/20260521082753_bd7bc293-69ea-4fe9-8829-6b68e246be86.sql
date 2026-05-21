@@ -1,0 +1,2 @@
+ALTER TABLE public.proposals ADD COLUMN IF NOT EXISTS previous_proposal_id uuid REFERENCES public.proposals(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_proposals_previous ON public.proposals(previous_proposal_id);

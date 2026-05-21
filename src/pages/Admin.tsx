@@ -234,7 +234,7 @@ ${alternativePhrase}
 };
 
 const getInfoEmailBody = (recipientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n• Votre enveloppe budgétaire\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
+  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n\nConcernant votre enveloppe budgétaire : le tarif moyen des conférenciers se situe entre 4K et 7K HT, hors frais VHR. L'idéal serait de nous indiquer si votre budget se situe dans cette fourchette, au-dessus ou en-dessous, sachant que les premiers tarifs de notre offre se situent autour des 2,5K HT, hors frais VHR.\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
 
 type ProposalType = "classique" | "unique" | "info";
 
@@ -499,7 +499,7 @@ const EmailPreviewCard = ({
               </div>
               <div style={{ background: "#f0f7ff", border: "1px solid #d0e3f7", borderRadius: "8px", padding: "16px", margin: "20px 0" }}>
                 <p style={{ color: "#1a5276", fontSize: "13px", margin: 0, textAlign: "center" }}>
-                  📅 Cette proposition est <strong>valable 30 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
+                  📅 Cette proposition est <strong>valable 90 jours</strong>. Vous pouvez y revenir autant de fois que vous le souhaitez et <strong>y répondre directement en ligne</strong>.
                 </p>
               </div>
             </>
@@ -579,6 +579,7 @@ const AdminProposalsContent = () => {
   const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
   const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
   const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
+  const [updatingFromProposalId, setUpdatingFromProposalId] = useState<string | null>(null);
   const [allLeads, setAllLeads] = useState<any[]>([]);
   const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
@@ -693,12 +694,16 @@ const AdminProposalsContent = () => {
       const leads = (data as any[]) || [];
       setMatchingLeads(leads);
 
-      // Auto-prefill from latest lead (only when creating, and only empty fields)
-      if (!editDialogOpen && leads.length > 0) {
+      // Auto-prefill from latest lead (only when creating, and only empty fields, no existing client selected)
+      if (!editDialogOpen && leads.length > 0 && !selectedClientId) {
         const latest = leads[0];
-        if (latest.event_date && !eventDateText) setEventDateText(latest.event_date);
+        if (latest.event_date && !eventDateText) setEventDateText(formatFrenchEventDate(latest.event_date) || latest.event_date);
         if (latest.location && !eventLocation) setEventLocation(latest.location);
         if (latest.audience_size && !audienceSize) setAudienceSize(latest.audience_size);
+        if (latest.company && !clientName) setClientName(latest.company);
+        const fullName = `${latest.first_name || ""} ${latest.last_name || ""}`.trim();
+        if (fullName && !recipientName) setRecipientName(fullName);
+        if (latest.phone && !clientPhone) setClientPhone(latest.phone);
       }
     }, 350);
     return () => clearTimeout(timer);
@@ -750,18 +755,13 @@ const AdminProposalsContent = () => {
     const sentDate = new Date(sentAt);
     const relance1Date = new Date(sentDate);
     relance1Date.setDate(relance1Date.getDate() + 7);
-    
+
     const tasks: any[] = [
       { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
+      // Relance 2 sans date par défaut (admin la planifie manuellement) — y compris pour "info".
+      { proposal_id: proposalId, task_type: "relance_2", due_date: null },
     ];
-    
-    // No relance 2 for "info" type
-    if (pType !== "info") {
-      const relance2Date = new Date(sentDate);
-      relance2Date.setDate(relance2Date.getDate() + 15);
-      tasks.push({ proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] });
-    }
-    
+
     await supabase.from("proposal_tasks").insert(tasks as any);
     fetchTasks();
   };
@@ -1074,6 +1074,7 @@ const AdminProposalsContent = () => {
         proposal_type: proposalType, client_id: clientId,
         event_location: eventLocation || null, event_date_text: eventDateText || null,
         audience_size: audienceSize || null, client_phone: clientPhone || null,
+        previous_proposal_id: updatingFromProposalId || null,
       } as any)
       .select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
@@ -1095,12 +1096,36 @@ const AdminProposalsContent = () => {
         const sentAt = new Date().toISOString();
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
         await createTasksForProposal(proposal.id, sentAt, proposalType);
-        toast.success("Proposition créée et envoyée !");
+
+        // Mise à jour d'une proposition précédente : archiver + copier notes + supprimer tâches pending
+        if (updatingFromProposalId) {
+          const { data: prevTasks } = await supabase
+            .from("proposal_tasks")
+            .select("task_type, note")
+            .eq("proposal_id", updatingFromProposalId);
+          const notesToCopy = (prevTasks || []).filter((t: any) => t.note && t.note.trim());
+          if (notesToCopy.length > 0) {
+            for (const t of notesToCopy as any[]) {
+              await supabase
+                .from("proposal_tasks")
+                .update({ note: t.note })
+                .eq("proposal_id", proposal.id)
+                .eq("task_type", t.task_type);
+            }
+          }
+          await supabase.from("proposal_tasks").delete().eq("proposal_id", updatingFromProposalId).eq("status", "pending");
+          await supabase.from("proposals").update({
+            status: "archived",
+            lost_reason: "[Mise à jour] Remplacée par une nouvelle proposition",
+            lost_at: new Date().toISOString(),
+          } as any).eq("id", updatingFromProposalId);
+        }
+        toast.success(updatingFromProposalId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !");
       } catch { toast.error("Proposition créée mais erreur d'envoi"); }
     } else {
       toast.success("Brouillon enregistré !");
     }
-    setDialogOpen(false); resetForm(); fetchProposals(); fetchClients(); setSubmitting(false);
+    setDialogOpen(false); resetForm(); fetchProposals(); fetchClients(); fetchTasks(); setSubmitting(false);
   };
 
   const resetForm = () => {
@@ -1110,6 +1135,7 @@ const AdminProposalsContent = () => {
     setClientPhone(""); setEventLocation(""); setEventDateText(""); setAudienceSize("");
     setClientSearchQuery(""); setClientSearchResults([]); setSelectedClientId(null); setClientMode("new");
     setCcEmails("");
+    setUpdatingFromProposalId(null);
   };
 
   const handleNewProposalForClient = (clientId: string, latest: Proposal) => {
@@ -1127,12 +1153,19 @@ const AdminProposalsContent = () => {
     setClientEmail(cEmail);
     setClientPhone(cPhone);
     setRecipientName(rName);
+    const rawDate = (latest as any).event_date_text || "";
+    const dateFmt = formatFrenchEventDate(rawDate) || rawDate;
     setEventLocation((latest as any).event_location || "");
-    setEventDateText((latest as any).event_date_text || "");
+    setEventDateText(dateFmt);
     setAudienceSize((latest as any).audience_size || "");
+    // Pré-remplir les conférenciers depuis la proposition source (point de départ modifiable)
+    setSelectedSpeakers(buildProposalSpeakers(latest.proposal_speakers));
+    // Lier comme "mise à jour" : la précédente sera archivée à l'envoi
+    setUpdatingFromProposalId(latest.id);
+    const ctx = buildEventContextLine((latest as any).event_location || "", dateFmt, (latest as any).audience_size || "");
     setMessage(getFollowUpMessage(rName, cName));
     setEmailSubject(getFollowUpEmailSubject(cName));
-    setEmailBody(getFollowUpEmailBody(rName, cName));
+    setEmailBody(getFollowUpEmailBody(rName, cName, ctx));
     setDialogOpen(true);
   };
 
@@ -1272,25 +1305,36 @@ const AdminProposalsContent = () => {
     if (!infoAcceptProposalId) return;
     const original = proposals.find(p => p.id === infoAcceptProposalId);
     if (!original) return;
-    // Pre-fill a new proposal creation form with the client info
+    // Pre-fill a new proposal creation form with the client + event info
     resetForm();
     setClientName(original.client_name);
     setClientEmail(original.client_email);
     setRecipientName(original.recipient_name || "");
     setClientPhone((original as any).client_phone || "");
+    // Pré-remplir les détails de l'événement
+    const rawDate = (original as any).event_date_text || "";
+    const dateFmt = formatFrenchEventDate(rawDate) || rawDate;
+    setEventLocation((original as any).event_location || "");
+    setEventDateText(dateFmt);
+    setAudienceSize((original as any).audience_size || "");
     setProposalType(newType);
     // Set email defaults
     if (newType === "classique") {
       setEmailSubject(getDefaultEmailSubject(original.client_name));
       setEmailBody(getDefaultEmailBody(original.recipient_name || "", original.client_name));
     }
-    setClientMode("new");
+    // Préselection du client si déjà rattaché
+    if ((original as any).client_id) {
+      setClientMode("search");
+      setSelectedClientId((original as any).client_id);
+    } else {
+      setClientMode("new");
+    }
+    // Lier comme mise à jour (la demande d'infos sera archivée à l'envoi via handleCreate)
+    setUpdatingFromProposalId(infoAcceptProposalId);
     setInfoAcceptDialogOpen(false);
     setDialogOpen(true);
-    // Mark the info proposal as archived
-    await supabase.from("proposals").update({ status: "archived" }).eq("id", infoAcceptProposalId);
-    fetchProposals();
-    toast.info("Créez la proposition à partir des informations du client");
+    toast.info("Complétez la proposition à partir des informations du client");
   };
 
   // ── Archivage avec raison obligatoire ──
@@ -1334,6 +1378,22 @@ const AdminProposalsContent = () => {
     toast.success("Proposition supprimée"); fetchProposals();
   };
 
+  // Marquer un brouillon comme envoyé manuellement (sans envoi de mail)
+  const handleMarkAsSent = async (proposal: Proposal) => {
+    if (!confirm("Marquer cette proposition comme envoyée (sans envoi d'email) ?")) return;
+    const sentAt = new Date().toISOString();
+    const { error } = await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
+    if (error) { toast.error("Erreur"); return; }
+    await createTasksForProposal(proposal.id, sentAt, (proposal as any).proposal_type);
+    toast.success("Proposition marquée comme envoyée");
+    fetchProposals();
+  };
+
+  // Détails d'une proposition archivée (lecture seule)
+  const [archiveDetailsId, setArchiveDetailsId] = useState<string | null>(null);
+
+
+
   const getProposalUrl = (token: string) => `${window.location.origin}/proposition/${token}`;
   const copyLink = (proposal: Proposal) => {
     navigator.clipboard.writeText(getProposalUrl(proposal.token));
@@ -1376,7 +1436,8 @@ const AdminProposalsContent = () => {
       setMessage("");
       setEmailSubject(`Votre conférencier sur mesure - ${clientName || "Les Conférenciers"}`);
     } else {
-      setEmailBody(getDefaultEmailBody(recipientName, clientName));
+      const ctx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+      setEmailBody(getDefaultEmailBody(recipientName, clientName, ctx));
       setMessage(getDefaultMessage(recipientName, clientName));
       setEmailSubject(getDefaultEmailSubject(clientName));
     }
@@ -1398,13 +1459,40 @@ const AdminProposalsContent = () => {
     });
   };
 
-  const selectExistingClient = (client: any) => {
+  const selectExistingClient = async (client: any) => {
     setSelectedClientId(client.id);
     setClientName(client.company_name);
     setClientEmail(client.email || "");
     setRecipientName(client.contact_name || "");
     setClientPhone(client.phone || "");
     setClientMode("search");
+    // Préremplir les détails événement depuis la dernière proposition de ce client
+    try {
+      const { data: latest } = await supabase
+        .from("proposals")
+        .select("event_location, event_date_text, audience_size")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latest) {
+        const loc = (latest as any).event_location || "";
+        const rawDate = (latest as any).event_date_text || "";
+        const dateFmt = formatFrenchEventDate(rawDate) || rawDate;
+        const aud = (latest as any).audience_size || "";
+        if (loc && !eventLocation) setEventLocation(loc);
+        if (dateFmt && !eventDateText) setEventDateText(dateFmt);
+        if (aud && !audienceSize) setAudienceSize(aud);
+        // Regénérer sujet + corps du mail avec contexte
+        const ctx = buildEventContextLine(loc, dateFmt, aud);
+        const rName = client.contact_name || "";
+        const cName = client.company_name || "";
+        setEmailSubject(getDefaultEmailSubject(cName));
+        setEmailBody(getDefaultEmailBody(rName, cName, ctx));
+      }
+    } catch (e) {
+      console.warn("Prefill last proposal failed", e);
+    }
   };
 
   const filteredClients = clientSearchQuery.trim()
@@ -1890,7 +1978,16 @@ const AdminProposalsContent = () => {
         <TableRow className={expired && mode !== "completed" ? "opacity-50" : ""}>
           <TableCell className="text-xs whitespace-nowrap">{formatDate(p.created_at)}</TableCell>
           <TableCell>
-            <div className="font-medium text-sm">{p.client_name}</div>
+            <div className="font-medium text-sm flex items-center gap-1.5">
+              {p.client_name}
+              {(() => {
+                let v = 1; let cur: any = p;
+                const byId = new Map(proposals.map((x: any) => [x.id, x]));
+                while (cur?.previous_proposal_id && byId.has(cur.previous_proposal_id)) { v++; cur = byId.get(cur.previous_proposal_id); }
+                if (v > 1) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-semibold" title="Proposition mise à jour">v{v}</span>;
+                return null;
+              })()}
+            </div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
               <span>{p.client_email}</span>
               {(() => {
@@ -1967,9 +2064,9 @@ const AdminProposalsContent = () => {
                 {(p as any).reminder2_sent_at && <div className="text-[10px] text-blue-600">Relance 2 ✓</div>}
                 {(() => {
                   const tasks = getTasksForProposal(p.id);
-                  const pendingTasks = tasks.filter((t: any) => t.status === "pending");
+                  const pendingTasks = tasks.filter((t: any) => t.status === "pending" && t.due_date);
                   if (pendingTasks.length === 0) return null;
-                  const nextTask = pendingTasks.sort((a: any, b: any) => a.due_date.localeCompare(b.due_date))[0];
+                  const nextTask = pendingTasks.sort((a: any, b: any) => (a.due_date || "").localeCompare(b.due_date || ""))[0];
                   const dueDate = new Date(nextTask.due_date);
                   const today = new Date(); today.setHours(0,0,0,0);
                   const isOverdue = dueDate < today;
@@ -2021,6 +2118,11 @@ const AdminProposalsContent = () => {
                   <Send className="h-3 w-3" />{sending === p.id ? "Envoi…" : "Envoyer"}
                 </Button>
               )}
+              {mode === "draft" && (
+                <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:bg-emerald-50" onClick={() => handleMarkAsSent(p)} title="Marquer comme envoyée (sans envoi d'email)">
+                  <Check className="h-3 w-3" />
+                </Button>
+              )}
               {mode === "sent" && p.status === "sent" && (
                 <>
                   {!expired && (
@@ -2028,14 +2130,21 @@ const AdminProposalsContent = () => {
                       <Bell className="h-3 w-3" /> Relances
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => handleAccept(p.id)} title="Accepter">
-                    <Check className="h-3 w-3" /> Accepter
-                  </Button>
+                  {(p as any).proposal_type !== "info" && (
+                    <Button variant="outline" size="sm" className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => handleAccept(p.id)} title="Accepter">
+                      <Check className="h-3 w-3" /> Accepter
+                    </Button>
+                  )}
                 </>
               )}
+              {(p as any).proposal_type === "info" && (mode === "draft" || (mode === "sent" && (p.status === "sent" || p.status === "draft"))) && (
+                <Button variant="outline" size="sm" className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => { setInfoAcceptProposalId(p.id); setInfoAcceptDialogOpen(true); }} title="Convertir en proposition">
+                  <Send className="h-3 w-3" /> Convertir
+                </Button>
+              )}
               {mode === "sent" && (p.status === "sent" || p.status === "archived") && (
-                <Button variant="outline" size="sm" className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50" onClick={() => handleNewProposalForClient(p.client_id || "", p)} title="Nouvelle proposition pour ce client">
-                  <Plus className="h-3 w-3" /> Nouvelle
+                <Button variant="outline" size="sm" className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50" onClick={() => handleNewProposalForClient(p.client_id || "", p)} title="Mettre à jour & renvoyer une nouvelle proposition">
+                  <RefreshCw className="h-3 w-3" /> Mettre à jour
                 </Button>
               )}
               {mode !== "completed" && p.status !== "archived" && (
@@ -2197,9 +2306,9 @@ const AdminProposalsContent = () => {
                       size="sm"
                       className="gap-1"
                       onClick={(e) => { e.stopPropagation(); handleNewProposalForClient(entry.clientId, latest); }}
-                      title="Créer une nouvelle proposition pour ce client"
+                      title="Mettre à jour et renvoyer une nouvelle proposition"
                     >
-                      <Plus className="h-3.5 w-3.5" /> Nouvelle proposition
+                      <RefreshCw className="h-3.5 w-3.5" /> Mettre à jour
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -2328,6 +2437,7 @@ const AdminProposalsContent = () => {
                         <TableHead>Client</TableHead>
                         <TableHead>Conférenciers</TableHead>
                         <TableHead>Type</TableHead>
+                        <TableHead>Raison</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -2355,11 +2465,17 @@ const AdminProposalsContent = () => {
                               {(p as any).proposal_type === "unique" ? "🎤 Unique" : (p as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
                             </span>
                           </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate" title={(p as any).lost_reason || ""}>
+                            {(p as any).lost_reason || <span className="italic opacity-60">—</span>}
+                          </TableCell>
                           <TableCell>
                             <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée</span>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => setArchiveDetailsId(p.id)} title="Voir détails">
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="sm" asChild title="Voir en ligne">
                                 <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
                               </Button>
@@ -2372,7 +2488,7 @@ const AdminProposalsContent = () => {
                       ))}
                       {paginated.length === 0 && !loading && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                             Aucune proposition archivée.
                           </TableCell>
                         </TableRow>
@@ -2520,6 +2636,81 @@ const AdminProposalsContent = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Archive details dialog */}
+      <Dialog open={!!archiveDetailsId} onOpenChange={(o) => !o && setArchiveDetailsId(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-serif">Détails de la proposition archivée</DialogTitle></DialogHeader>
+          {(() => {
+            const p: any = proposals.find(x => x.id === archiveDetailsId);
+            if (!p) return null;
+            const tasks = getTasksForProposal(p.id);
+            const fmt = (d?: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
+            return (
+              <div className="space-y-4 mt-2 text-sm">
+                <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                  <p><strong>Client :</strong> {p.client_name}</p>
+                  <p><strong>Email :</strong> {p.client_email}</p>
+                  {p.recipient_name && <p><strong>Destinataire :</strong> {p.recipient_name}</p>}
+                  {p.client_phone && <p><strong>Tél :</strong> {p.client_phone}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div><span className="text-muted-foreground">Créée le :</span> {fmt(p.created_at)}</div>
+                  <div><span className="text-muted-foreground">Envoyée le :</span> {fmt(p.sent_at)}</div>
+                  <div><span className="text-muted-foreground">Relance 1 :</span> {fmt(p.reminder1_sent_at)}</div>
+                  <div><span className="text-muted-foreground">Relance 2 :</span> {fmt(p.reminder2_sent_at)}</div>
+                  <div><span className="text-muted-foreground">Archivée le :</span> {fmt(p.lost_at)}</div>
+                  <div><span className="text-muted-foreground">Expire :</span> {fmt(p.expires_at)}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Raison de l'archivage</Label>
+                  <div className="rounded-md border border-border bg-muted/20 p-2 text-sm">{p.lost_reason || <span className="italic opacity-60">—</span>}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Conférenciers proposés</Label>
+                  {(!p.proposal_speakers || p.proposal_speakers.length === 0) ? (
+                    <p className="text-xs italic text-muted-foreground mt-1">Aucun conférencier.</p>
+                  ) : (
+                    <div className="space-y-1 mt-1">
+                      {[...p.proposal_speakers].sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0)).map((ps: any) => {
+                        const total = Number(ps.total_price) || ((Number(ps.speaker_fee) || 0) + (Number(ps.travel_costs) || 0) + (Number(ps.agency_commission) || 0));
+                        const fee = Number(ps.speaker_fee) || 0;
+                        const travel = Number(ps.travel_costs) || 0;
+                        const commission = Number(ps.agency_commission) || 0;
+                        const fmtEur = (n: number) => `${n.toLocaleString("fr-FR")} €`;
+                        return (
+                          <div key={ps.speaker_id} className="rounded-md border border-border bg-muted/20 px-2.5 py-2 text-xs space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm">{ps.speakers?.name || "Conférencier"}</span>
+                              <span className="font-semibold">{total > 0 ? `${fmtEur(total)} HT` : "—"}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground text-[11px]">
+                              <span>Honoraires : {fmtEur(fee)}</span>
+                              <span>Frais déplacement : {fmtEur(travel)}</span>
+                              <span>Commission agence : {fmtEur(commission)}</span>
+                            </div>
+                          </div>
+                        );
+
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Notes des relances</Label>
+                  {tasks.length === 0 && <p className="text-xs italic text-muted-foreground">Aucune tâche.</p>}
+                  {tasks.map((t: any) => (
+                    <div key={t.id} className="rounded-md border border-border p-2 mt-2 text-xs">
+                      <div className="font-medium mb-1">{t.task_type === "relance_1" ? "Relance 1" : "Relance 2"} · échéance {fmt(t.due_date)} {t.status === "completed" && <span className="text-emerald-600">✓</span>}</div>
+                      {t.note ? <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: t.note }} /> : <span className="italic text-muted-foreground">Aucune note.</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       {/* Reminder Dialog */}
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -2545,7 +2736,7 @@ const AdminProposalsContent = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${task.task_type === "relance_1" ? "bg-amber-100 text-amber-700" : "bg-orange-100 text-orange-700"}`}>
-                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2 (J+15)"}
+                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2"}
                         </span>
                         {task.status === "completed" && <span className="text-xs text-green-600">✓ Envoyée</span>}
                         {(reminderProposal as any)[task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"] && (
@@ -2558,29 +2749,33 @@ const AdminProposalsContent = () => {
                     <div className="space-y-3">
                       {task.status !== "completed" && (
                         <div className="space-y-1 max-w-xs">
-                          <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                          <Label className="text-xs text-muted-foreground">
+                            Date de relance prévue {task.task_type === "relance_2" && !task.due_date && <span className="italic">(non planifiée)</span>}
+                          </Label>
                           <Input
                             type="date"
-                            value={task.due_date}
+                            value={task.due_date || ""}
                             onChange={e => {
                               const updated = [...editingTasks];
-                              updated[idx] = { ...updated[idx], due_date: e.target.value };
+                              updated[idx] = { ...updated[idx], due_date: e.target.value || null };
                               setEditingTasks(updated);
                             }}
                           />
                         </div>
                       )}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Note</Label>
-                        <SimpleRichTextEditor
-                          value={task.note || ""}
-                          onChange={(val) => {
-                            const updated = [...editingTasks];
-                            updated[idx] = { ...updated[idx], note: val };
-                            setEditingTasks(updated);
-                          }}
-                        />
-                      </div>
+                      {task.task_type === "relance_1" && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Notes</Label>
+                          <SimpleRichTextEditor
+                            value={task.note || ""}
+                            onChange={(val) => {
+                              const updated = [...editingTasks];
+                              updated[idx] = { ...updated[idx], note: val };
+                              setEditingTasks(updated);
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
