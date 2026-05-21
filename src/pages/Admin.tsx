@@ -1221,6 +1221,7 @@ const AdminProposalsContent = () => {
       setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
     }
     setEditSelectedSpeakers(proposalSpeakers);
+    setEditInternalNotes(((p as any).internal_notes || "") as string);
     setShowLeadsPanel(true);
     setEditDialogOpen(true);
   };
