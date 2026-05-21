@@ -1244,6 +1244,7 @@ const AdminProposalsContent = () => {
       recipient_name: editRecipientName || null,
       message: pType === "classique" ? (editEmailBody || null) : null,
       email_subject: editEmailSubject || null, email_body: editEmailBody || null,
+      internal_notes: editInternalNotes.trim() || null,
     } as any).eq("id", editingProposal.id);
     if (error) { toast.error("Erreur"); setSubmitting(false); return; }
 
