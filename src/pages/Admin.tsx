@@ -2618,12 +2618,24 @@ const AdminProposalsContent = () => {
                     <div className="space-y-1 mt-1">
                       {[...p.proposal_speakers].sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0)).map((ps: any) => {
                         const total = Number(ps.total_price) || ((Number(ps.speaker_fee) || 0) + (Number(ps.travel_costs) || 0) + (Number(ps.agency_commission) || 0));
+                        const fee = Number(ps.speaker_fee) || 0;
+                        const travel = Number(ps.travel_costs) || 0;
+                        const commission = Number(ps.agency_commission) || 0;
+                        const fmtEur = (n: number) => `${n.toLocaleString("fr-FR")} €`;
                         return (
-                          <div key={ps.speaker_id} className="flex items-center justify-between rounded-md border border-border bg-muted/20 px-2 py-1.5 text-xs">
-                            <span className="font-medium">{ps.speakers?.name || "Conférencier"}</span>
-                            <span className="text-muted-foreground">{total > 0 ? `${total.toLocaleString("fr-FR")} € HT` : "—"}</span>
+                          <div key={ps.speaker_id} className="rounded-md border border-border bg-muted/20 px-2.5 py-2 text-xs space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm">{ps.speakers?.name || "Conférencier"}</span>
+                              <span className="font-semibold">{total > 0 ? `${fmtEur(total)} HT` : "—"}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground text-[11px]">
+                              <span>Honoraires : {fmtEur(fee)}</span>
+                              <span>Frais déplacement : {fmtEur(travel)}</span>
+                              <span>Commission agence : {fmtEur(commission)}</span>
+                            </div>
                           </div>
                         );
+
                       })}
                     </div>
                   )}
