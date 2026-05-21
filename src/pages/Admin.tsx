@@ -1996,9 +1996,9 @@ const AdminProposalsContent = () => {
                 {(p as any).reminder2_sent_at && <div className="text-[10px] text-blue-600">Relance 2 ✓</div>}
                 {(() => {
                   const tasks = getTasksForProposal(p.id);
-                  const pendingTasks = tasks.filter((t: any) => t.status === "pending");
+                  const pendingTasks = tasks.filter((t: any) => t.status === "pending" && t.due_date);
                   if (pendingTasks.length === 0) return null;
-                  const nextTask = pendingTasks.sort((a: any, b: any) => a.due_date.localeCompare(b.due_date))[0];
+                  const nextTask = pendingTasks.sort((a: any, b: any) => (a.due_date || "").localeCompare(b.due_date || ""))[0];
                   const dueDate = new Date(nextTask.due_date);
                   const today = new Date(); today.setHours(0,0,0,0);
                   const isOverdue = dueDate < today;
