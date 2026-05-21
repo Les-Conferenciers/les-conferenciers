@@ -87,15 +87,65 @@ const AdminEventDossiers = () => {
   const [directSpeakerSearch, setDirectSpeakerSearch] = useState("");
 
   // Visio quick scheduler (déclenché depuis la pipeline)
-  const [visioDialog, setVisioDialog] = useState<{ eventId: string; date: string; time: string } | null>(null);
+  const [visioDialog, setVisioDialog] = useState<{
+    eventId: string;
+    date: string;
+    time: string;
+    clientName: string;
+    eventDateRaw: string;
+    eventsSentAt: string | null;
+    // email composer
+    clientTo: string;
+    clientCc: string;
+    clientSubject: string;
+    clientBody: string;
+    speakerTo: string;
+    speakerCc: string;
+    speakerSubject: string;
+    speakerBody: string;
+    tab: "client" | "speaker";
+  } | null>(null);
   const [savingVisio, setSavingVisio] = useState(false);
+  const [sendingVisioEmail, setSendingVisioEmail] = useState<"client" | "speaker" | null>(null);
 
-  const openVisioPicker = (eventRow: any) => {
+  const fmtVisioDateLong = (d: string) => {
+    if (!d) return "";
+    const dt = new Date(d + (d.length === 10 ? "T12:00:00" : ""));
+    if (isNaN(dt.getTime())) return d;
+    return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  };
+
+  const openVisioPicker = (eventRow: any, proposal?: any) => {
     if (!eventRow) { toast.error("Créez d'abord le dossier événement"); return; }
+    const speakers = proposal?.proposal_speakers || [];
+    const selectedSpeakerId = eventRow?.selected_speaker_id;
+    const selSp = (selectedSpeakerId && speakers.find((s: any) => s.speaker_id === selectedSpeakerId)) || speakers[0];
+    const speakerData = selSp?.speakers || null;
+    const isFormal = speakerData?.formal_address !== false;
+
+    const eventDateRaw = eventRow.event_date || proposal?.event_date_text || "";
+    const dateLong = fmtVisioDateLong(eventDateRaw) || (proposal?.event_date_text || "");
+    const timeStr = eventRow.event_time || "";
+    const dateTimeStr = `${dateLong}${timeStr ? ` à ${timeStr}` : ""}`;
+
+    const subject = `Invitation visio préparatoire${dateLong ? ` — ${dateLong}` : ""}`;
+
     setVisioDialog({
       eventId: eventRow.id,
       date: eventRow.visio_date || "",
       time: eventRow.visio_time || "",
+      clientName: proposal?.client_name || "",
+      eventDateRaw,
+      eventsSentAt: eventRow.visio_emails_sent_at || null,
+      clientTo: proposal?.client_email || "",
+      clientCc: "",
+      clientSubject: subject,
+      clientBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} vient de vous être adressée.\n\nDans l'attente de nos prochains échanges, je vous souhaite une excellente fin de journée !`,
+      speakerTo: speakerData?.email || "",
+      speakerCc: "",
+      speakerSubject: subject,
+      speakerBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} ${isFormal ? "vient de partir" : "vient de partir"}.\n\nA très vite et belle journée`,
+      tab: "client",
     });
   };
 
@@ -109,6 +159,31 @@ const AdminEventDossiers = () => {
     if (error) toast.error("Erreur");
     else { toast.success("Visio planifiée"); setVisioDialog(null); fetchData(); }
     setSavingVisio(false);
+  };
+
+  const splitList = (s: string) => s.split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
+
+  const handleSendVisioEmail = async (target: "client" | "speaker") => {
+    if (!visioDialog) return;
+    const to = target === "client" ? splitList(visioDialog.clientTo) : splitList(visioDialog.speakerTo);
+    const cc = target === "client" ? splitList(visioDialog.clientCc) : splitList(visioDialog.speakerCc);
+    const subject = target === "client" ? visioDialog.clientSubject : visioDialog.speakerSubject;
+    const body = target === "client" ? visioDialog.clientBody : visioDialog.speakerBody;
+    if (to.length === 0) { toast.error("Renseignez au moins un destinataire"); return; }
+    setSendingVisioEmail(target);
+    try {
+      const { error } = await supabase.functions.invoke("send-contact-email", {
+        body: { to, subject, body, from_name: "Les Conférenciers", cc: cc.length ? cc : undefined },
+      });
+      if (error) throw error;
+      await supabase.from("events").update({ visio_emails_sent_at: new Date().toISOString() } as any).eq("id", visioDialog.eventId);
+      toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé`);
+      setVisioDialog({ ...visioDialog, eventsSentAt: new Date().toISOString() });
+      fetchData();
+    } catch {
+      toast.error("Erreur d'envoi");
+    }
+    setSendingVisioEmail(null);
   };
 
   const fetchData = async () => {
