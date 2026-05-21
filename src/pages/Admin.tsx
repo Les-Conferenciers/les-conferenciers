@@ -1180,6 +1180,22 @@ const AdminProposalsContent = () => {
     setMessage(getFollowUpMessage(rName, cName));
     setEmailSubject(getFollowUpEmailSubject(cName));
     setEmailBody(getFollowUpEmailBody(rName, cName, ctx));
+    // Reporter les notes internes de la version précédente (avec fallback sur la note de relance_1)
+    (async () => {
+      const previousNotes = ((latest as any).internal_notes || "").trim();
+      if (previousNotes) {
+        setInternalNotes(previousNotes);
+      } else {
+        const { data: prevTasks } = await supabase
+          .from("proposal_tasks")
+          .select("note, task_type")
+          .eq("proposal_id", latest.id);
+        const r1 = (prevTasks || []).find((t: any) => t.task_type === "relance_1");
+        const r2 = (prevTasks || []).find((t: any) => t.task_type === "relance_2");
+        const fallback = (r1?.note && r1.note.trim()) || (r2?.note && r2.note.trim()) || "";
+        if (fallback) setInternalNotes(fallback);
+      }
+    })();
     setDialogOpen(true);
   };
 
