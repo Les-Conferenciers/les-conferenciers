@@ -757,12 +757,9 @@ const AdminProposalsContent = () => {
 
     const tasks: any[] = [
       { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
+      // Relance 2 sans date par défaut (admin la planifie manuellement) — y compris pour "info".
+      { proposal_id: proposalId, task_type: "relance_2", due_date: null },
     ];
-
-    // Relance 2 sans date par défaut (admin la planifie manuellement). Pas de relance 2 pour "info".
-    if (pType !== "info") {
-      tasks.push({ proposal_id: proposalId, task_type: "relance_2", due_date: null });
-    }
 
     await supabase.from("proposal_tasks").insert(tasks as any);
     fetchTasks();
