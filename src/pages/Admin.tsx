@@ -844,8 +844,16 @@ const AdminProposalsContent = () => {
         note: task.note || null,
       } as any).eq("id", task.id);
     }
+    // Sync internal_notes on the proposal with the relance_1 note (single source of truth across versions)
+    if (reminderProposal) {
+      const r1 = editingTasks.find((t: any) => t.task_type === "relance_1");
+      const r2 = editingTasks.find((t: any) => t.task_type === "relance_2");
+      const noteToSync = (r1?.note && r1.note.trim()) || (r2?.note && r2.note.trim()) || null;
+      await supabase.from("proposals").update({ internal_notes: noteToSync } as any).eq("id", reminderProposal.id);
+    }
     toast.success("Tâches mises à jour");
     fetchTasks();
+    fetchProposals();
   };
 
   const applyTemplate = (templateId: string) => {
