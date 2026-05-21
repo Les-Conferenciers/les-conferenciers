@@ -2468,75 +2468,149 @@ const AdminProposalsContent = () => {
           const paginatedEntries = isSent ? sentEntries.slice(0, pageSize) : [];
           return (
             <TabsContent key={key} value={key}>
-              {key === "archived" ? (
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Conférenciers</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Raison</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginated.map(p => (
-                        <TableRow key={p.id}>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                            {new Date(p.created_at).toLocaleDateString("fr-FR")}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium text-sm">{p.client_name}</div>
-                            <div className="text-xs text-muted-foreground">{p.client_email}</div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 flex-wrap text-xs text-muted-foreground">
-                              {(p.proposal_speakers || []).slice(0, 3).map((ps: any, i: number) => (
-                                <span key={i}>{ps.speakers?.name}{i < Math.min(2, (p.proposal_speakers || []).length - 1) ? "," : ""}</span>
-                              ))}
-                              {(p.proposal_speakers || []).length > 3 && <span>+{(p.proposal_speakers || []).length - 3}</span>}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                              {(p as any).proposal_type === "unique" ? "🎤 Unique" : (p as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate" title={(p as any).lost_reason || ""}>
-                            {(p as any).lost_reason || <span className="italic opacity-60">—</span>}
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => setArchiveDetailsId(p.id)} title="Voir détails">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" asChild title="Voir en ligne">
-                                <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer définitivement">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {paginated.length === 0 && !loading && (
+              {key === "archived" ? (() => {
+                // Regrouper les propositions archivées via la chaîne previous_proposal_id
+                const archivedById = new Map<string, any>(paginated.map(p => [p.id, p]));
+                // Pour chaque archivée, remonter au plus ancien archivé de la chaîne
+                const rootOf = new Map<string, string>();
+                for (const p of paginated) {
+                  let cur: any = p;
+                  while (cur && cur.previous_proposal_id && archivedById.has(cur.previous_proposal_id)) {
+                    cur = archivedById.get(cur.previous_proposal_id);
+                  }
+                  rootOf.set(p.id, cur.id);
+                }
+                const groupsMap = new Map<string, any[]>();
+                for (const p of paginated) {
+                  const r = rootOf.get(p.id) || p.id;
+                  const arr = groupsMap.get(r) || [];
+                  arr.push(p);
+                  groupsMap.set(r, arr);
+                }
+                type ArchEntry = { kind: "single"; p: any } | { kind: "group"; rootId: string; items: any[]; latest: any };
+                const entries: ArchEntry[] = [];
+                for (const [rootId, group] of groupsMap.entries()) {
+                  const sorted = [...group].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                  if (sorted.length === 1) entries.push({ kind: "single", p: sorted[0] });
+                  else entries.push({ kind: "group", rootId, items: sorted, latest: sorted[0] });
+                }
+                entries.sort((a, b) => {
+                  const da = a.kind === "single" ? new Date(a.p.created_at).getTime() : new Date(a.latest.created_at).getTime();
+                  const db = b.kind === "single" ? new Date(b.p.created_at).getTime() : new Date(b.latest.created_at).getTime();
+                  return dateSortAsc ? da - db : db - da;
+                });
+
+                const renderArchivedRow = (p: any, opts?: { indent?: boolean; versionLabel?: string }) => (
+                  <TableRow key={p.id} className={opts?.indent ? "bg-background" : ""}>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {opts?.indent && <span className="inline-block w-4" />}
+                      {opts?.versionLabel && <span className="text-[10px] mr-2 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{opts.versionLabel}</span>}
+                      {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium text-sm">{p.client_name}</div>
+                      <div className="text-xs text-muted-foreground">{p.client_email}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 flex-wrap text-xs text-muted-foreground">
+                        {(p.proposal_speakers || []).slice(0, 3).map((ps: any, i: number) => (
+                          <span key={i}>{ps.speakers?.name}{i < Math.min(2, (p.proposal_speakers || []).length - 1) ? "," : ""}</span>
+                        ))}
+                        {(p.proposal_speakers || []).length > 3 && <span>+{(p.proposal_speakers || []).length - 3}</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        {(p as any).proposal_type === "unique" ? "🎤 Unique" : (p as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate" title={(p as any).lost_reason || ""}>
+                      {(p as any).lost_reason || <span className="italic opacity-60">—</span>}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => setArchiveDetailsId(p.id)} title="Voir détails">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild title="Voir en ligne">
+                          <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer définitivement">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+
+                return (
+                  <div className="border border-border rounded-xl overflow-hidden">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                            Aucune proposition archivée.
-                          </TableCell>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Client</TableHead>
+                          <TableHead>Conférenciers</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Raison</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : isSent ? (
+                      </TableHeader>
+                      <TableBody>
+                        {entries.map(entry => {
+                          if (entry.kind === "single") return renderArchivedRow(entry.p);
+                          const isOpen = expandedArchivedGroupId === entry.rootId;
+                          const latest = entry.latest;
+                          return (
+                            <React.Fragment key={`arch-group-${entry.rootId}`}>
+                              <TableRow className="bg-muted/40 hover:bg-muted/60 cursor-pointer" onClick={() => setExpandedArchivedGroupId(isOpen ? null : entry.rootId)}>
+                                <TableCell className="text-xs whitespace-nowrap font-medium">
+                                  <div className="flex items-center gap-1.5">
+                                    {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                    {new Date(latest.created_at).toLocaleDateString("fr-FR")}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium text-sm">{latest.client_name}</div>
+                                  <div className="text-xs text-muted-foreground">{latest.client_email}</div>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {entry.items.length} versions
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                    {(latest as any).proposal_type === "unique" ? "🎤 Unique" : (latest as any).proposal_type === "info" ? "📝 Infos" : "📋 Classique"}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground italic">
+                                  Chaîne de mises à jour
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Archivée ×{entry.items.length}</span>
+                                </TableCell>
+                                <TableCell />
+                              </TableRow>
+                              {isOpen && entry.items.map((it, idx) => renderArchivedRow(it, { indent: true, versionLabel: `v${entry.items.length - idx}` }))}
+                            </React.Fragment>
+                          );
+                        })}
+                        {entries.length === 0 && !loading && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                              Aucune proposition archivée.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })()
+              : isSent ? (
                 renderGroupedSentTable(paginatedEntries)
               ) : (
                 renderTable(paginated, mode)
