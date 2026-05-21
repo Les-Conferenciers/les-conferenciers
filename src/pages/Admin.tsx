@@ -754,15 +754,16 @@ const AdminProposalsContent = () => {
     setProposalTasks((data as any) || []);
   };
 
-  const createTasksForProposal = async (proposalId: string, sentAt: string, pType?: string) => {
+  const createTasksForProposal = async (proposalId: string, sentAt: string, pType?: string, seedNote?: string | null) => {
     const sentDate = new Date(sentAt);
     const relance1Date = new Date(sentDate);
     relance1Date.setDate(relance1Date.getDate() + 7);
 
+    const note = seedNote && seedNote.trim() ? seedNote.trim() : null;
     const tasks: any[] = [
-      { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
+      { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0], note },
       // Relance 2 sans date par défaut (admin la planifie manuellement) — y compris pour "info".
-      { proposal_id: proposalId, task_type: "relance_2", due_date: null },
+      { proposal_id: proposalId, task_type: "relance_2", due_date: null, note },
     ];
 
     await supabase.from("proposal_tasks").insert(tasks as any);
