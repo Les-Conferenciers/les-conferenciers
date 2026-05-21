@@ -2118,6 +2118,7 @@ Nelly Sabde - Les Conférenciers`);
                   size="sm"
                   onClick={async () => {
                     await persistLiaisonFields();
+                    await fetchData();
                     toast.success("Modifications enregistrées");
                   }}
                   className="gap-1.5"
