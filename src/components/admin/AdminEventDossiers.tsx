@@ -647,7 +647,7 @@ const AdminEventDossiers = () => {
                           stages={r.stages}
                           onChange={fetchData}
                           compact
-                          onCustomAction={(key) => { if (key === "visio") openVisioPicker(r.event); }}
+                          onCustomAction={(key) => { if (key === "visio") openVisioPicker(r.event, r.proposal); }}
                         />
                       </TableCell>
                       <TableCell className="text-right py-3">
