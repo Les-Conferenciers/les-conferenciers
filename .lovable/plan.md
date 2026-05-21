@@ -1,37 +1,23 @@
-## Ordre d'affichage des conférenciers — édition fluide
+## 20 profils featured sur la home
 
-### Objectif
-Dans le CRM Speakers, chaque conférencier reçoit un numéro d'ordre (1, 2, 3…) qui pilote la page publique `/conferenciers`. Quand on change un numéro (ex. Régis Rossi passe de 10 à 15), tous les autres se décalent automatiquement, sans doublon ni trou.
+### Constat
+- La section Home utilise déjà un **carrousel** (`FeaturedSpeakers.tsx`) qui charge tous les conférenciers `featured = true` triés par `featured_order`. Il affiche 5 cartes visibles sur desktop, 3 sur tablette, ~2 sur mobile, avec autoplay (5s) et boucle.
+- La seule vraie limite "5" est dans le CRM admin : le champ `featured_order` a un `max={5}`, ce qui bloque l'utilisateur à 5 mises en avant.
 
-### Base existante
-- La colonne `display_order` existe déjà sur `speakers` et trie déjà la page publique.
-- Le champ est déjà éditable dans la fiche "Modifier", mais en mode "affectation libre" → doublons possibles, et changer 10→15 n'impacte personne d'autre.
+### Changement proposé (UX cohérente)
+Garder strictement le **même carrousel** (même style de cartes, même autoplay, mêmes flèches), juste avec plus de slides — c'est déjà l'UX la plus cohérente avec le site, et ça évite une grille géante qui alourdirait la home.
 
-### Changements
-
-**1. Renumérotation initiale (one-shot SQL)**
-Réattribuer 1, 2, 3, … à tous les conférenciers actifs selon l'ordre actuel (`display_order` asc, puis nom). Les archivés gardent `display_order = 999`. Base saine pour démarrer.
-
-**2. Colonne "N°" dans la liste CRM**
-Petit badge numéroté à gauche de chaque ligne (avant la photo) affichant le numéro courant.
-
-**3. Édition "intelligente" du numéro (fiche Modifier)**
-Le champ "Ordre d'affichage" existant garde son input numérique. À la sauvegarde, si l'ancien numéro = X et le nouveau = Y :
-- Y < X → +1 sur tous les conférenciers actifs dont l'ordre est dans [Y, X-1].
-- Y > X → −1 sur tous les conférenciers actifs dont l'ordre est dans [X+1, Y].
-- Puis on assigne Y au conférencier modifié.
-
-Résultat : pas de doublons, pas de trous, comportement type "drag & drop" via simple saisie.
-
-**4. Flèches ↑ / ↓ en hover sur chaque ligne**
-Deux petites flèches visibles au survol (à côté des boutons Archiver/Modifier) qui font ±1 via swap avec le voisin actif. Réutilise la même logique côté serveur.
+1. **Lever la limite admin** : `featured_order` passe de `max={5}` à `max={20}` dans `AdminSpeakersCRM.tsx`. Le label passe de "1 à 5" à "1 à 20".
+2. **Rythme du carrousel** : conserver `basis-1/5` (5 cartes visibles desktop). Avec 20 profils, l'utilisateur fait défiler 4 "pages". Loop déjà actif, autoplay déjà actif. Rien d'autre à toucher.
+3. **Skeleton de chargement** : passer de 4 à 5 placeholders pour matcher le carrousel (cohérence visuelle pendant le chargement).
+4. **Mémoire projet** : mettre à jour `mem://features/featured-speakers` (6 → 20).
 
 ### Hors scope
-- Pas de drag & drop graphique.
-- Pas de changement de schéma DB.
-- `featured_order` (top 6) reste indépendant et inchangé.
-- Les archivés ne sont jamais inclus dans la renumérotation.
+- Pas de refonte de la grille / pas de nouveau layout.
+- Pas de changement sur la page `/conferenciers`.
+- Pas de modification de `SpeakerCard`.
 
 ### Fichiers touchés
-- `src/components/admin/AdminSpeakersCRM.tsx` — colonne N°, flèches ↑/↓, logique de réordonnancement à la sauvegarde.
-- Un UPDATE SQL one-shot pour renuméroter proprement la base.
+- `src/components/FeaturedSpeakers.tsx` (skeleton x5)
+- `src/components/admin/AdminSpeakersCRM.tsx` (max 20 sur `featured_order`)
+- `mem://features/featured-speakers`

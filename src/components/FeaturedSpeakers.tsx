@@ -30,8 +30,8 @@ const FeaturedSpeakers = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="space-y-4">
             <Skeleton className="h-[300px] w-full rounded-lg" />
             <Skeleton className="h-4 w-3/4" />
