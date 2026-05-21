@@ -522,6 +522,7 @@ export type Database = {
           lost_at: string | null
           lost_reason: string | null
           message: string | null
+          previous_proposal_id: string | null
           proposal_type: string
           recipient_name: string | null
           reminder1_sent_at: string | null
@@ -547,6 +548,7 @@ export type Database = {
           lost_at?: string | null
           lost_reason?: string | null
           message?: string | null
+          previous_proposal_id?: string | null
           proposal_type?: string
           recipient_name?: string | null
           reminder1_sent_at?: string | null
@@ -572,6 +574,7 @@ export type Database = {
           lost_at?: string | null
           lost_reason?: string | null
           message?: string | null
+          previous_proposal_id?: string | null
           proposal_type?: string
           recipient_name?: string | null
           reminder1_sent_at?: string | null
@@ -586,6 +589,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_previous_proposal_id_fkey"
+            columns: ["previous_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
             referencedColumns: ["id"]
           },
         ]
