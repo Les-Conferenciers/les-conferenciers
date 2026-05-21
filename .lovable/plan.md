@@ -1,38 +1,27 @@
-## Objectif
+## Problème
 
-Reproduire dans la feuille de liaison (`EventDossier.tsx`) le pattern déjà utilisé pour les emails visio (`AdminEventDossiers.tsx`) :
-- Deux envois indépendants (client et conférencier) avec un bouton par onglet
-- Date d'envoi mémorisée séparément pour chaque destinataire
-- Le bouton d'envoi est grisé et remplacé par la date d'envoi côté déjà envoyé
-- L'autre côté reste envoyable tant que son email n'est pas parti
+Sur le contrat Atout Groupe, les lignes du contrat affichent bien **Benoît Vermersch** (le conférencier sélectionné dans le dossier événement), mais l'en-tête "ENTRE / Monsieur ..." affiche **Alex Si** (premier conférencier de la proposition à 4 personnes).
 
-## Changements
+Cause : `contracts.selected_speaker_id` est `NULL` pour ce contrat. Le code de `ContractView.tsx` et `ContractSign.tsx` retombe alors sur `proposal_speakers[0]`, donc le premier de la liste (Alex Si), au lieu d'utiliser le conférencier sélectionné dans `events.selected_speaker_id` (Benoît Vermersch).
 
-### 1. Base de données (migration)
-Ajouter deux colonnes à la table `events` :
-- `liaison_email_client_sent_at` (timestamptz, nullable)
-- `liaison_email_speaker_sent_at` (timestamptz, nullable)
+## Correctif
 
-La colonne existante `liaison_sheet_sent_at` est conservée pour la rétro-compatibilité (affichage "Envoyée le…" et tracking jalon). Elle sera mise à jour dès qu'au moins un des deux emails est parti.
+### 1. `src/pages/ContractView.tsx`
+- Dans `fetchAll`, après avoir récupéré l'event (déjà fait ligne 111), si `c.selected_speaker_id` est null mais `ev.selected_speaker_id` existe, charger ce speaker depuis la table `speakers` et l'affecter à `c.selected_speaker`.
+- Résultat : `firstSpeaker = contract.selected_speaker || speakers[0]?.speakers` (ligne 169) retournera Benoît Vermersch.
 
-### 2. `src/components/admin/EventDossier.tsx`
+### 2. `src/pages/ContractSign.tsx`
+- Récupérer également l'event lié (`events.selected_speaker_id`) lors du fetch du contrat.
+- Remplacer `const firstSpeaker = speakers[0]?.speakers;` (ligne 178) par une lookup qui privilégie `contract.selected_speaker_id` puis `event.selected_speaker_id`, et seulement en dernier recours `speakers[0]`.
 
-- Type `EventData` : ajouter les deux nouveaux champs.
-- Remplacer la fonction unique `handleSendLiaisonSheet` par deux handlers indépendants : `handleSendLiaisonToClient` et `handleSendLiaisonToSpeaker`. Chacun :
-  - persiste les champs de la feuille (`persistLiaisonFields`)
-  - valide les emails de son côté uniquement
-  - envoie via `send-contact-email`
-  - met à jour la colonne `liaison_email_*_sent_at` correspondante
-  - met à jour `liaison_sheet_sent_at` si null
-  - rafraîchit les données (le dialog reste ouvert pour permettre l'autre envoi)
-- Dans le dialog (autour des lignes 2090-2145), pour chaque onglet (`client` / `speaker`) :
-  - Afficher une coche verte à côté du label de l'onglet si déjà envoyé (comme pour la visio)
-  - Si `liaison_email_client_sent_at` / `liaison_email_speaker_sent_at` est défini : afficher un encart "Email client/conférencier envoyé le {date}" et masquer/désactiver le bouton d'envoi
-  - Sinon : afficher le bouton "Envoyer au client" / "Envoyer au conférencier" qui appelle le bon handler
-- Le bouton global "Envoyer" actuel en bas du dialog est supprimé, remplacé par un bouton par onglet (le bouton "Fermer" reste).
-- Le bouton "Renvoyer" sur la carte (ligne 1468) conserve son comportement : il ouvre le dialog. Les deux côtés peuvent être renvoyés individuellement après réouverture (en effaçant la date via un petit bouton "Renvoyer" à côté de l'encart "envoyé le…", optionnel — par défaut pas de réenvoi tant que la date est posée, comme demandé).
+### 3. `src/components/admin/EventDossier.tsx` (consolidation, hors-bug mais évite récidive)
+- Lors de la création / mise à jour du contrat (handlers existants qui font `supabase.from("contracts").insert(...)` ou `.update(...)`), inclure `selected_speaker_id: event.selected_speaker_id`. Ainsi les futurs contrats stockent l'info à la source et `ContractView` n'a plus à retomber sur l'event.
 
-## Hors scope
-- Aucun changement sur le contenu des emails ni sur les templates
-- Aucun changement sur la page `LiaisonSheetView.tsx`
-- Aucun changement sur le pattern visio existant
+### Hors scope
+- Pas de migration de données : on laisse `contracts.selected_speaker_id` NULL pour les contrats existants, la résolution dynamique via l'event suffit.
+- Pas de changement de logique de calcul des lignes ni de l'email.
+- `SpeakerContractView.tsx` utilise déjà `ev.selected_speaker_id` correctement, rien à faire.
+
+## Vérification
+- Recharger `/admin/contrat/9a9e3bc2-...` (Atout Groupe) → l'en-tête doit afficher Monsieur Benoît Vermersch.
+- Recharger un autre contrat mono-conférencier → comportement inchangé.

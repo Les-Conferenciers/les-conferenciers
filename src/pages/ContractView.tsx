@@ -97,8 +97,12 @@ const ContractView = () => {
       .single();
     let c = data as any;
 
-    if (c?.selected_speaker_id) {
-      const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", c.selected_speaker_id).maybeSingle();
+    const { data: ev } = await supabase.from("events").select("id, bdc_number, audience_size, theme, selected_speaker_id").eq("proposal_id", c?.proposal_id || c?.id).maybeSingle();
+    setEvent(ev as any);
+
+    const effectiveSpeakerId = c?.selected_speaker_id || (ev as any)?.selected_speaker_id;
+    if (effectiveSpeakerId) {
+      const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", effectiveSpeakerId).maybeSingle();
       if (sp) c.selected_speaker = sp;
     }
     setContract(c);
@@ -108,8 +112,6 @@ const ContractView = () => {
       setClient(cl as any);
     }
 
-    const { data: ev } = await supabase.from("events").select("id, bdc_number, audience_size, theme").eq("proposal_id", c?.proposal_id || c?.id).maybeSingle();
-    setEvent(ev as any);
 
     if (c) {
       setEvDate(c.event_date || "");
