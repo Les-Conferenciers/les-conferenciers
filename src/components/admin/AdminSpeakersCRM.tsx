@@ -90,7 +90,7 @@ const AdminSpeakersCRM = () => {
   const [profileFilter, setProfileFilter] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "online" | "offline">("all");
-  const [sortBy, setSortBy] = useState<"name" | "created_at" | "base_fee">("name");
+  const [sortBy, setSortBy] = useState<"name" | "created_at" | "base_fee" | "display_order">("display_order");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   // Import state
