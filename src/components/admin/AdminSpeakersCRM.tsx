@@ -366,7 +366,7 @@ const AdminSpeakersCRM = () => {
         languages: editForm.languages || [],
         featured: editForm.featured ?? false,
         featured_order: (editForm as any).featured_order || null,
-        display_order: (editForm as any).display_order != null ? (editForm as any).display_order : (editSpeaker as any).display_order ?? 999,
+        // display_order géré séparément via shiftDisplayOrder ci-dessous
         gender: editForm.gender || 'male',
         why_expertise: editForm.why_expertise || null,
         why_impact: editForm.why_impact || null,
