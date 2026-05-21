@@ -2121,10 +2121,17 @@ const AdminProposalsContent = () => {
                       <Bell className="h-3 w-3" /> Relances
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => handleAccept(p.id)} title="Accepter">
-                    <Check className="h-3 w-3" /> Accepter
-                  </Button>
+                  {(p as any).proposal_type !== "info" && (
+                    <Button variant="outline" size="sm" className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => handleAccept(p.id)} title="Accepter">
+                      <Check className="h-3 w-3" /> Accepter
+                    </Button>
+                  )}
                 </>
+              )}
+              {(p as any).proposal_type === "info" && (mode === "draft" || (mode === "sent" && (p.status === "sent" || p.status === "draft"))) && (
+                <Button variant="outline" size="sm" className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => { setInfoAcceptProposalId(p.id); setInfoAcceptDialogOpen(true); }} title="Convertir en proposition">
+                  <Send className="h-3 w-3" /> Convertir
+                </Button>
               )}
               {mode === "sent" && (p.status === "sent" || p.status === "archived") && (
                 <Button variant="outline" size="sm" className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50" onClick={() => handleNewProposalForClient(p.client_id || "", p)} title="Nouvelle proposition pour ce client">
