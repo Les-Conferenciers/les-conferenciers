@@ -2587,29 +2587,33 @@ const AdminProposalsContent = () => {
                     <div className="space-y-3">
                       {task.status !== "completed" && (
                         <div className="space-y-1 max-w-xs">
-                          <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                          <Label className="text-xs text-muted-foreground">
+                            Date de relance prévue {task.task_type === "relance_2" && !task.due_date && <span className="italic">(non planifiée)</span>}
+                          </Label>
                           <Input
                             type="date"
-                            value={task.due_date}
+                            value={task.due_date || ""}
                             onChange={e => {
                               const updated = [...editingTasks];
-                              updated[idx] = { ...updated[idx], due_date: e.target.value };
+                              updated[idx] = { ...updated[idx], due_date: e.target.value || null };
                               setEditingTasks(updated);
                             }}
                           />
                         </div>
                       )}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Note</Label>
-                        <SimpleRichTextEditor
-                          value={task.note || ""}
-                          onChange={(val) => {
-                            const updated = [...editingTasks];
-                            updated[idx] = { ...updated[idx], note: val };
-                            setEditingTasks(updated);
-                          }}
-                        />
-                      </div>
+                      {task.task_type === "relance_1" && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Notes</Label>
+                          <SimpleRichTextEditor
+                            value={task.note || ""}
+                            onChange={(val) => {
+                              const updated = [...editingTasks];
+                              updated[idx] = { ...updated[idx], note: val };
+                              setEditingTasks(updated);
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
