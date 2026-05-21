@@ -1374,7 +1374,8 @@ const AdminProposalsContent = () => {
       setMessage("");
       setEmailSubject(`Votre conférencier sur mesure - ${clientName || "Les Conférenciers"}`);
     } else {
-      setEmailBody(getDefaultEmailBody(recipientName, clientName));
+      const ctx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
+      setEmailBody(getDefaultEmailBody(recipientName, clientName, ctx));
       setMessage(getDefaultMessage(recipientName, clientName));
       setEmailSubject(getDefaultEmailSubject(clientName));
     }
