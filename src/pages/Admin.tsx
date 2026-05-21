@@ -1896,6 +1896,14 @@ const AdminProposalsContent = () => {
         )}
       </div>
 
+      <div className="border-t border-border pt-4 space-y-2">
+        <Label className="text-sm font-medium">🗒️ Notes internes (relances et suivi)</Label>
+        <p className="text-[11px] text-muted-foreground">Visible uniquement en interne. Sauvegardée dès le brouillon et reportée automatiquement aux prochaines versions de cette proposition.</p>
+        <Textarea value={internalNotes} onChange={e => setInternalNotes(e.target.value)} rows={4} />
+      </div>
+
+
+
       <div className="flex gap-3">
         <Button className="flex-1 gap-2" onClick={() => handleCreate(true)} disabled={submitting}>
           <Send className="h-4 w-4" />
