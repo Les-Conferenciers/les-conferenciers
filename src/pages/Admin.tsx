@@ -696,7 +696,7 @@ const AdminProposalsContent = () => {
       // Auto-prefill from latest lead (only when creating, and only empty fields, no existing client selected)
       if (!editDialogOpen && leads.length > 0 && !selectedClientId) {
         const latest = leads[0];
-        if (latest.event_date && !eventDateText) setEventDateText(latest.event_date);
+        if (latest.event_date && !eventDateText) setEventDateText(formatFrenchEventDate(latest.event_date) || latest.event_date);
         if (latest.location && !eventLocation) setEventLocation(latest.location);
         if (latest.audience_size && !audienceSize) setAudienceSize(latest.audience_size);
         if (latest.company && !clientName) setClientName(latest.company);
