@@ -160,6 +160,8 @@ export type Database = {
           hotel_info: string | null
           id: string
           info_sent_speaker_at: string | null
+          liaison_email_client_sent_at: string | null
+          liaison_email_speaker_sent_at: string | null
           liaison_sheet_sent_at: string | null
           logistics_info: string | null
           notes: string | null
@@ -203,6 +205,8 @@ export type Database = {
           hotel_info?: string | null
           id?: string
           info_sent_speaker_at?: string | null
+          liaison_email_client_sent_at?: string | null
+          liaison_email_speaker_sent_at?: string | null
           liaison_sheet_sent_at?: string | null
           logistics_info?: string | null
           notes?: string | null
@@ -246,6 +250,8 @@ export type Database = {
           hotel_info?: string | null
           id?: string
           info_sent_speaker_at?: string | null
+          liaison_email_client_sent_at?: string | null
+          liaison_email_speaker_sent_at?: string | null
           liaison_sheet_sent_at?: string | null
           logistics_info?: string | null
           notes?: string | null
