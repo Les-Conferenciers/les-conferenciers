@@ -177,6 +177,7 @@ export type Database = {
           theme: string | null
           updated_at: string
           visio_date: string | null
+          visio_emails_sent_at: string | null
           visio_notes: string | null
           visio_time: string | null
         }
@@ -217,6 +218,7 @@ export type Database = {
           theme?: string | null
           updated_at?: string
           visio_date?: string | null
+          visio_emails_sent_at?: string | null
           visio_notes?: string | null
           visio_time?: string | null
         }
@@ -257,6 +259,7 @@ export type Database = {
           theme?: string | null
           updated_at?: string
           visio_date?: string | null
+          visio_emails_sent_at?: string | null
           visio_notes?: string | null
           visio_time?: string | null
         }
