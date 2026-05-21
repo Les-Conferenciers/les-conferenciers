@@ -750,18 +750,16 @@ const AdminProposalsContent = () => {
     const sentDate = new Date(sentAt);
     const relance1Date = new Date(sentDate);
     relance1Date.setDate(relance1Date.getDate() + 7);
-    
+
     const tasks: any[] = [
       { proposal_id: proposalId, task_type: "relance_1", due_date: relance1Date.toISOString().split("T")[0] },
     ];
-    
-    // No relance 2 for "info" type
+
+    // Relance 2 sans date par défaut (admin la planifie manuellement). Pas de relance 2 pour "info".
     if (pType !== "info") {
-      const relance2Date = new Date(sentDate);
-      relance2Date.setDate(relance2Date.getDate() + 15);
-      tasks.push({ proposal_id: proposalId, task_type: "relance_2", due_date: relance2Date.toISOString().split("T")[0] });
+      tasks.push({ proposal_id: proposalId, task_type: "relance_2", due_date: null });
     }
-    
+
     await supabase.from("proposal_tasks").insert(tasks as any);
     fetchTasks();
   };
@@ -1398,13 +1396,40 @@ const AdminProposalsContent = () => {
     });
   };
 
-  const selectExistingClient = (client: any) => {
+  const selectExistingClient = async (client: any) => {
     setSelectedClientId(client.id);
     setClientName(client.company_name);
     setClientEmail(client.email || "");
     setRecipientName(client.contact_name || "");
     setClientPhone(client.phone || "");
     setClientMode("search");
+    // Préremplir les détails événement depuis la dernière proposition de ce client
+    try {
+      const { data: latest } = await supabase
+        .from("proposals")
+        .select("event_location, event_date_text, audience_size")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latest) {
+        const loc = (latest as any).event_location || "";
+        const rawDate = (latest as any).event_date_text || "";
+        const dateFmt = formatFrenchEventDate(rawDate) || rawDate;
+        const aud = (latest as any).audience_size || "";
+        if (loc && !eventLocation) setEventLocation(loc);
+        if (dateFmt && !eventDateText) setEventDateText(dateFmt);
+        if (aud && !audienceSize) setAudienceSize(aud);
+        // Regénérer sujet + corps du mail avec contexte
+        const ctx = buildEventContextLine(loc, dateFmt, aud);
+        const rName = client.contact_name || "";
+        const cName = client.company_name || "";
+        setEmailSubject(getDefaultEmailSubject(cName));
+        setEmailBody(getDefaultEmailBody(rName, cName, ctx));
+      }
+    } catch (e) {
+      console.warn("Prefill last proposal failed", e);
+    }
   };
 
   const filteredClients = clientSearchQuery.trim()
