@@ -1,58 +1,25 @@
-# Emails de confirmation visio (client + conférencier)
+## Plan — Feuille de liaison : enregistrement + bug de saisie
 
-## Objectif
+### 1. Bouton "Enregistrer" dans la modale "Modifier" (EventDossier)
 
-Sur l'étape **Visio** du suivi contrat, ajouter un dialog permettant d'envoyer deux emails distincts (client / conférencier) confirmant la visio préparatoire, sur le même modèle d'UX que la feuille de liaison (deux onglets, éditeur, To/CC, sujet, corps modifiable).
+Dans `src/components/admin/EventDossier.tsx`, à côté du bouton "Aperçu de la feuille" (ligne ~2115), ajouter un bouton **"Enregistrer les modifications"** qui :
+- appelle `persistLiaisonFields()` (fonction déjà existante qui sauvegarde date / lieu / horaires / auditoire / thématique / arrivée / besoins / commentaires en base) ;
+- affiche un toast de confirmation ;
+- ne ferme pas la modale et ne déclenche pas l'envoi de mail.
 
-## UX (calquée sur la feuille de liaison)
+Layout : aligner les deux boutons (Enregistrer + Aperçu) à droite du bloc "Champs de la feuille de liaison".
 
-Bouton **« Envoyer les invitations »** dans le bloc Visio de `EventDossier.tsx` (à côté du quick picker date/heure existant), ouvrant un Dialog :
+### 2. Bug de saisie "lettre par lettre" sur la page "Voir" (LiaisonSheetView)
 
-- Onglets `Client` / `Conférencier`
-- Champs éditables : `À`, `Cc`, `Objet`, `Corps` (Textarea)
-- Pré-remplissage automatique depuis l'événement (date, heure, contact, conférencier)
-- Boutons : `Annuler` / `Envoyer client` / `Envoyer conférencier` (envoi indépendant par onglet, comme la liaison)
-- Tracking : nouvelle colonne `visio_emails_sent_at` (timestamp) — affichée comme "Invitations envoyées le …" sous le bloc visio
+**Cause identifiée :** dans `src/pages/LiaisonSheetView.tsx` (lignes 112-138), les composants `Field` et `TextArea` sont déclarés **à l'intérieur** du composant `LiaisonSheetView`. À chaque frappe, React voit une nouvelle référence de composant, démonte et remonte l'`<input>`, ce qui fait perdre le focus → l'utilisateur doit cliquer entre chaque caractère.
 
-## Templates pré-remplis
+**Correctif :** extraire `Field` et `TextArea` **hors** du composant `LiaisonSheetView` (au niveau module, ou les remplacer par du JSX inline). Passer `editing` en prop. Les states et `onChange` restent inchangés. La fonction `handleSave` (déjà présente, déclenchée par le bouton "Enregistrer" en mode édition) continuera de fonctionner — aucune modification de la logique de sauvegarde.
 
-**Variables** : `[date de l'événement]` = `event_date` formaté FR long (ex. « 29 mai 2026 »), `[heure de l'evenement]` = `visio_time`.
+### Hors scope
+- Pas de changement du schéma DB.
+- Pas de modification du contenu envoyé par mail ni du PDF.
+- Pas de modification du bouton "Modifier / Enregistrer / Annuler" déjà présent en haut de la page Voir (il fonctionnera correctement une fois le bug de focus corrigé).
 
-**Client** (objet : `Invitation visio préparatoire — [date]`) :
-```
-Bonjour,
-
-Suite à nos précédents échanges, l'invitation teams pour la visio du [date] à [heure] vient de vous être adressée.
-
-Dans l'attente de nos prochains échanges, je vous souhaite une excellente fin de journée !
-```
-
-**Conférencier** (objet : `Invitation visio préparatoire — [date]`, tutoiement/vouvoiement selon `speakers.formal_address`) :
-```
-Bonjour,
-
-Suite à nos précédents échanges, l'invitation teams pour la visio du [date] à [heure] vient de partir.
-
-A très vite et belle journée
-```
-
-> Note : ce sont des emails de notification — l'invitation Teams elle-même reste envoyée manuellement par Nelly depuis Outlook/Teams (le mail confirme juste son envoi).
-
-## Implémentation technique
-
-**Fichiers modifiés**
-- `src/components/admin/EventDossier.tsx` : nouveaux states `visioEmail*` (mêmes patterns que `liaison*`), fonction `openVisioEmailDialog()` pré-remplissant les champs, `handleSendVisioEmail(target: 'client'|'speaker')` qui appelle l'edge function existante d'envoi puis upsert `events.visio_emails_sent_at = now()`.
-
-**Edge function**
-- Réutilise `send-contact-email` ou créer un endpoint générique léger. Plus simple : réutiliser le même mécanisme que la feuille de liaison (vérifier quelle fonction elle utilise — probablement Resend via une edge function existante). Aucun nouveau secret nécessaire.
-
-**Migration SQL**
-```sql
-ALTER TABLE public.events ADD COLUMN IF NOT EXISTS visio_emails_sent_at timestamptz;
-```
-
-**Expéditeur** : `nellysabde@lesconferenciers.com` (memory: sender-identity).
-
-## Hors scope
-- Pas de génération d'invitation .ics ni d'intégration Teams API (envoi manuel par Nelly inchangé).
-- Pas de modification du quick picker date/heure existant.
+### Fichiers touchés
+- `src/components/admin/EventDossier.tsx` — ajout d'un bouton "Enregistrer" dans le bloc liaison.
+- `src/pages/LiaisonSheetView.tsx` — extraction de `Field` / `TextArea` hors du composant.
