@@ -1183,6 +1183,9 @@ const AdminSpeakersCRM = () => {
               className={`flex items-center gap-4 p-3 hover:bg-muted/30 transition-colors cursor-pointer group ${speaker.archived ? "opacity-60" : ""}`}
               onClick={() => openEdit(speaker)}
             >
+              <div className="w-12 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-muted-foreground tabular-nums">
+                {speaker.archived ? "—" : ((speaker as any).display_order ?? "—")}
+              </div>
               {imageUrl ? (
                 <img src={imageUrl} alt={speaker.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
               ) : (
