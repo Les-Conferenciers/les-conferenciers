@@ -693,12 +693,16 @@ const AdminProposalsContent = () => {
       const leads = (data as any[]) || [];
       setMatchingLeads(leads);
 
-      // Auto-prefill from latest lead (only when creating, and only empty fields)
-      if (!editDialogOpen && leads.length > 0) {
+      // Auto-prefill from latest lead (only when creating, and only empty fields, no existing client selected)
+      if (!editDialogOpen && leads.length > 0 && !selectedClientId) {
         const latest = leads[0];
         if (latest.event_date && !eventDateText) setEventDateText(latest.event_date);
         if (latest.location && !eventLocation) setEventLocation(latest.location);
         if (latest.audience_size && !audienceSize) setAudienceSize(latest.audience_size);
+        if (latest.company && !clientName) setClientName(latest.company);
+        const fullName = `${latest.first_name || ""} ${latest.last_name || ""}`.trim();
+        if (fullName && !recipientName) setRecipientName(fullName);
+        if (latest.phone && !clientPhone) setClientPhone(latest.phone);
       }
     }, 350);
     return () => clearTimeout(timer);
