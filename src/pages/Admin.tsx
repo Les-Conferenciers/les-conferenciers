@@ -2297,9 +2297,9 @@ const AdminProposalsContent = () => {
                       size="sm"
                       className="gap-1"
                       onClick={(e) => { e.stopPropagation(); handleNewProposalForClient(entry.clientId, latest); }}
-                      title="Créer une nouvelle proposition pour ce client"
+                      title="Mettre à jour et renvoyer une nouvelle proposition"
                     >
-                      <Plus className="h-3.5 w-3.5" /> Nouvelle proposition
+                      <RefreshCw className="h-3.5 w-3.5" /> Mettre à jour
                     </Button>
                   </TableCell>
                 </TableRow>
