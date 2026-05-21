@@ -259,6 +259,11 @@ const AdminSpeakersCRM = () => {
         const bFee = b.base_fee ?? (sortDir === "asc" ? Infinity : -Infinity);
         return (aFee - bFee) * dir;
       }
+      if (sortBy === "display_order") {
+        const aOrd = (a as any).display_order ?? 999999;
+        const bOrd = (b as any).display_order ?? 999999;
+        return (aOrd - bOrd) * dir;
+      }
       return 0;
     });
   }, [speakers, search, themeFilter, cityFilter, feeFilter, feeMinFilter, feeMaxFilter, genderFilter, profileFilter, showArchived, visibilityFilter, sortBy, sortDir]);
