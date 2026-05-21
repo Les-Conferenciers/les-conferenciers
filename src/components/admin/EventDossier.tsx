@@ -969,18 +969,11 @@ Nelly Sabde - Les Conférenciers`);
     window.open(`/admin/feuille-liaison/${proposal.id}`, "_blank");
   };
 
-  const handleSendLiaisonSheet = async () => {
-    setSendingLiaison(true);
+  const buildLiaisonContent = () => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
-
-    // Persist edits first so contract & event reflect what's sent
-    await persistLiaisonFields();
-
     const dateStr = liaisonEventDate ? new Date(liaisonEventDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
-
-    // Build liaison sheet content block (uses dialog values)
-    const liaisonContent = `
+    return `
 
 📋 FEUILLE DE LIAISON
 ${event?.event_title ? `\nÉvénement : ${event.event_title}` : ""}
@@ -1005,64 +998,56 @@ ${liaisonSalleSetup ? `- ${liaisonSalleSetup}` : ""}
 ${event?.special_requests ? `\n📝 Remarques :\n${event.special_requests}` : ""}
 ${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any).logistics_info}` : ""}
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
+  };
+
+  const handleSendLiaisonEmail = async (target: "client" | "speaker") => {
+    setSendingLiaison(true);
+    await persistLiaisonFields();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const splitList = (s: string) => s.split(/[,;]/).map(e => e.trim()).filter(Boolean);
-    const clientToList = splitList(liaisonClientTo);
-    const clientCcList = splitList(liaisonClientCc);
-    const speakerToList = splitList(liaisonSpeakerTo);
-    const speakerCcList = splitList(liaisonSpeakerCc);
+    const toList = splitList(target === "client" ? liaisonClientTo : liaisonSpeakerTo);
+    const ccList = splitList(target === "client" ? liaisonClientCc : liaisonSpeakerCc);
+    const subject = target === "client" ? liaisonClientSubject : liaisonSpeakerSubject;
+    const body = target === "client" ? liaisonClientBody : liaisonSpeakerBody;
 
-    const allEmails = [...clientToList, ...clientCcList, ...speakerToList, ...speakerCcList];
-    const invalid = allEmails.find(e => !emailRegex.test(e));
+    const invalid = [...toList, ...ccList].find(e => !emailRegex.test(e));
     if (invalid) {
       toast.error(`Email invalide : ${invalid}`);
       setSendingLiaison(false);
       return;
     }
-    if (clientToList.length === 0 && speakerToList.length === 0) {
-      toast.error("Veuillez renseigner au moins un destinataire (client ou conférencier)");
+    if (toList.length === 0) {
+      toast.error(`Veuillez renseigner au moins un destinataire ${target === "client" ? "client" : "conférencier"}`);
       setSendingLiaison(false);
       return;
     }
 
     try {
-      // Send to client
-      if (clientToList.length > 0) {
-        await supabase.functions.invoke("send-contact-email", {
-          body: {
-            to: clientToList,
-            subject: liaisonClientSubject,
-            body: liaisonClientBody + liaisonContent,
-            from_name: "Les Conférenciers",
-            cc: clientCcList.length > 0 ? clientCcList : undefined,
-          },
-        });
-      }
+      await supabase.functions.invoke("send-contact-email", {
+        body: {
+          to: toList,
+          subject,
+          body: body + buildLiaisonContent(),
+          from_name: "Les Conférenciers",
+          cc: ccList.length > 0 ? ccList : undefined,
+        },
+      });
 
-      // Send to speaker
-      if (speakerToList.length > 0) {
-        await supabase.functions.invoke("send-contact-email", {
-          body: {
-            to: speakerToList,
-            subject: liaisonSpeakerSubject,
-            body: liaisonSpeakerBody + liaisonContent,
-            from_name: "Les Conférenciers",
-            cc: speakerCcList.length > 0 ? speakerCcList : undefined,
-          },
-        });
-      }
-
-      // Track
       if (event) {
-        await supabase.from("events").update({ liaison_sheet_sent_at: new Date().toISOString() } as any).eq("id", event.id);
+        const nowIso = new Date().toISOString();
+        const patch: any = target === "client"
+          ? { liaison_email_client_sent_at: nowIso }
+          : { liaison_email_speaker_sent_at: nowIso };
+        if (!event.liaison_sheet_sent_at) patch.liaison_sheet_sent_at = nowIso;
+        await supabase.from("events").update(patch).eq("id", event.id);
       }
-      toast.success("Feuille de liaison envoyée !");
-      setLiaisonDialogOpen(false);
-      fetchData();
+      toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé !`);
+      await fetchData();
     } catch { toast.error("Erreur d'envoi"); }
     setSendingLiaison(false);
   };
+
 
   // ─── Event edit ───
   const openEventEdit = () => {
