@@ -112,7 +112,9 @@ const LiaisonSheetView = () => {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAdmin(!!session && !isPublic);
+      const admin = !!session && !isPublic;
+      setIsAdmin(admin);
+      if (admin) setEditing(true);
     });
     loadData();
   }, [routeId, token, isPublic]);
