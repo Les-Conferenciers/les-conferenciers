@@ -2803,8 +2803,15 @@ Nelly Sabde - Les Conférenciers`);
             </details>
 
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
-              {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour" : "Créer le contrat"}
+              {saving
+                ? "Sauvegarde…"
+                : editingContract
+                  ? contract && (contract.status === "sent" || contract.status === "signed")
+                    ? `Créer la version v${(contract.version || 1) + 1}`
+                    : "Mettre à jour"
+                  : "Créer le contrat"}
             </Button>
+
           </div>
         </DialogContent>
       </Dialog>
