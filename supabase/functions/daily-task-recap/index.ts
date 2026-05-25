@@ -36,10 +36,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: tasksErr.message }), { status: 500, headers: corsHeaders });
     }
 
-    // Ignore tasks attached to lost / archived proposals
+    // Ignore tasks attached to lost / archived / accepted proposals
     const tasks = (rawTasks || []).filter((t: any) => {
       const s = t.proposals?.status;
-      return s !== "lost" && s !== "archived";
+      return s !== "lost" && s !== "archived" && s !== "accepted";
     });
 
     if (!tasks || tasks.length === 0) {
