@@ -89,7 +89,7 @@ const ContractView = () => {
       .select(`
         *,
         proposal:proposals(
-          client_name, client_email, recipient_name, client_id,
+          client_name, client_email, recipient_name, client_id, audience_size,
           proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(name, gender))
         )
       `)
@@ -97,7 +97,13 @@ const ContractView = () => {
       .single();
     let c = data as any;
 
-    const { data: ev } = await supabase.from("events").select("id, bdc_number, audience_size, theme, selected_speaker_id").eq("proposal_id", c?.proposal_id || c?.id).maybeSingle();
+    const { data: ev } = await supabase
+      .from("events")
+      .select("id, bdc_number, audience_size, theme, selected_speaker_id")
+      .eq("proposal_id", c?.proposal_id || c?.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     setEvent(ev as any);
 
     const effectiveSpeakerId = c?.selected_speaker_id || (ev as any)?.selected_speaker_id;
@@ -120,10 +126,8 @@ const ContractView = () => {
       setEvFormat(c.event_format || "");
       setEvDescription(c.event_description || "");
     }
-    if (ev) {
-      setEvAudience((ev as any).audience_size || "");
-      setEvTheme((ev as any).theme || "");
-    }
+    setEvAudience((ev as any)?.audience_size || c?.proposal?.audience_size || "");
+    setEvTheme((ev as any)?.theme || "");
 
     setLoading(false);
   };
@@ -198,6 +202,7 @@ const ContractView = () => {
   const clientName = client?.company_name || proposal?.client_name || "";
   const clientAddress = client ? `${client.address || ""} ${client.city || ""}`.trim() : "";
   const clientSiret = client?.siret || "";
+  const displayAudience = event?.audience_size || evAudience || proposal?.audience_size || "";
 
   const inputCls = "border border-primary/30 rounded px-2 py-0.5 text-sm bg-yellow-50 focus:outline-none focus:ring-1 focus:ring-primary";
 
@@ -286,12 +291,12 @@ const ContractView = () => {
                 ? <input type="text" value={evTime} onChange={e => setEvTime(e.target.value)} className={inputCls + " min-w-[200px]"} />
                 : (contract.event_time || "À définir")}
             </p>
-            {(editing || event?.audience_size) && (
+            {(editing || displayAudience) && (
               <p>
                 <span className="text-gray-600">Auditoire :</span>{" "}
                 {editing
                   ? <input type="text" value={evAudience} onChange={e => setEvAudience(e.target.value)} className={inputCls} />
-                  : `${event?.audience_size} personnes attendues`}
+                  : `${displayAudience} personnes attendues`}
               </p>
             )}
             {(editing || event?.theme) && (
