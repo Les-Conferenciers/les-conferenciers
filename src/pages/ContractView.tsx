@@ -298,18 +298,14 @@ const ContractView = () => {
                 ? <input type="text" value={evTheme} onChange={e => setEvTheme(e.target.value)} className={inputCls + " min-w-[260px]"} />
                 : (event?.theme || "—")}
             </p>
-            <p>
-              <span className="text-gray-600">Format :</span>{" "}
-              {editing
-                ? <input type="text" value={evFormat} onChange={e => setEvFormat(e.target.value)} className={inputCls + " min-w-[200px]"} />
-                : (contract.event_format || "—")}
-            </p>
-            <div>
-              <span className="text-gray-600">Détails :</span>{" "}
-              {editing
-                ? <textarea value={evDescription} onChange={e => setEvDescription(e.target.value)} rows={3} className={"block w-full mt-1 " + inputCls} />
-                : (contract.event_description ? <span className="whitespace-pre-line">{contract.event_description}</span> : "—")}
-            </div>
+            {(editing || contract.event_description) && (
+              <div>
+                <span className="text-gray-600">Détails :</span>{" "}
+                {editing
+                  ? <textarea value={evDescription} onChange={e => setEvDescription(e.target.value)} rows={3} className={"block w-full mt-1 " + inputCls} />
+                  : <span className="whitespace-pre-line">{contract.event_description}</span>}
+              </div>
+            )}
           </div>
         </section>
 

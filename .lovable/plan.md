@@ -1,20 +1,25 @@
-## Problème
+## Mise à jour du plan — point 2 (Feuille de liaison email conférencier)
 
-L'aperçu contrat (`/admin/contrat/:id`) ne reflète pas le changement de conférencier retenu effectué dans le dossier événement, car `contracts.selected_speaker_id` n'est mis à jour qu'à la sauvegarde du contrat, pas au moment du clic sur "Conférencier retenu".
+Remplacement du sous-point « Forcer le tutoiement » par :
 
-## Correctif
+**Choix tutoiement / vouvoiement dans la pop-up d'envoi**
 
-`src/components/admin/EventDossier.tsx` — dans les deux endroits qui changent le conférencier retenu, propager la valeur à la table `contracts` :
+Dans le dialogue d'envoi de la feuille de liaison (`EventDossier.openLiaisonDialog` → `Dialog` du brouillon email conférencier) :
 
-1. **`handleSelectSpeaker` (ligne 396)** : après l'update de `events.selected_speaker_id`, si `contract` existe, faire `supabase.from("contracts").update({ selected_speaker_id: speakerId }).eq("id", contract.id)`.
+- Ajouter un sélecteur `RadioGroup` (ou `Select`) en haut du dialogue, juste au-dessus du champ « Objet » :
+  - Options : **Vouvoiement** / **Tutoiement**
+  - Valeur par défaut chargée depuis `speaker.formal_address` (`true` → Vouvoiement, `false` → Tutoiement).
+- Stocker la valeur dans un nouvel état local `liaisonAddressing: "formal" | "informal"`.
+- Le template du corps de l'email (`liaisonSpeakerBody`) et la phrase d'accusé de réception sont régénérés à chaque changement du sélecteur :
+  - **Vouvoiement** : « Bonjour [Prénom], … **Pourriez-vous m'accuser réception de ce mail ?** … Je vous souhaite … »
+  - **Tutoiement** : « Bonjour [Prénom], … **Peux-tu m'accuser réception de ce mail ?** … Je te souhaite … »
+- Lorsque l'utilisatrice modifie le sélecteur après avoir édité manuellement le corps, afficher une confirmation `window.confirm("Régénérer le brouillon avec le nouveau choix ? Vos modifications seront perdues.")` avant d'écraser.
+- Aucune modification du champ `formal_address` en base : le choix est ponctuel et ne modifie pas la fiche conférencier.
 
-2. **Bouton inline (ligne 1729)** : même ajout après l'update de l'événement, avant le `setContractLines`.
+**Le reste du point 2 reste identique** : objet `Conférence du [date] - [Client]`, phrase d'accusé en gras (`<strong>…</strong>`), remplacement du `Textarea` par `SimpleRichTextEditor`.
 
-Aussi : ajouter le même update dans l'effet de bootstrap (ligne 376-377) qui auto-sélectionne le conférencier unique d'une proposition mono-speaker.
+---
 
-### Hors scope
-- Pas de changement dans `ContractView.tsx` / `ContractSign.tsx` (le fallback sur `event.selected_speaker_id` est déjà en place).
-- Pas de migration de données.
+## Le reste du plan (points 1, 3–10) reste inchangé
 
-## Vérification
-- Sur le dossier Atout Groupe, changer le conférencier retenu et recharger `/admin/contrat/9a9e3bc2-…` → l'en-tête affiche bien le nouveau conférencier.
+Voir version précédente — tous les autres éléments (pré-remplissage contrat avec remontée `previous_proposal_id`, suppression « Format », nouveau template email contrat client, case Détails conditionnelle, masquage acompte client, suppression préfixe BDC + J-n, visio basée sur `visio_date/visio_time`, refonte facturation avec IBAN/BIC réels + numérotation JJMM-BDC + notes + nom de fichier, pré-remplissage tech feuille de liaison + contacts client/conférencier, nouveau corps relance info, formulation budget, upload 50 Mo) restent à implémenter tels que décrits.

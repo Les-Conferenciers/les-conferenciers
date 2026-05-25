@@ -107,7 +107,6 @@ const InvoiceView = () => {
           <div className="flex-1">
             <img src="/images/les-conferenciers-banniere.png" alt="Les Conférenciers" className="h-14 w-auto mb-3" />
             <p className="text-xs text-gray-600 leading-snug">
-              {COMPANY.tradeName}<br />
               {COMPANY.legalForm} – {COMPANY.fullAddress}<br />
               SIRET : {COMPANY.siret} – TVA : {COMPANY.tvaIntra}
             </p>

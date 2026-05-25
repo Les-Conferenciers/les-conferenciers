@@ -272,6 +272,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonClientCc, setLiaisonClientCc] = useState("");
   const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
+  const [liaisonAddressing, setLiaisonAddressing] = useState<"formal" | "informal">("formal");
 
   // Visio quick picker
   const [visioQuickDate, setVisioQuickDate] = useState<Date | undefined>();
@@ -886,16 +887,41 @@ Nelly Sabde - Les Conférenciers`);
   };
 
   // ─── Liaison Sheet ───
+  // Helper: build speaker body based on tu/vous choice
+  const buildLiaisonSpeakerBody = (addressing: "formal" | "informal", speakerFirstName: string) => {
+    if (addressing === "informal") {
+      return `Bonjour ${speakerFirstName},
+
+Voici comme convenu la feuille de liaison pour ton intervention.
+
+<strong>Peux-tu m'accuser réception de ce mail ?</strong>
+
+Je te souhaite une excellente journée !
+
+Nelly Sabde - Les Conférenciers`;
+    }
+    return `Bonjour ${speakerFirstName},
+
+Voici comme convenu la feuille de liaison pour votre intervention.
+
+<strong>Pourriez-vous m'accuser réception de ce mail ?</strong>
+
+Je vous souhaite une excellente journée !
+
+Nelly Sabde - Les Conférenciers`;
+  };
+
   const openLiaisonDialog = () => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
     const speakerFirstName = speakerName.split(" ")[0];
-    const isFormal = speaker?.formal_address !== false;
+    const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
+    setLiaisonAddressing(initialAddressing);
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
     setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "L'intervenant participera avec plaisir au déjeuner à l'issue de sa conférence.");
-    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur, micro casque");
-    setLiaisonSalleSetup(event?.room_setup || "");
+    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur\nMicro casque");
+    setLiaisonSalleSetup("");
     setLiaisonArrival(event?.arrival_info || "");
     setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
     setLiaisonEventLocation(contract?.event_location || "");
@@ -908,7 +934,7 @@ Nelly Sabde - Les Conférenciers`);
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
 
     // Client email template (nouveau wording, sans prix)
-    setLiaisonClientSubject(`Feuille de liaison - ${speakerName}${eventDateLong ? ` - ${eventDateLong}` : ""}`);
+    setLiaisonClientSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
     setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
 
 Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
@@ -921,15 +947,9 @@ Excellente fin de journée à vous !
 
 Nelly Sabde - Les Conférenciers`);
 
-    // Speaker email template — tutoiement si formal_address = false, date dans l'objet
-    setLiaisonSpeakerSubject(`Feuille de liaison${eventDateLong ? ` - ${eventDateLong}` : ""} - ${proposal.client_name}`);
-    setLiaisonSpeakerBody(`${speakerFirstName},
-
-${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
-
-${isFormal ? "À très bientôt !" : "À très vite !"}
-
-Nelly Sabde - Les Conférenciers`);
+    // Speaker email template — adressage piloté par le sélecteur dans la pop-up
+    setLiaisonSpeakerSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
+    setLiaisonSpeakerBody(buildLiaisonSpeakerBody(initialAddressing, speakerFirstName));
 
     // Pre-fill recipients (editable) — pas de CC conférencier sur le mail client
     const speakerEmail = speaker?.email || "";
@@ -2105,8 +2125,8 @@ Nelly Sabde - Les Conférenciers`);
                 <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🎯 Thématique</Label><Input value={liaisonTheme} onChange={e => setLiaisonTheme(e.target.value)} placeholder="Le management" className="h-8 text-sm" /></div>
               </div>
               <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Besoins logistiques</Label><Textarea value={liaisonTechNeeds} onChange={e => { setLiaisonTechNeeds(e.target.value); setLiaisonSalleSetup(""); }} placeholder="Vidéoprojecteur, micro casque, configuration salle…" rows={2} className="text-sm" /></div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Besoins logistiques</Label><Textarea value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur&#10;Micro casque" rows={3} className="text-sm" /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={6} className="text-sm min-h-[160px]" placeholder="Le conférencier restera pour le déjeuner..." /></div>
 
               <div className="flex justify-end gap-2">
                 <Button
@@ -2179,8 +2199,30 @@ Nelly Sabde - Les Conférenciers`);
                     <Input value={liaisonSpeakerCc} onChange={e => setLiaisonSpeakerCc(e.target.value)} placeholder="client@email.com" className="text-sm" />
                     <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Formule d'adresse</Label>
+                    <Select
+                      value={liaisonAddressing}
+                      onValueChange={(v: "formal" | "informal") => {
+                        const speaker = getSelectedSpeakerInfo();
+                        const firstName = (speaker?.name || "").split(" ")[0];
+                        const next = buildLiaisonSpeakerBody(v, firstName);
+                        if (liaisonSpeakerBody && liaisonSpeakerBody !== buildLiaisonSpeakerBody(liaisonAddressing, firstName)) {
+                          if (!window.confirm("Régénérer le brouillon avec le nouveau choix ? Vos modifications seront perdues.")) return;
+                        }
+                        setLiaisonAddressing(v);
+                        setLiaisonSpeakerBody(next);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="formal">Vouvoiement</SelectItem>
+                        <SelectItem value="informal">Tutoiement</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
-                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
+                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><RichTextEditor value={liaisonSpeakerBody} onChange={setLiaisonSpeakerBody} /></div>
                   <Button className="w-full" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
                     <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer au conférencier"}
                   </Button>
