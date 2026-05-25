@@ -295,6 +295,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoiceType, setInvoiceType] = useState<"acompte" | "solde" | "total">("total");
   const [dueDate, setDueDate] = useState("");
+  const [invoiceNotes, setInvoiceNotes] = useState("");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Invoice edit
