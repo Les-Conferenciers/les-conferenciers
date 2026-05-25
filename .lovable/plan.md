@@ -1,25 +1,23 @@
-## Mise à jour du plan — point 2 (Feuille de liaison email conférencier)
+## Contrat — Auditoire et Thématique
 
-Remplacement du sous-point « Forcer le tutoiement » par :
+### Problème
+1. L'auditoire est bien stocké en base (123) mais l'affichage est brut ("123") sans la formulation "personnes attendues".
+2. La thématique n'est pas saisissable dans la pop-up de création de contrat (`EventDossier` → "Créer le contrat"), donc elle reste vide.
 
-**Choix tutoiement / vouvoiement dans la pop-up d'envoi**
+### Modifications
 
-Dans le dialogue d'envoi de la feuille de liaison (`EventDossier.openLiaisonDialog` → `Dialog` du brouillon email conférencier) :
+**1. `src/components/admin/EventDossier.tsx` — pop-up création contrat**
+- Ajouter un nouvel état `contractTheme` initialisé depuis `event?.theme || proposal.theme || ""` (comme pour `contractAudienceSize`).
+- Ajouter un champ texte `Label "Thématique" / Input` juste sous la ligne "Taille de l'auditoire / N° Bon de commande".
+- Persister `theme: contractTheme || null` dans l'`update`/`upsert` de la table `events` (à côté de `audience_size` ligne 676).
 
-- Ajouter un sélecteur `RadioGroup` (ou `Select`) en haut du dialogue, juste au-dessus du champ « Objet » :
-  - Options : **Vouvoiement** / **Tutoiement**
-  - Valeur par défaut chargée depuis `speaker.formal_address` (`true` → Vouvoiement, `false` → Tutoiement).
-- Stocker la valeur dans un nouvel état local `liaisonAddressing: "formal" | "informal"`.
-- Le template du corps de l'email (`liaisonSpeakerBody`) et la phrase d'accusé de réception sont régénérés à chaque changement du sélecteur :
-  - **Vouvoiement** : « Bonjour [Prénom], … **Pourriez-vous m'accuser réception de ce mail ?** … Je vous souhaite … »
-  - **Tutoiement** : « Bonjour [Prénom], … **Peux-tu m'accuser réception de ce mail ?** … Je te souhaite … »
-- Lorsque l'utilisatrice modifie le sélecteur après avoir édité manuellement le corps, afficher une confirmation `window.confirm("Régénérer le brouillon avec le nouveau choix ? Vos modifications seront perdues.")` avant d'écraser.
-- Aucune modification du champ `formal_address` en base : le choix est ponctuel et ne modifie pas la fiche conférencier.
+**2. `src/pages/ContractView.tsx` — affichage**
+- Ligne 290-294 (Auditoire) : afficher `{event.audience_size} personnes attendues` quand la valeur est présente, sinon `—`. Le mode édition garde l'`input` actuel (saisie d'un nombre uniquement).
+- Ligne 295-300 (Thématique) : déjà OK, l'édition existe. Masquer entièrement la ligne quand `!editing && !event?.theme` (pour ne rien afficher si vide, conformément à la demande "s'affichera dans le contrat s'il existe"). Idem côté Auditoire si vide.
 
-**Le reste du point 2 reste identique** : objet `Conférence du [date] - [Client]`, phrase d'accusé en gras (`<strong>…</strong>`), remplacement du `Textarea` par `SimpleRichTextEditor`.
+**3. `src/pages/SpeakerContractView.tsx` — contrat conférencier**
+- Ligne 109 : remplacer `environ {ev.audience_size}` par `{ev.audience_size} personnes attendues` pour cohérence.
 
----
-
-## Le reste du plan (points 1, 3–10) reste inchangé
-
-Voir version précédente — tous les autres éléments (pré-remplissage contrat avec remontée `previous_proposal_id`, suppression « Format », nouveau template email contrat client, case Détails conditionnelle, masquage acompte client, suppression préfixe BDC + J-n, visio basée sur `visio_date/visio_time`, refonte facturation avec IBAN/BIC réels + numérotation JJMM-BDC + notes + nom de fichier, pré-remplissage tech feuille de liaison + contacts client/conférencier, nouveau corps relance info, formulation budget, upload 50 Mo) restent à implémenter tels que décrits.
+### Hors scope
+- Pas de migration : `events.theme` et `events.audience_size` existent déjà.
+- Pas de modification du contrat conférencier au-delà de l'harmonisation du wording auditoire.
