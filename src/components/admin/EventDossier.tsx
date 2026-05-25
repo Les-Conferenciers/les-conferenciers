@@ -261,6 +261,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
   const [speakerEmailType, setSpeakerEmailType] = useState<"info" | "contract">("info");
+  const [speakerEmailAddressing, setSpeakerEmailAddressing] = useState<"formal" | "informal">("formal");
 
   // Liaison sheet dialog
   const [liaisonDialogOpen, setLiaisonDialogOpen] = useState(false);
