@@ -1,46 +1,65 @@
-## Diagnostic
+## 1. Pop-up "Communication conférencier"
 
-Le bouton « Aperçu de la feuille » appelle `handlePreviewLiaisonSheet` (`src/components/admin/EventDossier.tsx`, ligne 1180) :
+Fichier : `src/components/admin/EventDossier.tsx` (fonction `openSpeakerEmail` ~ligne 943, dialog ~ligne 2738).
 
+### a. Sélecteur tutoiement / vouvoiement
+- Nouvel état `speakerEmailAddressing: "formal" | "informal"`, initialisé d'après `speaker.formal_address`.
+- Radio « Tu / Vous » dans la pop-up (même composant que la pop-up Feuille de liaison).
+- Extraire `buildSpeakerEmailBody(type, addressing, ...)` pour régénérer le corps au changement de radio.
+
+### b. Date dans l'objet
+Réutiliser `liaisonEventDateFmt` (date longue FR) :
+- Infos : `Conférence du {date longue} - {client}`
+- Bon de commande : `Bon de commande - Conférence du {date longue} - {client}`
+
+### c. Accusé de réception en gras
+Passer les corps en HTML et insérer avant la formule de politesse :
+`<p><strong>{Peux-tu | Pouvez-vous} m'accuser réception de ce mail ?</strong></p>`
+Supprimer la mention texte plat déjà présente dans le template BDC (ligne 1000).
+
+### d. Éditeur de texte enrichi
+Remplacer le `Textarea` du corps (lignes 2771-2776) par `<RichTextEditor>` (déjà utilisé pour le mail contrat client).
+
+### e. Envoi HTML côté edge function
+`supabase/functions/send-contact-email/index.ts` échappe le HTML (ligne 59). Ajouter la détection HTML déjà utilisée par `send-contract-email` :
+- Si `/<\w+/.test(body)` → injecter le HTML tel quel, sans `white-space:pre-wrap`.
+- Sinon → comportement actuel (formulaire contact public inchangé).
+
+## 2. Feuille de liaison — page publique accessible via token
+
+### Migration BDD
+- Ajouter colonne `token TEXT UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex')` sur `events`.
+- Back-fill des lignes existantes puis `NOT NULL`.
+- Nouvelle policy publique sur `events` :
+  `CREATE POLICY "Public read events via token" ON events FOR SELECT TO public USING (token IS NOT NULL);`
+  (accès indirect : il faut connaître le token pour requêter la ligne via `.eq("token", :token)`.)
+- `contracts`, `proposals`, `proposal_speakers`, `speakers` ont déjà la lecture publique compatible.
+
+### Route publique
+Dans `src/App.tsx` ajouter : `/feuille-liaison/:token` → `LiaisonSheetView` en mode public.
+
+Côté `src/pages/LiaisonSheetView.tsx` :
+- Si route `/feuille-liaison/:token` → charger l'event par `token` puis déduire le `proposal_id` pour récupérer le contrat.
+- Si route `/admin/feuille-liaison/:id` → comportement actuel (édition admin conservée).
+- En mode public, forcer `editing = false`, masquer les boutons « Modifier / Enregistrer / Annuler » (garder uniquement « Imprimer / PDF »).
+
+### Bouton dans les mails de liaison
+Dans `openLiaisonDialog` (~ligne 1062 de `EventDossier.tsx`), construire l'URL publique à partir du token de l'event :
 ```ts
-const handlePreviewLiaisonSheet = async () => {
-  await persistLiaisonFields();
-  await fetchData();
-  window.open(`/admin/feuille-liaison/${proposal.id}`, "_blank");
-};
+const liaisonUrl = `${window.location.origin}/feuille-liaison/${event.token}`;
+```
+Ajouter à la fin des corps client ET conférencier :
+```html
+<p style="text-align:center;margin:24px 0;">
+  <a href="${liaisonUrl}" style="display:inline-block;background:#1a2332;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Consulter la feuille de liaison</a>
+</p>
 ```
 
-Les navigateurs exigent que `window.open` soit appelé **dans le même tick** que le clic utilisateur. Après `await`, le « user gesture » est perdu et le popup est bloqué silencieusement → l'onglet ne s'ouvre jamais, sans message d'erreur visible.
+L'edge function d'envoi des mails de liaison bénéficiera de la détection HTML mise en place au § 1e.
 
-## Correctif
-
-Ouvrir l'onglet **immédiatement** au clic, puis y rediriger une fois la sauvegarde terminée :
-
-```ts
-const handlePreviewLiaisonSheet = async () => {
-  const w = window.open("about:blank", "_blank");
-  try {
-    await persistLiaisonFields();
-    await fetchData();
-  } finally {
-    const url = `/admin/feuille-liaison/${proposal.id}`;
-    if (w) {
-      w.location.href = url;
-    } else {
-      // Fallback si bloqué quand même : navigation in-place
-      window.location.href = url;
-    }
-  }
-};
-```
-
-Cela :
-- préserve le user gesture (popup non bloqué) ;
-- conserve la persistance avant aperçu ;
-- garde l'édition admin disponible (la page `LiaisonSheetView` détecte déjà la session via `supabase.auth.getSession()` et affiche les boutons « Modifier / Enregistrer »).
-
-## Fichier modifié
-- `src/components/admin/EventDossier.tsx` (fonction `handlePreviewLiaisonSheet`, ligne 1180)
-
-## Hors scope
-Ce plan corrige uniquement le bug d'aperçu. Les évolutions discutées précédemment (tu/vous, éditeur enrichi, accusé en gras, date dans l'objet, page publique de la feuille de liaison via token) restent en attente et pourront être traitées dans un plan séparé.
+## Fichiers modifiés
+- Migration Supabase : ajout `events.token` + RLS publique
+- `src/App.tsx` : route publique
+- `src/pages/LiaisonSheetView.tsx` : support mode public via token
+- `src/components/admin/EventDossier.tsx` : pop-up conférencier + bouton liaison dans mails
+- `supabase/functions/send-contact-email/index.ts` : détection HTML

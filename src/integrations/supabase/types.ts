@@ -180,6 +180,7 @@ export type Database = {
           special_requests: string | null
           tech_needs: string | null
           theme: string | null
+          token: string
           updated_at: string
           visio_date: string | null
           visio_email_client_sent_at: string | null
@@ -228,6 +229,7 @@ export type Database = {
           special_requests?: string | null
           tech_needs?: string | null
           theme?: string | null
+          token?: string
           updated_at?: string
           visio_date?: string | null
           visio_email_client_sent_at?: string | null
@@ -276,6 +278,7 @@ export type Database = {
           special_requests?: string | null
           tech_needs?: string | null
           theme?: string | null
+          token?: string
           updated_at?: string
           visio_date?: string | null
           visio_email_client_sent_at?: string | null
