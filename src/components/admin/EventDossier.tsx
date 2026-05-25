@@ -941,69 +941,88 @@ Nelly Sabde - Les Conférenciers`);
   };
 
   // ─── Speaker email ───
-  const openSpeakerEmail = (type: "info" | "contract") => {
-    setSpeakerEmailType(type);
+  const buildSpeakerEmailSubject = (type: "info" | "contract") => {
+    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
+    const datePart = eventDateLong ? `Conférence du ${eventDateLong}` : "Conférence";
+    return type === "info"
+      ? `${datePart} - ${proposal.client_name}`
+      : `Bon de commande - ${datePart} - ${proposal.client_name}`;
+  };
+
+  const buildSpeakerEmailBody = (type: "info" | "contract", addressing: "formal" | "informal") => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "le conférencier";
     const firstName = speakerName.split(" ")[0];
-    const isFormal = speaker?.formal_address !== false;
-    const greeting = isFormal ? `Bonjour ${firstName},` : `Hello ${firstName},`;
-    const vouvoi = isFormal;
-    setSpeakerEmailTo(speaker?.email || "");
-    setSpeakerEmailCc("");
-
+    const vouvoi = addressing === "formal";
+    const greeting = `Bonjour ${firstName},`;
     const dateStr = contract?.event_date
       ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
       : "à définir";
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
 
+    const ack = vouvoi
+      ? "Pourriez-vous m'accuser réception de ce mail ?"
+      : "Peux-tu m'accuser réception de ce mail ?";
+    const closing = vouvoi ? "À très bientôt et bonne journée !" : "À très vite et bonne journée !";
+
+    const line = (label: string, value: string | undefined | null) =>
+      value ? `<p>${label} <strong>${value}</strong></p>` : "";
+
     if (type === "info") {
-      setSpeakerEmailSubject(
-        `Intervention - ${proposal.client_name}${event?.event_title ? ` - ${event.event_title}` : ""}`,
-      );
-      setSpeakerEmailBody(`${greeting}
-
-${vouvoi ? "Voici comme convenu les informations concernant votre intervention :" : "Voici comme convenu les infos concernant ton intervention :"}
-
-📅 Date de l'évènement : ${dateStr}
-📍 Lieu de l'intervention : ${contract?.event_location || "à définir"}
-🕐 Horaires de l'intervention : ${contract?.event_time || "à définir"}
-${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
-${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
-👥 Auditoire : ${event?.audience_size || "à définir"}
-📋 Thématique : ${event?.theme || "à définir"}
-🏢 Client : ${proposal.client_name}
-💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
-${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
-${event?.contact_on_site_name ? `\n👤 Contact sur place : ${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}` : ""}
-${event?.arrival_info ? `🚗 Arrivée : ${event.arrival_info}` : ""}
-${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
-${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
-${event?.tech_needs ? `🔧 Technique : ${event.tech_needs}` : ""}
-${event?.room_setup ? `🪑 Configuration salle : ${event.room_setup}` : ""}
-${event?.special_requests ? `\n📝 Remarques : ${event.special_requests}` : ""}
-
-${vouvoi ? "À très bientôt et bonne journée !" : "A très vite et bonne journée !"}
-
-Nelly Sabde - Les Conférenciers`);
-    } else {
-      setSpeakerEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
-      setSpeakerEmailBody(`${greeting}
-
-${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :" : "Voici le bon de commande pour ton intervention :"}
-
-📅 Date de l'évènement : ${dateStr}
-📍 Lieu : ${contract?.event_location || "à définir"}
-🏢 Client : ${proposal.client_name}
-💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
-
-${vouvoi ? "Pourriez-vous m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible." : "Peux-tu m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible."}
-
-${vouvoi ? "Restant à votre disposition." : "A très vite !"}
-
-Nelly Sabde - Les Conférenciers`);
+      const intro = vouvoi
+        ? "Voici comme convenu les informations concernant votre intervention :"
+        : "Voici comme convenu les infos concernant ton intervention :";
+      return `<p>${greeting}</p>
+<p>${intro}</p>
+${line("📅 Date de l'évènement :", dateStr)}
+${line("📍 Lieu de l'intervention :", contract?.event_location || "à définir")}
+${line("🕐 Horaires de l'intervention :", contract?.event_time || "à définir")}
+${line("🎤 Conférence :", event?.conference_title)}
+${line("⏱ Durée :", event?.conference_duration)}
+${line("👥 Auditoire :", event?.audience_size || "à définir")}
+${line("📋 Thématique :", event?.theme || "à définir")}
+${line("🏢 Client :", proposal.client_name)}
+${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("👔 Dress code :", event?.dress_code)}
+${event?.contact_on_site_name ? `<p>👤 Contact sur place : <strong>${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}</strong></p>` : ""}
+${line("🚗 Arrivée :", event?.arrival_info)}
+${line("🅿️ Parking :", event?.parking_info)}
+${line("🏨 Hôtel :", event?.hotel_info)}
+${line("🔧 Technique :", event?.tech_needs)}
+${line("🪑 Configuration salle :", event?.room_setup)}
+${event?.special_requests ? `<p>📝 Remarques : ${event.special_requests}</p>` : ""}
+<p><strong>${ack}</strong></p>
+<p>${closing}</p>
+<p>Nelly Sabde - Les Conférenciers</p>`;
     }
+    const intro = vouvoi
+      ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :"
+      : "Voici le bon de commande pour ton intervention :";
+    const sendBack = vouvoi
+      ? "Merci de me retourner le contrat signé dès que possible."
+      : "Merci de me retourner le contrat signé dès que possible.";
+    const sign = vouvoi ? "Restant à votre disposition." : "À très vite !";
+    return `<p>${greeting}</p>
+<p>${intro}</p>
+${line("📅 Date de l'évènement :", dateStr)}
+${line("📍 Lieu :", contract?.event_location || "à définir")}
+${line("🏢 Client :", proposal.client_name)}
+${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+<p><strong>${ack}</strong> ${sendBack}</p>
+<p>${sign}</p>
+<p>Nelly Sabde - Les Conférenciers</p>`;
+  };
+
+  const openSpeakerEmail = (type: "info" | "contract") => {
+    setSpeakerEmailType(type);
+    const speaker = getSelectedSpeakerInfo();
+    const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
+    setSpeakerEmailAddressing(initialAddressing);
+    setSpeakerEmailTo(speaker?.email || "");
+    setSpeakerEmailCc("");
+    setSpeakerEmailSubject(buildSpeakerEmailSubject(type));
+    setSpeakerEmailBody(buildSpeakerEmailBody(type, initialAddressing));
     setSpeakerEmailOpen(true);
   };
 
