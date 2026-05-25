@@ -171,6 +171,9 @@ export type Database = {
           selected_speaker_id: string | null
           speaker_acknowledgment_at: string | null
           speaker_budget: number | null
+          speaker_contact_email: string | null
+          speaker_contact_name: string | null
+          speaker_contact_phone: string | null
           speaker_deposit_paid_at: string | null
           speaker_paid_at: string | null
           speaker_signed_contract_at: string | null
@@ -216,6 +219,9 @@ export type Database = {
           selected_speaker_id?: string | null
           speaker_acknowledgment_at?: string | null
           speaker_budget?: number | null
+          speaker_contact_email?: string | null
+          speaker_contact_name?: string | null
+          speaker_contact_phone?: string | null
           speaker_deposit_paid_at?: string | null
           speaker_paid_at?: string | null
           speaker_signed_contract_at?: string | null
@@ -261,6 +267,9 @@ export type Database = {
           selected_speaker_id?: string | null
           speaker_acknowledgment_at?: string | null
           speaker_budget?: number | null
+          speaker_contact_email?: string | null
+          speaker_contact_name?: string | null
+          speaker_contact_phone?: string | null
           speaker_deposit_paid_at?: string | null
           speaker_paid_at?: string | null
           speaker_signed_contract_at?: string | null
@@ -341,6 +350,7 @@ export type Database = {
           id: string
           invoice_number: string
           invoice_type: string
+          notes: string | null
           paid_at: string | null
           proposal_id: string
           sent_at: string | null
@@ -357,6 +367,7 @@ export type Database = {
           id?: string
           invoice_number: string
           invoice_type?: string
+          notes?: string | null
           paid_at?: string | null
           proposal_id: string
           sent_at?: string | null
@@ -373,6 +384,7 @@ export type Database = {
           id?: string
           invoice_number?: string
           invoice_type?: string
+          notes?: string | null
           paid_at?: string | null
           proposal_id?: string
           sent_at?: string | null
@@ -914,7 +926,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_invoice_number: { Args: never; Returns: string }
+      generate_invoice_number:
+        | { Args: never; Returns: string }
+        | { Args: { _proposal_id: string }; Returns: string }
       get_invoice_bdc: { Args: { _invoice_id: string }; Returns: string }
     }
     Enums: {
