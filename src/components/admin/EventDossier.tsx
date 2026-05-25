@@ -2994,7 +2994,7 @@ Nelly Sabde - Les Conférenciers`);
                   <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Formule d'adresse</Label>
+                  <Label className="text-xs">Tutoiement ou Vouvoiement</Label>
                   <Select
                     value={liaisonAddressing}
                     onValueChange={(v: "formal" | "informal") => {
