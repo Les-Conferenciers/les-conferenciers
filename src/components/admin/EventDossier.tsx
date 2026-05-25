@@ -3446,20 +3446,33 @@ Nelly Sabde - Les Conférenciers`);
             <DialogTitle className="font-serif">Créer une facture - {proposal.client_name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label className="text-xs">Type de facture</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["acompte", "solde", "total"] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setInvoiceType(t)}
-                    className={`px-3 py-2 rounded-lg border text-sm capitalize transition-colors ${invoiceType === t ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-muted/50"}`}
-                  >
-                    {t === "acompte" ? "Acompte 50%" : t === "solde" ? "Solde 50%" : "Total 100%"}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {(() => {
+              const hasAcompte = invoices.some((i) => i.invoice_type === "acompte");
+              const onlySolde = hasAcompte;
+              const types = onlySolde ? (["solde"] as const) : (["acompte", "solde", "total"] as const);
+              return (
+                <div className="space-y-2">
+                  <Label className="text-xs">Type de facture</Label>
+                  {onlySolde && (
+                    <p className="text-xs text-muted-foreground">
+                      Une facture d'acompte a déjà été émise — seul le solde reste à facturer.
+                    </p>
+                  )}
+                  <div className={`grid gap-2 ${onlySolde ? "grid-cols-1" : "grid-cols-3"}`}>
+                    {types.map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setInvoiceType(t)}
+                        className={`px-3 py-2 rounded-lg border text-sm capitalize transition-colors ${invoiceType === t ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-muted/50"}`}
+                      >
+                        {t === "acompte" ? "Acompte 50%" : t === "solde" ? "Solde 50%" : "Total 100%"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="space-y-1">
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
