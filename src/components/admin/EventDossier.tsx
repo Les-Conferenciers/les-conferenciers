@@ -677,6 +677,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       }
       const { error: evErr } = await supabase.from("events").update({ 
         audience_size: contractAudienceSize || null,
+        theme: contractTheme || null,
         bdc_number: contractBdcNumber || null,
       } as any).eq("id", event.id);
       if (evErr) {
