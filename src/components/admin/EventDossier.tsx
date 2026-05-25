@@ -887,16 +887,41 @@ Nelly Sabde - Les Conférenciers`);
   };
 
   // ─── Liaison Sheet ───
+  // Helper: build speaker body based on tu/vous choice
+  const buildLiaisonSpeakerBody = (addressing: "formal" | "informal", speakerFirstName: string) => {
+    if (addressing === "informal") {
+      return `Bonjour ${speakerFirstName},
+
+Voici comme convenu la feuille de liaison pour ton intervention.
+
+<strong>Peux-tu m'accuser réception de ce mail ?</strong>
+
+Je te souhaite une excellente journée !
+
+Nelly Sabde - Les Conférenciers`;
+    }
+    return `Bonjour ${speakerFirstName},
+
+Voici comme convenu la feuille de liaison pour votre intervention.
+
+<strong>Pourriez-vous m'accuser réception de ce mail ?</strong>
+
+Je vous souhaite une excellente journée !
+
+Nelly Sabde - Les Conférenciers`;
+  };
+
   const openLiaisonDialog = () => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
     const speakerFirstName = speakerName.split(" ")[0];
-    const isFormal = speaker?.formal_address !== false;
+    const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
+    setLiaisonAddressing(initialAddressing);
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
     setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "L'intervenant participera avec plaisir au déjeuner à l'issue de sa conférence.");
-    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur, micro casque");
-    setLiaisonSalleSetup(event?.room_setup || "");
+    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur\nMicro casque");
+    setLiaisonSalleSetup("");
     setLiaisonArrival(event?.arrival_info || "");
     setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
     setLiaisonEventLocation(contract?.event_location || "");
@@ -909,7 +934,7 @@ Nelly Sabde - Les Conférenciers`);
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
 
     // Client email template (nouveau wording, sans prix)
-    setLiaisonClientSubject(`Feuille de liaison - ${speakerName}${eventDateLong ? ` - ${eventDateLong}` : ""}`);
+    setLiaisonClientSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
     setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
 
 Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
@@ -922,15 +947,9 @@ Excellente fin de journée à vous !
 
 Nelly Sabde - Les Conférenciers`);
 
-    // Speaker email template — tutoiement si formal_address = false, date dans l'objet
-    setLiaisonSpeakerSubject(`Feuille de liaison${eventDateLong ? ` - ${eventDateLong}` : ""} - ${proposal.client_name}`);
-    setLiaisonSpeakerBody(`${speakerFirstName},
-
-${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
-
-${isFormal ? "À très bientôt !" : "À très vite !"}
-
-Nelly Sabde - Les Conférenciers`);
+    // Speaker email template — adressage piloté par le sélecteur dans la pop-up
+    setLiaisonSpeakerSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
+    setLiaisonSpeakerBody(buildLiaisonSpeakerBody(initialAddressing, speakerFirstName));
 
     // Pre-fill recipients (editable) — pas de CC conférencier sur le mail client
     const speakerEmail = speaker?.email || "";
