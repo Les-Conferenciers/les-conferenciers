@@ -224,6 +224,15 @@ const InvoiceView = () => {
           </div>
         </section>
 
+        {invoice.notes && (
+          <section className="mb-6">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Notes</h2>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm whitespace-pre-wrap text-gray-800">
+              {invoice.notes}
+            </div>
+          </section>
+        )}
+
         {/* Légales */}
         <section className="text-[10px] text-gray-500 mt-6 leading-relaxed">
           <p>En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée, ainsi qu'une indemnité forfaitaire de 40 € pour frais de recouvrement (Art. L441-10 du Code de commerce).</p>
