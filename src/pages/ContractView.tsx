@@ -133,7 +133,10 @@ const ContractView = () => {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setIsAdmin(!!session));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAdmin(!!session);
+      if (session) setEditing(true);
+    });
     fetchAll();
   }, [id]);
 
