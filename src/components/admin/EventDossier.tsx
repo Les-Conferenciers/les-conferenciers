@@ -192,6 +192,8 @@ const parseAmountInput = (value: string) => Number(value.replace(/\s/g, "").repl
 
 const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contract, setContract] = useState<Contract | null>(null);
+  const [previousContracts, setPreviousContracts] = useState<Contract[]>([]);
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
