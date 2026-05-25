@@ -592,6 +592,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
+    setContractTheme(event?.theme || "");
     setContractBdcNumber(event?.bdc_number || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
     const savedCommission = Number((contract as any).agency_commission) || 0;
