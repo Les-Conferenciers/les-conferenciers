@@ -2793,17 +2793,37 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
             <div className="space-y-2">
+              <Label className="text-xs">Adressage</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSpeakerEmailAddressing("informal");
+                    setSpeakerEmailBody(buildSpeakerEmailBody(speakerEmailType, "informal"));
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${speakerEmailAddressing === "informal" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Tutoiement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSpeakerEmailAddressing("formal");
+                    setSpeakerEmailBody(buildSpeakerEmailBody(speakerEmailType, "formal"));
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${speakerEmailAddressing === "formal" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Vouvoiement
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs">Objet</Label>
               <Input value={speakerEmailSubject} onChange={(e) => setSpeakerEmailSubject(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Corps du mail</Label>
-              <Textarea
-                value={speakerEmailBody}
-                onChange={(e) => setSpeakerEmailBody(e.target.value)}
-                rows={12}
-                className="text-sm"
-              />
+              <RichTextEditor value={speakerEmailBody} onChange={setSpeakerEmailBody} />
             </div>
             <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
               <Send className="h-4 w-4 mr-2" />
