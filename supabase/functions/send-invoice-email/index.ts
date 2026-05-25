@@ -104,11 +104,6 @@ Deno.serve(async (req) => {
           Consulter la facture
         </a>
       </div>
-      <div style="background:#f8f6f1;padding:16px;border-radius:8px;margin:20px 0;">
-        <p style="color:#333;font-size:13px;margin:0 0 4px;font-weight:bold;">Coordonnées bancaires :</p>
-        <p style="color:#555;font-size:13px;margin:0;">IBAN : ${COMPANY_BANK.iban}</p>
-        <p style="color:#555;font-size:13px;margin:0;">BIC : ${COMPANY_BANK.bic}</p>
-      </div>
     </div>
     ${emailSignature}
     ${emailFooter}
