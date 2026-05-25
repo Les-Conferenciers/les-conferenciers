@@ -55,8 +55,8 @@ const SignedContractUpload = ({ contractId }: Props) => {
       toast.error("Format non supporté (PDF, image ou Word uniquement)");
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("Fichier trop volumineux (max 20 Mo)");
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Fichier trop volumineux (max 50 Mo)");
       return;
     }
 
