@@ -94,10 +94,28 @@ const InvoiceView = () => {
   const totalPrestationHT = invoice.amount_ht; // already prorated for the invoice (acompte/solde/total)
   const vhr = invoice.vhr_estimate || 0;
 
+  const clientDisplayName = client?.company_name || proposal?.client_name || "";
+  const bdcClean = (bdcNumber || "").replace(/^BDC[- ]*/i, "");
+  const bdcLabel = bdcClean && bdcClean !== "—" ? `BDC-${bdcClean}` : "—";
+  const paymentRef = clientDisplayName && bdcLabel !== "—" ? `${clientDisplayName} - ${bdcLabel}` : bdcLabel;
+
+  const handlePrint = () => {
+    const previousTitle = document.title;
+    const fileName = `Facture – ${clientDisplayName || "client"} – ${bdcLabel}`;
+    document.title = fileName;
+    const restore = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    window.print();
+    setTimeout(restore, 1500);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="print:hidden fixed top-4 right-4 z-50">
-        <Button onClick={() => window.print()} className="gap-2">
+        <Button onClick={handlePrint} className="gap-2">
           <Printer className="h-4 w-4" /> Imprimer / PDF
         </Button>
       </div>
