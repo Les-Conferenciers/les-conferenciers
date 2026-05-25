@@ -1,24 +1,9 @@
-# Mode édition par défaut pour l'admin
+# Nettoyage email facture
 
-## Problème
-Sur `/admin/contrat/:id` et `/admin/feuille-liaison/:id`, la page s'ouvre en lecture seule. Le bouton « Modifier » n'apparaît qu'après détection de la session admin, et tant qu'on n'a pas cliqué dessus, les champs restent en texte. Résultat : sensation que « rien n'est modifiable ».
+## 1. Supprimer l'aperçu du mail (Factures)
+`src/components/admin/EventDossier.tsx` lignes 3563-3571 : retirer le bloc `<Label>Aperçu du mail</Label>` + aperçu `whitespace-pre-wrap` + note bouton automatique. La textarea « Corps du mail » au-dessus reste, elle suffit.
 
-## Solution
-Forcer `editing = true` automatiquement dès que `isAdmin` passe à `true`, dans les deux pages.
+## 2. Supprimer le bloc coordonnées bancaires dans le mail envoyé
+`supabase/functions/send-invoice-email/index.ts` lignes 107-111 : retirer entièrement la `<div>` qui affiche IBAN + BIC. L'IBAN reste affiché sur la facture PDF elle-même (InvoiceView), donc le client garde l'info via le lien « Consulter la facture ».
 
-### `src/pages/ContractView.tsx`
-- Dans le `.then` de `supabase.auth.getSession()` (ligne 136), après `setIsAdmin(!!session)`, si la session existe → `setEditing(true)`.
-
-### `src/pages/LiaisonSheetView.tsx`
-- Idem ligne 114-115 : si `session && !isPublic` → `setEditing(true)`.
-
-## Comportement après changement
-- Admin qui ouvre `/admin/contrat/:id` ou `/admin/feuille-liaison/:id` → tous les champs sont directement éditables, boutons « Annuler » / « Enregistrer » visibles d'emblée.
-- Lien public `/feuille-liaison/:token` (client/conférencier) → reste en lecture seule (isPublic = true).
-- Bouton « Imprimer / PDF » reste disponible ; pour un PDF propre, l'admin peut cliquer « Annuler » avant impression (ou on peut ajouter un `@media print` qui masque les bordures d'input — à voir plus tard si besoin).
-
-## Fichiers touchés
-- `src/pages/ContractView.tsx` (1 ligne)
-- `src/pages/LiaisonSheetView.tsx` (1 ligne)
-
-Aucune modification de la base ou des autres pages.
+Aucun autre changement, pas de migration.
