@@ -809,12 +809,44 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     }
     const payloadWithSpeaker = { ...payload, selected_speaker_id: event?.selected_speaker_id || null };
     if (editingContract && contract) {
-      const { error } = await supabase
-        .from("contracts")
-        .update(payloadWithSpeaker as any)
-        .eq("id", contract.id);
-      if (error) toast.error("Erreur mise à jour");
-      else toast.success("Contrat mis à jour !");
+      const wasFrozen = contract.status === "sent" || contract.status === "signed";
+      if (wasFrozen) {
+        // Create a NEW version that supersedes the previous one
+        const newVersion = (contract.version || 1) + 1;
+        const { data: inserted, error: insErr } = await supabase
+          .from("contracts")
+          .insert({
+            proposal_id: proposal.id,
+            ...payloadWithSpeaker,
+            version: newVersion,
+            replaces_contract_id: contract.id,
+            status: "draft",
+          } as any)
+          .select()
+          .single();
+        if (insErr || !inserted) {
+          toast.error("Erreur création nouvelle version");
+          console.error(insErr);
+          setSaving(false);
+          return;
+        }
+        const { error: supErr } = await supabase
+          .from("contracts")
+          .update({
+            superseded_at: new Date().toISOString(),
+            superseded_by_contract_id: (inserted as any).id,
+          } as any)
+          .eq("id", contract.id);
+        if (supErr) console.error(supErr);
+        toast.success(`Nouvelle version v${newVersion} créée — pensez à la renvoyer`);
+      } else {
+        const { error } = await supabase
+          .from("contracts")
+          .update(payloadWithSpeaker as any)
+          .eq("id", contract.id);
+        if (error) toast.error("Erreur mise à jour");
+        else toast.success("Contrat mis à jour !");
+      }
     } else {
       const { error } = await supabase
         .from("contracts")
@@ -824,6 +856,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
         console.error(error);
       } else toast.success("Contrat créé !");
     }
+
 
     setContractDialogOpen(false);
     fetchData();
