@@ -2222,7 +2222,7 @@ Nelly Sabde - Les Conférenciers`);
                     </Select>
                   </div>
                   <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
-                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><RichTextEditor value={liaisonSpeakerBody} onChange={setLiaisonSpeakerBody} className="text-sm min-h-[220px]" /></div>
+                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><RichTextEditor value={liaisonSpeakerBody} onChange={setLiaisonSpeakerBody} /></div>
                   <Button className="w-full" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
                     <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer au conférencier"}
                   </Button>
