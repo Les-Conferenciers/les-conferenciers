@@ -231,13 +231,13 @@ const LiaisonSheetView = () => {
           </div>
         </section>
 
-        {/* Besoins techniques */}
+        {/* Besoins logistiques */}
         <section className="mb-8">
-          <h3 className="font-bold text-lg mb-3">Besoins techniques :</h3>
+          <h3 className="font-bold text-lg mb-3">Besoins logistiques :</h3>
           {editing ? (
             <div className="space-y-2">
               <div>
-                <label className="text-xs text-gray-500">Besoins techniques</label>
+                <label className="text-xs text-gray-500">Besoins logistiques</label>
                 <TextArea editing={editing} value={eventTechNeeds} onChange={setEventTechNeeds} placeholder="Vidéoprojecteur, micro…" rows={2} />
               </div>
               <div>
@@ -247,8 +247,15 @@ const LiaisonSheetView = () => {
             </div>
           ) : eventTechNeeds || eventRoomSetup ? (
             <ul className="list-disc pl-5 space-y-1">
-              {eventTechNeeds && <li>{eventTechNeeds}</li>}
-              {eventRoomSetup && <li>{eventRoomSetup}</li>}
+              {[
+                ...(eventTechNeeds ? eventTechNeeds.split(/[,\n]+/) : []),
+                ...(eventRoomSetup ? eventRoomSetup.split(/[,\n]+/) : []),
+              ]
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
             </ul>
           ) : (
             <ul className="list-disc pl-5 space-y-1">
@@ -257,6 +264,7 @@ const LiaisonSheetView = () => {
             </ul>
           )}
         </section>
+
 
         {/* Contact */}
         <section className="mb-8">
