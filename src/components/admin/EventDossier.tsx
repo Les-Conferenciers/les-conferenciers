@@ -882,7 +882,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setSelectedClientId("");
     setShowCreateClient(false);
 
-    setContractEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
+    const versionPrefix = (contract.version || 1) > 1 ? `[ANNULE ET REMPLACE — v${contract.version}] ` : "";
+    setContractEmailSubject(`${versionPrefix}Bon de commande - ${proposal.client_name} - Les Conférenciers`);
+
     setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
 Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l’intervention de ${speakerSummary}
