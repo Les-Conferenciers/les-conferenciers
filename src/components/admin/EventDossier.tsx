@@ -1446,6 +1446,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       tva_rate: tvaRate,
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
+      notes: invoiceNotes.trim() || null,
     });
     if (error) {
       toast.error("Erreur");
@@ -1454,6 +1455,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       toast.success("Facture créée !");
       setInvoiceDialogOpen(false);
       setDueDate("");
+      setInvoiceNotes("");
       fetchData();
     }
     setCreatingInvoice(false);
