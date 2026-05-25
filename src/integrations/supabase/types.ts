@@ -76,12 +76,16 @@ export type Database = {
           event_time: string | null
           id: string
           proposal_id: string
+          replaces_contract_id: string | null
           selected_speaker_id: string | null
           signed_at: string | null
           signer_ip: string | null
           signer_name: string | null
           status: string
+          superseded_at: string | null
+          superseded_by_contract_id: string | null
           token: string | null
+          version: number
         }
         Insert: {
           agency_commission?: number | null
@@ -99,12 +103,16 @@ export type Database = {
           event_time?: string | null
           id?: string
           proposal_id: string
+          replaces_contract_id?: string | null
           selected_speaker_id?: string | null
           signed_at?: string | null
           signer_ip?: string | null
           signer_name?: string | null
           status?: string
+          superseded_at?: string | null
+          superseded_by_contract_id?: string | null
           token?: string | null
+          version?: number
         }
         Update: {
           agency_commission?: number | null
@@ -122,12 +130,16 @@ export type Database = {
           event_time?: string | null
           id?: string
           proposal_id?: string
+          replaces_contract_id?: string | null
           selected_speaker_id?: string | null
           signed_at?: string | null
           signer_ip?: string | null
           signer_name?: string | null
           status?: string
+          superseded_at?: string | null
+          superseded_by_contract_id?: string | null
           token?: string | null
+          version?: number
         }
         Relationships: [
           {

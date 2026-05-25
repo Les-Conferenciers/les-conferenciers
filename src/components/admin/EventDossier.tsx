@@ -81,7 +81,12 @@ type Contract = {
   discount_percent: number | null;
   agency_commission?: number | null;
   client_signed_received_at?: string | null;
+  version?: number | null;
+  replaces_contract_id?: string | null;
+  superseded_at?: string | null;
+  superseded_by_contract_id?: string | null;
 };
+
 
 type SpeakerCRM = {
   id: string;
@@ -187,6 +192,8 @@ const parseAmountInput = (value: string) => Number(value.replace(/\s/g, "").repl
 
 const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contract, setContract] = useState<Contract | null>(null);
+  const [previousContracts, setPreviousContracts] = useState<Contract[]>([]);
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -359,15 +366,24 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const fetchData = async () => {
     setLoading(true);
     const [contractRes, invoicesRes, eventRes] = await Promise.all([
-      supabase.from("contracts").select("*").eq("proposal_id", proposal.id).maybeSingle(),
+      supabase
+        .from("contracts")
+        .select("*")
+        .eq("proposal_id", proposal.id)
+        .order("version", { ascending: false })
+        .order("created_at", { ascending: false }),
       supabase.from("invoices").select("*").eq("proposal_id", proposal.id).order("created_at"),
       supabase.from("events").select("*").eq("proposal_id", proposal.id).maybeSingle(),
     ]);
-    setContract(contractRes.data as any);
+    const allContracts = ((contractRes.data as any) || []) as Contract[];
+    const active = allContracts.find((c) => !c.superseded_at) || allContracts[0] || null;
+    setContract(active);
+    setPreviousContracts(allContracts.filter((c) => active && c.id !== active.id));
     setInvoices((invoicesRes.data as any) || []);
     setEvent(eventRes.data as any);
     setLoading(false);
   };
+
 
   const fetchClients = async () => {
     const { data } = await supabase
@@ -793,12 +809,44 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     }
     const payloadWithSpeaker = { ...payload, selected_speaker_id: event?.selected_speaker_id || null };
     if (editingContract && contract) {
-      const { error } = await supabase
-        .from("contracts")
-        .update(payloadWithSpeaker as any)
-        .eq("id", contract.id);
-      if (error) toast.error("Erreur mise à jour");
-      else toast.success("Contrat mis à jour !");
+      const wasFrozen = contract.status === "sent" || contract.status === "signed";
+      if (wasFrozen) {
+        // Create a NEW version that supersedes the previous one
+        const newVersion = (contract.version || 1) + 1;
+        const { data: inserted, error: insErr } = await supabase
+          .from("contracts")
+          .insert({
+            proposal_id: proposal.id,
+            ...payloadWithSpeaker,
+            version: newVersion,
+            replaces_contract_id: contract.id,
+            status: "draft",
+          } as any)
+          .select()
+          .single();
+        if (insErr || !inserted) {
+          toast.error("Erreur création nouvelle version");
+          console.error(insErr);
+          setSaving(false);
+          return;
+        }
+        const { error: supErr } = await supabase
+          .from("contracts")
+          .update({
+            superseded_at: new Date().toISOString(),
+            superseded_by_contract_id: (inserted as any).id,
+          } as any)
+          .eq("id", contract.id);
+        if (supErr) console.error(supErr);
+        toast.success(`Nouvelle version v${newVersion} créée — pensez à la renvoyer`);
+      } else {
+        const { error } = await supabase
+          .from("contracts")
+          .update(payloadWithSpeaker as any)
+          .eq("id", contract.id);
+        if (error) toast.error("Erreur mise à jour");
+        else toast.success("Contrat mis à jour !");
+      }
     } else {
       const { error } = await supabase
         .from("contracts")
@@ -808,6 +856,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
         console.error(error);
       } else toast.success("Contrat créé !");
     }
+
 
     setContractDialogOpen(false);
     fetchData();
@@ -833,7 +882,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setSelectedClientId("");
     setShowCreateClient(false);
 
-    setContractEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
+    const versionPrefix = (contract.version || 1) > 1 ? `[ANNULE ET REMPLACE — v${contract.version}] ` : "";
+    setContractEmailSubject(`${versionPrefix}Bon de commande - ${proposal.client_name} - Les Conférenciers`);
+
     setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
 Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l’intervention de ${speakerSummary}
@@ -1686,20 +1737,50 @@ Nelly Sabde - Les Conférenciers`);
                   ? "⏳ Non signé (envoyé)"
                   : "⚠️ Non signé (brouillon)"}
             </span>
+            {(contract.version || 1) > 1 && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 border border-blue-300">
+                v{contract.version}
+              </span>
+            )}
             <Button
               size="sm"
               variant="outline"
               className="gap-1 text-xs"
-              onClick={openEditContract}
-              title="Éditer les informations du contrat"
+              onClick={() => {
+                if (contract.status === "signed") {
+                  if (
+                    !window.confirm(
+                      "Ce contrat est déjà signé. Vos modifications créeront un avenant (nouvelle version) qui annulera et remplacera le contrat actuel. Continuer ?",
+                    )
+                  )
+                    return;
+                } else if (contract.status === "sent") {
+                  if (
+                    !window.confirm(
+                      "Ce contrat a déjà été envoyé. Vos modifications créeront une nouvelle version (annule et remplace) à renvoyer au client. Continuer ?",
+                    )
+                  )
+                    return;
+                }
+                openEditContract();
+              }}
+              title={
+                contract.status === "signed"
+                  ? "Créera un avenant qui annule et remplace"
+                  : contract.status === "sent"
+                    ? "Créera une nouvelle version (annule et remplace)"
+                    : "Éditer les informations du contrat"
+              }
             >
-              <Pencil className="h-3 w-3" /> Modifier
+              <Pencil className="h-3 w-3" />{" "}
+              {contract.status === "signed" ? "Créer un avenant" : "Modifier"}
             </Button>
             {contract.status === "draft" && (
               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
-                <Send className="h-3 w-3" /> Envoyer
+                <Send className="h-3 w-3" /> {(contract.version || 1) > 1 ? "Renvoyer" : "Envoyer"}
               </Button>
             )}
+
             <Button size="sm" variant="ghost" asChild>
               <a href={`/admin/contrat/${contract.id}`} target="_blank" rel="noopener noreferrer" className="gap-1">
                 <Printer className="h-3 w-3" /> Voir
@@ -1715,11 +1796,31 @@ Nelly Sabde - Les Conférenciers`);
         </div>
       )}
 
+      {contract && previousContracts.length > 0 && (
+        <div className="border border-border/60 rounded-lg p-3 bg-muted/10 space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground">Versions précédentes (annulées)</p>
+          {previousContracts.map((pc) => (
+            <a
+              key={pc.id}
+              href={`/admin/contrat/${pc.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              <Printer className="h-3 w-3" />
+              v{pc.version || 1} — créée le {formatDate(pc.created_at)}
+              {pc.superseded_at && <span>· annulée le {formatDate(pc.superseded_at)}</span>}
+            </a>
+          ))}
+        </div>
+      )}
+
       {contract && (
         <div className="border border-border/60 rounded-lg p-3 bg-muted/10">
           <SignedContractUpload contractId={contract.id} />
         </div>
       )}
+
 
       {/* ─── Speaker Communication ─── */}
       <div className="flex items-center justify-between">
@@ -1938,10 +2039,24 @@ Nelly Sabde - Les Conférenciers`);
         <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-w-0 [&_*]:box-border [&_button]:max-w-full [&_input]:max-w-full [&_textarea]:max-w-full [&_select]:max-w-full">
           <DialogHeader>
             <DialogTitle className="font-serif">
-              {editingContract ? "Modifier" : "Créer"} le contrat - {proposal.client_name}
+              {editingContract
+                ? contract?.status === "signed"
+                  ? "Créer un avenant"
+                  : "Modifier"
+                : "Créer"}{" "}
+              le contrat - {proposal.client_name}
             </DialogTitle>
           </DialogHeader>
+          {editingContract && contract && (contract.status === "sent" || contract.status === "signed") && (
+            <div className="rounded-lg border border-orange-300 bg-orange-50 text-orange-800 text-xs p-3 mt-2">
+              <strong>⚠️ Attention :</strong>{" "}
+              {contract.status === "signed"
+                ? "ce contrat est signé. L'enregistrement créera un avenant (nouvelle version) qui annulera et remplacera le contrat actuel. Il devra être renvoyé au client pour signature."
+                : "ce contrat a déjà été envoyé au client. L'enregistrement créera une nouvelle version « annule et remplace » qu'il faudra renvoyer."}
+            </div>
+          )}
           <div className="space-y-5 mt-2 min-w-0 max-w-full">
+
             {/* Client selector - mandatory */}
             <div className="space-y-3 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 min-w-0 max-w-full overflow-hidden">
               <Label className="text-xs font-semibold flex items-center gap-2">
@@ -2690,8 +2805,15 @@ Nelly Sabde - Les Conférenciers`);
             </details>
 
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
-              {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour" : "Créer le contrat"}
+              {saving
+                ? "Sauvegarde…"
+                : editingContract
+                  ? contract && (contract.status === "sent" || contract.status === "signed")
+                    ? `Créer la version v${(contract.version || 1) + 1}`
+                    : "Mettre à jour"
+                  : "Créer le contrat"}
             </Button>
+
           </div>
         </DialogContent>
       </Dialog>
