@@ -18,6 +18,7 @@ type InvoiceData = {
   vhr_estimate: number | null;
   contract_id: string | null;
   proposal_id: string;
+  notes: string | null;
 };
 
 const InvoiceView = () => {
