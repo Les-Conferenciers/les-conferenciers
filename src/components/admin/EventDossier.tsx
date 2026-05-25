@@ -295,6 +295,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoiceType, setInvoiceType] = useState<"acompte" | "solde" | "total">("total");
   const [dueDate, setDueDate] = useState("");
+  const [invoiceNotes, setInvoiceNotes] = useState("");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Invoice edit
@@ -1445,6 +1446,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       tva_rate: tvaRate,
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
+      notes: invoiceNotes.trim() || null,
     });
     if (error) {
       toast.error("Erreur");
@@ -1453,6 +1455,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       toast.success("Facture créée !");
       setInvoiceDialogOpen(false);
       setDueDate("");
+      setInvoiceNotes("");
       fetchData();
     }
     setCreatingInvoice(false);
@@ -1853,10 +1856,12 @@ Nelly Sabde - Les Conférenciers`);
                   {inv.status === "sent" && (
                     <Button
                       size="sm"
-                      className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
+                      variant="outline"
+                      className="gap-1 text-xs border-dashed"
                       onClick={() => handleMarkPaid(inv)}
+                      title="À cliquer uniquement lorsque le paiement est reçu"
                     >
-                      <CheckCircle className="h-3 w-3" /> Payée
+                      <CheckCircle className="h-3 w-3" /> Marquer comme payée
                     </Button>
                   )}
                   {inv.status === "paid" && (
@@ -3430,6 +3435,15 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-1">
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Notes internes (non visibles sur la facture)</Label>
+              <Textarea
+                value={invoiceNotes}
+                onChange={(e) => setInvoiceNotes(e.target.value)}
+                rows={3}
+                className="resize-none text-sm"
+              />
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
               <div className="flex justify-between">

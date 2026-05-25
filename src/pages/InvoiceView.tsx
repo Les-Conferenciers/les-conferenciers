@@ -94,10 +94,28 @@ const InvoiceView = () => {
   const totalPrestationHT = invoice.amount_ht; // already prorated for the invoice (acompte/solde/total)
   const vhr = invoice.vhr_estimate || 0;
 
+  const clientDisplayName = client?.company_name || proposal?.client_name || "";
+  const bdcClean = (bdcNumber || "").replace(/^BDC[- ]*/i, "");
+  const bdcLabel = bdcClean && bdcClean !== "—" ? `BDC-${bdcClean}` : "—";
+  const paymentRef = clientDisplayName && bdcLabel !== "—" ? `${clientDisplayName} - ${bdcLabel}` : bdcLabel;
+
+  const handlePrint = () => {
+    const previousTitle = document.title;
+    const fileName = `Facture – ${clientDisplayName || "client"} – ${bdcLabel}`;
+    document.title = fileName;
+    const restore = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    window.print();
+    setTimeout(restore, 1500);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="print:hidden fixed top-4 right-4 z-50">
-        <Button onClick={() => window.print()} className="gap-2">
+        <Button onClick={handlePrint} className="gap-2">
           <Printer className="h-4 w-4" /> Imprimer / PDF
         </Button>
       </div>
@@ -143,7 +161,7 @@ const InvoiceView = () => {
         <section className="mb-6">
           <div className="border-l-4 border-gray-900 bg-gray-100 px-4 py-3">
             <p className="font-bold text-gray-900 text-sm">
-              Mention à rappeler impérativement : Bon de commande n° {bdcNumber}
+              Mention à rappeler impérativement : {paymentRef}
             </p>
           </div>
         </section>
@@ -215,7 +233,7 @@ const InvoiceView = () => {
         <section className="mb-6">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Modalités de règlement</h2>
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <p className="text-sm mb-2">Paiement par virement bancaire — référence à rappeler : <strong>BDC n° {bdcNumber}</strong></p>
+            <p className="text-sm mb-2">Paiement par virement bancaire — référence à rappeler : <strong>{paymentRef}</strong></p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
               <div><span className="text-gray-500">Titulaire :</span> {COMPANY.name}</div>
               <div><span className="text-gray-500">BIC :</span> {COMPANY.bic}</div>
@@ -224,14 +242,8 @@ const InvoiceView = () => {
           </div>
         </section>
 
-        {invoice.notes && (
-          <section className="mb-6">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Notes</h2>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm whitespace-pre-wrap text-gray-800">
-              {invoice.notes}
-            </div>
-          </section>
-        )}
+        {/* Notes internes — non affichées au client */}
+
 
         {/* Légales */}
         <section className="text-[10px] text-gray-500 mt-6 leading-relaxed">
