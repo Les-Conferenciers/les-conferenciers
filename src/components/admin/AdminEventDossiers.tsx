@@ -128,11 +128,12 @@ const AdminEventDossiers = () => {
     const isFormal = speakerData?.formal_address !== false;
 
     const eventDateRaw = eventRow.event_date || proposal?.event_date_text || "";
-    const dateLong = fmtVisioDateLong(eventDateRaw) || (proposal?.event_date_text || "");
-    const timeStr = eventRow.event_time || "";
-    const dateTimeStr = `${dateLong}${timeStr ? ` à ${timeStr}` : ""}`;
+    const eventDateLong = fmtVisioDateLong(eventDateRaw) || (proposal?.event_date_text || "");
+    const visioDateLong = fmtVisioDateLong(eventRow.visio_date || "") || "";
+    const visioTimeStr = eventRow.visio_time || "";
+    const visioDateTimeStr = `${visioDateLong}${visioTimeStr ? ` à ${visioTimeStr}` : ""}`.trim() || "(à planifier)";
 
-    const subject = `Invitation visio préparatoire${dateLong ? ` — ${dateLong}` : ""}`;
+    const subject = `Conférence du ${eventDateLong || "(date à confirmer)"}${proposal?.client_name ? ` - ${proposal.client_name}` : ""}`;
 
     setVisioDialog({
       eventId: eventRow.id,
@@ -146,11 +147,11 @@ const AdminEventDossiers = () => {
       clientTo: proposal?.client_email || "",
       clientCc: "",
       clientSubject: subject,
-      clientBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} vient de vous être adressée.\n\nDans l'attente de nos prochains échanges, je vous souhaite une excellente fin de journée !${SIGNATURE_BLOCK}`,
+      clientBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${visioDateTimeStr} vient de vous être adressée.\n\nDans l'attente de nos prochains échanges, je vous souhaite une excellente fin de journée !${SIGNATURE_BLOCK}`,
       speakerTo: speakerData?.email || "",
       speakerCc: "",
       speakerSubject: subject,
-      speakerBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${dateTimeStr} vient de partir.\n\nA très vite et belle journée${SIGNATURE_BLOCK}`,
+      speakerBody: `Bonjour,\n\nSuite à nos précédents échanges, l'invitation teams pour la visio du ${visioDateTimeStr} vient de partir.\n\nA très vite et belle journée${SIGNATURE_BLOCK}`,
       tab: "client",
     });
   };
@@ -203,7 +204,7 @@ const AdminEventDossiers = () => {
     setLoading(true);
     const [pRes, cRes, iRes, eRes] = await Promise.all([
       supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))").eq("status", "accepted").order("created_at", { ascending: false }),
-      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date").order("created_at", { ascending: false }),
+      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date, deposit_required").order("created_at", { ascending: false }),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at, sent_at, due_date").order("created_at", { ascending: false }),
       supabase.from("events").select("*").order("created_at", { ascending: false }),
     ]);
@@ -366,13 +367,14 @@ const AdminEventDossiers = () => {
       const archiveStatus: "gagne" | "perdu" | null = isLost ? "perdu" : (isWon ? "gagne" : null);
 
       // Build pipeline (10 stages)
+      const depositRequired = pContract?.deposit_required !== false;
       const stages: PipelineStage[] = [
         { key: "contract_sent", label: "Contrat envoyé client", shortLabel: "Contrat env.", doneAt: contractSentClient,
           toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "contract_sent_at", valueType: "timestamp" } : undefined },
         { key: "client_signed", label: "Contrat signé client", shortLabel: "Signé client", doneAt: clientSigned,
           toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
-        { key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,
-          toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "client_deposit_paid_at", valueType: "date" } : undefined },
+        ...(depositRequired ? [{ key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,
+          toggle: pEvent ? { table: "events" as const, rowId: pEvent.id, field: "client_deposit_paid_at", valueType: "date" as const } : undefined } as PipelineStage] : []),
         { key: "speaker_communication", label: "Communication speaker envoyée", shortLabel: "Comm. speaker", doneAt: pEvent?.info_sent_speaker_at || null,
           toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "info_sent_speaker_at", valueType: "timestamp" } : undefined },
         { key: "speaker_ack", label: "AR speaker (accusé de réception)", shortLabel: "AR speaker",
@@ -635,20 +637,13 @@ const AdminEventDossiers = () => {
                     >
                       <TableCell className="py-3">
                         <div className="font-medium text-sm">{p.client_name}</div>
-                        {r.bdc && <div className="text-[10px] text-muted-foreground">BDC {r.bdc}</div>}
+                        {r.bdc && <div className="text-[10px] text-muted-foreground">{r.bdc}</div>}
                         {r.archiveStatus === "perdu" && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
                         {r.archiveStatus === "gagne" && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
                       </TableCell>
                       <TableCell className="whitespace-nowrap py-3">
                         {r.eventDate ? (
-                          <div>
-                            <div className="text-xs font-medium">{r.eventDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</div>
-                            {r.eventDate >= new Date() && (
-                              <div className="text-[10px] text-muted-foreground">
-                                J-{Math.ceil((r.eventDate.getTime() - Date.now()) / 86400000)}
-                              </div>
-                            )}
-                          </div>
+                          <div className="text-xs font-medium">{r.eventDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</div>
                         ) : p.event_date_text ? (
                           <span className="text-xs text-muted-foreground italic">{p.event_date_text}</span>
                         ) : (
