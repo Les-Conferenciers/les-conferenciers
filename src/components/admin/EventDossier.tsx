@@ -1062,25 +1062,25 @@ Nelly Sabde - Les Conférenciers`);
   // Helper: build speaker body based on tu/vous choice
   const buildLiaisonSpeakerBody = (addressing: "formal" | "informal", speakerFirstName: string) => {
     if (addressing === "informal") {
-      return `Bonjour ${speakerFirstName},
+      return `Bonjour ${speakerFirstName},</br>
 
 <p>Voici comme convenu la feuille de liaison pour ton intervention.</p>
 
-<strong>Peux-tu m'accuser réception de ce mail ?</strong>
+<p><strong>Peux-tu m'accuser réception de ce mail ?</strong></p>
 
-Je te souhaite une excellente journée !
+<p>Je te souhaite une excellente journée !</p>
 
-Nelly Sabde - Les Conférenciers`;
+<p>Nelly Sabde - Les Conférenciers</p>`;
     }
-    return `Bonjour ${speakerFirstName},
+    return `Bonjour ${speakerFirstName},</br>
 
 <p>Voici comme convenu la feuille de liaison pour votre intervention.<p><br>
 
-<p><strong>Pourriez-vous m'accuser réception de ce mail ?</strong></p><br>
+<p><strong>Pourriez-vous m'accuser réception de ce mail ?</strong></p>
 
-Je vous souhaite une excellente journée !
+<p>Je vous souhaite une excellente journée !</p>
 
-Nelly Sabde - Les Conférenciers`;
+<p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
   const openLiaisonDialog = () => {
