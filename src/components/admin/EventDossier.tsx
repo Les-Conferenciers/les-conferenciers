@@ -1794,11 +1794,31 @@ Nelly Sabde - Les Conférenciers`);
         </div>
       )}
 
+      {contract && previousContracts.length > 0 && (
+        <div className="border border-border/60 rounded-lg p-3 bg-muted/10 space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground">Versions précédentes (annulées)</p>
+          {previousContracts.map((pc) => (
+            <a
+              key={pc.id}
+              href={`/admin/contrat/${pc.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              <Printer className="h-3 w-3" />
+              v{pc.version || 1} — créée le {formatDate(pc.created_at)}
+              {pc.superseded_at && <span>· annulée le {formatDate(pc.superseded_at)}</span>}
+            </a>
+          ))}
+        </div>
+      )}
+
       {contract && (
         <div className="border border-border/60 rounded-lg p-3 bg-muted/10">
           <SignedContractUpload contractId={contract.id} />
         </div>
       )}
+
 
       {/* ─── Speaker Communication ─── */}
       <div className="flex items-center justify-between">
