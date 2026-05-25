@@ -3560,15 +3560,6 @@ Nelly Sabde - Les Conférenciers`);
                 className="text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Aperçu du mail</Label>
-              <div className="border rounded-md p-4 bg-background max-h-64 overflow-y-auto text-sm whitespace-pre-wrap">
-                {invoiceEmailBody || "—"}
-              </div>
-              <p className="text-[10px] text-muted-foreground">
-                Le bouton « Consulter la facture » est ajouté automatiquement.
-              </p>
-            </div>
             <Button className="w-full" onClick={handleSendInvoiceEmail} disabled={sendingInvoice}>
               <Send className="h-4 w-4 mr-2" />
               {sendingInvoice ? "Envoi…" : `Envoyer la facture`}
