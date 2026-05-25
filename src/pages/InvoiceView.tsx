@@ -18,6 +18,7 @@ type InvoiceData = {
   vhr_estimate: number | null;
   contract_id: string | null;
   proposal_id: string;
+  notes: string | null;
 };
 
 const InvoiceView = () => {
@@ -222,6 +223,15 @@ const InvoiceView = () => {
             </div>
           </div>
         </section>
+
+        {invoice.notes && (
+          <section className="mb-6">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Notes</h2>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm whitespace-pre-wrap text-gray-800">
+              {invoice.notes}
+            </div>
+          </section>
+        )}
 
         {/* Légales */}
         <section className="text-[10px] text-gray-500 mt-6 leading-relaxed">

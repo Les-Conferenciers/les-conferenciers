@@ -509,10 +509,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const parseProposalEventDate = (): string => {
     const txt = proposal.event_date_text || "";
     if (!txt) return "";
-    // Try to find an ISO-style date YYYY-MM-DD
     const isoMatch = txt.match(/(\d{4})-(\d{2})-(\d{2})/);
     if (isoMatch) return isoMatch[0];
-    // Try DD/MM/YYYY or DD-MM-YYYY
     const frMatch = txt.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
     if (frMatch) {
       const day = frMatch[1].padStart(2, "0");
@@ -520,6 +518,20 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       let year = frMatch[3];
       if (year.length === 2) year = "20" + year;
       return `${year}-${month}-${day}`;
+    }
+    // French textual: "12 avril 2027", "1er septembre 2026"
+    const months: Record<string, string> = {
+      janvier: "01", "février": "02", fevrier: "02", mars: "03", avril: "04",
+      mai: "05", juin: "06", juillet: "07", "août": "08", aout: "08",
+      septembre: "09", octobre: "10", novembre: "11", "décembre": "12", decembre: "12",
+    };
+    const txtLower = txt.toLowerCase().normalize("NFC");
+    const frTextMatch = txtLower.match(/(\d{1,2})(?:er)?\s+([a-zà-ÿ]+)\s+(\d{4})/);
+    if (frTextMatch) {
+      const day = frTextMatch[1].padStart(2, "0");
+      const month = months[frTextMatch[2]];
+      const year = frTextMatch[3];
+      if (month) return `${year}-${month}-${day}`;
     }
     return "";
   };
