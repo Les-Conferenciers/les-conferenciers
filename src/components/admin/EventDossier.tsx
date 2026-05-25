@@ -272,6 +272,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonClientCc, setLiaisonClientCc] = useState("");
   const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
+  const [liaisonAddressing, setLiaisonAddressing] = useState<"formal" | "informal">("formal");
 
   // Visio quick picker
   const [visioQuickDate, setVisioQuickDate] = useState<Date | undefined>();
