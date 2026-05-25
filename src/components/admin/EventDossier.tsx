@@ -1178,9 +1178,19 @@ Nelly Sabde - Les Conférenciers`);
   };
 
   const handlePreviewLiaisonSheet = async () => {
-    await persistLiaisonFields();
-    await fetchData();
-    window.open(`/admin/feuille-liaison/${proposal.id}`, "_blank");
+    // Ouvrir l'onglet immédiatement (dans le user gesture) pour éviter le blocage de popup
+    const w = window.open("about:blank", "_blank");
+    try {
+      await persistLiaisonFields();
+      await fetchData();
+    } finally {
+      const url = `/admin/feuille-liaison/${proposal.id}`;
+      if (w) {
+        w.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    }
   };
 
   const buildLiaisonContent = () => {
