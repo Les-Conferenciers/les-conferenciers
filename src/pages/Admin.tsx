@@ -958,14 +958,16 @@ const AdminProposalsContent = () => {
 <p>Je souhaitais savoir si le profil de ${speakerName} avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.</p>
 <p>Je reste bien évidemment à votre disposition si besoin est.</p>
 <p>Dans l'attente de votre retour.</p>
-<p>Très belle fin de journée à vous.</p>`;
+<p>Très belle fin de journée à vous.</p>
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
       }
       return `<p>Bonjour,</p>
 <p>Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants. 🙂</p>
 <p>Je souhaitais savoir si l'intervention de ${speakerName} était toujours d'actualité.</p>
 <p>Je reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.</p>
 <p>Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.</p>
-<p>Bien à vous,</p>`;
+<p>Bien à vous,</p>
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
     }
 
     if (pType === "info") {
@@ -974,7 +976,8 @@ const AdminProposalsContent = () => {
 <p>Je reviens vers vous suite à nos précédents échanges.</p>
 <p>Avez-vous pu en prendre connaissance ?</p>
 <p>Votre recherche d’intervenant est-elle toujours d’actualité ?</p>
-<p>Vous remerciant par avance de votre retour et restant à votre écoute, je vous souhaite une excellente journée.</p>`;
+<p>Vous remerciant par avance de votre retour et restant à votre écoute, je vous souhaite une excellente journée.</p>
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
     }
 
     // classique
@@ -985,13 +988,15 @@ const AdminProposalsContent = () => {
 <p>Je souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.</p>
 <p>Je reste bien évidemment à votre disposition si besoin est.</p>
 <p>Dans l'attente de votre retour.</p>
-<p>Très belle fin de journée à vous.</p>`;
+<p>Très belle fin de journée à vous.</p>
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
     }
     return `<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
 <p>Je reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂</p>
 <p>Je souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.</p>
 <p>Je reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.</p>
-<p>Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.</p>`;
+<p>Dans l'attente de votre retour, je vous souhaite une très belle fin de journée.</p>
+<p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
   };
 
   const getReminderDefaultSubject = (p: Proposal, num: 1 | 2) => {
