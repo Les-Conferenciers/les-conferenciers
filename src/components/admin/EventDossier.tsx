@@ -81,7 +81,12 @@ type Contract = {
   discount_percent: number | null;
   agency_commission?: number | null;
   client_signed_received_at?: string | null;
+  version?: number | null;
+  replaces_contract_id?: string | null;
+  superseded_at?: string | null;
+  superseded_by_contract_id?: string | null;
 };
+
 
 type SpeakerCRM = {
   id: string;
