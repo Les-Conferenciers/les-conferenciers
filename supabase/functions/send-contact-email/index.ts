@@ -49,6 +49,10 @@ serve(async (req) => {
 
       const fromAddress = `${from_name || "Les Conférenciers"} <nellysabde@lesconferenciers.com>`;
 
+      const isHtml = /<\w+/.test(emailText || "");
+      const bodyHtml = isHtml
+        ? emailText
+        : (emailText || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       const htmlBody = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -56,7 +60,7 @@ serve(async (req) => {
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
     ${emailHeader}
     <div style="padding:30px;">
-      <div style="color:#333;font-size:14px;line-height:1.7;white-space:pre-wrap;">${emailText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+      <div style="color:#333;font-size:14px;line-height:1.7;${isHtml ? "" : "white-space:pre-wrap;"}">${bodyHtml}</div>
     </div>
     ${emailSignature}
     ${emailFooter}

@@ -261,6 +261,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
   const [speakerEmailType, setSpeakerEmailType] = useState<"info" | "contract">("info");
+  const [speakerEmailAddressing, setSpeakerEmailAddressing] = useState<"formal" | "informal">("formal");
 
   // Liaison sheet dialog
   const [liaisonDialogOpen, setLiaisonDialogOpen] = useState(false);
@@ -940,69 +941,88 @@ Nelly Sabde - Les Conférenciers`);
   };
 
   // ─── Speaker email ───
-  const openSpeakerEmail = (type: "info" | "contract") => {
-    setSpeakerEmailType(type);
+  const buildSpeakerEmailSubject = (type: "info" | "contract") => {
+    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
+    const datePart = eventDateLong ? `Conférence du ${eventDateLong}` : "Conférence";
+    return type === "info"
+      ? `${datePart} - ${proposal.client_name}`
+      : `Bon de commande - ${datePart} - ${proposal.client_name}`;
+  };
+
+  const buildSpeakerEmailBody = (type: "info" | "contract", addressing: "formal" | "informal") => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "le conférencier";
     const firstName = speakerName.split(" ")[0];
-    const isFormal = speaker?.formal_address !== false;
-    const greeting = isFormal ? `Bonjour ${firstName},` : `Hello ${firstName},`;
-    const vouvoi = isFormal;
-    setSpeakerEmailTo(speaker?.email || "");
-    setSpeakerEmailCc("");
-
+    const vouvoi = addressing === "formal";
+    const greeting = `Bonjour ${firstName},`;
     const dateStr = contract?.event_date
       ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
       : "à définir";
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
 
+    const ack = vouvoi
+      ? "Pourriez-vous m'accuser réception de ce mail ?"
+      : "Peux-tu m'accuser réception de ce mail ?";
+    const closing = vouvoi ? "À très bientôt et bonne journée !" : "À très vite et bonne journée !";
+
+    const line = (label: string, value: string | undefined | null) =>
+      value ? `<p>${label} <strong>${value}</strong></p>` : "";
+
     if (type === "info") {
-      setSpeakerEmailSubject(
-        `Intervention - ${proposal.client_name}${event?.event_title ? ` - ${event.event_title}` : ""}`,
-      );
-      setSpeakerEmailBody(`${greeting}
-
-${vouvoi ? "Voici comme convenu les informations concernant votre intervention :" : "Voici comme convenu les infos concernant ton intervention :"}
-
-📅 Date de l'évènement : ${dateStr}
-📍 Lieu de l'intervention : ${contract?.event_location || "à définir"}
-🕐 Horaires de l'intervention : ${contract?.event_time || "à définir"}
-${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
-${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
-👥 Auditoire : ${event?.audience_size || "à définir"}
-📋 Thématique : ${event?.theme || "à définir"}
-🏢 Client : ${proposal.client_name}
-💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
-${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
-${event?.contact_on_site_name ? `\n👤 Contact sur place : ${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}` : ""}
-${event?.arrival_info ? `🚗 Arrivée : ${event.arrival_info}` : ""}
-${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
-${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
-${event?.tech_needs ? `🔧 Technique : ${event.tech_needs}` : ""}
-${event?.room_setup ? `🪑 Configuration salle : ${event.room_setup}` : ""}
-${event?.special_requests ? `\n📝 Remarques : ${event.special_requests}` : ""}
-
-${vouvoi ? "À très bientôt et bonne journée !" : "A très vite et bonne journée !"}
-
-Nelly Sabde - Les Conférenciers`);
-    } else {
-      setSpeakerEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
-      setSpeakerEmailBody(`${greeting}
-
-${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :" : "Voici le bon de commande pour ton intervention :"}
-
-📅 Date de l'évènement : ${dateStr}
-📍 Lieu : ${contract?.event_location || "à définir"}
-🏢 Client : ${proposal.client_name}
-💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
-
-${vouvoi ? "Pourriez-vous m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible." : "Peux-tu m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible."}
-
-${vouvoi ? "Restant à votre disposition." : "A très vite !"}
-
-Nelly Sabde - Les Conférenciers`);
+      const intro = vouvoi
+        ? "Voici comme convenu les informations concernant votre intervention :"
+        : "Voici comme convenu les infos concernant ton intervention :";
+      return `<p>${greeting}</p>
+<p>${intro}</p>
+${line("📅 Date de l'évènement :", dateStr)}
+${line("📍 Lieu de l'intervention :", contract?.event_location || "à définir")}
+${line("🕐 Horaires de l'intervention :", contract?.event_time || "à définir")}
+${line("🎤 Conférence :", event?.conference_title)}
+${line("⏱ Durée :", event?.conference_duration)}
+${line("👥 Auditoire :", event?.audience_size || "à définir")}
+${line("📋 Thématique :", event?.theme || "à définir")}
+${line("🏢 Client :", proposal.client_name)}
+${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("👔 Dress code :", event?.dress_code)}
+${event?.contact_on_site_name ? `<p>👤 Contact sur place : <strong>${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}</strong></p>` : ""}
+${line("🚗 Arrivée :", event?.arrival_info)}
+${line("🅿️ Parking :", event?.parking_info)}
+${line("🏨 Hôtel :", event?.hotel_info)}
+${line("🔧 Technique :", event?.tech_needs)}
+${line("🪑 Configuration salle :", event?.room_setup)}
+${event?.special_requests ? `<p>📝 Remarques : ${event.special_requests}</p>` : ""}
+<p><strong>${ack}</strong></p>
+<p>${closing}</p>
+<p>Nelly Sabde - Les Conférenciers</p>`;
     }
+    const intro = vouvoi
+      ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :"
+      : "Voici le bon de commande pour ton intervention :";
+    const sendBack = vouvoi
+      ? "Merci de me retourner le contrat signé dès que possible."
+      : "Merci de me retourner le contrat signé dès que possible.";
+    const sign = vouvoi ? "Restant à votre disposition." : "À très vite !";
+    return `<p>${greeting}</p>
+<p>${intro}</p>
+${line("📅 Date de l'évènement :", dateStr)}
+${line("📍 Lieu :", contract?.event_location || "à définir")}
+${line("🏢 Client :", proposal.client_name)}
+${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+<p><strong>${ack}</strong> ${sendBack}</p>
+<p>${sign}</p>
+<p>Nelly Sabde - Les Conférenciers</p>`;
+  };
+
+  const openSpeakerEmail = (type: "info" | "contract") => {
+    setSpeakerEmailType(type);
+    const speaker = getSelectedSpeakerInfo();
+    const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
+    setSpeakerEmailAddressing(initialAddressing);
+    setSpeakerEmailTo(speaker?.email || "");
+    setSpeakerEmailCc("");
+    setSpeakerEmailSubject(buildSpeakerEmailSubject(type));
+    setSpeakerEmailBody(buildSpeakerEmailBody(type, initialAddressing));
     setSpeakerEmailOpen(true);
   };
 
@@ -1060,27 +1080,33 @@ Nelly Sabde - Les Conférenciers`);
   };
 
   // ─── Liaison Sheet ───
+  // URL publique vers la feuille de liaison (token de l'event)
+  const liaisonPublicUrl = () => {
+    const token = (event as any)?.token;
+    return token ? `${window.location.origin}/feuille-liaison/${token}` : "";
+  };
+
+  const liaisonButtonHtml = () => {
+    const url = liaisonPublicUrl();
+    if (!url) return "";
+    return `<p style="text-align:center;margin:24px 0;"><a href="${url}" style="display:inline-block;background:#1a2332;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Consulter la feuille de liaison</a></p>`;
+  };
+
   // Helper: build speaker body based on tu/vous choice
   const buildLiaisonSpeakerBody = (addressing: "formal" | "informal", speakerFirstName: string) => {
     if (addressing === "informal") {
-      return `Bonjour ${speakerFirstName},</br>
-
+      return `<p>Bonjour ${speakerFirstName},</p>
 <p>Voici comme convenu la feuille de liaison pour ton intervention.</p>
-
+${liaisonButtonHtml()}
 <p><strong>Peux-tu m'accuser réception de ce mail ?</strong></p>
-
 <p>Je te souhaite une excellente journée !</p>
-
 <p>Nelly Sabde - Les Conférenciers</p>`;
     }
-    return `Bonjour ${speakerFirstName},</br>
-
-<p>Voici comme convenu la feuille de liaison pour votre intervention.<p>
-
+    return `<p>Bonjour ${speakerFirstName},</p>
+<p>Voici comme convenu la feuille de liaison pour votre intervention.</p>
+${liaisonButtonHtml()}
 <p><strong>Pourriez-vous m'accuser réception de ce mail ?</strong></p>
-
 <p>Je vous souhaite une excellente journée !</p>
-
 <p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
@@ -1113,17 +1139,13 @@ Nelly Sabde - Les Conférenciers`);
 
     // Client email template (nouveau wording, sans prix)
     setLiaisonClientSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
-    setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
-
-Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
-
-Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.
-
-Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
-
-Excellente fin de journée à vous !
-
-Nelly Sabde - Les Conférenciers`);
+    setLiaisonClientBody(`<p>${clientFirstName ? clientFirstName : "Bonjour"},</p>
+<p>Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !</p>
+<p>Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.</p>
+${liaisonButtonHtml()}
+<p>Vous en souhaitant bonne réception et restant à votre disposition si besoin est.</p>
+<p>Excellente fin de journée à vous !</p>
+<p>Nelly Sabde - Les Conférenciers</p>`);
 
     // Speaker email template — adressage piloté par le sélecteur dans la pop-up
     setLiaisonSpeakerSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
@@ -2773,17 +2795,37 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
             <div className="space-y-2">
+              <Label className="text-xs">Adressage</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSpeakerEmailAddressing("informal");
+                    setSpeakerEmailBody(buildSpeakerEmailBody(speakerEmailType, "informal"));
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${speakerEmailAddressing === "informal" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Tutoiement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSpeakerEmailAddressing("formal");
+                    setSpeakerEmailBody(buildSpeakerEmailBody(speakerEmailType, "formal"));
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${speakerEmailAddressing === "formal" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Vouvoiement
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs">Objet</Label>
               <Input value={speakerEmailSubject} onChange={(e) => setSpeakerEmailSubject(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Corps du mail</Label>
-              <Textarea
-                value={speakerEmailBody}
-                onChange={(e) => setSpeakerEmailBody(e.target.value)}
-                rows={12}
-                className="text-sm"
-              />
+              <RichTextEditor value={speakerEmailBody} onChange={setSpeakerEmailBody} />
             </div>
             <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
               <Send className="h-4 w-4 mr-2" />

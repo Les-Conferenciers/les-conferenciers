@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Printer, Pencil, Save, X } from "lucide-react";
@@ -40,7 +40,12 @@ const TextArea = ({ editing, value, onChange, placeholder, rows = 3 }: { editing
   );
 
 const LiaisonSheetView = () => {
-  const { id } = useParams(); // proposal_id
+  const params = useParams();
+  const location = useLocation();
+  const isPublic = location.pathname.startsWith("/feuille-liaison/");
+  const token = isPublic ? params.token : undefined;
+  const routeId = !isPublic ? params.id : undefined;
+  const [proposalId, setProposalId] = useState<string | null>(routeId || null);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -60,17 +65,33 @@ const LiaisonSheetView = () => {
   const [eventTime, setEventTime] = useState("");
 
   const loadData = async () => {
-    const { data: ev } = await supabase
-      .from("events")
-      .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
-      .eq("proposal_id", id!)
-      .maybeSingle();
+    let ev: any = null;
+    if (isPublic && token) {
+      const { data } = await supabase
+        .from("events")
+        .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
+        .eq("token", token)
+        .maybeSingle();
+      ev = data;
+    } else if (routeId) {
+      const { data } = await supabase
+        .from("events")
+        .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
+        .eq("proposal_id", routeId)
+        .maybeSingle();
+      ev = data;
+    }
 
-    const { data: contract } = await supabase
-      .from("contracts")
-      .select("event_date, event_location, event_time, event_description")
-      .eq("proposal_id", id!)
-      .maybeSingle();
+    const pid = ev?.proposal_id || routeId || null;
+    setProposalId(pid);
+
+    const { data: contract } = pid
+      ? await supabase
+          .from("contracts")
+          .select("event_date, event_location, event_time, event_description")
+          .eq("proposal_id", pid)
+          .maybeSingle()
+      : { data: null };
 
     setData({ event: ev, contract });
     if (ev) {
@@ -91,10 +112,10 @@ const LiaisonSheetView = () => {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAdmin(!!session);
+      setIsAdmin(!!session && !isPublic);
     });
     loadData();
-  }, [id]);
+  }, [routeId, token, isPublic]);
 
   const handleSave = async () => {
     if (!data?.event) return;
@@ -116,7 +137,7 @@ const LiaisonSheetView = () => {
           event_location: eventLocation || null,
           event_time: eventTime || null,
         } as any)
-        .eq("proposal_id", id!);
+        .eq("proposal_id", proposalId!);
       contractErr = error;
     }
 
