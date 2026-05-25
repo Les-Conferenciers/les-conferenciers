@@ -366,15 +366,24 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const fetchData = async () => {
     setLoading(true);
     const [contractRes, invoicesRes, eventRes] = await Promise.all([
-      supabase.from("contracts").select("*").eq("proposal_id", proposal.id).maybeSingle(),
+      supabase
+        .from("contracts")
+        .select("*")
+        .eq("proposal_id", proposal.id)
+        .order("version", { ascending: false })
+        .order("created_at", { ascending: false }),
       supabase.from("invoices").select("*").eq("proposal_id", proposal.id).order("created_at"),
       supabase.from("events").select("*").eq("proposal_id", proposal.id).maybeSingle(),
     ]);
-    setContract(contractRes.data as any);
+    const allContracts = ((contractRes.data as any) || []) as Contract[];
+    const active = allContracts.find((c) => !c.superseded_at) || allContracts[0] || null;
+    setContract(active);
+    setPreviousContracts(allContracts.filter((c) => active && c.id !== active.id));
     setInvoices((invoicesRes.data as any) || []);
     setEvent(eventRes.data as any);
     setLoading(false);
   };
+
 
   const fetchClients = async () => {
     const { data } = await supabase
