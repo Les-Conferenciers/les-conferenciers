@@ -6,18 +6,30 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil,
-  Ban, CircleDollarSign, Trash2, Percent, ClipboardList, Video, Mail, User, CalendarIcon, UserPlus, Eye, Save,
+  FileText,
+  Receipt,
+  Plus,
+  ExternalLink,
+  Send,
+  CheckCircle,
+  Printer,
+  Pencil,
+  Ban,
+  CircleDollarSign,
+  Trash2,
+  Percent,
+  ClipboardList,
+  Video,
+  Mail,
+  User,
+  CalendarIcon,
+  UserPlus,
+  Eye,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
@@ -26,7 +38,6 @@ import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 
 const REMOVED_CLAUSE = "__REMOVED__";
-
 
 // ── Types ──
 
@@ -189,6 +200,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [eventFormat, setEventFormat] = useState("Conférence");
   const [eventDescription, setEventDescription] = useState("");
   const [contractAudienceSize, setContractAudienceSize] = useState("");
+  const [contractTheme, setContractTheme] = useState("");
   const [contractBdcNumber, setContractBdcNumber] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
@@ -249,6 +261,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
   const [speakerEmailType, setSpeakerEmailType] = useState<"info" | "contract">("info");
+  const [speakerEmailAddressing, setSpeakerEmailAddressing] = useState<"formal" | "informal">("formal");
 
   // Liaison sheet dialog
   const [liaisonDialogOpen, setLiaisonDialogOpen] = useState(false);
@@ -272,6 +285,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonClientCc, setLiaisonClientCc] = useState("");
   const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
+  const [liaisonAddressing, setLiaisonAddressing] = useState<"formal" | "informal">("formal");
 
   // Visio quick picker
   const [visioQuickDate, setVisioQuickDate] = useState<Date | undefined>();
@@ -355,30 +369,53 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   const fetchClients = async () => {
-    const { data } = await supabase.from("clients").select("id, company_name, contact_name, email, phone, siret, address, city").order("company_name");
+    const { data } = await supabase
+      .from("clients")
+      .select("id, company_name, contact_name, email, phone, siret, address, city")
+      .order("company_name");
     setClients((data as any) || []);
-    const { data: sp } = await supabase.from("speakers").select("id, name, base_fee, email, phone, city").eq("archived", false).order("name");
+    const { data: sp } = await supabase
+      .from("speakers")
+      .select("id, name, base_fee, email, phone, city")
+      .eq("archived", false)
+      .order("name");
     setAllSpeakers((sp as any) || []);
   };
 
   // ─── Auto-create event if missing ───
   useEffect(() => {
     if (!loading && !event) {
-      supabase.from("events").insert({ 
-        proposal_id: proposal.id,
-        audience_size: proposal.audience_size || null,
-      } as any).then(() => fetchData());
+      supabase
+        .from("events")
+        .insert({
+          proposal_id: proposal.id,
+          audience_size: proposal.audience_size || null,
+        } as any)
+        .then(() => fetchData());
     }
   }, [loading, event]);
 
   // Auto-select speaker if only one
   useEffect(() => {
-    if (event && !event.selected_speaker_id && proposal.proposal_speakers.length === 1 && proposal.proposal_speakers[0]?.speaker_id) {
+    if (
+      event &&
+      !event.selected_speaker_id &&
+      proposal.proposal_speakers.length === 1 &&
+      proposal.proposal_speakers[0]?.speaker_id
+    ) {
       const spId = proposal.proposal_speakers[0].speaker_id;
-      supabase.from("events").update({ selected_speaker_id: spId } as any).eq("id", event.id).then(async () => {
-        if (contract) await supabase.from("contracts").update({ selected_speaker_id: spId } as any).eq("id", contract.id);
-        fetchData();
-      });
+      supabase
+        .from("events")
+        .update({ selected_speaker_id: spId } as any)
+        .eq("id", event.id)
+        .then(async () => {
+          if (contract)
+            await supabase
+              .from("contracts")
+              .update({ selected_speaker_id: spId } as any)
+              .eq("id", contract.id);
+          fetchData();
+        });
     }
   }, [event?.id, event?.selected_speaker_id]);
 
@@ -392,19 +429,29 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   // ─── Selected speaker helper ───
   const getSelectedSpeaker = () => {
     if (!event?.selected_speaker_id) return proposal.proposal_speakers[0] || null;
-    return proposal.proposal_speakers.find(ps => ps.speaker_id === event.selected_speaker_id) || proposal.proposal_speakers[0] || null;
+    return (
+      proposal.proposal_speakers.find((ps) => ps.speaker_id === event.selected_speaker_id) ||
+      proposal.proposal_speakers[0] ||
+      null
+    );
   };
 
   const getSelectedSpeakerInfo = () => getSelectedSpeaker()?.speakers || null;
 
   const handleSelectSpeaker = async (speakerId: string) => {
     if (!event) return;
-    await supabase.from("events").update({ selected_speaker_id: speakerId } as any).eq("id", event.id);
-    if (contract) await supabase.from("contracts").update({ selected_speaker_id: speakerId } as any).eq("id", contract.id);
+    await supabase
+      .from("events")
+      .update({ selected_speaker_id: speakerId } as any)
+      .eq("id", event.id);
+    if (contract)
+      await supabase
+        .from("contracts")
+        .update({ selected_speaker_id: speakerId } as any)
+        .eq("id", contract.id);
     toast.success("Conférencier sélectionné");
     fetchData();
   };
-
 
   // ─── Compute totals ───
   // The agency commission is added to the global HT (silent — not shown as a separate line in the contract)
@@ -414,10 +461,10 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     const discountAmount = subtotalHT * (discount / 100);
     const totalHTAfterDiscount = subtotalHT - discountAmount;
     // TVA computed on the merged base, prorated against original line TVA mix (commission inherits 20%)
-    const commissionTVA = (commission || 0) * 0.20;
+    const commissionTVA = (commission || 0) * 0.2;
     const linesTVA = lines.reduce((sum, l) => {
       const lineShare = linesSubtotal > 0 ? l.amount_ht / linesSubtotal : 0;
-      const lineHTAfterDiscount = l.amount_ht - (discountAmount * (linesSubtotal / (subtotalHT || 1)) * lineShare);
+      const lineHTAfterDiscount = l.amount_ht - discountAmount * (linesSubtotal / (subtotalHT || 1)) * lineShare;
       return sum + lineHTAfterDiscount * (l.tva_rate / 100);
     }, 0);
     const totalTVA = linesTVA + commissionTVA * (1 - discount / 100);
@@ -431,7 +478,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     }
     // For multiple proposals with a selected speaker, only show the selected one
     const speakersForContract = event?.selected_speaker_id
-      ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
+      ? proposal.proposal_speakers.filter((ps) => ps.speaker_id === event.selected_speaker_id)
       : proposal.proposal_speakers;
     return speakersForContract.map((ps, i) => ({
       id: generateId(),
@@ -449,10 +496,13 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
 
   const selectedSpeaker = getSelectedSpeaker();
   const speakerInfo = getSelectedSpeakerInfo();
-  const speakerSummary = speakerInfo?.name || effectiveLines
-    .filter(l => l.type === "speaker")
-    .map(l => l.label)
-    .join(", ") || proposal.proposal_speakers.map(s => s.speakers?.name || "—").join(", ");
+  const speakerSummary =
+    speakerInfo?.name ||
+    effectiveLines
+      .filter((l) => l.type === "speaker")
+      .map((l) => l.label)
+      .join(", ") ||
+    proposal.proposal_speakers.map((s) => s.speakers?.name || "—").join(", ");
 
   const buildInitialLines = (): ContractLine[] => {
     if (contract?.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0) {
@@ -460,7 +510,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     }
     // For multiple proposals with a selected speaker, only show the selected one
     const speakersForContract = event?.selected_speaker_id
-      ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
+      ? proposal.proposal_speakers.filter((ps) => ps.speaker_id === event.selected_speaker_id)
       : proposal.proposal_speakers;
     return speakersForContract.map((ps, i) => ({
       id: generateId(),
@@ -472,9 +522,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   };
 
   const updateLine = (id: string, field: keyof ContractLine, value: any) => {
-    setContractLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+    setContractLines((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
   };
-  const removeLine = (id: string) => setContractLines(prev => prev.filter(l => l.id !== id));
+  const removeLine = (id: string) => setContractLines((prev) => prev.filter((l) => l.id !== id));
   const updateAgencyCommission = (value: string) => {
     setAgencyCommissionText(value);
     setAgencyCommission(parseAmountInput(value));
@@ -489,17 +539,27 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       setSpeakerPickerOpen(true);
       return;
     }
-    const defaults: Record<string, string> = { speaker: "Conférencier", travel: "Frais de déplacement", custom: "Prestation complémentaire" };
-    setContractLines(prev => [...prev, { id: generateId(), label: defaults[type], amount_ht: 0, tva_rate: 20, type }]);
+    const defaults: Record<string, string> = {
+      speaker: "Conférencier",
+      travel: "Frais de déplacement",
+      custom: "Prestation complémentaire",
+    };
+    setContractLines((prev) => [
+      ...prev,
+      { id: generateId(), label: defaults[type], amount_ht: 0, tva_rate: 20, type },
+    ]);
   };
   const addSpeakerLineFromCRM = (sp: SpeakerCRM) => {
-    setContractLines(prev => [...prev, {
-      id: generateId(),
-      label: sp.name,
-      amount_ht: sp.base_fee || 0,
-      tva_rate: 20,
-      type: "speaker",
-    }]);
+    setContractLines((prev) => [
+      ...prev,
+      {
+        id: generateId(),
+        label: sp.name,
+        amount_ht: sp.base_fee || 0,
+        tva_rate: 20,
+        type: "speaker",
+      },
+    ]);
     setSpeakerPickerOpen(false);
     toast.success(`${sp.name} ajouté`);
   };
@@ -508,10 +568,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const parseProposalEventDate = (): string => {
     const txt = proposal.event_date_text || "";
     if (!txt) return "";
-    // Try to find an ISO-style date YYYY-MM-DD
     const isoMatch = txt.match(/(\d{4})-(\d{2})-(\d{2})/);
     if (isoMatch) return isoMatch[0];
-    // Try DD/MM/YYYY or DD-MM-YYYY
     const frMatch = txt.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
     if (frMatch) {
       const day = frMatch[1].padStart(2, "0");
@@ -520,14 +578,37 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       if (year.length === 2) year = "20" + year;
       return `${year}-${month}-${day}`;
     }
+    // French textual: "12 avril 2027", "1er septembre 2026"
+    const months: Record<string, string> = {
+      janvier: "01",
+      février: "02",
+      fevrier: "02",
+      mars: "03",
+      avril: "04",
+      mai: "05",
+      juin: "06",
+      juillet: "07",
+      août: "08",
+      aout: "08",
+      septembre: "09",
+      octobre: "10",
+      novembre: "11",
+      décembre: "12",
+      decembre: "12",
+    };
+    const txtLower = txt.toLowerCase().normalize("NFC");
+    const frTextMatch = txtLower.match(/(\d{1,2})(?:er)?\s+([a-zà-ÿ]+)\s+(\d{4})/);
+    if (frTextMatch) {
+      const day = frTextMatch[1].padStart(2, "0");
+      const month = months[frTextMatch[2]];
+      const year = frTextMatch[3];
+      if (month) return `${year}-${month}-${day}`;
+    }
     return "";
   };
 
   const generateNextBdcNumber = async (): Promise<string> => {
-    const { data } = await supabase
-      .from("events")
-      .select("bdc_number")
-      .not("bdc_number", "is", null);
+    const { data } = await supabase.from("events").select("bdc_number").not("bdc_number", "is", null);
     let max = 0;
     (data || []).forEach((row: any) => {
       const m = /^BDC-(\d+)$/i.exec((row.bdc_number || "").trim());
@@ -548,21 +629,28 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventFormat("Conférence");
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
+    setContractTheme(event?.theme || "");
     const nextBdc = await generateNextBdcNumber();
     setContractBdcNumber(event?.bdc_number || nextBdc);
     // Pre-fill agency commission from proposal (selected speaker if any, else sum across speakers)
     const speakersForCommission = event?.selected_speaker_id
-      ? proposal.proposal_speakers.filter(ps => ps.speaker_id === event.selected_speaker_id)
+      ? proposal.proposal_speakers.filter((ps) => ps.speaker_id === event.selected_speaker_id)
       : proposal.proposal_speakers;
     const proposalCommission = speakersForCommission.reduce((sum, ps) => sum + (Number(ps.agency_commission) || 0), 0);
-    setContractLines(buildInitialLines()); setDiscountPercent(0);
+    setContractLines(buildInitialLines());
+    setDiscountPercent(0);
     setAgencyCommission(proposalCommission);
     setAgencyCommissionText(proposalCommission ? String(proposalCommission) : "0");
     // Pre-select client if proposal already has one
     setContractClientId(proposal.client_id || "");
     setShowCreateClientInContract(false);
-    setNewContractClientCompany(""); setNewContractClientContact(""); setNewContractClientEmail("");
-    setNewContractClientPhone(""); setNewContractClientSiret(""); setNewContractClientAddress(""); setNewContractClientCity("");
+    setNewContractClientCompany("");
+    setNewContractClientContact("");
+    setNewContractClientEmail("");
+    setNewContractClientPhone("");
+    setNewContractClientSiret("");
+    setNewContractClientAddress("");
+    setNewContractClientCity("");
     setDepositRequired(true);
     setCustomClauses("");
     setArticleOverrides({});
@@ -574,11 +662,14 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEditingContract(true);
     setEventDate(contract.event_date || event?.event_date || parseProposalEventDate());
     setEventLocation(contract.event_location || "");
-    setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
+    setEventTime(contract.event_time || "");
+    setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
+    setContractTheme(event?.theme || "");
     setContractBdcNumber(event?.bdc_number || "");
-    setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
+    setContractLines(buildInitialLines());
+    setDiscountPercent(contract.discount_percent || 0);
     const savedCommission = Number((contract as any).agency_commission) || 0;
     setAgencyCommission(savedCommission);
     setAgencyCommissionText(savedCommission ? String(savedCommission) : "0");
@@ -586,31 +677,50 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setShowCreateClientInContract(false);
     setDepositRequired((contract as any).deposit_required !== false);
     const cc = (contract as any).custom_clauses;
-    setCustomClauses(typeof cc === "string" ? cc : (cc?.text || ""));
+    setCustomClauses(typeof cc === "string" ? cc : cc?.text || "");
     setArticleOverrides(cc && typeof cc === "object" && cc.articles ? { ...cc.articles } : {});
     setContractDialogOpen(true);
   };
 
   const handleCreateContractClient = async () => {
-    if (!newContractClientCompany) { toast.error("Nom de société requis"); return; }
-    if (!newContractClientEmail) { toast.error("Email requis pour le contrat"); return; }
+    if (!newContractClientCompany) {
+      toast.error("Nom de société requis");
+      return;
+    }
+    if (!newContractClientEmail) {
+      toast.error("Email requis pour le contrat");
+      return;
+    }
     setCreatingClient(true);
-    const { data, error } = await supabase.from("clients").insert({
-      company_name: newContractClientCompany,
-      contact_name: newContractClientContact || null,
-      email: newContractClientEmail || null,
-      phone: newContractClientPhone || null,
-      siret: newContractClientSiret || null,
-      address: newContractClientAddress || null,
-      city: newContractClientCity || null,
-    } as any).select().single();
-    if (error || !data) { toast.error("Erreur création client"); setCreatingClient(false); return; }
+    const { data, error } = await supabase
+      .from("clients")
+      .insert({
+        company_name: newContractClientCompany,
+        contact_name: newContractClientContact || null,
+        email: newContractClientEmail || null,
+        phone: newContractClientPhone || null,
+        siret: newContractClientSiret || null,
+        address: newContractClientAddress || null,
+        city: newContractClientCity || null,
+      } as any)
+      .select()
+      .single();
+    if (error || !data) {
+      toast.error("Erreur création client");
+      setCreatingClient(false);
+      return;
+    }
     toast.success("Client créé !");
     await fetchClients();
     setContractClientId((data as any).id);
     setShowCreateClientInContract(false);
-    setNewContractClientCompany(""); setNewContractClientContact(""); setNewContractClientEmail("");
-    setNewContractClientPhone(""); setNewContractClientSiret(""); setNewContractClientAddress(""); setNewContractClientCity("");
+    setNewContractClientCompany("");
+    setNewContractClientContact("");
+    setNewContractClientEmail("");
+    setNewContractClientPhone("");
+    setNewContractClientSiret("");
+    setNewContractClientAddress("");
+    setNewContractClientCity("");
     setCreatingClient(false);
   };
 
@@ -642,7 +752,10 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       })(),
     };
     // Link client to proposal
-    await supabase.from("proposals").update({ client_id: contractClientId } as any).eq("id", proposal.id);
+    await supabase
+      .from("proposals")
+      .update({ client_id: contractClientId } as any)
+      .eq("id", proposal.id);
     // Also update event with audience_size and bdc_number
     if (event) {
       // Pre-check BDC uniqueness if changed
@@ -659,14 +772,19 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
           return;
         }
       }
-      const { error: evErr } = await supabase.from("events").update({ 
-        audience_size: contractAudienceSize || null,
-        bdc_number: contractBdcNumber || null,
-      } as any).eq("id", event.id);
+      const { error: evErr } = await supabase
+        .from("events")
+        .update({
+          audience_size: contractAudienceSize || null,
+          theme: contractTheme || null,
+          bdc_number: contractBdcNumber || null,
+        } as any)
+        .eq("id", event.id);
       if (evErr) {
-        const msg = (evErr as any).code === "23505" || /duplicate/i.test(evErr.message)
-          ? `Le numéro de BDC "${contractBdcNumber}" existe déjà`
-          : "Erreur mise à jour du dossier";
+        const msg =
+          (evErr as any).code === "23505" || /duplicate/i.test(evErr.message)
+            ? `Le numéro de BDC "${contractBdcNumber}" existe déjà`
+            : "Erreur mise à jour du dossier";
         toast.error(msg);
         setSaving(false);
         return;
@@ -674,21 +792,39 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     }
     const payloadWithSpeaker = { ...payload, selected_speaker_id: event?.selected_speaker_id || null };
     if (editingContract && contract) {
-      const { error } = await supabase.from("contracts").update(payloadWithSpeaker as any).eq("id", contract.id);
-      if (error) toast.error("Erreur mise à jour"); else toast.success("Contrat mis à jour !");
+      const { error } = await supabase
+        .from("contracts")
+        .update(payloadWithSpeaker as any)
+        .eq("id", contract.id);
+      if (error) toast.error("Erreur mise à jour");
+      else toast.success("Contrat mis à jour !");
     } else {
-      const { error } = await supabase.from("contracts").insert({ proposal_id: proposal.id, ...payloadWithSpeaker } as any);
-      if (error) { toast.error("Erreur création contrat"); console.error(error); } else toast.success("Contrat créé !");
+      const { error } = await supabase
+        .from("contracts")
+        .insert({ proposal_id: proposal.id, ...payloadWithSpeaker } as any);
+      if (error) {
+        toast.error("Erreur création contrat");
+        console.error(error);
+      } else toast.success("Contrat créé !");
     }
 
-    setContractDialogOpen(false); fetchData(); onUpdate(); setSaving(false);
+    setContractDialogOpen(false);
+    fetchData();
+    onUpdate();
+    setSaving(false);
   };
 
   // ─── Contract email ───
   const openContractEmail = () => {
     if (!contract) return;
-    const dateStr = contract.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "à définir";
-    const totals = computeTotals(getEffectiveLines(), contract.discount_percent || 0, (contract as any).agency_commission || 0);
+    const dateStr = contract.event_date
+      ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+      : "à définir";
+    const totals = computeTotals(
+      getEffectiveLines(),
+      contract.discount_percent || 0,
+      (contract as any).agency_commission || 0,
+    );
 
     // Pre-fill recipient from proposal
     setContractRecipientName(proposal.recipient_name || "");
@@ -699,17 +835,18 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
     setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
-Suite à votre accord, je vous transmets le bon de commande pour votre événement.
+Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l’intervention de ${speakerSummary}
 
-📋 Récapitulatif :
+📋 Voici un petit récapitulatif : :
 • Conférencier(s) : ${speakerSummary}
 • Date : ${dateStr}
 • Lieu : ${contract.event_location || "à définir"}
 • Montant total TTC : ${totals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
 
-👉 Cliquez sur le bouton ci-dessous pour consulter le contrat et le signer électroniquement.
+👉 Vous pouvez consulter le contrat et le signer électroniquement en cliquant sur le bouton ci-dessous.
 
-N'hésitez pas à me contacter pour toute question.
+N’hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.
+Dans l’attente de votre retour, je vous souhaite une très belle journée.
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
@@ -718,13 +855,13 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSelectClient = (clientId: string) => {
     setSelectedClientId(clientId);
-    const client = clients.find(c => c.id === clientId);
+    const client = clients.find((c) => c.id === clientId);
     if (client) {
       setContractRecipientName(client.contact_name || "");
       setContractRecipientEmail(client.email || "");
       // Update email body greeting
       const firstName = client.contact_name?.split(" ")[0] || "";
-      setContractEmailBody(prev => {
+      setContractEmailBody((prev) => {
         const lines = prev.split("\n");
         if (lines[0]?.startsWith("Bonjour")) {
           lines[0] = `Bonjour${firstName ? ` ${firstName}` : ""},`;
@@ -735,15 +872,26 @@ Nelly Sabde - Les Conférenciers`);
   };
 
   const handleCreateNewClient = async () => {
-    if (!newClientCompany) { toast.error("Nom de société requis"); return; }
+    if (!newClientCompany) {
+      toast.error("Nom de société requis");
+      return;
+    }
     setCreatingClient(true);
-    const { data, error } = await supabase.from("clients").insert({
-      company_name: newClientCompany,
-      contact_name: newClientContact || null,
-      email: newClientEmail || null,
-      phone: newClientPhone || null,
-    } as any).select().single();
-    if (error || !data) { toast.error("Erreur création client"); setCreatingClient(false); return; }
+    const { data, error } = await supabase
+      .from("clients")
+      .insert({
+        company_name: newClientCompany,
+        contact_name: newClientContact || null,
+        email: newClientEmail || null,
+        phone: newClientPhone || null,
+      } as any)
+      .select()
+      .single();
+    if (error || !data) {
+      toast.error("Erreur création client");
+      setCreatingClient(false);
+      return;
+    }
     toast.success("Client créé !");
     await fetchClients();
     // Auto-select new client
@@ -751,7 +899,10 @@ Nelly Sabde - Les Conférenciers`);
     setContractRecipientName(newClientContact || "");
     setContractRecipientEmail(newClientEmail || "");
     setShowCreateClient(false);
-    setNewClientCompany(""); setNewClientContact(""); setNewClientEmail(""); setNewClientPhone("");
+    setNewClientCompany("");
+    setNewClientContact("");
+    setNewClientEmail("");
+    setNewClientPhone("");
     setCreatingClient(false);
   };
 
@@ -759,7 +910,10 @@ Nelly Sabde - Les Conférenciers`);
     if (!contract) return;
     // Auto-use proposal recipient — no manual selector needed
     const targetEmail = proposal.client_email;
-    if (!targetEmail) { toast.error("Aucun email client sur la proposition"); return; }
+    if (!targetEmail) {
+      toast.error("Aucun email client sur la proposition");
+      return;
+    }
     setSendingContract(true);
     try {
       const { error } = await supabase.functions.invoke("send-contract-email", {
@@ -771,90 +925,125 @@ Nelly Sabde - Les Conférenciers`);
         },
       });
       if (error) throw error;
-      await supabase.from("contracts").update({ status: "sent", contract_sent_at: new Date().toISOString() } as any).eq("id", contract.id);
+      await supabase
+        .from("contracts")
+        .update({ status: "sent", contract_sent_at: new Date().toISOString() } as any)
+        .eq("id", contract.id);
       // Ne pas toucher à contract_sent_speaker_at (= communication conférencier).
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
-      fetchData(); onUpdate();
-    } catch { toast.error("Erreur d'envoi du contrat"); }
+      fetchData();
+      onUpdate();
+    } catch {
+      toast.error("Erreur d'envoi du contrat");
+    }
     setSendingContract(false);
   };
 
   // ─── Speaker email ───
-  const openSpeakerEmail = (type: "info" | "contract") => {
-    setSpeakerEmailType(type);
+  const buildSpeakerEmailSubject = (type: "info" | "contract") => {
+    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
+    const datePart = eventDateLong ? `Conférence du ${eventDateLong}` : "Conférence";
+    return type === "info"
+      ? `${datePart} - ${proposal.client_name}`
+      : `Bon de commande - ${datePart} - ${proposal.client_name}`;
+  };
+
+  const buildSpeakerEmailBody = (type: "info" | "contract", addressing: "formal" | "informal") => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "le conférencier";
     const firstName = speakerName.split(" ")[0];
-    const isFormal = speaker?.formal_address !== false;
-    const greeting = isFormal ? `Bonjour ${firstName},` : `Hello ${firstName},`;
-    const vouvoi = isFormal;
-    setSpeakerEmailTo(speaker?.email || "");
-    setSpeakerEmailCc("");
-
-    const dateStr = contract?.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "à définir";
+    const vouvoi = addressing === "formal";
+    const greeting = `Bonjour ${firstName},`;
+    const dateStr = contract?.event_date
+      ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
+      : "à définir";
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
 
+    const ack = vouvoi
+      ? "Pourriez-vous m'accuser réception de ce mail ?"
+      : "Peux-tu m'accuser réception de ce mail ?";
+    const closing = vouvoi ? "À très bientôt et bonne journée !" : "À très vite et bonne journée !";
+
+    const line = (label: string, value: string | undefined | null) =>
+      value ? `<p>${label} <strong>${value}</strong></p>` : "";
+
     if (type === "info") {
-      setSpeakerEmailSubject(`Intervention - ${proposal.client_name}${event?.event_title ? ` - ${event.event_title}` : ""}`);
-      setSpeakerEmailBody(`${greeting}
-
-${vouvoi ? "Voici comme convenu les informations concernant votre intervention :" : "Voici comme convenu les infos concernant ton intervention :"}
-
-📅 Date de l'évènement : ${dateStr}
-📍 Lieu de l'intervention : ${contract?.event_location || "à définir"}
-🕐 Horaires de l'intervention : ${contract?.event_time || "à définir"}
-${event?.conference_title ? `🎤 Conférence : ${event.conference_title}` : ""}
-${event?.conference_duration ? `⏱ Durée : ${event.conference_duration}` : ""}
-👥 Auditoire : ${event?.audience_size || "à définir"}
-📋 Thématique : ${event?.theme || "à définir"}
-🏢 Client : ${proposal.client_name}
-💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
-${event?.dress_code ? `👔 Dress code : ${event.dress_code}` : ""}
-${event?.contact_on_site_name ? `\n👤 Contact sur place : ${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}` : ""}
-${event?.arrival_info ? `🚗 Arrivée : ${event.arrival_info}` : ""}
-${event?.parking_info ? `🅿️ Parking : ${event.parking_info}` : ""}
-${event?.hotel_info ? `🏨 Hôtel : ${event.hotel_info}` : ""}
-${event?.tech_needs ? `🔧 Technique : ${event.tech_needs}` : ""}
-${event?.room_setup ? `🪑 Configuration salle : ${event.room_setup}` : ""}
-${event?.special_requests ? `\n📝 Remarques : ${event.special_requests}` : ""}
-
-${vouvoi ? "À très bientôt et bonne journée !" : "A très vite et bonne journée !"}
-
-Nelly Sabde - Les Conférenciers`);
-    } else {
-      setSpeakerEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
-      setSpeakerEmailBody(`${greeting}
-
-${vouvoi ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :" : "Voici le bon de commande pour ton intervention :"}
-
-📅 Date de l'évènement : ${dateStr}
-📍 Lieu : ${contract?.event_location || "à définir"}
-🏢 Client : ${proposal.client_name}
-💰 Budget : ${budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir"}
-
-${vouvoi ? "Pourriez-vous m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible." : "Peux-tu m'accuser réception de ce mail ? Merci de me retourner le contrat signé dès que possible."}
-
-${vouvoi ? "Restant à votre disposition." : "A très vite !"}
-
-Nelly Sabde - Les Conférenciers`);
+      const intro = vouvoi
+        ? "Voici comme convenu les informations concernant votre intervention :"
+        : "Voici comme convenu les infos concernant ton intervention :";
+      return `<p>${greeting}</p>
+<p>${intro}</p>
+${line("📅 Date de l'évènement :", dateStr)}
+${line("📍 Lieu de l'intervention :", contract?.event_location || "à définir")}
+${line("🕐 Horaires de l'intervention :", contract?.event_time || "à définir")}
+${line("🎤 Conférence :", event?.conference_title)}
+${line("⏱ Durée :", event?.conference_duration)}
+${line("👥 Auditoire :", event?.audience_size || "à définir")}
+${line("📋 Thématique :", event?.theme || "à définir")}
+${line("🏢 Client :", proposal.client_name)}
+${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("👔 Dress code :", event?.dress_code)}
+${event?.contact_on_site_name ? `<p>👤 Contact sur place : <strong>${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}</strong></p>` : ""}
+${line("🚗 Arrivée :", event?.arrival_info)}
+${line("🅿️ Parking :", event?.parking_info)}
+${line("🏨 Hôtel :", event?.hotel_info)}
+${line("🔧 Technique :", event?.tech_needs)}
+${line("🪑 Configuration salle :", event?.room_setup)}
+${event?.special_requests ? `<p>📝 Remarques : ${event.special_requests}</p>` : ""}
+<p><strong>${ack}</strong></p>
+<p>${closing}</p>
+<p>Nelly Sabde - Les Conférenciers</p>`;
     }
+    const intro = vouvoi
+      ? "Veuillez trouver ci-joint le bon de commande pour votre intervention :"
+      : "Voici le bon de commande pour ton intervention :";
+    const sendBack = vouvoi
+      ? "Merci de me retourner le contrat signé dès que possible."
+      : "Merci de me retourner le contrat signé dès que possible.";
+    const sign = vouvoi ? "Restant à votre disposition." : "À très vite !";
+    return `<p>${greeting}</p>
+<p>${intro}</p>
+${line("📅 Date de l'évènement :", dateStr)}
+${line("📍 Lieu :", contract?.event_location || "à définir")}
+${line("🏢 Client :", proposal.client_name)}
+${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+<p><strong>${ack}</strong> ${sendBack}</p>
+<p>${sign}</p>
+<p>Nelly Sabde - Les Conférenciers</p>`;
+  };
+
+  const openSpeakerEmail = (type: "info" | "contract") => {
+    setSpeakerEmailType(type);
+    const speaker = getSelectedSpeakerInfo();
+    const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
+    setSpeakerEmailAddressing(initialAddressing);
+    setSpeakerEmailTo(speaker?.email || "");
+    setSpeakerEmailCc("");
+    setSpeakerEmailSubject(buildSpeakerEmailSubject(type));
+    setSpeakerEmailBody(buildSpeakerEmailBody(type, initialAddressing));
     setSpeakerEmailOpen(true);
   };
 
   const handleSendSpeakerEmail = async () => {
     setSendingSpeakerEmail(true);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const toList = speakerEmailTo.split(/[,;]/).map(s => s.trim()).filter(Boolean);
-    const ccList = speakerEmailCc.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    const toList = speakerEmailTo
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const ccList = speakerEmailCc
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     if (toList.length === 0) {
       toast.error("Veuillez renseigner au moins un destinataire");
       setSendingSpeakerEmail(false);
       return;
     }
-    const invalid = [...toList, ...ccList].find(e => !emailRegex.test(e));
+    const invalid = [...toList, ...ccList].find((e) => !emailRegex.test(e));
     if (invalid) {
       toast.error(`Email invalide : ${invalid}`);
       setSendingSpeakerEmail(false);
@@ -876,26 +1065,67 @@ Nelly Sabde - Les Conférenciers`);
       // Track in event
       const field = speakerEmailType === "info" ? "info_sent_speaker_at" : "contract_sent_speaker_at";
       if (event) {
-        await supabase.from("events").update({ [field]: new Date().toISOString() } as any).eq("id", event.id);
+        await supabase
+          .from("events")
+          .update({ [field]: new Date().toISOString() } as any)
+          .eq("id", event.id);
       }
       toast.success("Email envoyé au conférencier !");
       setSpeakerEmailOpen(false);
       fetchData();
-    } catch { toast.error("Erreur d'envoi"); }
+    } catch {
+      toast.error("Erreur d'envoi");
+    }
     setSendingSpeakerEmail(false);
   };
 
   // ─── Liaison Sheet ───
+  // URL publique vers la feuille de liaison (token de l'event)
+  const liaisonPublicUrl = () => {
+    const token = (event as any)?.token;
+    return token ? `${window.location.origin}/feuille-liaison/${token}` : "";
+  };
+
+  const liaisonButtonHtml = () => {
+    const url = liaisonPublicUrl();
+    if (!url) return "";
+    return `<p style="text-align:center;margin:24px 0;"><a href="${url}" style="display:inline-block;background:#1a2332;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Consulter la feuille de liaison</a></p>`;
+  };
+
+  // Helper: build speaker body based on tu/vous choice
+  const buildLiaisonSpeakerBody = (addressing: "formal" | "informal", speakerFirstName: string) => {
+    if (addressing === "informal") {
+      return `<p>Bonjour ${speakerFirstName},</p>
+<p>Voici comme convenu la feuille de liaison pour ton intervention.</p>
+${liaisonButtonHtml()}
+<p><strong>Peux-tu m'accuser réception de ce mail ?</strong></p>
+<p>Je te souhaite une excellente journée !</p>
+<p>Nelly Sabde - Les Conférenciers</p>`;
+    }
+    return `<p>Bonjour ${speakerFirstName},</p>
+<p>Voici comme convenu la feuille de liaison pour votre intervention.</p>
+${liaisonButtonHtml()}
+<p><strong>Pourriez-vous m'accuser réception de ce mail ?</strong></p>
+<p>Je vous souhaite une excellente journée !</p>
+<p>Nelly Sabde - Les Conférenciers</p>`;
+  };
+
   const openLiaisonDialog = () => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
     const speakerFirstName = speakerName.split(" ")[0];
-    const isFormal = speaker?.formal_address !== false;
+    const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
+    setLiaisonAddressing(initialAddressing);
     const clientFirstName = proposal.recipient_name?.split(" ")[0] || "";
 
-    setLiaisonNotes(event?.notes || event?.visio_notes || (contract as any)?.event_description || "L'intervenant participera avec plaisir au déjeuner à l'issue de sa conférence.");
-    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur, micro casque");
-    setLiaisonSalleSetup(event?.room_setup || "");
+    setLiaisonNotes(
+      event?.notes ||
+        event?.visio_notes ||
+        (contract as any)?.event_description ||
+        "L'intervenant participera avec plaisir au déjeuner à l'issue de sa conférence.",
+    );
+    setLiaisonTechNeeds(event?.tech_needs || "Vidéoprojecteur\nMicro casque");
+    setLiaisonSalleSetup("");
     setLiaisonArrival(event?.arrival_info || "");
     setLiaisonEventDate(contract?.event_date || (event as any)?.event_date || "");
     setLiaisonEventLocation(contract?.event_location || "");
@@ -908,28 +1138,18 @@ Nelly Sabde - Les Conférenciers`);
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
 
     // Client email template (nouveau wording, sans prix)
-    setLiaisonClientSubject(`Feuille de liaison - ${speakerName}${eventDateLong ? ` - ${eventDateLong}` : ""}`);
-    setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
+    setLiaisonClientSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
+    setLiaisonClientBody(`<p>${clientFirstName ? clientFirstName : "Bonjour"},</p>
+<p>Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !</p>
+<p>Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.</p>
+${liaisonButtonHtml()}
+<p>Vous en souhaitant bonne réception et restant à votre disposition si besoin est.</p>
+<p>Excellente fin de journée à vous !</p>
+<p>Nelly Sabde - Les Conférenciers</p>`);
 
-Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
-
-Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.
-
-Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
-
-Excellente fin de journée à vous !
-
-Nelly Sabde - Les Conférenciers`);
-
-    // Speaker email template — tutoiement si formal_address = false, date dans l'objet
-    setLiaisonSpeakerSubject(`Feuille de liaison${eventDateLong ? ` - ${eventDateLong}` : ""} - ${proposal.client_name}`);
-    setLiaisonSpeakerBody(`${speakerFirstName},
-
-${isFormal ? "Voici comme convenu la feuille de liaison pour votre intervention." : "Voici comme convenu la feuille de liaison pour ton intervention."}
-
-${isFormal ? "À très bientôt !" : "À très vite !"}
-
-Nelly Sabde - Les Conférenciers`);
+    // Speaker email template — adressage piloté par le sélecteur dans la pop-up
+    setLiaisonSpeakerSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
+    setLiaisonSpeakerBody(buildLiaisonSpeakerBody(initialAddressing, speakerFirstName));
 
     // Pre-fill recipients (editable) — pas de CC conférencier sur le mail client
     const speakerEmail = speaker?.email || "";
@@ -947,40 +1167,60 @@ Nelly Sabde - Les Conférenciers`);
     try {
       const dt = new Date(d.length === 10 ? d + "T12:00:00" : d);
       return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-    } catch { return ""; }
+    } catch {
+      return "";
+    }
   }
 
   // Persist editable liaison fields back to contract + event
   const persistLiaisonFields = async () => {
     if (contract) {
-      await supabase.from("contracts").update({
-        event_date: liaisonEventDate || null,
-        event_location: liaisonEventLocation || null,
-        event_time: liaisonEventTime || null,
-      } as any).eq("id", contract.id);
+      await supabase
+        .from("contracts")
+        .update({
+          event_date: liaisonEventDate || null,
+          event_location: liaisonEventLocation || null,
+          event_time: liaisonEventTime || null,
+        } as any)
+        .eq("id", contract.id);
     }
     if (event) {
-      await supabase.from("events").update({
-        audience_size: liaisonAudience || null,
-        theme: liaisonTheme || null,
-        arrival_info: liaisonArrival || null,
-        tech_needs: liaisonTechNeeds || null,
-        room_setup: liaisonSalleSetup || null,
-        notes: liaisonNotes || null,
-      } as any).eq("id", event.id);
+      await supabase
+        .from("events")
+        .update({
+          audience_size: liaisonAudience || null,
+          theme: liaisonTheme || null,
+          arrival_info: liaisonArrival || null,
+          tech_needs: liaisonTechNeeds || null,
+          room_setup: liaisonSalleSetup || null,
+          notes: liaisonNotes || null,
+        } as any)
+        .eq("id", event.id);
     }
   };
 
   const handlePreviewLiaisonSheet = async () => {
-    await persistLiaisonFields();
-    await fetchData();
-    window.open(`/admin/feuille-liaison/${proposal.id}`, "_blank");
+    // Ouvrir l'onglet immédiatement (dans le user gesture) pour éviter le blocage de popup
+    const w = window.open("about:blank", "_blank");
+    try {
+      await persistLiaisonFields();
+      await fetchData();
+    } finally {
+      const url = `/admin/feuille-liaison/${proposal.id}`;
+      if (w) {
+        w.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    }
   };
 
   const buildLiaisonContent = () => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
-    const dateStr = liaisonEventDate ? new Date(liaisonEventDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+    const dateStr = liaisonEventDate
+      ? new Date(liaisonEventDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
+      : "";
     return `
 
 📋 FEUILLE DE LIAISON
@@ -1013,13 +1253,17 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     await persistLiaisonFields();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const splitList = (s: string) => s.split(/[,;]/).map(e => e.trim()).filter(Boolean);
+    const splitList = (s: string) =>
+      s
+        .split(/[,;]/)
+        .map((e) => e.trim())
+        .filter(Boolean);
     const toList = splitList(target === "client" ? liaisonClientTo : liaisonSpeakerTo);
     const ccList = splitList(target === "client" ? liaisonClientCc : liaisonSpeakerCc);
     const subject = target === "client" ? liaisonClientSubject : liaisonSpeakerSubject;
     const body = target === "client" ? liaisonClientBody : liaisonSpeakerBody;
 
-    const invalid = [...toList, ...ccList].find(e => !emailRegex.test(e));
+    const invalid = [...toList, ...ccList].find((e) => !emailRegex.test(e));
     if (invalid) {
       toast.error(`Email invalide : ${invalid}`);
       setSendingLiaison(false);
@@ -1044,18 +1288,18 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
       if (event) {
         const nowIso = new Date().toISOString();
-        const patch: any = target === "client"
-          ? { liaison_email_client_sent_at: nowIso }
-          : { liaison_email_speaker_sent_at: nowIso };
+        const patch: any =
+          target === "client" ? { liaison_email_client_sent_at: nowIso } : { liaison_email_speaker_sent_at: nowIso };
         if (!event.liaison_sheet_sent_at) patch.liaison_sheet_sent_at = nowIso;
         await supabase.from("events").update(patch).eq("id", event.id);
       }
       toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé !`);
       await fetchData();
-    } catch { toast.error("Erreur d'envoi"); }
+    } catch {
+      toast.error("Erreur d'envoi");
+    }
     setSendingLiaison(false);
   };
-
 
   // ─── Event edit ───
   const openEventEdit = () => {
@@ -1110,49 +1354,58 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         return;
       }
     }
-    const { error } = await supabase.from("events").update({
-      bdc_number: editBdcNumber || null,
-      audience_size: editAudienceSize || null,
-      theme: editTheme || null,
-      speaker_budget: editSpeakerBudget || null,
-      visio_date: editVisioDate || null,
-      visio_time: editVisioTime || null,
-      visio_notes: editVisioNotes || null,
-      notes: editEventNotes || null,
-      event_title: editEventTitle || null,
-      contact_on_site_name: editContactOnSiteName || null,
-      contact_on_site_phone: editContactOnSitePhone || null,
-      contact_on_site_email: editContactOnSiteEmail || null,
-      tech_needs: editTechNeeds || null,
-      room_setup: editRoomSetup || null,
-      arrival_info: editArrivalInfo || null,
-      dress_code: editDressCode || null,
-      special_requests: editSpecialRequests || null,
-      conference_title: editConferenceTitle || null,
-      conference_duration: editConferenceDuration || null,
-      parking_info: editParkingInfo || null,
-      hotel_info: editHotelInfo || null,
-      event_date: editEventRealDate || null,
-      client_deposit_paid_at: editClientDepositPaidAt || null,
-      speaker_deposit_paid_at: editSpeakerDepositPaidAt || null,
-      client_invoice_sent_at: editClientInvoiceSentAt || null,
-      client_invoice_paid_at: editClientInvoicePaidAt || null,
-      speaker_signed_contract_at: editSpeakerSignedAt || null,
-      speaker_acknowledgment_at: editSpeakerAcknowledgmentAt || null,
-      speaker_paid_at: editSpeakerPaidAt ? new Date(editSpeakerPaidAt + "T12:00:00").toISOString() : null,
-      liaison_sheet_sent_at: editLiaisonSheetSentAt ? new Date(editLiaisonSheetSentAt + "T12:00:00").toISOString() : null,
-      logistics_info: editLogisticsInfo || null,
-    } as any).eq("id", event.id);
+    const { error } = await supabase
+      .from("events")
+      .update({
+        bdc_number: editBdcNumber || null,
+        audience_size: editAudienceSize || null,
+        theme: editTheme || null,
+        speaker_budget: editSpeakerBudget || null,
+        visio_date: editVisioDate || null,
+        visio_time: editVisioTime || null,
+        visio_notes: editVisioNotes || null,
+        notes: editEventNotes || null,
+        event_title: editEventTitle || null,
+        contact_on_site_name: editContactOnSiteName || null,
+        contact_on_site_phone: editContactOnSitePhone || null,
+        contact_on_site_email: editContactOnSiteEmail || null,
+        tech_needs: editTechNeeds || null,
+        room_setup: editRoomSetup || null,
+        arrival_info: editArrivalInfo || null,
+        dress_code: editDressCode || null,
+        special_requests: editSpecialRequests || null,
+        conference_title: editConferenceTitle || null,
+        conference_duration: editConferenceDuration || null,
+        parking_info: editParkingInfo || null,
+        hotel_info: editHotelInfo || null,
+        event_date: editEventRealDate || null,
+        client_deposit_paid_at: editClientDepositPaidAt || null,
+        speaker_deposit_paid_at: editSpeakerDepositPaidAt || null,
+        client_invoice_sent_at: editClientInvoiceSentAt || null,
+        client_invoice_paid_at: editClientInvoicePaidAt || null,
+        speaker_signed_contract_at: editSpeakerSignedAt || null,
+        speaker_acknowledgment_at: editSpeakerAcknowledgmentAt || null,
+        speaker_paid_at: editSpeakerPaidAt ? new Date(editSpeakerPaidAt + "T12:00:00").toISOString() : null,
+        liaison_sheet_sent_at: editLiaisonSheetSentAt
+          ? new Date(editLiaisonSheetSentAt + "T12:00:00").toISOString()
+          : null,
+        logistics_info: editLogisticsInfo || null,
+      } as any)
+      .eq("id", event.id);
     // Also update contract.client_signed_received_at if a contract exists
     if (contract?.id) {
-      await supabase.from("contracts").update({
-        client_signed_received_at: editClientSignedReceivedAt || null,
-      } as any).eq("id", contract.id);
+      await supabase
+        .from("contracts")
+        .update({
+          client_signed_received_at: editClientSignedReceivedAt || null,
+        } as any)
+        .eq("id", contract.id);
     }
     if (error) {
-      const msg = (error as any).code === "23505" || /duplicate/i.test(error.message)
-        ? `Le numéro de BDC "${editBdcNumber}" existe déjà`
-        : "Erreur";
+      const msg =
+        (error as any).code === "23505" || /duplicate/i.test(error.message)
+          ? `Le numéro de BDC "${editBdcNumber}" existe déjà`
+          : "Erreur";
       toast.error(msg);
       return;
     }
@@ -1165,10 +1418,13 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
   const handleSaveVisioQuick = async () => {
     if (!event) return;
     const dateStr = visioQuickDate ? visioQuickDate.toISOString().split("T")[0] : null;
-    await supabase.from("events").update({
-      visio_date: dateStr,
-      visio_time: visioQuickTime || null,
-    } as any).eq("id", event.id);
+    await supabase
+      .from("events")
+      .update({
+        visio_date: dateStr,
+        visio_time: visioQuickTime || null,
+      } as any)
+      .eq("id", event.id);
     toast.success("Visio enregistrée");
     fetchData();
   };
@@ -1190,15 +1446,23 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
     });
-    if (error) { toast.error("Erreur"); console.error(error); } else {
+    if (error) {
+      toast.error("Erreur");
+      console.error(error);
+    } else {
       toast.success("Facture créée !");
-      setInvoiceDialogOpen(false); setDueDate(""); fetchData();
+      setInvoiceDialogOpen(false);
+      setDueDate("");
+      fetchData();
     }
     setCreatingInvoice(false);
   };
 
   const openEditInvoice = (inv: Invoice) => {
-    setEditingInvoice(inv); setEditAmountHT(inv.amount_ht); setEditTvaRate(inv.tva_rate); setEditDueDate(inv.due_date || "");
+    setEditingInvoice(inv);
+    setEditAmountHT(inv.amount_ht);
+    setEditTvaRate(inv.tva_rate);
+    setEditDueDate(inv.due_date || "");
     setEditVhrEstimate(inv.vhr_estimate ?? "");
     setEditInvoiceOpen(true);
   };
@@ -1206,22 +1470,30 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
   const handleSaveInvoice = async () => {
     if (!editingInvoice) return;
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
-    await supabase.from("invoices").update({
-      amount_ht: Math.round(editAmountHT * 100) / 100,
-      tva_rate: editTvaRate,
-      amount_ttc: Math.round(amountTTC * 100) / 100,
-      due_date: editDueDate || null,
-      vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
-    } as any).eq("id", editingInvoice.id);
+    await supabase
+      .from("invoices")
+      .update({
+        amount_ht: Math.round(editAmountHT * 100) / 100,
+        tva_rate: editTvaRate,
+        amount_ttc: Math.round(amountTTC * 100) / 100,
+        due_date: editDueDate || null,
+        vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
+      } as any)
+      .eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
-    setEditInvoiceOpen(false); fetchData();
+    setEditInvoiceOpen(false);
+    fetchData();
   };
 
   const openInvoiceEmail = (inv: Invoice) => {
     setEmailInvoice(inv);
     const firstName = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
     const eventDateLong = contract?.event_date
-      ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+      ? new Date(contract.event_date + "T12:00:00").toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
       : "—";
     setInvoiceRecipientEmail(proposal.client_email || "");
     setInvoiceRecipientName(proposal.recipient_name || "");
@@ -1281,7 +1553,10 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
-    if (!invoiceRecipientEmail.trim()) { toast.error("Email destinataire requis"); return; }
+    if (!invoiceRecipientEmail.trim()) {
+      toast.error("Email destinataire requis");
+      return;
+    }
     setSendingInvoice(true);
     try {
       const { error } = await supabase.functions.invoke("send-invoice-email", {
@@ -1294,28 +1569,39 @@ Nelly Sabde - Les Conférenciers`);
         },
       });
       if (error) throw error;
-      await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", emailInvoice.id);
+      await supabase
+        .from("invoices")
+        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .eq("id", emailInvoice.id);
       toast.success(`Facture ${emailInvoice.invoice_number} envoyée !`);
-      setInvoiceEmailOpen(false); fetchData();
-    } catch { toast.error("Erreur d'envoi"); }
+      setInvoiceEmailOpen(false);
+      fetchData();
+    } catch {
+      toast.error("Erreur d'envoi");
+    }
     setSendingInvoice(false);
   };
 
   const handleMarkPaid = async (invoice: Invoice) => {
     await supabase.from("invoices").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", invoice.id);
     toast.success(`Facture ${invoice.invoice_number} marquée payée`);
-    fetchData(); onUpdate();
+    fetchData();
+    onUpdate();
   };
 
   const handleMarkUnpaid = async (invoice: Invoice) => {
     await supabase.from("invoices").update({ status: "sent", paid_at: null }).eq("id", invoice.id);
     toast.success(`Facture ${invoice.invoice_number} remise en attente`);
-    fetchData(); onUpdate();
+    fetchData();
+    onUpdate();
   };
 
   const handleMarkSpeakerPaid = async () => {
     if (!event) return;
-    await supabase.from("events").update({ speaker_paid_at: new Date().toISOString() } as any).eq("id", event.id);
+    await supabase
+      .from("events")
+      .update({ speaker_paid_at: new Date().toISOString() } as any)
+      .eq("id", event.id);
     toast.success("Conférencier marqué comme payé");
     fetchData();
   };
@@ -1334,7 +1620,6 @@ Nelly Sabde - Les Conférenciers`);
 
   return (
     <div className="space-y-6 mt-4 border-t border-border pt-4">
-
       {/* ─── Speaker Selector ─── */}
       {proposal.proposal_speakers.length > 1 && (
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
@@ -1342,7 +1627,7 @@ Nelly Sabde - Les Conférenciers`);
             <User className="h-4 w-4" /> Conférencier retenu pour la prestation
           </Label>
           <div className="flex flex-wrap gap-2">
-            {proposal.proposal_speakers.map(ps => {
+            {proposal.proposal_speakers.map((ps) => {
               const isSelected = event?.selected_speaker_id === ps.speaker_id;
               return (
                 <button
@@ -1352,12 +1637,14 @@ Nelly Sabde - Les Conférenciers`);
                     "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
                     isSelected
                       ? "border-primary bg-primary text-primary-foreground font-medium shadow-sm"
-                      : "border-border bg-background hover:border-primary/50 text-foreground"
+                      : "border-border bg-background hover:border-primary/50 text-foreground",
                   )}
                 >
                   <span>{ps.speakers?.name || "—"}</span>
                   {ps.speakers?.email && (
-                    <span className={cn("text-[10px]", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                    <span
+                      className={cn("text-[10px]", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")}
+                    >
                       ({ps.speakers.email})
                     </span>
                   )}
@@ -1376,7 +1663,6 @@ Nelly Sabde - Les Conférenciers`);
             <FileText className="h-4 w-4" /> Contrat client
           </h3>
           {/* Bandeau date/lieu/format retiré à la demande pour alléger l'aperçu contrat */}
-
         </div>
         {!contract ? (
           <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateContract}>
@@ -1384,16 +1670,26 @@ Nelly Sabde - Les Conférenciers`);
           </Button>
         ) : (
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              contract.status === "signed"
-                ? "bg-green-100 text-green-700 border border-green-300"
-                : "bg-red-100 text-red-700 border border-red-300"
-            }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                contract.status === "signed"
+                  ? "bg-green-100 text-green-700 border border-green-300"
+                  : "bg-red-100 text-red-700 border border-red-300"
+              }`}
+            >
               {contract.status === "signed"
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
-                : (contract.status === "sent" ? "⏳ Non signé (envoyé)" : "⚠️ Non signé (brouillon)")}
+                : contract.status === "sent"
+                  ? "⏳ Non signé (envoyé)"
+                  : "⚠️ Non signé (brouillon)"}
             </span>
-            <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openEditContract} title="Éditer les informations du contrat">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1 text-xs"
+              onClick={openEditContract}
+              title="Éditer les informations du contrat"
+            >
               <Pencil className="h-3 w-3" /> Modifier
             </Button>
             {contract.status === "draft" && (
@@ -1436,7 +1732,12 @@ Nelly Sabde - Les Conférenciers`);
             <FileText className="h-3 w-3" /> Envoyer contrat
           </Button>
           <Button size="sm" variant="ghost" asChild>
-            <a href={`/admin/contrat-conferencier/${proposal.id}`} target="_blank" rel="noopener noreferrer" className="gap-1">
+            <a
+              href={`/admin/contrat-conferencier/${proposal.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="gap-1"
+            >
               <Eye className="h-3 w-3" /> Voir BDC
             </a>
           </Button>
@@ -1446,7 +1747,9 @@ Nelly Sabde - Les Conférenciers`);
       {(event?.info_sent_speaker_at || event?.contract_sent_speaker_at) && (
         <div className="flex gap-3 text-xs text-muted-foreground">
           {event?.info_sent_speaker_at && <span>📧 Infos envoyées le {formatDate(event.info_sent_speaker_at)}</span>}
-          {event?.contract_sent_speaker_at && <span>📄 Contrat envoyé le {formatDate(event.contract_sent_speaker_at)}</span>}
+          {event?.contract_sent_speaker_at && (
+            <span>📄 Contrat envoyé le {formatDate(event.contract_sent_speaker_at)}</span>
+          )}
         </div>
       )}
 
@@ -1463,7 +1766,12 @@ Nelly Sabde - Les Conférenciers`);
             <Send className="h-3 w-3" /> {event?.liaison_sheet_sent_at ? "Renvoyer" : "Envoyer"}
           </Button>
           <Button size="sm" variant="ghost" asChild>
-            <a href={`/admin/feuille-liaison/${proposal.id}`} target="_blank" rel="noopener noreferrer" className="gap-1">
+            <a
+              href={`/admin/feuille-liaison/${proposal.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="gap-1"
+            >
               <Eye className="h-3 w-3" /> Voir
             </a>
           </Button>
@@ -1486,16 +1794,26 @@ Nelly Sabde - Les Conférenciers`);
 
       {invoices.length > 0 && (
         <div className="space-y-3">
-          {invoices.map(inv => (
-            <div key={inv.id} className={`border rounded-lg p-4 ${
-              inv.status === "paid" ? "border-green-200 bg-green-50/50" :
-              inv.status === "sent" ? "border-amber-200 bg-amber-50/30" : "border-border"
-            }`}>
+          {invoices.map((inv) => (
+            <div
+              key={inv.id}
+              className={`border rounded-lg p-4 ${
+                inv.status === "paid"
+                  ? "border-green-200 bg-green-50/50"
+                  : inv.status === "sent"
+                    ? "border-amber-200 bg-amber-50/30"
+                    : "border-border"
+              }`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-sm font-medium">{inv.invoice_number}</span>
                   <span className="text-xs capitalize text-muted-foreground">
-                    {inv.invoice_type === "acompte" ? "Acompte 50%" : inv.invoice_type === "solde" ? "Solde 50%" : "Total"}
+                    {inv.invoice_type === "acompte"
+                      ? "Acompte 50%"
+                      : inv.invoice_type === "solde"
+                        ? "Solde 50%"
+                        : "Total"}
                   </span>
                 </div>
                 <span className="text-sm font-bold">{inv.amount_ttc.toLocaleString("fr-FR")} € TTC</span>
@@ -1511,13 +1829,21 @@ Nelly Sabde - Les Conférenciers`);
                       <CircleDollarSign className="h-3 w-3" /> En attente
                     </span>
                   ) : (
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium">Brouillon</span>
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+                      Brouillon
+                    </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  {inv.status === "draft" && <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)}><Pencil className="h-3 w-3" /></Button>}
+                  {inv.status === "draft" && (
+                    <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)}>
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  )}
                   <Button size="sm" variant="ghost" asChild>
-                    <a href={`/admin/facture/${inv.id}`} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3 w-3" /></a>
+                    <a href={`/admin/facture/${inv.id}`} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
                   </Button>
                   {inv.status === "draft" && (
                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => openInvoiceEmail(inv)}>
@@ -1525,12 +1851,21 @@ Nelly Sabde - Les Conférenciers`);
                     </Button>
                   )}
                   {inv.status === "sent" && (
-                    <Button size="sm" className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white" onClick={() => handleMarkPaid(inv)}>
+                    <Button
+                      size="sm"
+                      className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleMarkPaid(inv)}
+                    >
                       <CheckCircle className="h-3 w-3" /> Payée
                     </Button>
                   )}
                   {inv.status === "paid" && (
-                    <Button size="sm" variant="ghost" className="gap-1 text-xs text-muted-foreground" onClick={() => handleMarkUnpaid(inv)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 text-xs text-muted-foreground"
+                      onClick={() => handleMarkUnpaid(inv)}
+                    >
                       <Ban className="h-3 w-3" /> Annuler
                     </Button>
                   )}
@@ -1553,7 +1888,11 @@ Nelly Sabde - Les Conférenciers`);
             ✓ Payé le {formatDate(event.speaker_paid_at)}
           </span>
         ) : (
-          <Button size="sm" className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white" onClick={handleMarkSpeakerPaid}>
+          <Button
+            size="sm"
+            className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleMarkSpeakerPaid}
+          >
             <CheckCircle className="h-3 w-3" /> Marquer payé
           </Button>
         )}
@@ -1571,7 +1910,7 @@ Nelly Sabde - Les Conférenciers`);
           </DialogHeader>
           <div className="space-y-5 mt-2 min-w-0 max-w-full">
             {/* Client selector - mandatory */}
-              <div className="space-y-3 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 min-w-0 max-w-full overflow-hidden">
+            <div className="space-y-3 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 min-w-0 max-w-full overflow-hidden">
               <Label className="text-xs font-semibold flex items-center gap-2">
                 <User className="h-3.5 w-3.5" /> Client (obligatoire pour le contrat) *
               </Label>
@@ -1579,7 +1918,7 @@ Nelly Sabde - Les Conférenciers`);
                 <select
                   className="flex-1 rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
                   value={contractClientId}
-                  onChange={e => {
+                  onChange={(e) => {
                     if (e.target.value === "__new__") {
                       setShowCreateClientInContract(true);
                       setContractClientId("");
@@ -1590,16 +1929,20 @@ Nelly Sabde - Les Conférenciers`);
                   }}
                 >
                   <option value="">- Sélectionner un client -</option>
-                  {clients.map(c => (
+                  {clients.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.company_name}{c.contact_name ? ` - ${c.contact_name}` : ""}{c.email ? ` (${c.email})` : ""}
+                      {c.company_name}
+                      {c.contact_name ? ` - ${c.contact_name}` : ""}
+                      {c.email ? ` (${c.email})` : ""}
                     </option>
                   ))}
                   <option value="__new__">➕ Créer un nouveau client…</option>
                 </select>
               </div>
               {!contractClientId && !showCreateClientInContract && (
-                <p className="text-[10px] text-destructive">⚠ Un client doit être sélectionné pour éditer le bon de commande</p>
+                <p className="text-[10px] text-destructive">
+                  ⚠ Un client doit être sélectionné pour éditer le bon de commande
+                </p>
               )}
 
               {showCreateClientInContract && (
@@ -1610,113 +1953,230 @@ Nelly Sabde - Les Conférenciers`);
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground">Société *</Label>
-                      <Input value={newContractClientCompany} onChange={e => setNewContractClientCompany(e.target.value)} placeholder="SNCF" className="h-8 text-sm" />
+                      <Input
+                        value={newContractClientCompany}
+                        onChange={(e) => setNewContractClientCompany(e.target.value)}
+                        placeholder="SNCF"
+                        className="h-8 text-sm"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground">Nom du contact</Label>
-                      <Input value={newContractClientContact} onChange={e => setNewContractClientContact(e.target.value)} placeholder="Pascal Dupont" className="h-8 text-sm" />
+                      <Input
+                        value={newContractClientContact}
+                        onChange={(e) => setNewContractClientContact(e.target.value)}
+                        placeholder="Pascal Dupont"
+                        className="h-8 text-sm"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground">Email *</Label>
-                      <Input type="email" value={newContractClientEmail} onChange={e => setNewContractClientEmail(e.target.value)} placeholder="email@societe.com" className="h-8 text-sm" />
+                      <Input
+                        type="email"
+                        value={newContractClientEmail}
+                        onChange={(e) => setNewContractClientEmail(e.target.value)}
+                        placeholder="email@societe.com"
+                        className="h-8 text-sm"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground">Téléphone</Label>
-                      <Input value={newContractClientPhone} onChange={e => setNewContractClientPhone(e.target.value)} placeholder="06 XX XX XX XX" className="h-8 text-sm" />
+                      <Input
+                        value={newContractClientPhone}
+                        onChange={(e) => setNewContractClientPhone(e.target.value)}
+                        placeholder="06 XX XX XX XX"
+                        className="h-8 text-sm"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground">SIRET</Label>
-                      <Input value={newContractClientSiret} onChange={e => setNewContractClientSiret(e.target.value)} placeholder="123 456 789 00012" className="h-8 text-sm" />
+                      <Input
+                        value={newContractClientSiret}
+                        onChange={(e) => setNewContractClientSiret(e.target.value)}
+                        placeholder="123 456 789 00012"
+                        className="h-8 text-sm"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground">Ville</Label>
-                      <Input value={newContractClientCity} onChange={e => setNewContractClientCity(e.target.value)} placeholder="Paris" className="h-8 text-sm" />
+                      <Input
+                        value={newContractClientCity}
+                        onChange={(e) => setNewContractClientCity(e.target.value)}
+                        placeholder="Paris"
+                        className="h-8 text-sm"
+                      />
                     </div>
                     <div className="col-span-2 space-y-1">
                       <Label className="text-[10px] text-muted-foreground">Adresse</Label>
-                      <Input value={newContractClientAddress} onChange={e => setNewContractClientAddress(e.target.value)} placeholder="12 rue de la Paix" className="h-8 text-sm" />
+                      <Input
+                        value={newContractClientAddress}
+                        onChange={(e) => setNewContractClientAddress(e.target.value)}
+                        placeholder="12 rue de la Paix"
+                        className="h-8 text-sm"
+                      />
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleCreateContractClient} disabled={creatingClient} className="gap-1">
                       <UserPlus className="h-3 w-3" /> {creatingClient ? "Création…" : "Créer et sélectionner"}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setShowCreateClientInContract(false)}>Annuler</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowCreateClientInContract(false)}>
+                      Annuler
+                    </Button>
                   </div>
                 </div>
               )}
 
               {/* Show selected client info (editable) */}
-              {contractClientId && (() => {
-                const c = clients.find(cl => cl.id === contractClientId);
-                if (!c) return null;
-                if (!editClientInContract) {
-                  return (
-                    <div className="text-[10px] text-muted-foreground space-y-0.5 bg-background p-2 rounded border border-border/50">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-0.5">
-                          <p><strong>{c.company_name}</strong>{c.contact_name ? ` - ${c.contact_name}` : ""}</p>
-                          {c.email && <p>📧 {c.email}</p>}
-                          {(c as any).phone && <p>📞 {(c as any).phone}</p>}
-                          {c.siret && <p>🏢 SIRET : {c.siret}</p>}
-                          {c.address && <p>📍 {c.address}{c.city ? `, ${c.city}` : ""}</p>}
+              {contractClientId &&
+                (() => {
+                  const c = clients.find((cl) => cl.id === contractClientId);
+                  if (!c) return null;
+                  if (!editClientInContract) {
+                    return (
+                      <div className="text-[10px] text-muted-foreground space-y-0.5 bg-background p-2 rounded border border-border/50">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <p>
+                              <strong>{c.company_name}</strong>
+                              {c.contact_name ? ` - ${c.contact_name}` : ""}
+                            </p>
+                            {c.email && <p>📧 {c.email}</p>}
+                            {(c as any).phone && <p>📞 {(c as any).phone}</p>}
+                            {c.siret && <p>🏢 SIRET : {c.siret}</p>}
+                            {c.address && (
+                              <p>
+                                📍 {c.address}
+                                {c.city ? `, ${c.city}` : ""}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-[10px]"
+                            onClick={() => {
+                              setEditClientCompany(c.company_name || "");
+                              setEditClientContact(c.contact_name || "");
+                              setEditClientEmail(c.email || "");
+                              setEditClientPhone((c as any).phone || "");
+                              setEditClientSiret(c.siret || "");
+                              setEditClientAddress(c.address || "");
+                              setEditClientCity(c.city || "");
+                              setEditClientInContract(true);
+                            }}
+                          >
+                            ✏️ Modifier
+                          </Button>
                         </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
+                      <Label className="text-xs font-semibold">✏️ Modifier les informations du client</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Société *</Label>
+                          <Input
+                            value={editClientCompany}
+                            onChange={(e) => setEditClientCompany(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Nom du contact</Label>
+                          <Input
+                            value={editClientContact}
+                            onChange={(e) => setEditClientContact(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Email</Label>
+                          <Input
+                            type="email"
+                            value={editClientEmail}
+                            onChange={(e) => setEditClientEmail(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Téléphone</Label>
+                          <Input
+                            value={editClientPhone}
+                            onChange={(e) => setEditClientPhone(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">SIRET</Label>
+                          <Input
+                            value={editClientSiret}
+                            onChange={(e) => setEditClientSiret(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Ville</Label>
+                          <Input
+                            value={editClientCity}
+                            onChange={(e) => setEditClientCity(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Adresse</Label>
+                          <Input
+                            value={editClientAddress}
+                            onChange={(e) => setEditClientAddress(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
                         <Button
-                          type="button" size="sm" variant="ghost" className="h-6 px-2 text-[10px]"
-                          onClick={() => {
-                            setEditClientCompany(c.company_name || "");
-                            setEditClientContact(c.contact_name || "");
-                            setEditClientEmail(c.email || "");
-                            setEditClientPhone((c as any).phone || "");
-                            setEditClientSiret(c.siret || "");
-                            setEditClientAddress(c.address || "");
-                            setEditClientCity(c.city || "");
-                            setEditClientInContract(true);
+                          size="sm"
+                          disabled={savingClientEdit}
+                          className="gap-1"
+                          onClick={async () => {
+                            if (!editClientCompany) {
+                              toast.error("Société requise");
+                              return;
+                            }
+                            setSavingClientEdit(true);
+                            const { error } = await supabase
+                              .from("clients")
+                              .update({
+                                company_name: editClientCompany,
+                                contact_name: editClientContact || null,
+                                email: editClientEmail || null,
+                                phone: editClientPhone || null,
+                                siret: editClientSiret || null,
+                                address: editClientAddress || null,
+                                city: editClientCity || null,
+                              } as any)
+                              .eq("id", c.id);
+                            if (error) {
+                              toast.error("Erreur de sauvegarde");
+                            } else {
+                              toast.success("Client mis à jour");
+                              await fetchClients();
+                              setEditClientInContract(false);
+                            }
+                            setSavingClientEdit(false);
                           }}
                         >
-                          ✏️ Modifier
+                          {savingClientEdit ? "Sauvegarde…" : "Enregistrer"}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditClientInContract(false)}>
+                          Annuler
                         </Button>
                       </div>
                     </div>
                   );
-                }
-                return (
-                  <div className="border border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
-                    <Label className="text-xs font-semibold">✏️ Modifier les informations du client</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Société *</Label><Input value={editClientCompany} onChange={e => setEditClientCompany(e.target.value)} className="h-8 text-sm" /></div>
-                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Nom du contact</Label><Input value={editClientContact} onChange={e => setEditClientContact(e.target.value)} className="h-8 text-sm" /></div>
-                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Email</Label><Input type="email" value={editClientEmail} onChange={e => setEditClientEmail(e.target.value)} className="h-8 text-sm" /></div>
-                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Téléphone</Label><Input value={editClientPhone} onChange={e => setEditClientPhone(e.target.value)} className="h-8 text-sm" /></div>
-                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">SIRET</Label><Input value={editClientSiret} onChange={e => setEditClientSiret(e.target.value)} className="h-8 text-sm" /></div>
-                      <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">Ville</Label><Input value={editClientCity} onChange={e => setEditClientCity(e.target.value)} className="h-8 text-sm" /></div>
-                      <div className="col-span-2 space-y-1"><Label className="text-[10px] text-muted-foreground">Adresse</Label><Input value={editClientAddress} onChange={e => setEditClientAddress(e.target.value)} className="h-8 text-sm" /></div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm" disabled={savingClientEdit} className="gap-1"
-                        onClick={async () => {
-                          if (!editClientCompany) { toast.error("Société requise"); return; }
-                          setSavingClientEdit(true);
-                          const { error } = await supabase.from("clients").update({
-                            company_name: editClientCompany,
-                            contact_name: editClientContact || null,
-                            email: editClientEmail || null,
-                            phone: editClientPhone || null,
-                            siret: editClientSiret || null,
-                            address: editClientAddress || null,
-                            city: editClientCity || null,
-                          } as any).eq("id", c.id);
-                          if (error) { toast.error("Erreur de sauvegarde"); }
-                          else { toast.success("Client mis à jour"); await fetchClients(); setEditClientInContract(false); }
-                          setSavingClientEdit(false);
-                        }}
-                      >{savingClientEdit ? "Sauvegarde…" : "Enregistrer"}</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditClientInContract(false)}>Annuler</Button>
-                    </div>
-                  </div>
-                );
-              })()}
+                })()}
             </div>
 
             {/* Speaker selector — allows changing the assigned speaker even after contract creation */}
@@ -1726,7 +2186,7 @@ Nelly Sabde - Les Conférenciers`);
                   <User className="h-3.5 w-3.5" /> Conférencier retenu pour ce contrat
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {proposal.proposal_speakers.map(ps => {
+                  {proposal.proposal_speakers.map((ps) => {
                     const isSelected = event?.selected_speaker_id === ps.speaker_id;
                     return (
                       <button
@@ -1734,24 +2194,35 @@ Nelly Sabde - Les Conférenciers`);
                         type="button"
                         onClick={async () => {
                           if (!ps.speaker_id || !event) return;
-                          await supabase.from("events").update({ selected_speaker_id: ps.speaker_id } as any).eq("id", event.id);
-                          if (contract) await supabase.from("contracts").update({ selected_speaker_id: ps.speaker_id } as any).eq("id", contract.id);
+                          await supabase
+                            .from("events")
+                            .update({ selected_speaker_id: ps.speaker_id } as any)
+                            .eq("id", event.id);
+                          if (contract)
+                            await supabase
+                              .from("contracts")
+                              .update({ selected_speaker_id: ps.speaker_id } as any)
+                              .eq("id", contract.id);
                           // Rebuild lines for the newly selected speaker
 
-                          const newLines = [{
-                            id: generateId(),
-                            label: ps.speakers?.name || "Conférencier",
-                            amount_ht: ps.total_price || 0,
-                            tva_rate: 20,
-                            type: "speaker" as const,
-                          }];
+                          const newLines = [
+                            {
+                              id: generateId(),
+                              label: ps.speakers?.name || "Conférencier",
+                              amount_ht: ps.total_price || 0,
+                              tva_rate: 20,
+                              type: "speaker" as const,
+                            },
+                          ];
                           setContractLines(newLines);
                           fetchData();
                           toast.success("Conférencier mis à jour");
                         }}
                         className={cn(
                           "px-3 py-1.5 rounded-md border text-xs transition-all",
-                          isSelected ? "border-primary bg-primary text-primary-foreground font-medium" : "border-border bg-background hover:border-primary/50"
+                          isSelected
+                            ? "border-primary bg-primary text-primary-foreground font-medium"
+                            : "border-border bg-background hover:border-primary/50",
                         )}
                       >
                         {ps.speakers?.name || "—"}
@@ -1760,56 +2231,166 @@ Nelly Sabde - Les Conférenciers`);
                     );
                   })}
                 </div>
-                <p className="text-[10px] text-muted-foreground">Modifier ici si le conférencier choisi diffère de la proposition initiale.</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Modifier ici si le conférencier choisi diffère de la proposition initiale.
+                </p>
               </div>
             )}
 
-              <div className="grid grid-cols-1 gap-3 min-w-0">
-              <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} /></div>
-              <div className="space-y-1"><Label className="text-xs">Horaires</Label><Input placeholder="14h00 - 15h30" value={eventTime} onChange={e => setEventTime(e.target.value)} /></div>
+            <div className="grid grid-cols-1 gap-3 min-w-0">
+              <div className="space-y-1">
+                <Label className="text-xs">Date</Label>
+                <Input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Horaires</Label>
+                <Input placeholder="14h00 - 15h30" value={eventTime} onChange={(e) => setEventTime(e.target.value)} />
+              </div>
             </div>
-            <div className="space-y-1"><Label className="text-xs">Lieu</Label><Input placeholder="Hôtel Marriott, Paris" value={eventLocation} onChange={e => setEventLocation(e.target.value)} /></div>
-              <div className="grid grid-cols-1 gap-3 min-w-0">
-              <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input placeholder="200 personnes" value={contractAudienceSize} onChange={e => setContractAudienceSize(e.target.value)} /></div>
-              <div className="space-y-1"><Label className="text-xs">N° Bon de commande</Label><Input placeholder="BDC-001" value={contractBdcNumber} onChange={e => setContractBdcNumber(e.target.value)} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Lieu</Label>
+              <Input
+                placeholder="Hôtel Marriott, Paris"
+                value={eventLocation}
+                onChange={(e) => setEventLocation(e.target.value)}
+              />
             </div>
-            <div className="space-y-1"><Label className="text-xs">Format</Label><Input placeholder="Conférence, Table ronde..." value={eventFormat} onChange={e => setEventFormat(e.target.value)} /></div>
-            <div className="space-y-1"><Label className="text-xs">Détails</Label><Textarea placeholder="Infos complémentaires..." value={eventDescription} onChange={e => setEventDescription(e.target.value)} rows={2} /></div>
+            <div className="grid grid-cols-1 gap-3 min-w-0">
+              <div className="space-y-1">
+                <Label className="text-xs">Taille de l'auditoire</Label>
+                <Input
+                  placeholder="200"
+                  value={contractAudienceSize}
+                  onChange={(e) => setContractAudienceSize(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">N° Bon de commande</Label>
+                <Input
+                  placeholder="BDC-001"
+                  value={contractBdcNumber}
+                  onChange={(e) => setContractBdcNumber(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Thématique</Label>
+              <Input
+                placeholder="Leadership, innovation, transformation..."
+                value={contractTheme}
+                onChange={(e) => setContractTheme(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Format</Label>
+              <Input
+                placeholder="Conférence, Table ronde..."
+                value={eventFormat}
+                onChange={(e) => setEventFormat(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Détails</Label>
+              <Textarea
+                placeholder="Infos complémentaires..."
+                value={eventDescription}
+                onChange={(e) => setEventDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
 
             {/* Lines */}
             <div className="space-y-3 min-w-0">
               <Label className="text-sm font-semibold">Lignes de facturation</Label>
-              {contractLines.map(line => (
+              {contractLines.map((line) => (
                 <div key={line.id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2 min-w-0">
                   <div className="flex items-start gap-2 min-w-0 max-w-full overflow-hidden">
-                    <span className={cn(
-                      "inline-flex shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground",
-                      line.type === "speaker" && "bg-primary/10 text-primary"
-                    )}>{line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}</span>
-                    <Button type="button" size="icon" variant="ghost" className="ml-auto h-7 w-7 shrink-0 text-destructive hover:text-destructive" onClick={() => removeLine(line.id)} title="Supprimer cette ligne" aria-label="Supprimer cette ligne">
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground",
+                        line.type === "speaker" && "bg-primary/10 text-primary",
+                      )}
+                    >
+                      {line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}
+                    </span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="ml-auto h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => removeLine(line.id)}
+                      title="Supprimer cette ligne"
+                      aria-label="Supprimer cette ligne"
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                  <Input value={line.label} onChange={e => updateLine(line.id, "label", e.target.value)} className="h-8 text-sm min-w-0 max-w-full" />
+                  <Input
+                    value={line.label}
+                    onChange={(e) => updateLine(line.id, "label", e.target.value)}
+                    className="h-8 text-sm min-w-0 max-w-full"
+                  />
                   <div className="grid grid-cols-1 gap-2 min-w-0">
                     <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">Montant HT (€)</Label>
-                      <Input type="number" inputMode="numeric" value={line.amount_ht} onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))} className="h-8 text-sm min-w-0 max-w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={line.amount_ht}
+                        onChange={(e) => updateLine(line.id, "amount_ht", Number(e.target.value))}
+                        className="h-8 text-sm min-w-0 max-w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
                     </div>
                     <div className="space-y-0.5 min-w-0">
                       <Label className="text-[10px] text-muted-foreground">TVA</Label>
-                      <Select value={String(line.tva_rate)} onValueChange={v => updateLine(line.id, "tva_rate", Number(v))}>
-                        <SelectTrigger className="h-8 text-sm max-w-full"><SelectValue /></SelectTrigger>
-                        <SelectContent>{TVA_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                      <Select
+                        value={String(line.tva_rate)}
+                        onValueChange={(v) => updateLine(line.id, "tva_rate", Number(v))}
+                      >
+                        <SelectTrigger className="h-8 text-sm max-w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TVA_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
                       </Select>
                     </div>
                   </div>
                 </div>
               ))}
               <div className="grid grid-cols-1 gap-2 min-w-0">
-                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("speaker")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Conférencier</span></Button>
-                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("travel")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Déplacement</span></Button>
-                <Button type="button" size="sm" variant="outline" className="w-full justify-center gap-1 text-xs min-w-0" onClick={() => addLine("custom")}><Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Autre</span></Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-center gap-1 text-xs min-w-0"
+                  onClick={() => addLine("speaker")}
+                >
+                  <Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Conférencier</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-center gap-1 text-xs min-w-0"
+                  onClick={() => addLine("travel")}
+                >
+                  <Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Déplacement</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-center gap-1 text-xs min-w-0"
+                  onClick={() => addLine("custom")}
+                >
+                  <Plus className="h-3 w-3 shrink-0" /> <span className="truncate">Autre</span>
+                </Button>
               </div>
             </div>
 
@@ -1823,10 +2404,24 @@ Nelly Sabde - Les Conférenciers`);
               </div>
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 min-w-0 max-w-full overflow-hidden">
                 <div className="relative flex-1 min-w-0">
-                  <Input type="text" inputMode="decimal" value={agencyCommissionText} onChange={e => updateAgencyCommission(e.target.value)} className="h-8 pr-8 text-sm text-right min-w-0" />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">€</span>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={agencyCommissionText}
+                    onChange={(e) => updateAgencyCommission(e.target.value)}
+                    className="h-8 pr-8 text-sm text-right min-w-0"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">
+                    €
+                  </span>
                 </div>
-                <Button type="button" size="sm" variant="ghost" className="h-8 shrink-0 px-2 text-xs text-destructive hover:text-destructive" onClick={resetAgencyCommission}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 shrink-0 px-2 text-xs text-destructive hover:text-destructive"
+                  onClick={resetAgencyCommission}
+                >
                   Retirer
                 </Button>
               </div>
@@ -1835,19 +2430,60 @@ Nelly Sabde - Les Conférenciers`);
             {/* Discount */}
             <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50 min-w-0">
               <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div className="flex-1 min-w-0"><Label className="text-xs">Remise globale (%)</Label></div>
-              <Input type="number" min={0} max={100} inputMode="numeric" value={discountPercent} onChange={e => setDiscountPercent(Number(e.target.value))} className="w-20 h-8 text-sm text-right shrink-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" onWheel={e => e.currentTarget.blur()} />
+              <div className="flex-1 min-w-0">
+                <Label className="text-xs">Remise globale (%)</Label>
+              </div>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                inputMode="numeric"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(Number(e.target.value))}
+                className="w-20 h-8 text-sm text-right shrink-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                onWheel={(e) => e.currentTarget.blur()}
+              />
             </div>
 
             {/* Totals */}
             <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-2 text-sm min-w-0">
-              <div className="flex justify-between text-muted-foreground"><span>Sous-total lignes HT</span><span>{(dialogTotals.subtotalHT - (agencyCommission || 0)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
-              {agencyCommission > 0 && <div className="flex justify-between text-amber-700"><span>+ Commission agence (interne)</span><span>{agencyCommission.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
-              <div className="flex justify-between text-muted-foreground"><span>Sous-total HT</span><span>{dialogTotals.subtotalHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
-              {discountPercent > 0 && <div className="flex justify-between text-red-600"><span>Remise ({discountPercent}%)</span><span>-{dialogTotals.discountAmount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>}
-              <div className="flex justify-between text-muted-foreground"><span>Total HT</span><span>{dialogTotals.totalHTAfterDiscount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
-              <div className="flex justify-between text-muted-foreground"><span>TVA</span><span>{dialogTotals.totalTVA.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
-              <div className="border-t border-border pt-2 flex justify-between font-bold text-base"><span>Total TTC</span><span>{dialogTotals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Sous-total lignes HT</span>
+                <span>
+                  {(dialogTotals.subtotalHT - (agencyCommission || 0)).toLocaleString("fr-FR", {
+                    minimumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
+              </div>
+              {agencyCommission > 0 && (
+                <div className="flex justify-between text-amber-700">
+                  <span>+ Commission agence (interne)</span>
+                  <span>{agencyCommission.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                </div>
+              )}
+              <div className="flex justify-between text-muted-foreground">
+                <span>Sous-total HT</span>
+                <span>{dialogTotals.subtotalHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              </div>
+              {discountPercent > 0 && (
+                <div className="flex justify-between text-red-600">
+                  <span>Remise ({discountPercent}%)</span>
+                  <span>-{dialogTotals.discountAmount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                </div>
+              )}
+              <div className="flex justify-between text-muted-foreground">
+                <span>Total HT</span>
+                <span>{dialogTotals.totalHTAfterDiscount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>TVA</span>
+                <span>{dialogTotals.totalTVA.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              </div>
+              <div className="border-t border-border pt-2 flex justify-between font-bold text-base">
+                <span>Total TTC</span>
+                <span>{dialogTotals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              </div>
             </div>
 
             {/* Acompte requis */}
@@ -1860,10 +2496,12 @@ Nelly Sabde - Les Conférenciers`);
                 type="button"
                 role="switch"
                 aria-checked={depositRequired}
-                onClick={() => setDepositRequired(v => !v)}
+                onClick={() => setDepositRequired((v) => !v)}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${depositRequired ? "bg-primary" : "bg-muted-foreground/30"}`}
               >
-                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${depositRequired ? "translate-x-5" : "translate-x-0"}`} />
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${depositRequired ? "translate-x-5" : "translate-x-0"}`}
+                />
               </button>
             </div>
 
@@ -1872,11 +2510,13 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-xs">Conditions particulières (ajoutées au contrat)</Label>
               <Textarea
                 value={customClauses}
-                onChange={e => setCustomClauses(e.target.value)}
+                onChange={(e) => setCustomClauses(e.target.value)}
                 rows={4}
                 className="text-sm font-mono"
               />
-              <p className="text-[10px] text-muted-foreground">Apparaît dans une section « Conditions particulières » du contrat (visible côté client). Vide = aucune.</p>
+              <p className="text-[10px] text-muted-foreground">
+                Apparaît dans une section « Conditions particulières » du contrat (visible côté client). Vide = aucune.
+              </p>
             </div>
 
             {/* Édition des articles standards des CG (cas rares) */}
@@ -1892,16 +2532,16 @@ Nelly Sabde - Les Conférenciers`);
               </summary>
               <div className="p-3 space-y-4">
                 <p className="text-[11px] text-muted-foreground">
-                  Modifiez ou supprimez uniquement les articles à ajuster (ex : droit à l'image).
-                  Les articles supprimés ne seront pas affichés et la numérotation sera mise à jour automatiquement.
+                  Modifiez ou supprimez uniquement les articles à ajuster (ex : droit à l'image). Les articles supprimés
+                  ne seront pas affichés et la numérotation sera mise à jour automatiquement.
                 </p>
                 {DEFAULT_CLAUSES.map((clause, idx) => {
                   const raw = articleOverrides[clause.key] ?? "";
                   const isRemoved = raw === REMOVED_CLAUSE;
                   const isOverridden = !isRemoved && raw.trim().length > 0;
-                  const visibleIndex = DEFAULT_CLAUSES
-                    .slice(0, idx + 1)
-                    .filter(c => articleOverrides[c.key] !== REMOVED_CLAUSE).length;
+                  const visibleIndex = DEFAULT_CLAUSES.slice(0, idx + 1).filter(
+                    (c) => articleOverrides[c.key] !== REMOVED_CLAUSE,
+                  ).length;
                   const dynamicTitle = isRemoved
                     ? clause.title
                     : clause.title.replace(/^Article\s+\d+\./i, `Article ${visibleIndex}.`);
@@ -1913,12 +2553,14 @@ Nelly Sabde - Les Conférenciers`);
                         borderColor: isRemoved
                           ? "hsl(var(--destructive))"
                           : isOverridden
-                          ? "hsl(var(--primary))"
-                          : "hsl(var(--border))",
+                            ? "hsl(var(--primary))"
+                            : "hsl(var(--border))",
                       }}
                     >
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <Label className={cn("text-xs font-semibold", isRemoved && "line-through text-muted-foreground")}>
+                        <Label
+                          className={cn("text-xs font-semibold", isRemoved && "line-through text-muted-foreground")}
+                        >
                           {dynamicTitle}
                           {isRemoved && <span className="ml-2 text-[10px] text-destructive">(supprimé)</span>}
                           {isOverridden && <span className="ml-2 text-[10px] text-primary">(modifié)</span>}
@@ -1926,31 +2568,68 @@ Nelly Sabde - Les Conférenciers`);
                         <div className="flex gap-1">
                           {!isOverridden && !isRemoved && (
                             <>
-                              <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
-                                onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: clause.defaultHtml }))}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-[10px]"
+                                onClick={() => setArticleOverrides((o) => ({ ...o, [clause.key]: clause.defaultHtml }))}
+                              >
                                 Modifier
                               </Button>
-                              <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
-                                onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: REMOVED_CLAUSE }))}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-[10px] text-destructive"
+                                onClick={() => setArticleOverrides((o) => ({ ...o, [clause.key]: REMOVED_CLAUSE }))}
+                              >
                                 Supprimer
                               </Button>
                             </>
                           )}
                           {isOverridden && (
                             <>
-                              <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
-                                onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: REMOVED_CLAUSE }))}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-[10px] text-destructive"
+                                onClick={() => setArticleOverrides((o) => ({ ...o, [clause.key]: REMOVED_CLAUSE }))}
+                              >
                                 Supprimer
                               </Button>
-                              <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
-                                onClick={() => setArticleOverrides(o => { const n = { ...o }; delete n[clause.key as ClauseKey]; return n; })}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-[10px]"
+                                onClick={() =>
+                                  setArticleOverrides((o) => {
+                                    const n = { ...o };
+                                    delete n[clause.key as ClauseKey];
+                                    return n;
+                                  })
+                                }
+                              >
                                 Réinitialiser
                               </Button>
                             </>
                           )}
                           {isRemoved && (
-                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
-                              onClick={() => setArticleOverrides(o => { const n = { ...o }; delete n[clause.key as ClauseKey]; return n; })}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px]"
+                              onClick={() =>
+                                setArticleOverrides((o) => {
+                                  const n = { ...o };
+                                  delete n[clause.key as ClauseKey];
+                                  return n;
+                                })
+                              }
+                            >
                               Restaurer
                             </Button>
                           )}
@@ -1960,12 +2639,13 @@ Nelly Sabde - Les Conférenciers`);
                         <>
                           <RichTextEditor
                             value={raw}
-                            onChange={(html) => setArticleOverrides(o => ({ ...o, [clause.key]: html }))}
+                            onChange={(html) => setArticleOverrides((o) => ({ ...o, [clause.key]: html }))}
                             minHeight="160px"
                           />
                           {clause.key === "art5" && (
                             <p className="text-[10px] text-muted-foreground">
-                              Astuce : la mention <code>{'{{PRICE_CLAUSE}}'}</code> est remplacée automatiquement par la clause d'acompte.
+                              Astuce : la mention <code>{"{{PRICE_CLAUSE}}"}</code> est remplacée automatiquement par la
+                              clause d'acompte.
                             </p>
                           )}
                         </>
@@ -1975,7 +2655,6 @@ Nelly Sabde - Les Conférenciers`);
                 })}
               </div>
             </details>
-
 
             <Button className="w-full" onClick={handleSaveContract} disabled={saving}>
               {saving ? "Sauvegarde…" : editingContract ? "Mettre à jour" : "Créer le contrat"}
@@ -1994,14 +2673,19 @@ Nelly Sabde - Les Conférenciers`);
             <Input
               placeholder="Rechercher un conférencier…"
               value={speakerPickerSearch}
-              onChange={e => setSpeakerPickerSearch(e.target.value)}
+              onChange={(e) => setSpeakerPickerSearch(e.target.value)}
               autoFocus
             />
             <div className="flex-1 overflow-y-auto border border-border/60 rounded-md divide-y divide-border/40">
               {allSpeakers
-                .filter(sp => !speakerPickerSearch || sp.name.toLowerCase().includes(speakerPickerSearch.toLowerCase()) || (sp.city || "").toLowerCase().includes(speakerPickerSearch.toLowerCase()))
+                .filter(
+                  (sp) =>
+                    !speakerPickerSearch ||
+                    sp.name.toLowerCase().includes(speakerPickerSearch.toLowerCase()) ||
+                    (sp.city || "").toLowerCase().includes(speakerPickerSearch.toLowerCase()),
+                )
                 .slice(0, 200)
-                .map(sp => (
+                .map((sp) => (
                   <button
                     key={sp.id}
                     type="button"
@@ -2011,7 +2695,8 @@ Nelly Sabde - Les Conférenciers`);
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{sp.name}</p>
                       <p className="text-[11px] text-muted-foreground truncate">
-                        {sp.city || "—"}{sp.email ? ` · ${sp.email}` : ""}
+                        {sp.city || "—"}
+                        {sp.email ? ` · ${sp.email}` : ""}
                       </p>
                     </div>
                     <span className="text-xs font-semibold text-primary shrink-0">
@@ -2023,7 +2708,9 @@ Nelly Sabde - Les Conférenciers`);
                 <p className="p-4 text-xs text-muted-foreground italic text-center">Chargement des conférenciers…</p>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground">Le tarif de base et le nom seront pré-remplis depuis la fiche CRM.</p>
+            <p className="text-[10px] text-muted-foreground">
+              Le tarif de base et le nom seront pré-remplis depuis la fiche CRM.
+            </p>
           </div>
         </DialogContent>
       </Dialog>
@@ -2031,9 +2718,10 @@ Nelly Sabde - Les Conférenciers`);
       {/* Contract email dialog with client selector */}
       <Dialog open={contractEmailOpen} onOpenChange={setContractEmailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-2">
-
             {/* Auto-linked recipient from proposal */}
             <div className="p-3 bg-muted/30 rounded-lg border border-border/50 text-sm">
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -2045,17 +2733,35 @@ Nelly Sabde - Les Conférenciers`);
               </p>
             </div>
 
-            <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={contractEmailSubject} onChange={e => setContractEmailSubject(e.target.value)} /></div>
-            <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={contractEmailBody} onChange={e => setContractEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
+            <div className="space-y-2">
+              <Label className="text-xs">Objet</Label>
+              <Input value={contractEmailSubject} onChange={(e) => setContractEmailSubject(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Corps du mail</Label>
+              <Textarea
+                value={contractEmailBody}
+                onChange={(e) => setContractEmailBody(e.target.value)}
+                rows={12}
+                className="text-sm"
+              />
+            </div>
 
             {/* Recap */}
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>🎤 <strong>Conférencier :</strong> {speakerSummary}</p>
-              {getContractSignUrl() && <p>🔗 <strong>Lien signature :</strong> {getContractSignUrl()}</p>}
+              <p>
+                🎤 <strong>Conférencier :</strong> {speakerSummary}
+              </p>
+              {getContractSignUrl() && (
+                <p>
+                  🔗 <strong>Lien signature :</strong> {getContractSignUrl()}
+                </p>
+              )}
             </div>
 
             <Button className="w-full" onClick={handleSendContractEmail} disabled={sendingContract}>
-              <Send className="h-4 w-4 mr-2" />{sendingContract ? "Envoi…" : "Envoyer le contrat"}
+              <Send className="h-4 w-4 mr-2" />
+              {sendingContract ? "Envoi…" : "Envoyer le contrat"}
             </Button>
           </div>
         </DialogContent>
@@ -2071,13 +2777,59 @@ Nelly Sabde - Les Conférenciers`);
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label className="text-xs">À</Label><Input value={speakerEmailTo} onChange={e => setSpeakerEmailTo(e.target.value)} placeholder="email@exemple.com" /></div>
-              <div className="space-y-2"><Label className="text-xs">Cc (séparés par virgule)</Label><Input value={speakerEmailCc} onChange={e => setSpeakerEmailCc(e.target.value)} placeholder="copie1@exemple.com, copie2@exemple.com" /></div>
+              <div className="space-y-2">
+                <Label className="text-xs">À</Label>
+                <Input
+                  value={speakerEmailTo}
+                  onChange={(e) => setSpeakerEmailTo(e.target.value)}
+                  placeholder="email@exemple.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Cc (séparés par virgule)</Label>
+                <Input
+                  value={speakerEmailCc}
+                  onChange={(e) => setSpeakerEmailCc(e.target.value)}
+                  placeholder="copie1@exemple.com, copie2@exemple.com"
+                />
+              </div>
             </div>
-            <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={speakerEmailSubject} onChange={e => setSpeakerEmailSubject(e.target.value)} /></div>
-            <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={speakerEmailBody} onChange={e => setSpeakerEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
+            <div className="space-y-2">
+              <Label className="text-xs">Adressage</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSpeakerEmailAddressing("informal");
+                    setSpeakerEmailBody(buildSpeakerEmailBody(speakerEmailType, "informal"));
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${speakerEmailAddressing === "informal" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Tutoiement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSpeakerEmailAddressing("formal");
+                    setSpeakerEmailBody(buildSpeakerEmailBody(speakerEmailType, "formal"));
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${speakerEmailAddressing === "formal" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                >
+                  Vouvoiement
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Objet</Label>
+              <Input value={speakerEmailSubject} onChange={(e) => setSpeakerEmailSubject(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Corps du mail</Label>
+              <RichTextEditor value={speakerEmailBody} onChange={setSpeakerEmailBody} />
+            </div>
             <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
-              <Send className="h-4 w-4 mr-2" />{sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
+              <Send className="h-4 w-4 mr-2" />
+              {sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
             </Button>
           </div>
         </DialogContent>
@@ -2086,27 +2838,97 @@ Nelly Sabde - Les Conférenciers`);
       {/* Liaison sheet dialog */}
       <Dialog open={liaisonDialogOpen} onOpenChange={setLiaisonDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Feuille de liaison - {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-serif">Feuille de liaison - {proposal.client_name}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-5 mt-2">
             {/* Liaison details - matching the DOCX template fields */}
             <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold">📋 Champs de la feuille de liaison</Label>
-                <p className="text-[10px] text-muted-foreground italic">Ces valeurs mettent à jour le contrat à l'envoi.</p>
+                <p className="text-[10px] text-muted-foreground italic">
+                  Ces valeurs mettent à jour le contrat à l'envoi.
+                </p>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">📅 Date</Label><Input type="date" value={liaisonEventDate} onChange={e => setLiaisonEventDate(e.target.value)} className="h-8 text-sm" /></div>
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🕐 Horaires</Label><Input value={liaisonEventTime} onChange={e => setLiaisonEventTime(e.target.value)} placeholder="9h-12h" className="h-8 text-sm" /></div>
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">📍 Lieu</Label><Input value={liaisonEventLocation} onChange={e => setLiaisonEventLocation(e.target.value)} placeholder="Marseille" className="h-8 text-sm" /></div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">📅 Date</Label>
+                  <Input
+                    type="date"
+                    value={liaisonEventDate}
+                    onChange={(e) => setLiaisonEventDate(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">🕐 Horaires</Label>
+                  <Input
+                    value={liaisonEventTime}
+                    onChange={(e) => setLiaisonEventTime(e.target.value)}
+                    placeholder="9h-12h"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">📍 Lieu</Label>
+                  <Input
+                    value={liaisonEventLocation}
+                    onChange={(e) => setLiaisonEventLocation(e.target.value)}
+                    placeholder="Marseille"
+                    className="h-8 text-sm"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">👥 Auditoire</Label><Input value={liaisonAudience} onChange={e => setLiaisonAudience(e.target.value)} placeholder="100 personnes" className="h-8 text-sm" /></div>
-                <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🎯 Thématique</Label><Input value={liaisonTheme} onChange={e => setLiaisonTheme(e.target.value)} placeholder="Le management" className="h-8 text-sm" /></div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">👥 Auditoire</Label>
+                  <Input
+                    value={liaisonAudience}
+                    onChange={(e) => setLiaisonAudience(e.target.value)}
+                    placeholder="100 personnes"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">🎯 Thématique</Label>
+                  <Input
+                    value={liaisonTheme}
+                    onChange={(e) => setLiaisonTheme(e.target.value)}
+                    placeholder="Le management"
+                    className="h-8 text-sm"
+                  />
+                </div>
               </div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Besoins logistiques</Label><Textarea value={liaisonTechNeeds} onChange={e => { setLiaisonTechNeeds(e.target.value); setLiaisonSalleSetup(""); }} placeholder="Vidéoprojecteur, micro casque, configuration salle…" rows={2} className="text-sm" /></div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label>
+                <Input
+                  value={liaisonArrival}
+                  onChange={(e) => setLiaisonArrival(e.target.value)}
+                  placeholder="environ 10H"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">🔧 Besoins logistiques</Label>
+                <Textarea
+                  value={liaisonTechNeeds}
+                  onChange={(e) => setLiaisonTechNeeds(e.target.value)}
+                  placeholder="Vidéoprojecteur&#10;Micro casque"
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label>
+                <Textarea
+                  value={liaisonNotes}
+                  onChange={(e) => setLiaisonNotes(e.target.value)}
+                  rows={6}
+                  className="text-sm min-h-[160px]"
+                  placeholder="Le conférencier restera pour le déjeuner..."
+                />
+              </div>
 
               <div className="flex justify-end gap-2">
                 <Button
@@ -2122,7 +2944,13 @@ Nelly Sabde - Les Conférenciers`);
                 >
                   <Save className="h-3.5 w-3.5" /> Enregistrer les modifications
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={handlePreviewLiaisonSheet} className="gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviewLiaisonSheet}
+                  className="gap-1.5"
+                >
                   <FileText className="h-3.5 w-3.5" /> Aperçu de la feuille
                 </Button>
               </div>
@@ -2130,11 +2958,19 @@ Nelly Sabde - Les Conférenciers`);
 
             {/* Email tabs */}
             <div className="flex gap-2">
-              <button onClick={() => setLiaisonTab("client")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${liaisonTab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                📧 Email Client {event?.liaison_email_client_sent_at && <CheckCircle className="h-3 w-3 text-emerald-500" />}
+              <button
+                onClick={() => setLiaisonTab("client")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${liaisonTab === "client" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              >
+                📧 Email Client{" "}
+                {event?.liaison_email_client_sent_at && <CheckCircle className="h-3 w-3 text-emerald-500" />}
               </button>
-              <button onClick={() => setLiaisonTab("speaker")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${liaisonTab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                🎤 Email Conférencier {event?.liaison_email_speaker_sent_at && <CheckCircle className="h-3 w-3 text-emerald-500" />}
+              <button
+                onClick={() => setLiaisonTab("speaker")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${liaisonTab === "speaker" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              >
+                🎤 Email Conférencier{" "}
+                {event?.liaison_email_speaker_sent_at && <CheckCircle className="h-3 w-3 text-emerald-500" />}
               </button>
             </div>
 
@@ -2148,51 +2984,125 @@ Nelly Sabde - Les Conférenciers`);
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <Label className="text-xs">À</Label>
-                    <Input value={liaisonClientTo} onChange={e => setLiaisonClientTo(e.target.value)} placeholder="client@email.com" className="text-sm" />
+                    <Input
+                      value={liaisonClientTo}
+                      onChange={(e) => setLiaisonClientTo(e.target.value)}
+                      placeholder="client@email.com"
+                      className="text-sm"
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">CC (copie pour le mail client)</Label>
-                    <Input value={liaisonClientCc} onChange={e => setLiaisonClientCc(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
+                    <Input
+                      value={liaisonClientCc}
+                      onChange={(e) => setLiaisonClientCc(e.target.value)}
+                      placeholder="conferencier@email.com"
+                      className="text-sm"
+                    />
                     <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                   </div>
-                  <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonClientSubject} onChange={e => setLiaisonClientSubject(e.target.value)} /></div>
-                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonClientBody} onChange={e => setLiaisonClientBody(e.target.value)} rows={10} className="text-sm" /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Objet</Label>
+                    <Input value={liaisonClientSubject} onChange={(e) => setLiaisonClientSubject(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Corps du mail</Label>
+                    <Textarea
+                      value={liaisonClientBody}
+                      onChange={(e) => setLiaisonClientBody(e.target.value)}
+                      rows={10}
+                      className="text-sm"
+                    />
+                  </div>
                   <Button className="w-full" onClick={() => handleSendLiaisonEmail("client")} disabled={sendingLiaison}>
-                    <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer au client"}
+                    <Send className="h-4 w-4 mr-2" />
+                    {sendingLiaison ? "Envoi…" : "Envoyer au client"}
                   </Button>
                 </div>
               )
+            ) : event?.liaison_email_speaker_sent_at ? (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Email conférencier envoyé le {formatDate(event.liaison_email_speaker_sent_at)}
+              </div>
             ) : (
-              event?.liaison_email_speaker_sent_at ? (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  Email conférencier envoyé le {formatDate(event.liaison_email_speaker_sent_at)}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">À</Label>
+                  <Input
+                    value={liaisonSpeakerTo}
+                    onChange={(e) => setLiaisonSpeakerTo(e.target.value)}
+                    placeholder="conferencier@email.com"
+                    className="text-sm"
+                  />
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">À</Label>
-                    <Input value={liaisonSpeakerTo} onChange={e => setLiaisonSpeakerTo(e.target.value)} placeholder="conferencier@email.com" className="text-sm" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">CC (copie pour le mail conférencier)</Label>
-                    <Input value={liaisonSpeakerCc} onChange={e => setLiaisonSpeakerCc(e.target.value)} placeholder="client@email.com" className="text-sm" />
-                    <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
-                  </div>
-                  <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
-                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
-                  <Button className="w-full" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
-                    <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer au conférencier"}
-                  </Button>
+                <div className="space-y-1">
+                  <Label className="text-xs">CC (copie pour le mail conférencier)</Label>
+                  <Input
+                    value={liaisonSpeakerCc}
+                    onChange={(e) => setLiaisonSpeakerCc(e.target.value)}
+                    placeholder="client@email.com"
+                    className="text-sm"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                 </div>
-              )
+                <div className="space-y-1">
+                  <Label className="text-xs">Tutoiement ou Vouvoiement</Label>
+                  <Select
+                    value={liaisonAddressing}
+                    onValueChange={(v: "formal" | "informal") => {
+                      const speaker = getSelectedSpeakerInfo();
+                      const firstName = (speaker?.name || "").split(" ")[0];
+                      const next = buildLiaisonSpeakerBody(v, firstName);
+                      if (
+                        liaisonSpeakerBody &&
+                        liaisonSpeakerBody !== buildLiaisonSpeakerBody(liaisonAddressing, firstName)
+                      ) {
+                        if (
+                          !window.confirm(
+                            "Régénérer le brouillon avec le nouveau choix ? Vos modifications seront perdues.",
+                          )
+                        )
+                          return;
+                      }
+                      setLiaisonAddressing(v);
+                      setLiaisonSpeakerBody(next);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="formal">Vouvoiement</SelectItem>
+                      <SelectItem value="informal">Tutoiement</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Objet</Label>
+                  <Input value={liaisonSpeakerSubject} onChange={(e) => setLiaisonSpeakerSubject(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Corps du mail</Label>
+                  <RichTextEditor value={liaisonSpeakerBody} onChange={setLiaisonSpeakerBody} />
+                </div>
+                <Button className="w-full" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
+                  <Send className="h-4 w-4 mr-2" />
+                  {sendingLiaison ? "Envoi…" : "Envoyer au conférencier"}
+                </Button>
+              </div>
             )}
 
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>📧 <strong>Client :</strong> {liaisonClientTo || "—"}{liaisonClientCc ? ` (CC: ${liaisonClientCc})` : ""}</p>
-              <p>🎤 <strong>Conférencier :</strong> {liaisonSpeakerTo || "—"}{liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}</p>
+              <p>
+                📧 <strong>Client :</strong> {liaisonClientTo || "—"}
+                {liaisonClientCc ? ` (CC: ${liaisonClientCc})` : ""}
+              </p>
+              <p>
+                🎤 <strong>Conférencier :</strong> {liaisonSpeakerTo || "—"}
+                {liaisonSpeakerCc ? ` (CC: ${liaisonSpeakerCc})` : ""}
+              </p>
             </div>
-
           </div>
         </DialogContent>
       </Dialog>
@@ -2200,40 +3110,115 @@ Nelly Sabde - Les Conférenciers`);
       {/* Event edit dialog */}
       <Dialog open={eventEditOpen} onOpenChange={setEventEditOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Suivi du dossier - {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-serif">Suivi du dossier - {proposal.client_name}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-5 mt-2">
-
             {/* Section: Événement */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">📋 Événement</Label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Titre de l'événement</Label><Input value={editEventTitle} onChange={e => setEditEventTitle(e.target.value)} placeholder="Séminaire annuel, Congrès RH…" /></div>
-                <div className="space-y-1"><Label className="text-xs">N° BDC</Label><Input value={editBdcNumber} onChange={e => setEditBdcNumber(e.target.value)} placeholder="BDC-001" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Titre de l'événement</Label>
+                  <Input
+                    value={editEventTitle}
+                    onChange={(e) => setEditEventTitle(e.target.value)}
+                    placeholder="Séminaire annuel, Congrès RH…"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">N° BDC</Label>
+                  <Input
+                    value={editBdcNumber}
+                    onChange={(e) => setEditBdcNumber(e.target.value)}
+                    placeholder="BDC-001"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input value={editTheme} onChange={e => setEditTheme(e.target.value)} placeholder="Le management" /></div>
-                <div className="space-y-1"><Label className="text-xs">Auditoire</Label><Input value={editAudienceSize} onChange={e => setEditAudienceSize(e.target.value)} placeholder="100 personnes" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Thématique</Label>
+                  <Input value={editTheme} onChange={(e) => setEditTheme(e.target.value)} placeholder="Le management" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Auditoire</Label>
+                  <Input
+                    value={editAudienceSize}
+                    onChange={(e) => setEditAudienceSize(e.target.value)}
+                    placeholder="100 personnes"
+                  />
+                </div>
               </div>
-              <div className="space-y-1"><Label className="text-xs">Dress code</Label><Input value={editDressCode} onChange={e => setEditDressCode(e.target.value)} placeholder="Tenue de ville, casual…" /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">Dress code</Label>
+                <Input
+                  value={editDressCode}
+                  onChange={(e) => setEditDressCode(e.target.value)}
+                  placeholder="Tenue de ville, casual…"
+                />
+              </div>
             </div>
 
             {/* Section: Conférence */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">🎤 Conférence</Label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Titre de la conférence</Label><Input value={editConferenceTitle} onChange={e => setEditConferenceTitle(e.target.value)} placeholder="L'Art du Leadership" /></div>
-                <div className="space-y-1"><Label className="text-xs">Durée</Label><Input value={editConferenceDuration} onChange={e => setEditConferenceDuration(e.target.value)} placeholder="1h00, 1h30…" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Titre de la conférence</Label>
+                  <Input
+                    value={editConferenceTitle}
+                    onChange={(e) => setEditConferenceTitle(e.target.value)}
+                    placeholder="L'Art du Leadership"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Durée</Label>
+                  <Input
+                    value={editConferenceDuration}
+                    onChange={(e) => setEditConferenceDuration(e.target.value)}
+                    placeholder="1h00, 1h30…"
+                  />
+                </div>
               </div>
-              <div className="space-y-1"><Label className="text-xs">Budget conférencier (€ HT)</Label><Input type="number" value={editSpeakerBudget} onChange={e => setEditSpeakerBudget(e.target.value ? Number(e.target.value) : "")} /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">Budget conférencier (€ HT)</Label>
+                <Input
+                  type="number"
+                  value={editSpeakerBudget}
+                  onChange={(e) => setEditSpeakerBudget(e.target.value ? Number(e.target.value) : "")}
+                />
+              </div>
             </div>
 
             {/* Section: Contact sur place */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">👤 Contact sur place (client)</Label>
               <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Nom</Label><Input value={editContactOnSiteName} onChange={e => setEditContactOnSiteName(e.target.value)} placeholder="Marie Dupont" /></div>
-                <div className="space-y-1"><Label className="text-xs">Téléphone</Label><Input value={editContactOnSitePhone} onChange={e => setEditContactOnSitePhone(e.target.value)} placeholder="06 XX XX XX XX" /></div>
-                <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={editContactOnSiteEmail} onChange={e => setEditContactOnSiteEmail(e.target.value)} placeholder="marie@societe.com" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Nom</Label>
+                  <Input
+                    value={editContactOnSiteName}
+                    onChange={(e) => setEditContactOnSiteName(e.target.value)}
+                    placeholder="Marie Dupont"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Téléphone</Label>
+                  <Input
+                    value={editContactOnSitePhone}
+                    onChange={(e) => setEditContactOnSitePhone(e.target.value)}
+                    placeholder="06 XX XX XX XX"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email</Label>
+                  <Input
+                    type="email"
+                    value={editContactOnSiteEmail}
+                    onChange={(e) => setEditContactOnSiteEmail(e.target.value)}
+                    placeholder="marie@societe.com"
+                  />
+                </div>
               </div>
             </div>
 
@@ -2241,58 +3226,182 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">🚗 Logistique</Label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Arrivée / accueil</Label><Input value={editArrivalInfo} onChange={e => setEditArrivalInfo(e.target.value)} placeholder="Accueil à 9h00 hall A" /></div>
-                <div className="space-y-1"><Label className="text-xs">Parking</Label><Input value={editParkingInfo} onChange={e => setEditParkingInfo(e.target.value)} placeholder="Parking souterrain, badge à l'accueil" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Arrivée / accueil</Label>
+                  <Input
+                    value={editArrivalInfo}
+                    onChange={(e) => setEditArrivalInfo(e.target.value)}
+                    placeholder="Accueil à 9h00 hall A"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Parking</Label>
+                  <Input
+                    value={editParkingInfo}
+                    onChange={(e) => setEditParkingInfo(e.target.value)}
+                    placeholder="Parking souterrain, badge à l'accueil"
+                  />
+                </div>
               </div>
-              <div className="space-y-1"><Label className="text-xs">Hôtel</Label><Input value={editHotelInfo} onChange={e => setEditHotelInfo(e.target.value)} placeholder="Hôtel Marriott - réservation confirmée" /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">Hôtel</Label>
+                <Input
+                  value={editHotelInfo}
+                  onChange={(e) => setEditHotelInfo(e.target.value)}
+                  placeholder="Hôtel Marriott - réservation confirmée"
+                />
+              </div>
             </div>
 
             {/* Section: Besoins logistiques */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">🔧 Besoins logistiques</Label>
-              <div className="space-y-1"><Textarea value={editTechNeeds} onChange={e => { setEditTechNeeds(e.target.value); setEditRoomSetup(""); }} rows={3} placeholder="Vidéoprojecteur, micro casque, configuration salle…" /></div>
+              <div className="space-y-1">
+                <Textarea
+                  value={editTechNeeds}
+                  onChange={(e) => {
+                    setEditTechNeeds(e.target.value);
+                    setEditRoomSetup("");
+                  }}
+                  rows={3}
+                  placeholder="Vidéoprojecteur, micro casque, configuration salle…"
+                />
+              </div>
             </div>
 
             {/* Section: Visio prépa */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">📹 Visio préparatoire</Label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Date visio</Label><Input type="date" value={editVisioDate} onChange={e => setEditVisioDate(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Heure</Label><Input value={editVisioTime} onChange={e => setEditVisioTime(e.target.value)} placeholder="10h00" /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Date visio</Label>
+                  <Input type="date" value={editVisioDate} onChange={(e) => setEditVisioDate(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Heure</Label>
+                  <Input value={editVisioTime} onChange={(e) => setEditVisioTime(e.target.value)} placeholder="10h00" />
+                </div>
               </div>
-              <div className="space-y-1"><Label className="text-xs">Notes visio</Label><Textarea value={editVisioNotes} onChange={e => setEditVisioNotes(e.target.value)} rows={2} /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">Notes visio</Label>
+                <Textarea value={editVisioNotes} onChange={(e) => setEditVisioNotes(e.target.value)} rows={2} />
+              </div>
             </div>
 
             {/* Section: Suivi des dates clés (chronologie dossier) */}
             <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
-              <Label className="text-sm font-semibold flex items-center gap-1.5">📅 Suivi du dossier (dates clés)</Label>
+              <Label className="text-sm font-semibold flex items-center gap-1.5">
+                📅 Suivi du dossier (dates clés)
+              </Label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Date de l'événement</Label><Input type="date" value={editEventRealDate} onChange={e => setEditEventRealDate(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Contrat client signé reçu le</Label><Input type="date" value={editClientSignedReceivedAt} onChange={e => setEditClientSignedReceivedAt(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">AR conférencier reçu le</Label><Input type="date" value={editSpeakerAcknowledgmentAt} onChange={e => setEditSpeakerAcknowledgmentAt(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Contrat conférencier signé le</Label><Input type="date" value={editSpeakerSignedAt} onChange={e => setEditSpeakerSignedAt(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Acompte payé par le client le</Label><Input type="date" value={editClientDepositPaidAt} onChange={e => setEditClientDepositPaidAt(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Acompte versé au conférencier le</Label><Input type="date" value={editSpeakerDepositPaidAt} onChange={e => setEditSpeakerDepositPaidAt(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Feuille de liaison envoyée le</Label><Input type="date" value={editLiaisonSheetSentAt} onChange={e => setEditLiaisonSheetSentAt(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Facture envoyée au client le</Label><Input type="date" value={editClientInvoiceSentAt} onChange={e => setEditClientInvoiceSentAt(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Facture payée par le client le</Label><Input type="date" value={editClientInvoicePaidAt} onChange={e => setEditClientInvoicePaidAt(e.target.value)} /></div>
-                <div className="space-y-1"><Label className="text-xs">Conférencier payé le</Label><Input type="date" value={editSpeakerPaidAt} onChange={e => setEditSpeakerPaidAt(e.target.value)} /></div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Date de l'événement</Label>
+                  <Input type="date" value={editEventRealDate} onChange={(e) => setEditEventRealDate(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Contrat client signé reçu le</Label>
+                  <Input
+                    type="date"
+                    value={editClientSignedReceivedAt}
+                    onChange={(e) => setEditClientSignedReceivedAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">AR conférencier reçu le</Label>
+                  <Input
+                    type="date"
+                    value={editSpeakerAcknowledgmentAt}
+                    onChange={(e) => setEditSpeakerAcknowledgmentAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Contrat conférencier signé le</Label>
+                  <Input
+                    type="date"
+                    value={editSpeakerSignedAt}
+                    onChange={(e) => setEditSpeakerSignedAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Acompte payé par le client le</Label>
+                  <Input
+                    type="date"
+                    value={editClientDepositPaidAt}
+                    onChange={(e) => setEditClientDepositPaidAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Acompte versé au conférencier le</Label>
+                  <Input
+                    type="date"
+                    value={editSpeakerDepositPaidAt}
+                    onChange={(e) => setEditSpeakerDepositPaidAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Feuille de liaison envoyée le</Label>
+                  <Input
+                    type="date"
+                    value={editLiaisonSheetSentAt}
+                    onChange={(e) => setEditLiaisonSheetSentAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Facture envoyée au client le</Label>
+                  <Input
+                    type="date"
+                    value={editClientInvoiceSentAt}
+                    onChange={(e) => setEditClientInvoiceSentAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Facture payée par le client le</Label>
+                  <Input
+                    type="date"
+                    value={editClientInvoicePaidAt}
+                    onChange={(e) => setEditClientInvoicePaidAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Conférencier payé le</Label>
+                  <Input type="date" value={editSpeakerPaidAt} onChange={(e) => setEditSpeakerPaidAt(e.target.value)} />
+                </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Infos logistiques (reportées dans la feuille de liaison)</Label>
-                <Textarea value={editLogisticsInfo} onChange={e => setEditLogisticsInfo(e.target.value)} rows={3} placeholder="Ex. : le conférencier vient en voiture, hôtel réservé au Marriott le 12, train arrivée 9h15…" />
+                <Textarea
+                  value={editLogisticsInfo}
+                  onChange={(e) => setEditLogisticsInfo(e.target.value)}
+                  rows={3}
+                  placeholder="Ex. : le conférencier vient en voiture, hôtel réservé au Marriott le 12, train arrivée 9h15…"
+                />
               </div>
-              <p className="text-[11px] text-muted-foreground">Ces dates et infos alimentent automatiquement la vue chronologique des dossiers événement.</p>
+              <p className="text-[11px] text-muted-foreground">
+                Ces dates et infos alimentent automatiquement la vue chronologique des dossiers événement.
+              </p>
             </div>
 
             {/* Section: Demandes spéciales */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">📝 Notes & demandes</Label>
-              <div className="space-y-1"><Label className="text-xs">Demandes spéciales</Label><Textarea value={editSpecialRequests} onChange={e => setEditSpecialRequests(e.target.value)} rows={2} placeholder="Régime alimentaire, accessibilité…" /></div>
-              <div className="space-y-1"><Label className="text-xs">Notes internes</Label><Textarea value={editEventNotes} onChange={e => setEditEventNotes(e.target.value)} rows={3} /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">Demandes spéciales</Label>
+                <Textarea
+                  value={editSpecialRequests}
+                  onChange={(e) => setEditSpecialRequests(e.target.value)}
+                  rows={2}
+                  placeholder="Régime alimentaire, accessibilité…"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Notes internes</Label>
+                <Textarea value={editEventNotes} onChange={(e) => setEditEventNotes(e.target.value)} rows={3} />
+              </div>
             </div>
 
-            <Button className="w-full" onClick={handleSaveEvent}>Enregistrer</Button>
+            <Button className="w-full" onClick={handleSaveEvent}>
+              Enregistrer
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -2300,22 +3409,47 @@ Nelly Sabde - Les Conférenciers`);
       {/* Invoice creation dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="font-serif">Créer une facture - {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-serif">Créer une facture - {proposal.client_name}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-2">
               <Label className="text-xs">Type de facture</Label>
               <div className="grid grid-cols-3 gap-2">
-                {(["acompte", "solde", "total"] as const).map(t => (
-                  <button key={t} onClick={() => setInvoiceType(t)} className={`px-3 py-2 rounded-lg border text-sm capitalize transition-colors ${invoiceType === t ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-muted/50"}`}>
+                {(["acompte", "solde", "total"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setInvoiceType(t)}
+                    className={`px-3 py-2 rounded-lg border text-sm capitalize transition-colors ${invoiceType === t ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-muted/50"}`}
+                  >
                     {t === "acompte" ? "Acompte 50%" : t === "solde" ? "Solde 50%" : "Total 100%"}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="space-y-1"><Label className="text-xs">Date d'échéance</Label><Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Date d'échéance</Label>
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">Montant HT</span><span>{(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
-              <div className="flex justify-between font-bold border-t pt-1"><span>Total TTC</span><span>{(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5) * 1.2).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span></div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Montant HT</span>
+                <span>
+                  {(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5)).toLocaleString("fr-FR", {
+                    minimumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
+              </div>
+              <div className="flex justify-between font-bold border-t pt-1">
+                <span>Total TTC</span>
+                <span>
+                  {(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5) * 1.2).toLocaleString("fr-FR", {
+                    minimumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
+              </div>
             </div>
             <Button className="w-full" onClick={handleCreateInvoice} disabled={creatingInvoice}>
               {creatingInvoice ? "Création…" : "Créer la facture"}
@@ -2327,35 +3461,61 @@ Nelly Sabde - Les Conférenciers`);
       {/* Invoice edit dialog */}
       <Dialog open={editInvoiceOpen} onOpenChange={setEditInvoiceOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="font-serif">Modifier {editingInvoice?.invoice_number}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-serif">Modifier {editingInvoice?.invoice_number}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-xs">Montant HT (€)</Label><Input type="number" value={editAmountHT} onChange={e => setEditAmountHT(Number(e.target.value))} /></div>
+              <div className="space-y-1">
+                <Label className="text-xs">Montant HT (€)</Label>
+                <Input type="number" value={editAmountHT} onChange={(e) => setEditAmountHT(Number(e.target.value))} />
+              </div>
               <div className="space-y-1">
                 <Label className="text-xs">TVA</Label>
-                <Select value={String(editTvaRate)} onValueChange={v => setEditTvaRate(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{TVA_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                <Select value={String(editTvaRate)} onValueChange={(v) => setEditTvaRate(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TVA_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="space-y-1"><Label className="text-xs">Date d'échéance</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Date d'échéance</Label>
+              <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} />
+            </div>
             <div className="space-y-1">
               <Label className="text-xs">Estimation frais VHR (€) — optionnel</Label>
               <Input
                 type="number"
                 inputMode="numeric"
                 value={editVhrEstimate}
-                onChange={e => setEditVhrEstimate(e.target.value === "" ? "" : Number(e.target.value))}
-                onWheel={e => (e.target as HTMLInputElement).blur()}
+                onChange={(e) => setEditVhrEstimate(e.target.value === "" ? "" : Number(e.target.value))}
+                onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
-              <p className="text-[10px] text-muted-foreground">Voyage / Hébergement / Restauration. Ajoutée à la facture si renseignée.</p>
+              <p className="text-[10px] text-muted-foreground">
+                Voyage / Hébergement / Restauration. Ajoutée à la facture si renseignée.
+              </p>
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
-              <span>Total TTC</span><span>{((editAmountHT + (Number(editVhrEstimate) || 0)) * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              <span>Total TTC</span>
+              <span>
+                {((editAmountHT + (Number(editVhrEstimate) || 0)) * (1 + editTvaRate / 100)).toLocaleString("fr-FR", {
+                  minimumFractionDigits: 2,
+                })}{" "}
+                €
+              </span>
             </div>
-            <Button className="w-full" onClick={handleSaveInvoice}>Mettre à jour</Button>
+            <Button className="w-full" onClick={handleSaveInvoice}>
+              Mettre à jour
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -2363,23 +3523,46 @@ Nelly Sabde - Les Conférenciers`);
       {/* Invoice email dialog */}
       <Dialog open={invoiceEmailOpen} onOpenChange={setInvoiceEmailOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Envoyer {emailInvoice?.invoice_number} - {proposal.client_name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-serif">
+              Envoyer {emailInvoice?.invoice_number} - {proposal.client_name}
+            </DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label className="text-xs">À</Label><Input value={invoiceRecipientEmail} onChange={e => setInvoiceRecipientEmail(e.target.value)} className="text-sm" /></div>
-              <div className="space-y-2"><Label className="text-xs">Contact</Label><Input value={invoiceRecipientName} onChange={e => setInvoiceRecipientName(e.target.value)} className="text-sm" /></div>
-            </div>
-            <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={invoiceEmailSubject} onChange={e => setInvoiceEmailSubject(e.target.value)} /></div>
-            <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={invoiceEmailBody} onChange={e => setInvoiceEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Aperçu du mail</Label>
-              <div className="border rounded-md p-4 bg-background max-h-64 overflow-y-auto text-sm whitespace-pre-wrap">
-                {invoiceEmailBody || "—"}
+              <div className="space-y-2">
+                <Label className="text-xs">À</Label>
+                <Input
+                  value={invoiceRecipientEmail}
+                  onChange={(e) => setInvoiceRecipientEmail(e.target.value)}
+                  className="text-sm"
+                />
               </div>
-              <p className="text-[10px] text-muted-foreground">Le bouton « Consulter la facture » est ajouté automatiquement.</p>
+              <div className="space-y-2">
+                <Label className="text-xs">Contact</Label>
+                <Input
+                  value={invoiceRecipientName}
+                  onChange={(e) => setInvoiceRecipientName(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Objet</Label>
+              <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Corps du mail</Label>
+              <Textarea
+                value={invoiceEmailBody}
+                onChange={(e) => setInvoiceEmailBody(e.target.value)}
+                rows={12}
+                className="text-sm"
+              />
             </div>
             <Button className="w-full" onClick={handleSendInvoiceEmail} disabled={sendingInvoice}>
-              <Send className="h-4 w-4 mr-2" />{sendingInvoice ? "Envoi…" : `Envoyer la facture`}
+              <Send className="h-4 w-4 mr-2" />
+              {sendingInvoice ? "Envoi…" : `Envoyer la facture`}
             </Button>
           </div>
         </DialogContent>

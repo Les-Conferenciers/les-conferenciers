@@ -1,20 +1,9 @@
-## Problème
+# Nettoyage email facture
 
-L'aperçu contrat (`/admin/contrat/:id`) ne reflète pas le changement de conférencier retenu effectué dans le dossier événement, car `contracts.selected_speaker_id` n'est mis à jour qu'à la sauvegarde du contrat, pas au moment du clic sur "Conférencier retenu".
+## 1. Supprimer l'aperçu du mail (Factures)
+`src/components/admin/EventDossier.tsx` lignes 3563-3571 : retirer le bloc `<Label>Aperçu du mail</Label>` + aperçu `whitespace-pre-wrap` + note bouton automatique. La textarea « Corps du mail » au-dessus reste, elle suffit.
 
-## Correctif
+## 2. Supprimer le bloc coordonnées bancaires dans le mail envoyé
+`supabase/functions/send-invoice-email/index.ts` lignes 107-111 : retirer entièrement la `<div>` qui affiche IBAN + BIC. L'IBAN reste affiché sur la facture PDF elle-même (InvoiceView), donc le client garde l'info via le lien « Consulter la facture ».
 
-`src/components/admin/EventDossier.tsx` — dans les deux endroits qui changent le conférencier retenu, propager la valeur à la table `contracts` :
-
-1. **`handleSelectSpeaker` (ligne 396)** : après l'update de `events.selected_speaker_id`, si `contract` existe, faire `supabase.from("contracts").update({ selected_speaker_id: speakerId }).eq("id", contract.id)`.
-
-2. **Bouton inline (ligne 1729)** : même ajout après l'update de l'événement, avant le `setContractLines`.
-
-Aussi : ajouter le même update dans l'effet de bootstrap (ligne 376-377) qui auto-sélectionne le conférencier unique d'une proposition mono-speaker.
-
-### Hors scope
-- Pas de changement dans `ContractView.tsx` / `ContractSign.tsx` (le fallback sur `event.selected_speaker_id` est déjà en place).
-- Pas de migration de données.
-
-## Vérification
-- Sur le dossier Atout Groupe, changer le conférencier retenu et recharger `/admin/contrat/9a9e3bc2-…` → l'en-tête affiche bien le nouveau conférencier.
+Aucun autre changement, pas de migration.

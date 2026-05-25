@@ -63,6 +63,7 @@ const App = () => (
             <Route path="/admin/contrat/:id" element={<ContractView />} />
             <Route path="/admin/contrat-conferencier/:id" element={<SpeakerContractView />} />
             <Route path="/admin/feuille-liaison/:id" element={<LiaisonSheetView />} />
+            <Route path="/feuille-liaison/:token" element={<LiaisonSheetView />} />
             <Route path="/signer-contrat/:token" element={<ContractSign />} />
             <Route path="/admin/facture/:id" element={<InvoiceView />} />
             <Route path="*" element={<NotFound />} />

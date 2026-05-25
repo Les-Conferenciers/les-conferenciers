@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Printer, Pencil, Save, X } from "lucide-react";
@@ -40,7 +40,12 @@ const TextArea = ({ editing, value, onChange, placeholder, rows = 3 }: { editing
   );
 
 const LiaisonSheetView = () => {
-  const { id } = useParams(); // proposal_id
+  const params = useParams();
+  const location = useLocation();
+  const isPublic = location.pathname.startsWith("/feuille-liaison/");
+  const token = isPublic ? params.token : undefined;
+  const routeId = !isPublic ? params.id : undefined;
+  const [proposalId, setProposalId] = useState<string | null>(routeId || null);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -60,17 +65,33 @@ const LiaisonSheetView = () => {
   const [eventTime, setEventTime] = useState("");
 
   const loadData = async () => {
-    const { data: ev } = await supabase
-      .from("events")
-      .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
-      .eq("proposal_id", id!)
-      .maybeSingle();
+    let ev: any = null;
+    if (isPublic && token) {
+      const { data } = await supabase
+        .from("events")
+        .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
+        .eq("token", token)
+        .maybeSingle();
+      ev = data;
+    } else if (routeId) {
+      const { data } = await supabase
+        .from("events")
+        .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
+        .eq("proposal_id", routeId)
+        .maybeSingle();
+      ev = data;
+    }
 
-    const { data: contract } = await supabase
-      .from("contracts")
-      .select("event_date, event_location, event_time, event_description")
-      .eq("proposal_id", id!)
-      .maybeSingle();
+    const pid = ev?.proposal_id || routeId || null;
+    setProposalId(pid);
+
+    const { data: contract } = pid
+      ? await supabase
+          .from("contracts")
+          .select("event_date, event_location, event_time, event_description")
+          .eq("proposal_id", pid)
+          .maybeSingle()
+      : { data: null };
 
     setData({ event: ev, contract });
     if (ev) {
@@ -91,10 +112,12 @@ const LiaisonSheetView = () => {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAdmin(!!session);
+      const admin = !!session && !isPublic;
+      setIsAdmin(admin);
+      if (admin) setEditing(true);
     });
     loadData();
-  }, [id]);
+  }, [routeId, token, isPublic]);
 
   const handleSave = async () => {
     if (!data?.event) return;
@@ -116,7 +139,7 @@ const LiaisonSheetView = () => {
           event_location: eventLocation || null,
           event_time: eventTime || null,
         } as any)
-        .eq("proposal_id", id!);
+        .eq("proposal_id", proposalId!);
       contractErr = error;
     }
 
@@ -210,13 +233,13 @@ const LiaisonSheetView = () => {
           </div>
         </section>
 
-        {/* Besoins techniques */}
+        {/* Besoins logistiques */}
         <section className="mb-8">
-          <h3 className="font-bold text-lg mb-3">Besoins techniques :</h3>
+          <h3 className="font-bold text-lg mb-3">Besoins logistiques :</h3>
           {editing ? (
             <div className="space-y-2">
               <div>
-                <label className="text-xs text-gray-500">Besoins techniques</label>
+                <label className="text-xs text-gray-500">Besoins logistiques</label>
                 <TextArea editing={editing} value={eventTechNeeds} onChange={setEventTechNeeds} placeholder="Vidéoprojecteur, micro…" rows={2} />
               </div>
               <div>
@@ -226,8 +249,15 @@ const LiaisonSheetView = () => {
             </div>
           ) : eventTechNeeds || eventRoomSetup ? (
             <ul className="list-disc pl-5 space-y-1">
-              {eventTechNeeds && <li>{eventTechNeeds}</li>}
-              {eventRoomSetup && <li>{eventRoomSetup}</li>}
+              {[
+                ...(eventTechNeeds ? eventTechNeeds.split(/[,\n]+/) : []),
+                ...(eventRoomSetup ? eventRoomSetup.split(/[,\n]+/) : []),
+              ]
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
             </ul>
           ) : (
             <ul className="list-disc pl-5 space-y-1">
@@ -236,6 +266,7 @@ const LiaisonSheetView = () => {
             </ul>
           )}
         </section>
+
 
         {/* Contact */}
         <section className="mb-8">

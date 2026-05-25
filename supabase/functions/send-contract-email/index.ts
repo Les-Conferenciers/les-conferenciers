@@ -75,7 +75,8 @@ Deno.serve(async (req) => {
     }
 
     const signUrl = `${SITE}/signer-contrat/${contract.token}`;
-    const bodyHtml = (email_body || "").replace(/\n/g, "<br>");
+    const rawBody = email_body || "";
+    const bodyHtml = /<\w+/.test(rawBody) ? rawBody : rawBody.replace(/\n/g, "<br>");
     const subject = email_subject || `Contrat de prestation - ${proposal.client_name} - Les Conférenciers`;
 
     const emailHtml = `

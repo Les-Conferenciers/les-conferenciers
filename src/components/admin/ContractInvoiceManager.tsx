@@ -4,14 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  FileText, Receipt, Plus, ExternalLink, Send, CheckCircle, Printer, Pencil, Ban, CircleDollarSign, Trash2, Percent,
+  FileText,
+  Receipt,
+  Plus,
+  ExternalLink,
+  Send,
+  CheckCircle,
+  Printer,
+  Pencil,
+  Ban,
+  CircleDollarSign,
+  Trash2,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
@@ -157,7 +164,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     // Weighted TVA calculation
     const totalTVA = lines.reduce((sum, l) => {
       const lineShare = subtotalHT > 0 ? l.amount_ht / subtotalHT : 0;
-      const lineHTAfterDiscount = l.amount_ht - (discountAmount * lineShare);
+      const lineHTAfterDiscount = l.amount_ht - discountAmount * lineShare;
       return sum + lineHTAfterDiscount * (l.tva_rate / 100);
     }, 0);
     const totalTTC = totalHTAfterDiscount + totalTVA;
@@ -182,10 +189,11 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const effectiveLines = getEffectiveLines();
   const { totalHTAfterDiscount, totalTTC } = computeTotals(effectiveLines, effectiveDiscount);
 
-  const speakerSummary = effectiveLines
-    .filter(l => l.type === "speaker")
-    .map(l => l.label)
-    .join(", ") || proposal.proposal_speakers.map(s => s.speakers?.name || "—").join(", ");
+  const speakerSummary =
+    effectiveLines
+      .filter((l) => l.type === "speaker")
+      .map((l) => l.label)
+      .join(", ") || proposal.proposal_speakers.map((s) => s.speakers?.name || "—").join(", ");
 
   // ─── Contract lines helpers ───
   const buildInitialLines = (): ContractLine[] => {
@@ -202,11 +210,11 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   };
 
   const updateLine = (id: string, field: keyof ContractLine, value: any) => {
-    setContractLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+    setContractLines((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
   };
 
   const removeLine = (id: string) => {
-    setContractLines(prev => prev.filter(l => l.id !== id));
+    setContractLines((prev) => prev.filter((l) => l.id !== id));
   };
 
   const addLine = (type: ContractLine["type"]) => {
@@ -215,13 +223,16 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       travel: "Frais de déplacement",
       custom: "Prestation complémentaire",
     };
-    setContractLines(prev => [...prev, {
-      id: generateId(),
-      label: defaults[type],
-      amount_ht: 0,
-      tva_rate: 20,
-      type,
-    }]);
+    setContractLines((prev) => [
+      ...prev,
+      {
+        id: generateId(),
+        label: defaults[type],
+        amount_ht: 0,
+        tva_rate: 20,
+        type,
+      },
+    ]);
   };
 
   // ─── Contract ───
@@ -253,7 +264,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setDiscountPercent(contract.discount_percent || 0);
     setDepositRequired(contract.deposit_required !== false);
     const cc = (contract as any).custom_clauses;
-    setCustomClauses(typeof cc === "string" ? cc : (cc?.text || ""));
+    setCustomClauses(typeof cc === "string" ? cc : cc?.text || "");
     setArticleOverrides(cc && typeof cc === "object" && cc.articles ? { ...cc.articles } : {});
     setContractDialogOpen(true);
   };
@@ -282,14 +293,26 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     };
 
     if (editingContract && contract) {
-      const { error } = await supabase.from("contracts").update(payload as any).eq("id", contract.id);
-      if (error) { toast.error("Erreur mise à jour"); } else { toast.success("Contrat mis à jour !"); }
+      const { error } = await supabase
+        .from("contracts")
+        .update(payload as any)
+        .eq("id", contract.id);
+      if (error) {
+        toast.error("Erreur mise à jour");
+      } else {
+        toast.success("Contrat mis à jour !");
+      }
     } else {
       const { error } = await supabase.from("contracts").insert({
         proposal_id: proposal.id,
         ...payload,
       } as any);
-      if (error) { toast.error("Erreur création contrat"); console.error(error); } else { toast.success("Contrat créé !"); }
+      if (error) {
+        toast.error("Erreur création contrat");
+        console.error(error);
+      } else {
+        toast.success("Contrat créé !");
+      }
     }
     setContractDialogOpen(false);
     fetchData();
@@ -301,21 +324,24 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     const lines = getEffectiveLines();
     const disc = contract.discount_percent || 0;
     const totals = computeTotals(lines, disc);
-    const dateStr = contract.event_date ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "à définir";
+    const dateStr = contract.event_date
+      ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+      : "à définir";
     setContractEmailSubject(`Contrat de prestation — ${proposal.client_name} — Les Conférenciers`);
     setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
-Suite à votre accord, je vous transmets le contrat de prestation pour votre événement.
+Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l’intervention de ${speakerSummary}
 
-📋 Récapitulatif :
+📋 Voici un petit récapitulatif :
 • Conférencier(s) : ${speakerSummary}
 • Date : ${dateStr}
 • Lieu : ${contract.event_location || "à définir"}
 • Montant total TTC : ${totals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €${disc > 0 ? ` (remise ${disc}% incluse)` : ""}
 
-👉 Cliquez sur le bouton ci-dessous pour consulter le contrat et le signer électroniquement. Il vous suffira de renseigner votre nom complet et de cocher la case d'acceptation.
+👉 Vous pouvez consulter le contrat et le signer électroniquement en cliquant sur le bouton ci-dessous.
 
-N'hésitez pas à me contacter pour toute question.
+N’hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.
+Dans l’attente de votre retour, je vous souhaite une très belle journée.
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
@@ -334,7 +360,10 @@ Nelly Sabde - Les Conférenciers`);
         },
       });
       if (error) throw error;
-      await supabase.from("contracts").update({ status: "sent" } as any).eq("id", contract.id);
+      await supabase
+        .from("contracts")
+        .update({ status: "sent" } as any)
+        .eq("id", contract.id);
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
       fetchData();
@@ -387,13 +416,20 @@ Nelly Sabde - Les Conférenciers`);
   const handleSaveInvoice = async () => {
     if (!editingInvoice) return;
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
-    const { error } = await supabase.from("invoices").update({
-      amount_ht: Math.round(editAmountHT * 100) / 100,
-      tva_rate: editTvaRate,
-      amount_ttc: Math.round(amountTTC * 100) / 100,
-      due_date: editDueDate || null,
-    }).eq("id", editingInvoice.id);
-    if (error) { toast.error("Erreur"); } else { toast.success("Facture mise à jour !"); }
+    const { error } = await supabase
+      .from("invoices")
+      .update({
+        amount_ht: Math.round(editAmountHT * 100) / 100,
+        tva_rate: editTvaRate,
+        amount_ttc: Math.round(amountTTC * 100) / 100,
+        due_date: editDueDate || null,
+      })
+      .eq("id", editingInvoice.id);
+    if (error) {
+      toast.error("Erreur");
+    } else {
+      toast.success("Facture mise à jour !");
+    }
     setEditInvoiceOpen(false);
     fetchData();
   };
@@ -432,7 +468,10 @@ Nelly Sabde - Les Conférenciers`);
         },
       });
       if (error) throw error;
-      await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", emailInvoice.id);
+      await supabase
+        .from("invoices")
+        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .eq("id", emailInvoice.id);
       toast.success(`Facture ${emailInvoice.invoice_number} envoyée !`);
       setInvoiceEmailOpen(false);
       fetchData();
@@ -480,13 +519,20 @@ Nelly Sabde - Les Conférenciers`);
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              contract.status === "signed" ? "bg-green-100 text-green-700" :
-              contract.status === "sent" ? "bg-amber-100 text-amber-700" :
-              "bg-muted text-muted-foreground"
-            }`}>
-              {contract.status === "signed" ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}` :
-               contract.status === "sent" ? "Envoyé" : "Brouillon"}
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                contract.status === "signed"
+                  ? "bg-green-100 text-green-700"
+                  : contract.status === "sent"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {contract.status === "signed"
+                ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
+                : contract.status === "sent"
+                  ? "Envoyé"
+                  : "Brouillon"}
             </span>
             {(contract.status === "draft" || contract.status === "sent") && (
               <>
@@ -528,24 +574,37 @@ Nelly Sabde - Les Conférenciers`);
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Date de l'événement</Label>
-                <Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} />
+                <Input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Horaires</Label>
-                <Input placeholder="14h00 - 15h30" value={eventTime} onChange={e => setEventTime(e.target.value)} />
+                <Input placeholder="14h00 - 15h30" value={eventTime} onChange={(e) => setEventTime(e.target.value)} />
               </div>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Lieu</Label>
-              <Input placeholder="Hôtel Marriott, Paris" value={eventLocation} onChange={e => setEventLocation(e.target.value)} />
+              <Input
+                placeholder="Hôtel Marriott, Paris"
+                value={eventLocation}
+                onChange={(e) => setEventLocation(e.target.value)}
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Format</Label>
-              <Input placeholder="Conférence, Table ronde, Atelier..." value={eventFormat} onChange={e => setEventFormat(e.target.value)} />
+              <Input
+                placeholder="Conférence, Table ronde, Atelier..."
+                value={eventFormat}
+                onChange={(e) => setEventFormat(e.target.value)}
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Détails / remarques</Label>
-              <Textarea placeholder="Informations complémentaires..." value={eventDescription} onChange={e => setEventDescription(e.target.value)} rows={2} />
+              <Textarea
+                placeholder="Informations complémentaires..."
+                value={eventDescription}
+                onChange={(e) => setEventDescription(e.target.value)}
+                rows={2}
+              />
             </div>
 
             {/* ─── Editable line items ─── */}
@@ -555,20 +614,27 @@ Nelly Sabde - Les Conférenciers`);
               </div>
 
               {contractLines.map((line) => (
-                <div key={line.id} className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                <div
+                  key={line.id}
+                  className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border/50"
+                >
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                        line.type === "speaker" ? "bg-primary/10 text-primary" :
-                        line.type === "travel" ? "bg-blue-100 text-blue-700" :
-                        "bg-purple-100 text-purple-700"
-                      }`}>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                          line.type === "speaker"
+                            ? "bg-primary/10 text-primary"
+                            : line.type === "travel"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-purple-100 text-purple-700"
+                        }`}
+                      >
                         {line.type === "speaker" ? "Conférencier" : line.type === "travel" ? "Déplacement" : "Autre"}
                       </span>
                     </div>
                     <Input
                       value={line.label}
-                      onChange={e => updateLine(line.id, "label", e.target.value)}
+                      onChange={(e) => updateLine(line.id, "label", e.target.value)}
                       className="h-8 text-sm"
                       placeholder="Libellé"
                     />
@@ -578,26 +644,36 @@ Nelly Sabde - Les Conférenciers`);
                         <Input
                           type="number"
                           value={line.amount_ht}
-                          onChange={e => updateLine(line.id, "amount_ht", Number(e.target.value))}
+                          onChange={(e) => updateLine(line.id, "amount_ht", Number(e.target.value))}
                           className="h-8 text-sm"
                         />
                       </div>
                       <div className="space-y-0.5">
                         <Label className="text-[10px] text-muted-foreground">TVA</Label>
-                        <Select value={String(line.tva_rate)} onValueChange={v => updateLine(line.id, "tva_rate", Number(v))}>
+                        <Select
+                          value={String(line.tva_rate)}
+                          onValueChange={(v) => updateLine(line.id, "tva_rate", Number(v))}
+                        >
                           <SelectTrigger className="h-8 text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {TVA_OPTIONS.map(o => (
-                              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                            {TVA_OPTIONS.map((o) => (
+                              <SelectItem key={o.value} value={o.value}>
+                                {o.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive mt-6" onClick={() => removeLine(line.id)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-destructive mt-6"
+                    onClick={() => removeLine(line.id)}
+                  >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -629,7 +705,7 @@ Nelly Sabde - Les Conférenciers`);
                 min={0}
                 max={100}
                 value={discountPercent}
-                onChange={e => setDiscountPercent(Number(e.target.value))}
+                onChange={(e) => setDiscountPercent(Number(e.target.value))}
                 className="w-20 h-8 text-sm text-right"
               />
             </div>
@@ -670,10 +746,12 @@ Nelly Sabde - Les Conférenciers`);
                 type="button"
                 role="switch"
                 aria-checked={depositRequired}
-                onClick={() => setDepositRequired(v => !v)}
+                onClick={() => setDepositRequired((v) => !v)}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${depositRequired ? "bg-primary" : "bg-muted-foreground/30"}`}
               >
-                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${depositRequired ? "translate-x-5" : "translate-x-0"}`} />
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${depositRequired ? "translate-x-5" : "translate-x-0"}`}
+                />
               </button>
             </div>
 
@@ -683,11 +761,13 @@ Nelly Sabde - Les Conférenciers`);
               <Textarea
                 placeholder={`Ex : Article 4.3 — Captation autorisée uniquement à des fins internes…\n\nLaisser vide pour utiliser le contrat standard.`}
                 value={customClauses}
-                onChange={e => setCustomClauses(e.target.value)}
+                onChange={(e) => setCustomClauses(e.target.value)}
                 rows={5}
                 className="text-sm font-mono"
               />
-              <p className="text-[10px] text-muted-foreground">Ces clauses apparaîtront dans une section « Conditions particulières » du contrat (visible côté client).</p>
+              <p className="text-[10px] text-muted-foreground">
+                Ces clauses apparaîtront dans une section « Conditions particulières » du contrat (visible côté client).
+              </p>
             </div>
 
             {/* Édition des articles standards des CG */}
@@ -698,27 +778,47 @@ Nelly Sabde - Les Conférenciers`);
               </summary>
               <div className="p-3 space-y-4">
                 <p className="text-[10px] text-muted-foreground">
-                  Vide = texte standard. Modifiez uniquement les articles à ajuster (ex : droit à l'image).
-                  Le HTML est accepté (balises <code>{'<p>'}</code>, <code>{'<strong>'}</code>, <code>{'<ul>'}</code>…).
-                  Pour l'article 5, conservez <code>{'{{PRICE_CLAUSE}}'}</code> où la clause de prix doit s'insérer.
+                  Vide = texte standard. Modifiez uniquement les articles à ajuster (ex : droit à l'image). Le HTML est
+                  accepté (balises <code>{"<p>"}</code>, <code>{"<strong>"}</code>, <code>{"<ul>"}</code>…). Pour
+                  l'article 5, conservez <code>{"{{PRICE_CLAUSE}}"}</code> où la clause de prix doit s'insérer.
                 </p>
                 {DEFAULT_CLAUSES.map((clause) => {
                   const value = articleOverrides[clause.key] ?? "";
                   const isOverridden = value.trim().length > 0;
                   return (
-                    <div key={clause.key} className="space-y-1 border-l-2 pl-3" style={{ borderColor: isOverridden ? "hsl(var(--primary))" : "hsl(var(--border))" }}>
+                    <div
+                      key={clause.key}
+                      className="space-y-1 border-l-2 pl-3"
+                      style={{ borderColor: isOverridden ? "hsl(var(--primary))" : "hsl(var(--border))" }}
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <Label className="text-xs font-semibold">{clause.title}</Label>
                         <div className="flex gap-1">
                           {!isOverridden && (
-                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px]"
-                              onClick={() => setArticleOverrides(o => ({ ...o, [clause.key]: clause.defaultHtml }))}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px]"
+                              onClick={() => setArticleOverrides((o) => ({ ...o, [clause.key]: clause.defaultHtml }))}
+                            >
                               Personnaliser
                             </Button>
                           )}
                           {isOverridden && (
-                            <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] text-destructive"
-                              onClick={() => setArticleOverrides(o => { const n = { ...o }; delete n[clause.key as ClauseKey]; return n; })}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px] text-destructive"
+                              onClick={() =>
+                                setArticleOverrides((o) => {
+                                  const n = { ...o };
+                                  delete n[clause.key as ClauseKey];
+                                  return n;
+                                })
+                              }
+                            >
                               Réinitialiser
                             </Button>
                           )}
@@ -727,7 +827,7 @@ Nelly Sabde - Les Conférenciers`);
                       {isOverridden && (
                         <Textarea
                           value={value}
-                          onChange={e => setArticleOverrides(o => ({ ...o, [clause.key]: e.target.value }))}
+                          onChange={(e) => setArticleOverrides((o) => ({ ...o, [clause.key]: e.target.value }))}
                           rows={Math.min(14, Math.max(4, value.split("\n").length))}
                           className="text-[11px] font-mono"
                         />
@@ -754,12 +854,19 @@ Nelly Sabde - Les Conférenciers`);
           <div className="space-y-4 mt-2">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
-              <Input value={contractEmailSubject} onChange={e => setContractEmailSubject(e.target.value)} />
+              <Input value={contractEmailSubject} onChange={(e) => setContractEmailSubject(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>
-              <Textarea value={contractEmailBody} onChange={e => setContractEmailBody(e.target.value)} rows={12} className="text-sm" />
-              <p className="text-[10px] text-muted-foreground">Le bouton « Consulter et signer le contrat » est ajouté automatiquement.</p>
+              <Textarea
+                value={contractEmailBody}
+                onChange={(e) => setContractEmailBody(e.target.value)}
+                rows={12}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Le bouton « Consulter et signer le contrat » est ajouté automatiquement.
+              </p>
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Aperçu</Label>
@@ -791,17 +898,26 @@ Nelly Sabde - Les Conférenciers`);
 
       {invoices.length > 0 && (
         <div className="space-y-3">
-          {invoices.map(inv => (
-            <div key={inv.id} className={`border rounded-lg p-4 ${
-              inv.status === "paid" ? "border-green-200 bg-green-50/50" :
-              inv.status === "sent" ? "border-amber-200 bg-amber-50/30" :
-              "border-border"
-            }`}>
+          {invoices.map((inv) => (
+            <div
+              key={inv.id}
+              className={`border rounded-lg p-4 ${
+                inv.status === "paid"
+                  ? "border-green-200 bg-green-50/50"
+                  : inv.status === "sent"
+                    ? "border-amber-200 bg-amber-50/30"
+                    : "border-border"
+              }`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-sm font-medium">{inv.invoice_number}</span>
                   <span className="text-xs capitalize text-muted-foreground">
-                    {inv.invoice_type === "acompte" ? "Acompte 50%" : inv.invoice_type === "solde" ? "Solde 50%" : "Total"}
+                    {inv.invoice_type === "acompte"
+                      ? "Acompte 50%"
+                      : inv.invoice_type === "solde"
+                        ? "Solde 50%"
+                        : "Total"}
                   </span>
                 </div>
                 <span className="text-sm font-bold">{inv.amount_ttc.toLocaleString("fr-FR")} € TTC</span>
@@ -853,7 +969,13 @@ Nelly Sabde - Les Conférenciers`);
                     </Button>
                   )}
                   {inv.status === "paid" && (
-                    <Button size="sm" variant="ghost" className="gap-1 text-xs text-muted-foreground" onClick={() => handleMarkUnpaid(inv)} title="Annuler le paiement">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 text-xs text-muted-foreground"
+                      onClick={() => handleMarkUnpaid(inv)}
+                      title="Annuler le paiement"
+                    >
                       <Ban className="h-3 w-3" /> Annuler
                     </Button>
                   )}
@@ -864,9 +986,7 @@ Nelly Sabde - Les Conférenciers`);
         </div>
       )}
 
-      {invoices.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center py-3">Aucune facture créée</p>
-      )}
+      {invoices.length === 0 && <p className="text-xs text-muted-foreground text-center py-3">Aucune facture créée</p>}
 
       {/* Invoice creation dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
@@ -878,7 +998,7 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-2">
               <Label className="text-xs">Type de facture</Label>
               <div className="grid grid-cols-3 gap-2">
-                {(["acompte", "solde", "total"] as const).map(t => (
+                {(["acompte", "solde", "total"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setInvoiceType(t)}
@@ -893,16 +1013,26 @@ Nelly Sabde - Les Conférenciers`);
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Date d'échéance</Label>
-              <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Montant HT</span>
-                <span>{(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span>
+                  {(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5)).toLocaleString("fr-FR", {
+                    minimumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">TVA 20%</span>
-                <span>{(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5) * 0.2).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span>
+                  {(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5) * 0.2).toLocaleString("fr-FR", {
+                    minimumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
               </div>
               {effectiveDiscount > 0 && (
                 <div className="flex justify-between text-xs text-muted-foreground italic">
@@ -911,7 +1041,12 @@ Nelly Sabde - Les Conférenciers`);
               )}
               <div className="flex justify-between font-bold border-t pt-1">
                 <span>Total TTC</span>
-                <span>{(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5) * 1.2).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span>
+                  {(totalHTAfterDiscount * (invoiceType === "total" ? 1 : 0.5) * 1.2).toLocaleString("fr-FR", {
+                    minimumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
               </div>
             </div>
             <Button className="w-full" onClick={handleCreateInvoice} disabled={creatingInvoice}>
@@ -931,20 +1066,22 @@ Nelly Sabde - Les Conférenciers`);
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Montant HT (€)</Label>
-                <Input type="number" value={editAmountHT} onChange={e => setEditAmountHT(Number(e.target.value))} />
+                <Input type="number" value={editAmountHT} onChange={(e) => setEditAmountHT(Number(e.target.value))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">TVA (%)</Label>
-                <Input type="number" value={editTvaRate} onChange={e => setEditTvaRate(Number(e.target.value))} />
+                <Input type="number" value={editTvaRate} onChange={(e) => setEditTvaRate(Number(e.target.value))} />
               </div>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Date d'échéance</Label>
-              <Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
+              <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} />
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
               <span>Total TTC</span>
-              <span>{(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+              <span>
+                {(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
+              </span>
             </div>
             <Button className="w-full" onClick={handleSaveInvoice}>
               Enregistrer les modifications
@@ -962,12 +1099,19 @@ Nelly Sabde - Les Conférenciers`);
           <div className="space-y-4 mt-2">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
-              <Input value={invoiceEmailSubject} onChange={e => setInvoiceEmailSubject(e.target.value)} />
+              <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>
-              <Textarea value={invoiceEmailBody} onChange={e => setInvoiceEmailBody(e.target.value)} rows={12} className="text-sm" />
-              <p className="text-[10px] text-muted-foreground">Le bouton « Consulter la facture » et les coordonnées bancaires sont ajoutés automatiquement.</p>
+              <Textarea
+                value={invoiceEmailBody}
+                onChange={(e) => setInvoiceEmailBody(e.target.value)}
+                rows={12}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Le bouton « Consulter la facture » et les coordonnées bancaires sont ajoutés automatiquement.
+              </p>
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Aperçu</Label>
