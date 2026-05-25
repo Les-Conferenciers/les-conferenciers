@@ -2126,7 +2126,7 @@ Nelly Sabde - Les Conférenciers`);
               </div>
               <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🚗 Arrivée</Label><Input value={liaisonArrival} onChange={e => setLiaisonArrival(e.target.value)} placeholder="environ 10H" className="h-8 text-sm" /></div>
               <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">🔧 Besoins logistiques</Label><Textarea value={liaisonTechNeeds} onChange={e => setLiaisonTechNeeds(e.target.value)} placeholder="Vidéoprojecteur&#10;Micro casque" rows={3} className="text-sm" /></div>
-              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={2} className="text-sm" placeholder="Le conférencier restera pour le déjeuner..." /></div>
+              <div className="space-y-1"><Label className="text-[10px] text-muted-foreground">💬 Commentaires</Label><Textarea value={liaisonNotes} onChange={e => setLiaisonNotes(e.target.value)} rows={6} className="text-sm min-h-[160px]" placeholder="Le conférencier restera pour le déjeuner..." /></div>
 
               <div className="flex justify-end gap-2">
                 <Button
