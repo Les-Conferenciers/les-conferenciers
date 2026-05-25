@@ -137,7 +137,7 @@ const LiaisonSheetView = () => {
           event_location: eventLocation || null,
           event_time: eventTime || null,
         } as any)
-        .eq("proposal_id", id!);
+        .eq("proposal_id", proposalId!);
       contractErr = error;
     }
 
