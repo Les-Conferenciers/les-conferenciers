@@ -1080,27 +1080,33 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
   };
 
   // ─── Liaison Sheet ───
+  // URL publique vers la feuille de liaison (token de l'event)
+  const liaisonPublicUrl = () => {
+    const token = (event as any)?.token;
+    return token ? `${window.location.origin}/feuille-liaison/${token}` : "";
+  };
+
+  const liaisonButtonHtml = () => {
+    const url = liaisonPublicUrl();
+    if (!url) return "";
+    return `<p style="text-align:center;margin:24px 0;"><a href="${url}" style="display:inline-block;background:#1a2332;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Consulter la feuille de liaison</a></p>`;
+  };
+
   // Helper: build speaker body based on tu/vous choice
   const buildLiaisonSpeakerBody = (addressing: "formal" | "informal", speakerFirstName: string) => {
     if (addressing === "informal") {
-      return `Bonjour ${speakerFirstName},</br>
-
+      return `<p>Bonjour ${speakerFirstName},</p>
 <p>Voici comme convenu la feuille de liaison pour ton intervention.</p>
-
+${liaisonButtonHtml()}
 <p><strong>Peux-tu m'accuser réception de ce mail ?</strong></p>
-
 <p>Je te souhaite une excellente journée !</p>
-
 <p>Nelly Sabde - Les Conférenciers</p>`;
     }
-    return `Bonjour ${speakerFirstName},</br>
-
-<p>Voici comme convenu la feuille de liaison pour votre intervention.<p>
-
+    return `<p>Bonjour ${speakerFirstName},</p>
+<p>Voici comme convenu la feuille de liaison pour votre intervention.</p>
+${liaisonButtonHtml()}
 <p><strong>Pourriez-vous m'accuser réception de ce mail ?</strong></p>
-
 <p>Je vous souhaite une excellente journée !</p>
-
 <p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
@@ -1133,17 +1139,13 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
 
     // Client email template (nouveau wording, sans prix)
     setLiaisonClientSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
-    setLiaisonClientBody(`${clientFirstName ? clientFirstName : "Bonjour"},
-
-Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !
-
-Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.
-
-Vous en souhaitant bonne réception et restant à votre disposition si besoin est.
-
-Excellente fin de journée à vous !
-
-Nelly Sabde - Les Conférenciers`);
+    setLiaisonClientBody(`<p>${clientFirstName ? clientFirstName : "Bonjour"},</p>
+<p>Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !</p>
+<p>Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.</p>
+${liaisonButtonHtml()}
+<p>Vous en souhaitant bonne réception et restant à votre disposition si besoin est.</p>
+<p>Excellente fin de journée à vous !</p>
+<p>Nelly Sabde - Les Conférenciers</p>`);
 
     // Speaker email template — adressage piloté par le sélecteur dans la pop-up
     setLiaisonSpeakerSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
