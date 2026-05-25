@@ -3434,6 +3434,15 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Notes internes (non visibles sur la facture)</Label>
+              <Textarea
+                value={invoiceNotes}
+                onChange={(e) => setInvoiceNotes(e.target.value)}
+                rows={3}
+                className="resize-none text-sm"
+              />
+            </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Montant HT</span>
