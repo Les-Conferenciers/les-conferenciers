@@ -243,6 +243,13 @@ const ContractView = () => {
           <p className="text-sm uppercase text-gray-500">PARTICIPATION D'UN INTERVENANT À UN ÉVÉNEMENT</p>
         </div>
 
+        {(contract.version || 1) > 1 && (
+          <div className="mb-6 border-2 border-gray-900 px-4 py-3 text-center text-sm font-semibold uppercase tracking-wide">
+            Cette version v{contract.version} annule et remplace toute version précédente de ce bon de commande.
+          </div>
+        )}
+
+
         <div className="flex justify-between items-start mb-8">
           <p className="font-bold text-lg">Bon de commande n° : {bdcNumber}</p>
           <p className="text-sm text-gray-600">Date d'émission : {formatDate(contract.created_at)}</p>
