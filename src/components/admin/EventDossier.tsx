@@ -189,6 +189,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [eventFormat, setEventFormat] = useState("Conférence");
   const [eventDescription, setEventDescription] = useState("");
   const [contractAudienceSize, setContractAudienceSize] = useState("");
+  const [contractTheme, setContractTheme] = useState("");
   const [contractBdcNumber, setContractBdcNumber] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
@@ -561,6 +562,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventFormat("Conférence");
     setEventDescription("");
     setContractAudienceSize(proposal.audience_size || "");
+    setContractTheme(event?.theme || "");
     const nextBdc = await generateNextBdcNumber();
     setContractBdcNumber(event?.bdc_number || nextBdc);
     // Pre-fill agency commission from proposal (selected speaker if any, else sum across speakers)
@@ -590,6 +592,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setEventTime(contract.event_time || ""); setEventFormat(contract.event_format || "Conférence");
     setEventDescription(contract.event_description || "");
     setContractAudienceSize(event?.audience_size || proposal.audience_size || "");
+    setContractTheme(event?.theme || "");
     setContractBdcNumber(event?.bdc_number || "");
     setContractLines(buildInitialLines()); setDiscountPercent(contract.discount_percent || 0);
     const savedCommission = Number((contract as any).agency_commission) || 0;
@@ -674,6 +677,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       }
       const { error: evErr } = await supabase.from("events").update({ 
         audience_size: contractAudienceSize || null,
+        theme: contractTheme || null,
         bdc_number: contractBdcNumber || null,
       } as any).eq("id", event.id);
       if (evErr) {
@@ -1802,9 +1806,10 @@ Nelly Sabde - Les Conférenciers`);
             </div>
             <div className="space-y-1"><Label className="text-xs">Lieu</Label><Input placeholder="Hôtel Marriott, Paris" value={eventLocation} onChange={e => setEventLocation(e.target.value)} /></div>
               <div className="grid grid-cols-1 gap-3 min-w-0">
-              <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input placeholder="200 personnes" value={contractAudienceSize} onChange={e => setContractAudienceSize(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Taille de l'auditoire</Label><Input placeholder="200" value={contractAudienceSize} onChange={e => setContractAudienceSize(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-xs">N° Bon de commande</Label><Input placeholder="BDC-001" value={contractBdcNumber} onChange={e => setContractBdcNumber(e.target.value)} /></div>
             </div>
+            <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input placeholder="Leadership, innovation, transformation..." value={contractTheme} onChange={e => setContractTheme(e.target.value)} /></div>
             <div className="space-y-1"><Label className="text-xs">Format</Label><Input placeholder="Conférence, Table ronde..." value={eventFormat} onChange={e => setEventFormat(e.target.value)} /></div>
             <div className="space-y-1"><Label className="text-xs">Détails</Label><Textarea placeholder="Infos complémentaires..." value={eventDescription} onChange={e => setEventDescription(e.target.value)} rows={2} /></div>
 

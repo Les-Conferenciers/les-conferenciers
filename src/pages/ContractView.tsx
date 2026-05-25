@@ -286,18 +286,22 @@ const ContractView = () => {
                 ? <input type="text" value={evTime} onChange={e => setEvTime(e.target.value)} className={inputCls + " min-w-[200px]"} />
                 : (contract.event_time || "À définir")}
             </p>
-            <p>
-              <span className="text-gray-600">Auditoire :</span>{" "}
-              {editing
-                ? <input type="text" value={evAudience} onChange={e => setEvAudience(e.target.value)} className={inputCls} />
-                : (event?.audience_size || "—")}
-            </p>
-            <p>
-              <span className="text-gray-600">Thématique :</span>{" "}
-              {editing
-                ? <input type="text" value={evTheme} onChange={e => setEvTheme(e.target.value)} className={inputCls + " min-w-[260px]"} />
-                : (event?.theme || "—")}
-            </p>
+            {(editing || event?.audience_size) && (
+              <p>
+                <span className="text-gray-600">Auditoire :</span>{" "}
+                {editing
+                  ? <input type="text" value={evAudience} onChange={e => setEvAudience(e.target.value)} className={inputCls} />
+                  : `${event?.audience_size} personnes attendues`}
+              </p>
+            )}
+            {(editing || event?.theme) && (
+              <p>
+                <span className="text-gray-600">Thématique :</span>{" "}
+                {editing
+                  ? <input type="text" value={evTheme} onChange={e => setEvTheme(e.target.value)} className={inputCls + " min-w-[260px]"} />
+                  : event?.theme}
+              </p>
+            )}
             {(editing || contract.event_description) && (
               <div>
                 <span className="text-gray-600">Détails :</span>{" "}
