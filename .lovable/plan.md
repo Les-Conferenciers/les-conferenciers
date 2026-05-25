@@ -1,55 +1,25 @@
+## Diagnostic
 
-## 1. Nouveau format de numéro de facture
+Les factures Davido ont reçu `20260525-01` et `20260525-02` (date du jour + compteur) parce que la fonction `generate_invoice_number` lit `events.event_date`, qui est `NULL` pour ces dossiers. La vraie date est stockée sur `contracts.event_date` (13 avril 2027 et 16 mai 2027). La fonction n'a donc pas trouvé de date et est tombée dans le fallback.
 
-Format actuel : `DDMM-BDC` (ex. `0525-01`)
-Nouveau format : `YYYYMMDD-BDC` (ex. `20270516-1020`)
+## 1. Corriger la fonction SQL
 
-**Migration SQL** — remplacer la fonction `generate_invoice_number(_proposal_id)` :
-- Si date d'événement + BDC existent → `to_char(event_date, 'YYYYMMDD') || '-' || bdc_clean`
-- Fallback inchangé (`YYYYMMDD-XX`)
-- `bdc_clean` retire toujours le préfixe `BDC-`
+Mettre à jour `public.generate_invoice_number(_proposal_id uuid)` :
 
-Les factures déjà créées **gardent leur ancien numéro** (on ne renumérote pas l'historique pour ne pas casser les références déjà envoyées au client).
+- Récupérer `bdc_number` depuis `events` (inchangé).
+- Récupérer la date avec ce priorité : `events.event_date` → sinon `contracts.event_date` la plus récente.
+- Si date + BDC trouvés → `to_char(date, 'YYYYMMDD') || '-' || bdc_clean`.
+- Sinon fallback inchangé (`YYYYMMDD-NN`).
 
-## 2. Mentions dans la facture (`src/pages/InvoiceView.tsx`)
+## 2. Renuméroter les 2 factures Davido existantes
 
-- Ligne 146 : `Mention à rappeler impérativement : Bon de commande n° {bdcNumber}`  
-  → `Mention à rappeler impérativement : {nom client} - BDC-{numéro}`
-- Ligne 218 : `… référence à rappeler : BDC n° {bdcNumber}`  
-  → `… référence à rappeler : {nom client} - BDC-{numéro}`
+Mettre à jour manuellement les 2 factures déjà créées avec le fallback :
 
-`{nom client}` = `client.company_name` (fallback `proposal.client_name`).  
-`{numéro}` = BDC nettoyé (sans le préfixe `BDC-`, qu'on remet une seule fois).
+- `20260525-02` (Davido, BDC-1019, événement 13/04/2027) → **`20270413-1019`**
+- `20260525-01` (Davido Mai, BDC-1020, événement 16/05/2027) → **`20270516-1020`**
 
-## 3. Nom du fichier PDF à l'impression
+Les autres factures historiques (`FAC-2026-XXX`) restent inchangées.
 
-Dans `InvoiceView.tsx`, juste avant `window.print()` : changer `document.title` en `Facture – {nom client} – BDC-{numéro}` puis le restaurer après. Le navigateur utilisera ce titre comme nom de fichier par défaut dans la boîte « Enregistrer en PDF ».
+## 3. Aucun changement côté front
 
-## 4. Champ « Notes internes » à la création de facture (`EventDossier.tsx`)
-
-Dans le dialogue « Créer une facture » (autour de la ligne 3410) :
-- Ajouter un `<Textarea>` « Notes internes (non visibles sur la facture) »
-- Nouveau state `invoiceNotes`
-- Passer `notes: invoiceNotes || null` dans `supabase.from("invoices").insert(...)` (ligne 1439)
-- Reset après création
-
-La colonne `notes` existe déjà sur la table `invoices`. Les notes ne s'affichent pas sur la facture publique (le bloc Notes actuel dans `InvoiceView.tsx` sera retiré pour garantir la confidentialité côté client).
-
-## 5. UX du bouton « Marquer comme payée »
-
-Aujourd'hui : bouton vert plein avec libellé `Payée` → ambigu (on dirait un statut).
-
-Nouveau :
-- Statut `sent` (en attente) : bouton **outline neutre** avec libellé explicite « **Marquer comme payée** » + icône `CheckCircle`. Pas de fond vert.
-- Statut `paid` : badge vert inchangé (`Payée le …`) + petit bouton fantôme « Annuler » conservé.
-
-Couleur verte réservée au **statut** final, pas au bouton d'action.
-
----
-
-## Détails techniques
-
-- Migration : `CREATE OR REPLACE FUNCTION public.generate_invoice_number(_proposal_id uuid)` — pas de changement de signature, pas d'impact sur le trigger `set_invoice_number`.
-- `bdcNumber` dans `InvoiceView.tsx` peut arriver avec ou sans préfixe `BDC-` → normaliser : `const bdcClean = bdcNumber.replace(/^BDC[- ]*/i, "")` puis afficher `BDC-{bdcClean}`.
-- Fichier PDF : pas d'API standard pour forcer le filename à l'impression, mais `document.title` est la convention respectée par Chrome / Edge / Safari.
-- Aucun changement de schéma (la colonne `notes` est déjà présente).
+Le composant `InvoiceView.tsx` affiche simplement `invoice_number`, donc rien à modifier.
