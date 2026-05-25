@@ -1786,14 +1786,43 @@ Nelly Sabde - Les Conférenciers`);
       )}
 
       {/* ─── Invoices ─── */}
+      {(() => null)()}
+      {/* compute invoice availability */}
+      {/* eslint-disable-next-line */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Receipt className="h-4 w-4" /> Factures
         </h3>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setInvoiceDialogOpen(true)}>
-          <Plus className="h-3 w-3" /> Créer une facture
-        </Button>
+        {(() => {
+          const hasTotal = invoices.some((i) => i.invoice_type === "total");
+          const hasAcompte = invoices.some((i) => i.invoice_type === "acompte");
+          const hasSolde = invoices.some((i) => i.invoice_type === "solde");
+          const canCreate = !hasTotal && !hasSolde;
+          const onlySolde = hasAcompte && !hasSolde && !hasTotal;
+          const disabledTitle = hasTotal
+            ? "Une facture totale a déjà été créée"
+            : hasSolde
+            ? "Le solde a déjà été facturé"
+            : "";
+          return (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              disabled={!canCreate}
+              title={disabledTitle || undefined}
+              onClick={() => {
+                if (onlySolde) setInvoiceType("solde");
+                else setInvoiceType("total");
+                setInvoiceDialogOpen(true);
+              }}
+            >
+              <Plus className="h-3 w-3" /> Créer une facture
+            </Button>
+          );
+        })()}
       </div>
+
 
       {invoices.length > 0 && (
         <div className="space-y-3">
