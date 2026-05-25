@@ -2199,8 +2199,30 @@ Nelly Sabde - Les Conférenciers`);
                     <Input value={liaisonSpeakerCc} onChange={e => setLiaisonSpeakerCc(e.target.value)} placeholder="client@email.com" className="text-sm" />
                     <p className="text-[10px] text-muted-foreground">Séparez les adresses par une virgule</p>
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Formule d'adresse</Label>
+                    <Select
+                      value={liaisonAddressing}
+                      onValueChange={(v: "formal" | "informal") => {
+                        const speaker = getSelectedSpeakerInfo();
+                        const firstName = (speaker?.name || "").split(" ")[0];
+                        const next = buildLiaisonSpeakerBody(v, firstName);
+                        if (liaisonSpeakerBody && liaisonSpeakerBody !== buildLiaisonSpeakerBody(liaisonAddressing, firstName)) {
+                          if (!window.confirm("Régénérer le brouillon avec le nouveau choix ? Vos modifications seront perdues.")) return;
+                        }
+                        setLiaisonAddressing(v);
+                        setLiaisonSpeakerBody(next);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="formal">Vouvoiement</SelectItem>
+                        <SelectItem value="informal">Tutoiement</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-1"><Label className="text-xs">Objet</Label><Input value={liaisonSpeakerSubject} onChange={e => setLiaisonSpeakerSubject(e.target.value)} /></div>
-                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><Textarea value={liaisonSpeakerBody} onChange={e => setLiaisonSpeakerBody(e.target.value)} rows={10} className="text-sm" /></div>
+                  <div className="space-y-1"><Label className="text-xs">Corps du mail</Label><RichTextEditor value={liaisonSpeakerBody} onChange={setLiaisonSpeakerBody} className="text-sm min-h-[220px]" /></div>
                   <Button className="w-full" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
                     <Send className="h-4 w-4 mr-2" />{sendingLiaison ? "Envoi…" : "Envoyer au conférencier"}
                   </Button>
