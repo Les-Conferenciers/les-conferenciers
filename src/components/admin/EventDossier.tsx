@@ -1810,7 +1810,6 @@ Nelly Sabde - Les Conférenciers`);
               <div className="space-y-1"><Label className="text-xs">N° Bon de commande</Label><Input placeholder="BDC-001" value={contractBdcNumber} onChange={e => setContractBdcNumber(e.target.value)} /></div>
             </div>
             <div className="space-y-1"><Label className="text-xs">Thématique</Label><Input placeholder="Leadership, innovation, transformation..." value={contractTheme} onChange={e => setContractTheme(e.target.value)} /></div>
-            </div>
             <div className="space-y-1"><Label className="text-xs">Format</Label><Input placeholder="Conférence, Table ronde..." value={eventFormat} onChange={e => setEventFormat(e.target.value)} /></div>
             <div className="space-y-1"><Label className="text-xs">Détails</Label><Textarea placeholder="Infos complémentaires..." value={eventDescription} onChange={e => setEventDescription(e.target.value)} rows={2} /></div>
 
