@@ -1856,10 +1856,12 @@ Nelly Sabde - Les Conférenciers`);
                   {inv.status === "sent" && (
                     <Button
                       size="sm"
-                      className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
+                      variant="outline"
+                      className="gap-1 text-xs border-dashed"
                       onClick={() => handleMarkPaid(inv)}
+                      title="À cliquer uniquement lorsque le paiement est reçu"
                     >
-                      <CheckCircle className="h-3 w-3" /> Payée
+                      <CheckCircle className="h-3 w-3" /> Marquer comme payée
                     </Button>
                   )}
                   {inv.status === "paid" && (
