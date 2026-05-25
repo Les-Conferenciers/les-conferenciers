@@ -189,6 +189,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [eventFormat, setEventFormat] = useState("Conférence");
   const [eventDescription, setEventDescription] = useState("");
   const [contractAudienceSize, setContractAudienceSize] = useState("");
+  const [contractTheme, setContractTheme] = useState("");
   const [contractBdcNumber, setContractBdcNumber] = useState("");
   const [contractLines, setContractLines] = useState<ContractLine[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
