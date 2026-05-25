@@ -1,23 +1,39 @@
-## Contrat — Auditoire et Thématique
+## Plan : Template email contrat client + aperçu live
 
-### Problème
-1. L'auditoire est bien stocké en base (123) mais l'affichage est brut ("123") sans la formulation "personnes attendues".
-2. La thématique n'est pas saisissable dans la pop-up de création de contrat (`EventDossier` → "Créer le contrat"), donc elle reste vide.
+### Objectif
+Remplacer le wording brut du mail d'envoi du bon de commande par le template HTML demandé, permettre son édition en HTML, et afficher un aperçu live du rendu final dans la pop-up d'envoi.
 
-### Modifications
+### Étape 1 — Nouveau template HTML dans `EventDossier.tsx`
+- Modifier `openContractEmail()` pour générer le corps HTML exact fourni :
+  - Salutation avec prénom du destinataire
+  - « Suite à nos précédents échanges, je suis ravie de vous adresser le **bon de commande** relatif à l'intervention de **[Conférencier]** »
+  - Bloc récapitulatif (date, lieu, montant TTC) en `<strong>`
+  - Phrases de signature électronique, disponibilité, formule de politesse
+  - Signature Nelly Sabde avec téléphone
+- Variables interpolées dynamiquement : `recipient_name`, speaker name, `event_date`, `event_location`, `totalTTC`.
 
-**1. `src/components/admin/EventDossier.tsx` — pop-up création contrat**
-- Ajouter un nouvel état `contractTheme` initialisé depuis `event?.theme || proposal.theme || ""` (comme pour `contractAudienceSize`).
-- Ajouter un champ texte `Label "Thématique" / Input` juste sous la ligne "Taille de l'auditoire / N° Bon de commande".
-- Persister `theme: contractTheme || null` dans l'`update`/`upsert` de la table `events` (à côté de `audience_size` ligne 676).
+### Étape 2 — Éditeur riche pour le corps du mail
+- Remplacer le `<Textarea>` du corps du mail de contrat par le composant `<RichTextEditor>` déjà utilisé ailleurs dans l'admin.
+- Adapter la taille (`minHeight`) pour qu'elle tienne dans la dialog.
 
-**2. `src/pages/ContractView.tsx` — affichage**
-- Ligne 290-294 (Auditoire) : afficher `{event.audience_size} personnes attendues` quand la valeur est présente, sinon `—`. Le mode édition garde l'`input` actuel (saisie d'un nombre uniquement).
-- Ligne 295-300 (Thématique) : déjà OK, l'édition existe. Masquer entièrement la ligne quand `!editing && !event?.theme` (pour ne rien afficher si vide, conformément à la demande "s'affichera dans le contrat s'il existe"). Idem côté Auditoire si vide.
+### Étape 3 — Panneau d'aperçu live dans la dialog
+- Étendre la dialog d'envoi de contrat (`max-w-3xl` ou plus) pour accueillir deux colonnes :
+  - **Gauche** : champs d'édition (objet, éditeur riche)
+  - **Droite** : aperçu HTML rendu en temps réel
+- L'aperçu reproduit fidèlement l'enveloppe de marque de l'email envoyé :
+  - Header `#1a2332` avec logo pépite + titre « Agence Les Conférenciers »
+  - Corps du mail (rendu HTML du `RichTextEditor`)
+  - Bouton « Consulter et signer le contrat »
+  - Image de signature Nelly Sabde
+  - Footer « Document confidentiel »
+- L'aperçu se met à jour en temps réel à chaque modification de l'éditeur.
 
-**3. `src/pages/SpeakerContractView.tsx` — contrat conférencier**
-- Ligne 109 : remplacer `environ {ev.audience_size}` par `{ev.audience_size} personnes attendues` pour cohérence.
+### Étape 4 — Correction de l'edge function `send-contract-email`
+- Ligne 78 : le `replace(/\n/g, "<br>")` actuellement appliqué systématiquement crée des `<br>` parasites si le body contient déjà du HTML.
+- Conditionner le remplacement : ne l'appliquer que si le `email_body` ne contient pas déjà de balises HTML (`!/<\w+/.test(body)`).
 
-### Hors scope
-- Pas de migration : `events.theme` et `events.audience_size` existent déjà.
-- Pas de modification du contrat conférencier au-delà de l'harmonisation du wording auditoire.
+### Fichiers concernés
+- `src/components/admin/EventDossier.tsx` (template + dialog + aperçu)
+- `supabase/functions/send-contract-email/index.ts` (fix double balisage)
+
+### Aucun changement de schéma requis.
