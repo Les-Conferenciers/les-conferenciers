@@ -106,7 +106,7 @@ const SpeakerContractView = () => {
             <p><span className="text-gray-600">Date de l'évènement :</span> {formatDate(contract?.event_date)}</p>
             <p><span className="text-gray-600">Lieu de la conférence :</span> {contract?.event_location || "À définir"}</p>
             <p><span className="text-gray-600">Horaire de la conférence :</span> {contract?.event_time || "À définir"}</p>
-            {ev.audience_size && <p><span className="text-gray-600">Auditoire :</span> environ {ev.audience_size}</p>}
+            {ev.audience_size && <p><span className="text-gray-600">Auditoire :</span> {ev.audience_size} personnes attendues</p>}
             {ev.theme && <p><span className="text-gray-600">Thématique de l'intervention :</span> « {ev.theme} »</p>}
           </div>
         </section>
