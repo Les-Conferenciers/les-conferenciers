@@ -2037,10 +2037,24 @@ Nelly Sabde - Les Conférenciers`);
         <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-w-0 [&_*]:box-border [&_button]:max-w-full [&_input]:max-w-full [&_textarea]:max-w-full [&_select]:max-w-full">
           <DialogHeader>
             <DialogTitle className="font-serif">
-              {editingContract ? "Modifier" : "Créer"} le contrat - {proposal.client_name}
+              {editingContract
+                ? contract?.status === "signed"
+                  ? "Créer un avenant"
+                  : "Modifier"
+                : "Créer"}{" "}
+              le contrat - {proposal.client_name}
             </DialogTitle>
           </DialogHeader>
+          {editingContract && contract && (contract.status === "sent" || contract.status === "signed") && (
+            <div className="rounded-lg border border-orange-300 bg-orange-50 text-orange-800 text-xs p-3 mt-2">
+              <strong>⚠️ Attention :</strong>{" "}
+              {contract.status === "signed"
+                ? "ce contrat est signé. L'enregistrement créera un avenant (nouvelle version) qui annulera et remplacera le contrat actuel. Il devra être renvoyé au client pour signature."
+                : "ce contrat a déjà été envoyé au client. L'enregistrement créera une nouvelle version « annule et remplace » qu'il faudra renvoyer."}
+            </div>
+          )}
           <div className="space-y-5 mt-2 min-w-0 max-w-full">
+
             {/* Client selector - mandatory */}
             <div className="space-y-3 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 min-w-0 max-w-full overflow-hidden">
               <Label className="text-xs font-semibold flex items-center gap-2">
