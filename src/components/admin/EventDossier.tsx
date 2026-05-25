@@ -834,17 +834,18 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
     setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
-Suite à votre accord, je vous transmets le bon de commande pour votre événement.
+Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l’intervention de ${speakerSummary}
 
-📋 Récapitulatif :
+📋 Voici un petit récapitulatif : :
 • Conférencier(s) : ${speakerSummary}
 • Date : ${dateStr}
 • Lieu : ${contract.event_location || "à définir"}
 • Montant total TTC : ${totals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
 
-👉 Cliquez sur le bouton ci-dessous pour consulter le contrat et le signer électroniquement.
+👉 Vous pouvez consulter le contrat et le signer électroniquement en cliquant sur le bouton ci-dessous.
 
-N'hésitez pas à me contacter pour toute question.
+N’hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.
+Dans l’attente de votre retour, je vous souhaite une très belle journée.
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
