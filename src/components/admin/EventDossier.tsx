@@ -229,6 +229,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
   const [sendingContract, setSendingContract] = useState(false);
+  const [showContractPreview, setShowContractPreview] = useState(false);
 
   // Client contact for contract email
   const [clients, setClients] = useState<ClientContact[]>([]);
@@ -721,13 +722,18 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
     setContractEmailBody(`<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
 <p>Suite à nos précédents échanges, je suis ravie de vous adresser le <strong>bon de commande</strong> relatif à l'intervention de <strong>${speakerName}</strong>.</p>
+<p>&nbsp;</p>
 <p><strong>Voici un petit récapitulatif :</strong><br>
 Date : <strong>${dateStr}</strong><br>
 Lieu : <strong>${lieu}</strong><br>
 Montant total TTC : <strong>${totalTTC} €</strong></p>
+<p>&nbsp;</p>
 <p>Vous pouvez consulter le contrat et le signer électroniquement en cliquant sur le bouton ci-dessous.</p>
+<p>&nbsp;</p>
 <p>N'hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.</p>
+<p>&nbsp;</p>
 <p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+<p>&nbsp;</p>
 <p>Bien cordialement,<br>Nelly Sabde — Les Conférenciers<br>📞 06 95 93 97 91</p>`);
     setContractEmailOpen(true);
   };
