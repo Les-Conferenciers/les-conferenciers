@@ -1,15 +1,24 @@
-## Modifications dans la feuille de liaison
+# Mode édition par défaut pour l'admin
 
-Fichier : `src/pages/LiaisonSheetView.tsx`
+## Problème
+Sur `/admin/contrat/:id` et `/admin/feuille-liaison/:id`, la page s'ouvre en lecture seule. Le bouton « Modifier » n'apparaît qu'après détection de la session admin, et tant qu'on n'a pas cliqué dessus, les champs restent en texte. Résultat : sensation que « rien n'est modifiable ».
 
-### 1. Harmonisation du titre
-Renommer la section « Besoins techniques : » en **« Besoins logistiques : »** (ligne 236). Mettre à jour aussi le label admin du champ texte (ligne 240) pour rester cohérent. Le titre de la section dans `EventDossier.tsx` est déjà « Besoins logistiques », rien à changer côté admin.
+## Solution
+Forcer `editing = true` automatiquement dès que `isAdmin` passe à `true`, dans les deux pages.
 
-### 2. Affichage en liste : un élément par ligne
-Le champ `eventTechNeeds` (saisi en texte libre type « Vidéoprojecteur, micro ») est aujourd'hui rendu sur une seule ligne. Le scinder en plusieurs `<li>` :
-- Split sur virgules **et** retours à la ligne (`/[,\n]+/`), trim, filtrer les vides.
-- Générer un `<li>` par entrée.
-- Idem pour `eventRoomSetup` si plusieurs items.
-- Le fallback (quand rien n'est saisi) reste : « Vidéoprojecteur » + « Salle installée en largeur… ».
+### `src/pages/ContractView.tsx`
+- Dans le `.then` de `supabase.auth.getSession()` (ligne 136), après `setIsAdmin(!!session)`, si la session existe → `setEditing(true)`.
 
-Aucune modification BDD, aucune autre section touchée.
+### `src/pages/LiaisonSheetView.tsx`
+- Idem ligne 114-115 : si `session && !isPublic` → `setEditing(true)`.
+
+## Comportement après changement
+- Admin qui ouvre `/admin/contrat/:id` ou `/admin/feuille-liaison/:id` → tous les champs sont directement éditables, boutons « Annuler » / « Enregistrer » visibles d'emblée.
+- Lien public `/feuille-liaison/:token` (client/conférencier) → reste en lecture seule (isPublic = true).
+- Bouton « Imprimer / PDF » reste disponible ; pour un PDF propre, l'admin peut cliquer « Annuler » avant impression (ou on peut ajouter un `@media print` qui masque les bordures d'input — à voir plus tard si besoin).
+
+## Fichiers touchés
+- `src/pages/ContractView.tsx` (1 ligne)
+- `src/pages/LiaisonSheetView.tsx` (1 ligne)
+
+Aucune modification de la base ou des autres pages.
