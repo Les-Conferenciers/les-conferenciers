@@ -1786,10 +1786,7 @@ Nelly Sabde - Les Conférenciers`);
       )}
 
       {/* ─── Invoices ─── */}
-      {(() => null)()}
-      {/* compute invoice availability */}
-      {/* eslint-disable-next-line */}
-      <div className="flex items-center justify-between">
+
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Receipt className="h-4 w-4" /> Factures
         </h3>
