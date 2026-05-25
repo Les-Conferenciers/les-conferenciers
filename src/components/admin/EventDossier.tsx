@@ -229,6 +229,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
   const [sendingContract, setSendingContract] = useState(false);
+  const [showContractPreview, setShowContractPreview] = useState(false);
 
   // Client contact for contract email
   const [clients, setClients] = useState<ClientContact[]>([]);
@@ -721,13 +722,18 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setContractEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
     setContractEmailBody(`<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
 <p>Suite à nos précédents échanges, je suis ravie de vous adresser le <strong>bon de commande</strong> relatif à l'intervention de <strong>${speakerName}</strong>.</p>
+<p>&nbsp;</p>
 <p><strong>Voici un petit récapitulatif :</strong><br>
 Date : <strong>${dateStr}</strong><br>
 Lieu : <strong>${lieu}</strong><br>
 Montant total TTC : <strong>${totalTTC} €</strong></p>
+<p>&nbsp;</p>
 <p>Vous pouvez consulter le contrat et le signer électroniquement en cliquant sur le bouton ci-dessous.</p>
+<p>&nbsp;</p>
 <p>N'hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.</p>
+<p>&nbsp;</p>
 <p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+<p>&nbsp;</p>
 <p>Bien cordialement,<br>Nelly Sabde — Les Conférenciers<br>📞 06 95 93 97 91</p>`);
     setContractEmailOpen(true);
   };
@@ -2061,10 +2067,24 @@ Nelly Sabde - Les Conférenciers`);
       </Dialog>
 
       {/* Contract email dialog with client selector */}
-      <Dialog open={contractEmailOpen} onOpenChange={setContractEmailOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
+      <Dialog open={contractEmailOpen} onOpenChange={(o) => { setContractEmailOpen(o); if (!o) setShowContractPreview(false); }}>
+        <DialogContent className={cn("max-h-[90vh] overflow-y-auto transition-all", showContractPreview ? "max-w-6xl" : "max-w-2xl")}>
+          <DialogHeader>
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant={showContractPreview ? "default" : "outline"}
+                className="gap-1 text-xs mr-6"
+                onClick={() => setShowContractPreview(v => !v)}
+              >
+                <Eye className="h-3.5 w-3.5" />
+                {showContractPreview ? "Masquer l'aperçu" : "Aperçu"}
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className={cn("grid gap-4 mt-2", showContractPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1")}>
             {/* Left: editor */}
             <div className="space-y-4">
               <div className="p-3 bg-muted/30 rounded-lg border border-border/50 text-sm">
@@ -2093,32 +2113,34 @@ Nelly Sabde - Les Conférenciers`);
               </Button>
             </div>
 
-            {/* Right: live preview */}
-            <div className="space-y-2">
-              <Label className="text-xs flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> Aperçu du mail</Label>
-              <div className="rounded-lg border border-border/50 overflow-hidden bg-[#f5f5f5] p-4 max-h-[600px] overflow-y-auto">
-                <div style={{ maxWidth: 600, margin: "0 auto", background: "#ffffff" }}>
-                  <div style={{ background: "#1a2332", padding: "20px 30px", textAlign: "center" }}>
-                    <img src="https://www.lesconferenciers.com/favicon.png" alt="" style={{ width: 36, height: 36, display: "inline-block", verticalAlign: "middle", marginRight: 12 }} />
-                    <span style={{ color: "#f5f0e8", fontSize: 20, fontWeight: "bold", verticalAlign: "middle", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
-                  </div>
-                  <div style={{ padding: 30 }}>
-                    <div style={{ color: "#333", fontSize: 15, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: contractEmailBody }} />
-                    <div style={{ textAlign: "center", margin: "30px 0" }}>
-                      <span style={{ display: "inline-block", background: "#1a2332", color: "#f5f0e8", padding: "14px 32px", borderRadius: 8, fontSize: 15, fontWeight: "bold" }}>
-                        Consulter et signer le contrat
-                      </span>
+            {/* Right: live preview (toggle) */}
+            {showContractPreview && (
+              <div className="space-y-2">
+                <Label className="text-xs flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> Aperçu du mail</Label>
+                <div className="rounded-lg border border-border/50 overflow-hidden bg-[#f5f5f5] p-4 max-h-[600px] overflow-y-auto">
+                  <div style={{ maxWidth: 600, margin: "0 auto", background: "#ffffff" }}>
+                    <div style={{ background: "#1a2332", padding: "20px 30px", textAlign: "center" }}>
+                      <img src="https://www.lesconferenciers.com/favicon.png" alt="" style={{ width: 36, height: 36, display: "inline-block", verticalAlign: "middle", marginRight: 12 }} />
+                      <span style={{ color: "#f5f0e8", fontSize: 20, fontWeight: "bold", verticalAlign: "middle", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
                     </div>
-                  </div>
-                  <div style={{ padding: "20px 30px 10px" }}>
-                    <img src="https://www.lesconferenciers.com/images/les-conferenciers-signature.png" alt="Signature" style={{ width: "100%", maxWidth: 500, display: "block" }} />
-                  </div>
-                  <div style={{ background: "#1a2332", padding: 14, textAlign: "center" }}>
-                    <p style={{ color: "#f5f0e8", opacity: 0.5, fontSize: 11, margin: 0 }}>Document confidentiel - Les Conférenciers</p>
+                    <div style={{ padding: 30 }}>
+                      <div style={{ color: "#333", fontSize: 15, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: contractEmailBody }} />
+                      <div style={{ textAlign: "center", margin: "30px 0" }}>
+                        <span style={{ display: "inline-block", background: "#1a2332", color: "#f5f0e8", padding: "14px 32px", borderRadius: 8, fontSize: 15, fontWeight: "bold" }}>
+                          Consulter et signer le contrat
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ padding: "20px 30px 10px" }}>
+                      <img src="https://www.lesconferenciers.com/images/les-conferenciers-signature.png" alt="Signature" style={{ width: "100%", maxWidth: 500, display: "block" }} />
+                    </div>
+                    <div style={{ background: "#1a2332", padding: 14, textAlign: "center" }}>
+                      <p style={{ color: "#f5f0e8", opacity: 0.5, fontSize: 11, margin: 0 }}>Document confidentiel - Les Conférenciers</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
