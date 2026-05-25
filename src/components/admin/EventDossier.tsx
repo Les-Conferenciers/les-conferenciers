@@ -713,23 +713,22 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setSelectedClientId("");
     setShowCreateClient(false);
 
+    const firstName = proposal.recipient_name?.split(" ")[0] || "";
+    const speakerName = speakerSummary;
+    const lieu = contract.event_location || "à définir";
+    const totalTTC = totals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 });
+
     setContractEmailSubject(`Bon de commande - ${proposal.client_name} - Les Conférenciers`);
-    setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
-
-Suite à votre accord, je vous transmets le bon de commande pour votre événement.
-
-📋 Récapitulatif :
-• Conférencier(s) : ${speakerSummary}
-• Date : ${dateStr}
-• Lieu : ${contract.event_location || "à définir"}
-• Montant total TTC : ${totals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
-
-👉 Cliquez sur le bouton ci-dessous pour consulter le contrat et le signer électroniquement.
-
-N'hésitez pas à me contacter pour toute question.
-
-Bien cordialement,
-Nelly Sabde - Les Conférenciers`);
+    setContractEmailBody(`<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>
+<p>Suite à nos précédents échanges, je suis ravie de vous adresser le <strong>bon de commande</strong> relatif à l'intervention de <strong>${speakerName}</strong>.</p>
+<p><strong>Voici un petit récapitulatif :</strong><br>
+Date : <strong>${dateStr}</strong><br>
+Lieu : <strong>${lieu}</strong><br>
+Montant total TTC : <strong>${totalTTC} €</strong></p>
+<p>Vous pouvez consulter le contrat et le signer électroniquement en cliquant sur le bouton ci-dessous.</p>
+<p>N'hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.</p>
+<p>Dans l'attente de votre retour, je vous souhaite une très belle journée.</p>
+<p>Bien cordialement,<br>Nelly Sabde — Les Conférenciers<br>📞 06 95 93 97 91</p>`);
     setContractEmailOpen(true);
   };
 
@@ -739,15 +738,11 @@ Nelly Sabde - Les Conférenciers`);
     if (client) {
       setContractRecipientName(client.contact_name || "");
       setContractRecipientEmail(client.email || "");
-      // Update email body greeting
+      // Update HTML email body greeting
       const firstName = client.contact_name?.split(" ")[0] || "";
-      setContractEmailBody(prev => {
-        const lines = prev.split("\n");
-        if (lines[0]?.startsWith("Bonjour")) {
-          lines[0] = `Bonjour${firstName ? ` ${firstName}` : ""},`;
-        }
-        return lines.join("\n");
-      });
+      setContractEmailBody(prev =>
+        prev.replace(/<p>Bonjour[^<,]*,<\/p>/, `<p>Bonjour${firstName ? ` ${firstName}` : ""},</p>`)
+      );
     }
   };
 
@@ -2067,33 +2062,63 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Contract email dialog with client selector */}
       <Dialog open={contractEmailOpen} onOpenChange={setContractEmailOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">Envoyer le contrat - {proposal.client_name}</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-
-            {/* Auto-linked recipient from proposal */}
-            <div className="p-3 bg-muted/30 rounded-lg border border-border/50 text-sm">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                <User className="h-3.5 w-3.5" /> Destinataire (lié à la proposition)
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
+            {/* Left: editor */}
+            <div className="space-y-4">
+              <div className="p-3 bg-muted/30 rounded-lg border border-border/50 text-sm">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <User className="h-3.5 w-3.5" /> Destinataire (lié à la proposition)
+                </div>
+                <p className="font-medium">
+                  {proposal.recipient_name || proposal.client_name}
+                  <span className="text-muted-foreground font-normal"> &lt;{proposal.client_email}&gt;</span>
+                </p>
               </div>
-              <p className="font-medium">
-                {proposal.recipient_name || proposal.client_name}
-                <span className="text-muted-foreground font-normal"> &lt;{proposal.client_email}&gt;</span>
-              </p>
+
+              <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={contractEmailSubject} onChange={e => setContractEmailSubject(e.target.value)} /></div>
+              <div className="space-y-2">
+                <Label className="text-xs">Corps du mail</Label>
+                <RichTextEditor value={contractEmailBody} onChange={setContractEmailBody} minHeight="320px" />
+              </div>
+
+              <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
+                <p>🎤 <strong>Conférencier :</strong> {speakerSummary}</p>
+                {getContractSignUrl() && <p>🔗 <strong>Lien signature :</strong> {getContractSignUrl()}</p>}
+              </div>
+
+              <Button className="w-full" onClick={handleSendContractEmail} disabled={sendingContract}>
+                <Send className="h-4 w-4 mr-2" />{sendingContract ? "Envoi…" : "Envoyer le contrat"}
+              </Button>
             </div>
 
-            <div className="space-y-2"><Label className="text-xs">Objet</Label><Input value={contractEmailSubject} onChange={e => setContractEmailSubject(e.target.value)} /></div>
-            <div className="space-y-2"><Label className="text-xs">Corps du mail</Label><Textarea value={contractEmailBody} onChange={e => setContractEmailBody(e.target.value)} rows={12} className="text-sm" /></div>
-
-            {/* Recap */}
-            <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
-              <p>🎤 <strong>Conférencier :</strong> {speakerSummary}</p>
-              {getContractSignUrl() && <p>🔗 <strong>Lien signature :</strong> {getContractSignUrl()}</p>}
+            {/* Right: live preview */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> Aperçu du mail</Label>
+              <div className="rounded-lg border border-border/50 overflow-hidden bg-[#f5f5f5] p-4 max-h-[600px] overflow-y-auto">
+                <div style={{ maxWidth: 600, margin: "0 auto", background: "#ffffff" }}>
+                  <div style={{ background: "#1a2332", padding: "20px 30px", textAlign: "center" }}>
+                    <img src="https://www.lesconferenciers.com/favicon.png" alt="" style={{ width: 36, height: 36, display: "inline-block", verticalAlign: "middle", marginRight: 12 }} />
+                    <span style={{ color: "#f5f0e8", fontSize: 20, fontWeight: "bold", verticalAlign: "middle", fontFamily: "Georgia, serif" }}>Agence Les Conférenciers</span>
+                  </div>
+                  <div style={{ padding: 30 }}>
+                    <div style={{ color: "#333", fontSize: 15, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: contractEmailBody }} />
+                    <div style={{ textAlign: "center", margin: "30px 0" }}>
+                      <span style={{ display: "inline-block", background: "#1a2332", color: "#f5f0e8", padding: "14px 32px", borderRadius: 8, fontSize: 15, fontWeight: "bold" }}>
+                        Consulter et signer le contrat
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ padding: "20px 30px 10px" }}>
+                    <img src="https://www.lesconferenciers.com/images/les-conferenciers-signature.png" alt="Signature" style={{ width: "100%", maxWidth: 500, display: "block" }} />
+                  </div>
+                  <div style={{ background: "#1a2332", padding: 14, textAlign: "center" }}>
+                    <p style={{ color: "#f5f0e8", opacity: 0.5, fontSize: 11, margin: 0 }}>Document confidentiel - Les Conférenciers</p>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <Button className="w-full" onClick={handleSendContractEmail} disabled={sendingContract}>
-              <Send className="h-4 w-4 mr-2" />{sendingContract ? "Envoi…" : "Envoyer le contrat"}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
