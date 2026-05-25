@@ -161,7 +161,7 @@ const InvoiceView = () => {
         <section className="mb-6">
           <div className="border-l-4 border-gray-900 bg-gray-100 px-4 py-3">
             <p className="font-bold text-gray-900 text-sm">
-              Mention à rappeler impérativement : Bon de commande n° {bdcNumber}
+              Mention à rappeler impérativement : {paymentRef}
             </p>
           </div>
         </section>
