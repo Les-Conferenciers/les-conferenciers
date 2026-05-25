@@ -1074,7 +1074,7 @@ Nelly Sabde - Les Conférenciers`);
     }
     return `Bonjour ${speakerFirstName},</br>
 
-<p>Voici comme convenu la feuille de liaison pour votre intervention.<p><br>
+<p>Voici comme convenu la feuille de liaison pour votre intervention.<p>
 
 <p><strong>Pourriez-vous m'accuser réception de ce mail ?</strong></p>
 
