@@ -1787,13 +1787,41 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* ─── Invoices ─── */}
       <div className="flex items-center justify-between">
+
+
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Receipt className="h-4 w-4" /> Factures
         </h3>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setInvoiceDialogOpen(true)}>
-          <Plus className="h-3 w-3" /> Créer une facture
-        </Button>
+        {(() => {
+          const hasTotal = invoices.some((i) => i.invoice_type === "total");
+          const hasAcompte = invoices.some((i) => i.invoice_type === "acompte");
+          const hasSolde = invoices.some((i) => i.invoice_type === "solde");
+          const canCreate = !hasTotal && !hasSolde;
+          const onlySolde = hasAcompte && !hasSolde && !hasTotal;
+          const disabledTitle = hasTotal
+            ? "Une facture totale a déjà été créée"
+            : hasSolde
+            ? "Le solde a déjà été facturé"
+            : "";
+          return (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              disabled={!canCreate}
+              title={disabledTitle || undefined}
+              onClick={() => {
+                if (onlySolde) setInvoiceType("solde");
+                else setInvoiceType("total");
+                setInvoiceDialogOpen(true);
+              }}
+            >
+              <Plus className="h-3 w-3" /> Créer une facture
+            </Button>
+          );
+        })()}
       </div>
+
 
       {invoices.length > 0 && (
         <div className="space-y-3">
@@ -3418,20 +3446,33 @@ Nelly Sabde - Les Conférenciers`);
             <DialogTitle className="font-serif">Créer une facture - {proposal.client_name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label className="text-xs">Type de facture</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["acompte", "solde", "total"] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setInvoiceType(t)}
-                    className={`px-3 py-2 rounded-lg border text-sm capitalize transition-colors ${invoiceType === t ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-muted/50"}`}
-                  >
-                    {t === "acompte" ? "Acompte 50%" : t === "solde" ? "Solde 50%" : "Total 100%"}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {(() => {
+              const hasAcompte = invoices.some((i) => i.invoice_type === "acompte");
+              const onlySolde = hasAcompte;
+              const types = onlySolde ? (["solde"] as const) : (["acompte", "solde", "total"] as const);
+              return (
+                <div className="space-y-2">
+                  <Label className="text-xs">Type de facture</Label>
+                  {onlySolde && (
+                    <p className="text-xs text-muted-foreground">
+                      Une facture d'acompte a déjà été émise — seul le solde reste à facturer.
+                    </p>
+                  )}
+                  <div className={`grid gap-2 ${onlySolde ? "grid-cols-1" : "grid-cols-3"}`}>
+                    {types.map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setInvoiceType(t)}
+                        className={`px-3 py-2 rounded-lg border text-sm capitalize transition-colors ${invoiceType === t ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-muted/50"}`}
+                      >
+                        {t === "acompte" ? "Acompte 50%" : t === "solde" ? "Solde 50%" : "Total 100%"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="space-y-1">
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />

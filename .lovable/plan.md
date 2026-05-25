@@ -1,25 +1,25 @@
-## Diagnostic
+## Logique demandée
 
-Les factures Davido ont reçu `20260525-01` et `20260525-02` (date du jour + compteur) parce que la fonction `generate_invoice_number` lit `events.event_date`, qui est `NULL` pour ces dossiers. La vraie date est stockée sur `contracts.event_date` (13 avril 2027 et 16 mai 2027). La fonction n'a donc pas trouvé de date et est tombée dans le fallback.
+- Si **facture totale** existe déjà → bouton « Créer une facture » désactivé (plus rien à facturer).
+- Si **facture d'acompte** existe déjà → dialogue ouvert mais seul le type **« Solde 50% »** est disponible et présélectionné. Plus d'acompte ni de total possibles.
+- Si **facture de solde** existe déjà (mais pas d'acompte, cas rare) → bouton désactivé.
+- Sinon (aucune facture) → comportement actuel inchangé (Acompte / Solde / Total).
 
-## 1. Corriger la fonction SQL
+## Modifications dans `src/components/admin/EventDossier.tsx`
 
-Mettre à jour `public.generate_invoice_number(_proposal_id uuid)` :
+1. Calculer en haut du rendu factures :
+   ```ts
+   const hasTotal = invoices.some(i => i.invoice_type === "total");
+   const hasAcompte = invoices.some(i => i.invoice_type === "acompte");
+   const hasSolde = invoices.some(i => i.invoice_type === "solde");
+   const canCreateInvoice = !hasTotal && !hasSolde;
+   const onlySoldeAllowed = hasAcompte && !hasSolde && !hasTotal;
+   ```
 
-- Récupérer `bdc_number` depuis `events` (inchangé).
-- Récupérer la date avec ce priorité : `events.event_date` → sinon `contracts.event_date` la plus récente.
-- Si date + BDC trouvés → `to_char(date, 'YYYYMMDD') || '-' || bdc_clean`.
-- Sinon fallback inchangé (`YYYYMMDD-NN`).
+2. **Bouton « Créer une facture »** (ligne 1793) : ajouter `disabled={!canCreateInvoice}` + tooltip via `title` expliquant pourquoi (« Facture totale déjà créée » / « Solde déjà créé »).
 
-## 2. Renuméroter les 2 factures Davido existantes
+3. **Ouverture du dialogue** : dans le `onClick`, si `onlySoldeAllowed`, forcer `setInvoiceType("solde")` avant d'ouvrir.
 
-Mettre à jour manuellement les 2 factures déjà créées avec le fallback :
+4. **Dialogue de création** (ligne 3423-3433) : filtrer la liste des types selon `onlySoldeAllowed` — n'afficher que `["solde"]` dans ce cas, sinon les trois. Ajout d'un petit texte d'aide au-dessus quand le type est contraint : « Une facture d'acompte a déjà été émise, seul le solde reste à facturer. »
 
-- `20260525-02` (Davido, BDC-1019, événement 13/04/2027) → **`20270413-1019`**
-- `20260525-01` (Davido Mai, BDC-1020, événement 16/05/2027) → **`20270516-1020`**
-
-Les autres factures historiques (`FAC-2026-XXX`) restent inchangées.
-
-## 3. Aucun changement côté front
-
-Le composant `InvoiceView.tsx` affiche simplement `invoice_number`, donc rien à modifier.
+Aucun changement de schéma ni de logique d'insertion côté base.
