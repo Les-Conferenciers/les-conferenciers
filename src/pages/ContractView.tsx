@@ -33,6 +33,9 @@ type ContractData = {
   custom_clauses?: any;
   selected_speaker_id: string | null;
   proposal_id?: string;
+  version?: number | null;
+  replaces_contract_id?: string | null;
+
   selected_speaker?: { name: string; gender: string | null } | null;
   proposal: {
     client_name: string;
