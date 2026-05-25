@@ -1735,20 +1735,50 @@ Nelly Sabde - Les Conférenciers`);
                   ? "⏳ Non signé (envoyé)"
                   : "⚠️ Non signé (brouillon)"}
             </span>
+            {(contract.version || 1) > 1 && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 border border-blue-300">
+                v{contract.version}
+              </span>
+            )}
             <Button
               size="sm"
               variant="outline"
               className="gap-1 text-xs"
-              onClick={openEditContract}
-              title="Éditer les informations du contrat"
+              onClick={() => {
+                if (contract.status === "signed") {
+                  if (
+                    !window.confirm(
+                      "Ce contrat est déjà signé. Vos modifications créeront un avenant (nouvelle version) qui annulera et remplacera le contrat actuel. Continuer ?",
+                    )
+                  )
+                    return;
+                } else if (contract.status === "sent") {
+                  if (
+                    !window.confirm(
+                      "Ce contrat a déjà été envoyé. Vos modifications créeront une nouvelle version (annule et remplace) à renvoyer au client. Continuer ?",
+                    )
+                  )
+                    return;
+                }
+                openEditContract();
+              }}
+              title={
+                contract.status === "signed"
+                  ? "Créera un avenant qui annule et remplace"
+                  : contract.status === "sent"
+                    ? "Créera une nouvelle version (annule et remplace)"
+                    : "Éditer les informations du contrat"
+              }
             >
-              <Pencil className="h-3 w-3" /> Modifier
+              <Pencil className="h-3 w-3" />{" "}
+              {contract.status === "signed" ? "Créer un avenant" : "Modifier"}
             </Button>
             {contract.status === "draft" && (
               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
-                <Send className="h-3 w-3" /> Envoyer
+                <Send className="h-3 w-3" /> {(contract.version || 1) > 1 ? "Renvoyer" : "Envoyer"}
               </Button>
             )}
+
             <Button size="sm" variant="ghost" asChild>
               <a href={`/admin/contrat/${contract.id}`} target="_blank" rel="noopener noreferrer" className="gap-1">
                 <Printer className="h-3 w-3" /> Voir
