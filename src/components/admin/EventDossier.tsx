@@ -1064,7 +1064,7 @@ Nelly Sabde - Les Conférenciers`);
     if (addressing === "informal") {
       return `Bonjour ${speakerFirstName},
 
-Voici comme convenu la feuille de liaison pour ton intervention.
+<p>Voici comme convenu la feuille de liaison pour ton intervention.</p>
 
 <strong>Peux-tu m'accuser réception de ce mail ?</strong>
 
