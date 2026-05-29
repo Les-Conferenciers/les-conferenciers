@@ -1,55 +1,47 @@
+## Constat
 
-## 1. Nouveau format de numéro de facture
+Aujourd'hui le bouton **Modifier** est toujours actif, même après envoi ou signature, sans aucun garde-fou. Ce n'est ni rigoureux juridiquement, ni traçable.
 
-Format actuel : `DDMM-BDC` (ex. `0525-01`)
-Nouveau format : `YYYYMMDD-BDC` (ex. `20270516-1020`)
+## Proposition
 
-**Migration SQL** — remplacer la fonction `generate_invoice_number(_proposal_id)` :
-- Si date d'événement + BDC existent → `to_char(event_date, 'YYYYMMDD') || '-' || bdc_clean`
-- Fallback inchangé (`YYYYMMDD-XX`)
-- `bdc_clean` retire toujours le préfixe `BDC-`
+Logique selon le statut du contrat :
 
-Les factures déjà créées **gardent leur ancien numéro** (on ne renumérote pas l'historique pour ne pas casser les références déjà envoyées au client).
+| Statut | Action | Comportement |
+|---|---|---|
+| `draft` | Modifier | Édition libre comme aujourd'hui. |
+| `sent` (envoyé, non signé) | Modifier | Ouvre l'éditeur avec un bandeau orange : « Ce contrat a déjà été envoyé. Toute modification créera une nouvelle version qui annulera la précédente. » Au save → bump `version`, statut repasse à `draft`, on enregistre un historique. Au renvoi suivant → l'objet de mail est préfixé `[ANNULE ET REMPLACE — v{n}]` et le PDF affiche la mention « Cette version annule et remplace la version précédente du {date} ». |
+| `signed` | Modifier | Bouton remplacé par **Créer un avenant** → duplique le contrat avec `version = n+1`, `replaces_contract_id = ancien`, statut `draft`. L'ancien contrat signé reste intouchable, visible dans un encart « Versions précédentes ». |
 
-## 2. Mentions dans la facture (`src/pages/InvoiceView.tsx`)
+## Changements techniques
 
-- Ligne 146 : `Mention à rappeler impérativement : Bon de commande n° {bdcNumber}`  
-  → `Mention à rappeler impérativement : {nom client} - BDC-{numéro}`
-- Ligne 218 : `… référence à rappeler : BDC n° {bdcNumber}`  
-  → `… référence à rappeler : {nom client} - BDC-{numéro}`
+### 1. Migration SQL (`contracts`)
 
-`{nom client}` = `client.company_name` (fallback `proposal.client_name`).  
-`{numéro}` = BDC nettoyé (sans le préfixe `BDC-`, qu'on remet une seule fois).
+Ajouter :
+- `version int not null default 1`
+- `replaces_contract_id uuid` (FK logique vers contracts.id, sans contrainte forte)
+- `superseded_at timestamptz`
+- `superseded_by_contract_id uuid`
 
-## 3. Nom du fichier PDF à l'impression
+Aucune RLS à toucher.
 
-Dans `InvoiceView.tsx`, juste avant `window.print()` : changer `document.title` en `Facture – {nom client} – BDC-{numéro}` puis le restaurer après. Le navigateur utilisera ce titre comme nom de fichier par défaut dans la boîte « Enregistrer en PDF ».
+### 2. UI `EventDossier.tsx` (zone contrat ~1689-1707)
 
-## 4. Champ « Notes internes » à la création de facture (`EventDossier.tsx`)
+- Bouton **Modifier** :
+  - `draft` → comportement actuel.
+  - `sent` → ouvre le dialogue avec bandeau d'avertissement + au save, appelle `reviseContract()` qui crée la nouvelle version, marque l'ancienne `superseded_at = now()`, et bascule l'affichage sur la nouvelle.
+  - `signed` → bouton renommé **Créer un avenant**, même flux que `sent` mais le nouveau contrat démarre vide-pré-rempli et garde la référence.
+- Ajouter un petit composant « Versions précédentes » sous le contrat actif listant les anciennes versions cliquables (lien `/admin/contrat/{id}`).
 
-Dans le dialogue « Créer une facture » (autour de la ligne 3410) :
-- Ajouter un `<Textarea>` « Notes internes (non visibles sur la facture) »
-- Nouveau state `invoiceNotes`
-- Passer `notes: invoiceNotes || null` dans `supabase.from("invoices").insert(...)` (ligne 1439)
-- Reset après création
+### 3. Email de renvoi (`send-contract-email`)
 
-La colonne `notes` existe déjà sur la table `invoices`. Les notes ne s'affichent pas sur la facture publique (le bloc Notes actuel dans `InvoiceView.tsx` sera retiré pour garantir la confidentialité côté client).
+- Si `version > 1` → sujet préfixé `[ANNULE ET REMPLACE — v{n}]` et corps mentionnant l'annulation de la version précédente.
 
-## 5. UX du bouton « Marquer comme payée »
+### 4. PDF contrat (`ContractView.tsx`)
 
-Aujourd'hui : bouton vert plein avec libellé `Payée` → ambigu (on dirait un statut).
+- Si `version > 1`, ajouter en tête du contrat la mention :  
+  « **Cette version annule et remplace la version v{n-1} émise le {date}.** »
 
-Nouveau :
-- Statut `sent` (en attente) : bouton **outline neutre** avec libellé explicite « **Marquer comme payée** » + icône `CheckCircle`. Pas de fond vert.
-- Statut `paid` : badge vert inchangé (`Payée le …`) + petit bouton fantôme « Annuler » conservé.
+## Hors scope (à valider ensuite)
 
-Couleur verte réservée au **statut** final, pas au bouton d'action.
-
----
-
-## Détails techniques
-
-- Migration : `CREATE OR REPLACE FUNCTION public.generate_invoice_number(_proposal_id uuid)` — pas de changement de signature, pas d'impact sur le trigger `set_invoice_number`.
-- `bdcNumber` dans `InvoiceView.tsx` peut arriver avec ou sans préfixe `BDC-` → normaliser : `const bdcClean = bdcNumber.replace(/^BDC[- ]*/i, "")` puis afficher `BDC-{bdcClean}`.
-- Fichier PDF : pas d'API standard pour forcer le filename à l'impression, mais `document.title` est la convention respectée par Chrome / Edge / Safari.
-- Aucun changement de schéma (la colonne `notes` est déjà présente).
+- Faut-il aussi conserver une copie PDF figée de chaque version envoyée dans le bucket `signed-contracts` ? (utile en cas de litige) — je peux l'ajouter si tu veux.
+- Faut-le appliquer le même principe aux **factures** envoyées ?

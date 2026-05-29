@@ -33,6 +33,9 @@ type ContractData = {
   custom_clauses?: any;
   selected_speaker_id: string | null;
   proposal_id?: string;
+  version?: number | null;
+  replaces_contract_id?: string | null;
+
   selected_speaker?: { name: string; gender: string | null } | null;
   proposal: {
     client_name: string;
@@ -239,6 +242,13 @@ const ContractView = () => {
           <p className="text-sm font-semibold uppercase text-gray-600">CONDITIONS PARTICULIÈRES</p>
           <p className="text-sm uppercase text-gray-500">PARTICIPATION D'UN INTERVENANT À UN ÉVÉNEMENT</p>
         </div>
+
+        {(contract.version || 1) > 1 && (
+          <div className="mb-6 border-2 border-gray-900 px-4 py-3 text-center text-sm font-semibold uppercase tracking-wide">
+            Cette version v{contract.version} annule et remplace toute version précédente de ce bon de commande.
+          </div>
+        )}
+
 
         <div className="flex justify-between items-start mb-8">
           <p className="font-bold text-lg">Bon de commande n° : {bdcNumber}</p>
