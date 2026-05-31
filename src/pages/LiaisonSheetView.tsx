@@ -63,6 +63,9 @@ const LiaisonSheetView = () => {
   const [eventDate, setEventDate] = useState("");
   const [eventLocation, setEventLocation] = useState("");
   const [eventTime, setEventTime] = useState("");
+  // Téléphones override (event)
+  const [clientPhone, setClientPhone] = useState("");
+  const [speakerPhone, setSpeakerPhone] = useState("");
 
   const loadData = async () => {
     let ev: any = null;
