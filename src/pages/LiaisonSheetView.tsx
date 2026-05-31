@@ -279,17 +279,28 @@ const LiaisonSheetView = () => {
         {/* Contact */}
         <section className="mb-8">
           <h3 className="font-bold text-lg mb-3">Contact :</h3>
-          <p>
-            <span className="font-medium">Contact client :</span>{" "}
-            {proposal?.recipient_name || "—"}
-            {(ev.contact_on_site_phone || proposal?.client_phone) ? ` - ${ev.contact_on_site_phone || proposal?.client_phone}` : ""}
+          <p className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">Contact client :</span>
+            <span>{proposal?.recipient_name || "—"}</span>
+            <span>-</span>
+            {editing ? (
+              <EditableField value={clientPhone} onChange={setClientPhone} type="tel" placeholder="Téléphone" />
+            ) : (
+              <span>{clientPhone || "À définir"}</span>
+            )}
           </p>
-          <p>
-            <span className="font-medium">Contact conférencier :</span>{" "}
-            {speaker?.name || "—"}
-            {speaker?.phone ? ` - ${speaker.phone}` : ""}
+          <p className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="font-medium">Contact conférencier :</span>
+            <span>{speaker?.name || "—"}</span>
+            <span>-</span>
+            {editing ? (
+              <EditableField value={speakerPhone} onChange={setSpeakerPhone} type="tel" placeholder="Téléphone" />
+            ) : (
+              <span>{speakerPhone || "À définir"}</span>
+            )}
           </p>
         </section>
+
 
         {/* Commentaires */}
         <section className="mb-8">
