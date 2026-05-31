@@ -104,6 +104,9 @@ const LiaisonSheetView = () => {
       setEventTechNeeds(ev.tech_needs || "");
       setEventRoomSetup(ev.room_setup || "");
       setEventNotes(ev.notes || "");
+      setClientPhone(ev.contact_on_site_phone || ev.proposal?.client_phone || "");
+      const sp = ev.proposal?.proposal_speakers?.[0]?.speakers;
+      setSpeakerPhone(ev.speaker_contact_phone || sp?.phone || "");
     }
     if (contract) {
       setEventDate(contract.event_date || "");
