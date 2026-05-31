@@ -15,6 +15,18 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Only run at 7h Paris time (cron fires at both 5h and 6h UTC to cover CET/CEST).
+    // Allow manual invocation via ?force=1.
+    const url = new URL(req.url);
+    const force = url.searchParams.get("force") === "1";
+    const parisHour = parseInt(
+      new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", hour12: false }).format(new Date()),
+      10
+    );
+    if (!force && parisHour !== 7) {
+      return new Response(JSON.stringify({ skipped: true, parisHour }), { headers: corsHeaders });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
