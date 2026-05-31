@@ -1,22 +1,27 @@
-## Constat
-
-Pendant la fenêtre où on n'archivait plus les anciennes versions, 2 propositions ancêtres sont restées en `status = 'sent'` :
-- **Davido Consulting** (29 mai) → remplacée le 31 mai
-- **PRO BTP** (21 mai) → remplacée le 22 mai
-
-Sans correction elles continuent à apparaître comme « En attente » dans l'onglet Envoyées, avec toutes les actions actives (Accepter, Mettre à jour, etc.) — exactement ce qu'on veut éviter.
-
 ## Action
 
-Back-fill SQL : passer ces 2 propositions en `status = 'archived'` avec `lost_reason = '[Mise à jour] Remplacée par une nouvelle proposition'` et `lost_at = now()`. La requête cible automatiquement toute proposition `status='sent'` référencée comme `previous_proposal_id` par une autre — pas de risque d'élargissement.
+Lier a posteriori les paires Groupe Tangram et SOCOTEC, puis archiver les anciennes versions comme une vraie mise à jour.
 
 ```sql
+-- Groupe Tangram : 28 mai remplace 10 avril
+UPDATE proposals SET previous_proposal_id = 'ff22a95c-c168-486b-a1de-73701edea0f9'
+WHERE id = 'f36cd58d-4fa3-4b21-a9e2-19f591c70189';
+
+-- SOCOTEC : 29 mai remplace 27 mai
+UPDATE proposals SET previous_proposal_id = 'a6ea69d9-4d4b-48eb-929a-3ace14ea663f'
+WHERE id = 'a4bcafec-de4d-460c-acd8-1437adf6eb53';
+
+-- Archiver les ancêtres
 UPDATE proposals
 SET status = 'archived',
     lost_reason = '[Mise à jour] Remplacée par une nouvelle proposition',
     lost_at = now()
-WHERE status = 'sent'
-  AND id IN (SELECT previous_proposal_id FROM proposals WHERE previous_proposal_id IS NOT NULL);
+WHERE id IN ('ff22a95c-c168-486b-a1de-73701edea0f9', 'a6ea69d9-4d4b-48eb-929a-3ace14ea663f');
+
+-- Couper les relances en attente sur les ancêtres
+DELETE FROM proposal_tasks
+WHERE proposal_id IN ('ff22a95c-c168-486b-a1de-73701edea0f9', 'a6ea69d9-4d4b-48eb-929a-3ace14ea663f')
+  AND status = 'pending';
 ```
 
-Après ça, les 2 chaînes affichent le bon badge « Archivée vN » et les actions sont verrouillées comme pour les nouvelles mises à jour.
+Résultat : chaînes propres, badge « Archivée v1 » sur les anciennes, actions verrouillées, relances coupées.
