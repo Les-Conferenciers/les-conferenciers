@@ -1,47 +1,23 @@
-## Constat
+## Changements
 
-Aujourd'hui le bouton **Modifier** est toujours actif, même après envoi ou signature, sans aucun garde-fou. Ce n'est ni rigoureux juridiquement, ni traçable.
+### 1. `src/pages/Admin.tsx` (flux de mise à jour, lignes 1383-1412)
 
-## Proposition
+Supprimer le passage `status: "archived"` + `lost_reason` + `lost_at` sur l'ancienne proposition. On garde uniquement :
+- la copie des notes vers la nouvelle ;
+- la suppression des `proposal_tasks` `pending` de l'ancienne (coupe les relances).
 
-Logique selon le statut du contrat :
+L'ancienne reste en `status: "sent"`. Le badge `vN` déjà en place (ligne 2779) marque les versions précédentes.
 
-| Statut | Action | Comportement |
-|---|---|---|
-| `draft` | Modifier | Édition libre comme aujourd'hui. |
-| `sent` (envoyé, non signé) | Modifier | Ouvre l'éditeur avec un bandeau orange : « Ce contrat a déjà été envoyé. Toute modification créera une nouvelle version qui annulera la précédente. » Au save → bump `version`, statut repasse à `draft`, on enregistre un historique. Au renvoi suivant → l'objet de mail est préfixé `[ANNULE ET REMPLACE — v{n}]` et le PDF affiche la mention « Cette version annule et remplace la version précédente du {date} ». |
-| `signed` | Modifier | Bouton remplacé par **Créer un avenant** → duplique le contrat avec `version = n+1`, `replaces_contract_id = ancien`, statut `draft`. L'ancien contrat signé reste intouchable, visible dans un encart « Versions précédentes ». |
+### 2. Onglet Envoyées — aucun changement de rendu
 
-## Changements techniques
+`buildSentEntries` (ligne 3119) regroupe déjà toutes les propositions d'un même `client_id` derrière un toggle « X propositions ». Les anciennes versions y apparaissent donc naturellement avec les nouvelles.
 
-### 1. Migration SQL (`contracts`)
+### 3. Onglet Archivées
 
-Ajouter :
-- `version int not null default 1`
-- `replaces_contract_id uuid` (FK logique vers contracts.id, sans contrainte forte)
-- `superseded_at timestamptz`
-- `superseded_by_contract_id uuid`
+Plus aucune proposition issue d'une mise à jour ne tombe ici. La logique de regroupement par chaîne dans cet onglet (lignes 3374-3415) devient sans objet mais on la laisse en place (no-op quand il n'y a pas de chaînes).
 
-Aucune RLS à toucher.
+### 4. `supabase/functions/auto-archive-proposals/index.ts`
 
-### 2. UI `EventDossier.tsx` (zone contrat ~1689-1707)
+Aujourd'hui : archive toute `status = sent` dont la relance 2 date > 7j. Exclure les propositions remplacées (celles dont l'`id` est `previous_proposal_id` d'une autre), sinon une ancienne version serait re-archivée par le cron.
 
-- Bouton **Modifier** :
-  - `draft` → comportement actuel.
-  - `sent` → ouvre le dialogue avec bandeau d'avertissement + au save, appelle `reviseContract()` qui crée la nouvelle version, marque l'ancienne `superseded_at = now()`, et bascule l'affichage sur la nouvelle.
-  - `signed` → bouton renommé **Créer un avenant**, même flux que `sent` mais le nouveau contrat démarre vide-pré-rempli et garde la référence.
-- Ajouter un petit composant « Versions précédentes » sous le contrat actif listant les anciennes versions cliquables (lien `/admin/contrat/{id}`).
-
-### 3. Email de renvoi (`send-contract-email`)
-
-- Si `version > 1` → sujet préfixé `[ANNULE ET REMPLACE — v{n}]` et corps mentionnant l'annulation de la version précédente.
-
-### 4. PDF contrat (`ContractView.tsx`)
-
-- Si `version > 1`, ajouter en tête du contrat la mention :  
-  « **Cette version annule et remplace la version v{n-1} émise le {date}.** »
-
-## Hors scope (à valider ensuite)
-
-- Faut-il aussi conserver une copie PDF figée de chaque version envoyée dans le bucket `signed-contracts` ? (utile en cas de litige) — je peux l'ajouter si tu veux.
-- Faut-le appliquer le même principe aux **factures** envoyées ?
+Pour valider, dis-moi de passer en mode build.
