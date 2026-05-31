@@ -243,12 +243,37 @@ Nelly Sabde - Les Conférenciers
       ? `Re: ${emailSubject}`
       : emailSubject;
 
+    const htmlToPlainText = (html: string): string => {
+      return html
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/(p|div|li|h[1-6])>/gi, "\n\n")
+        .replace(/<li[^>]*>/gi, "• ")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/[ \t]+\n/g, "\n")
+        .trim();
+    };
+
     const emailPayload: any = {
       from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
       to: [proposal.client_email],
       subject: threadedSubject,
-      html: emailHtml,
     };
+    if (proposal.proposal_type === "info") {
+      emailPayload.text = proposal.email_body
+        ? htmlToPlainText(proposal.email_body)
+        : defaultInfoBody;
+    } else {
+      emailPayload.html = emailHtml;
+    }
+
     if (ccList.length > 0) {
       emailPayload.cc = ccList;
     }
