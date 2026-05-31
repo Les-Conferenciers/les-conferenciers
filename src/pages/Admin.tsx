@@ -1105,10 +1105,19 @@ const AdminProposalsContent = () => {
   };
   const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(applySearch(applyHideTest(items))));
 
+  // Les ancêtres d'une chaîne de mise à jour (archivés mais référencés par une autre proposition)
+  // remontent dans l'onglet Envoyées et sont exclus de l'onglet Archivées.
+  const supersededIds = new Set(
+    proposals.map((p: any) => p.previous_proposal_id).filter(Boolean) as string[],
+  );
   const drafts = filterAndSort(proposals.filter((p) => p.status === "draft"));
-  const sent = filterAndSort(proposals.filter((p) => p.status === "sent"));
+  const sent = filterAndSort(
+    proposals.filter((p) => p.status === "sent" || (p.status === "archived" && supersededIds.has(p.id))),
+  );
   const accepted = filterAndSort(proposals.filter((p) => p.status === "accepted"));
-  const archived = filterAndSort(proposals.filter((p) => p.status === "archived"));
+  const archived = filterAndSort(
+    proposals.filter((p) => p.status === "archived" && !supersededIds.has(p.id)),
+  );
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter((c) => c.speaker_id === speakerId);
 
@@ -1403,6 +1412,15 @@ const AdminProposalsContent = () => {
             .delete()
             .eq("proposal_id", updatingFromProposalId)
             .eq("status", "pending");
+          // Archive l'ancienne : elle reste visible dans l'onglet Envoyées (groupée) mais toute action est verrouillée.
+          await supabase
+            .from("proposals")
+            .update({
+              status: "archived",
+              lost_reason: "[Mise à jour] Remplacée par une nouvelle proposition",
+              lost_at: new Date().toISOString(),
+            } as any)
+            .eq("id", updatingFromProposalId);
         }
         toast.success(
           updatingFromProposalId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !",
@@ -2913,6 +2931,20 @@ const AdminProposalsContent = () => {
             {mode === "sent" && p.status === "accepted" && pipelineInfo && (
               <span className={`text-xs px-2 py-1 rounded-full ${pipelineInfo.color}`}>{pipelineInfo.label}</span>
             )}
+            {mode === "sent" && p.status === "archived" && (() => {
+              let v = 1;
+              let cur: any = p;
+              const byId = new Map(proposals.map((x: any) => [x.id, x]));
+              while (cur?.previous_proposal_id && byId.has(cur.previous_proposal_id)) {
+                v++;
+                cur = byId.get(cur.previous_proposal_id);
+              }
+              return (
+                <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                  Archivée{v > 1 ? ` v${v}` : ""}
+                </span>
+              );
+            })()}
             {mode === "completed" && (
               <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">✓ Mission terminée</span>
             )}
@@ -3021,7 +3053,7 @@ const AdminProposalsContent = () => {
                     <Send className="h-3 w-3" /> Convertir
                   </Button>
                 )}
-              {mode === "sent" && (p.status === "sent" || p.status === "archived") && (
+              {mode === "sent" && p.status === "sent" && (
                 <Button
                   variant="outline"
                   size="sm"
