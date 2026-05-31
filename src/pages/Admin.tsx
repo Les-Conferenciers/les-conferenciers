@@ -2961,7 +2961,18 @@ const AdminProposalsContent = () => {
                   {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
               )}
+              {mode === "sent" && p.status === "archived" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setArchiveDetailsId(p.id)}
+                  title="Voir détails"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
+
                 {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
               </Button>
               <Button variant="ghost" size="sm" asChild title="Voir en ligne">
