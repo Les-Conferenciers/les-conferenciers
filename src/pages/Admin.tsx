@@ -2931,6 +2931,20 @@ const AdminProposalsContent = () => {
             {mode === "sent" && p.status === "accepted" && pipelineInfo && (
               <span className={`text-xs px-2 py-1 rounded-full ${pipelineInfo.color}`}>{pipelineInfo.label}</span>
             )}
+            {mode === "sent" && p.status === "archived" && (() => {
+              let v = 1;
+              let cur: any = p;
+              const byId = new Map(proposals.map((x: any) => [x.id, x]));
+              while (cur?.previous_proposal_id && byId.has(cur.previous_proposal_id)) {
+                v++;
+                cur = byId.get(cur.previous_proposal_id);
+              }
+              return (
+                <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                  Archivée{v > 1 ? ` v${v}` : ""}
+                </span>
+              );
+            })()}
             {mode === "completed" && (
               <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">✓ Mission terminée</span>
             )}
