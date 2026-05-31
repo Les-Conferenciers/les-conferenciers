@@ -63,6 +63,9 @@ const LiaisonSheetView = () => {
   const [eventDate, setEventDate] = useState("");
   const [eventLocation, setEventLocation] = useState("");
   const [eventTime, setEventTime] = useState("");
+  // Téléphones override (event)
+  const [clientPhone, setClientPhone] = useState("");
+  const [speakerPhone, setSpeakerPhone] = useState("");
 
   const loadData = async () => {
     let ev: any = null;
@@ -101,6 +104,9 @@ const LiaisonSheetView = () => {
       setEventTechNeeds(ev.tech_needs || "");
       setEventRoomSetup(ev.room_setup || "");
       setEventNotes(ev.notes || "");
+      setClientPhone(ev.contact_on_site_phone || ev.proposal?.client_phone || "");
+      const sp = ev.proposal?.proposal_speakers?.[0]?.speakers;
+      setSpeakerPhone(ev.speaker_contact_phone || sp?.phone || "");
     }
     if (contract) {
       setEventDate(contract.event_date || "");
@@ -129,6 +135,8 @@ const LiaisonSheetView = () => {
       tech_needs: eventTechNeeds || null,
       room_setup: eventRoomSetup || null,
       notes: eventNotes || null,
+      contact_on_site_phone: clientPhone || null,
+      speaker_contact_phone: speakerPhone || null,
     } as any).eq("id", data.event.id);
 
     let contractErr: any = null;
@@ -271,17 +279,28 @@ const LiaisonSheetView = () => {
         {/* Contact */}
         <section className="mb-8">
           <h3 className="font-bold text-lg mb-3">Contact :</h3>
-          <p>
-            <span className="font-medium">Contact client :</span>{" "}
-            {proposal?.recipient_name || "—"}
-            {(ev.contact_on_site_phone || proposal?.client_phone) ? ` - ${ev.contact_on_site_phone || proposal?.client_phone}` : ""}
+          <p className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">Contact client :</span>
+            <span>{proposal?.recipient_name || "—"}</span>
+            <span>-</span>
+            {editing ? (
+              <EditableField value={clientPhone} onChange={setClientPhone} type="tel" placeholder="Téléphone" />
+            ) : (
+              <span>{clientPhone || "À définir"}</span>
+            )}
           </p>
-          <p>
-            <span className="font-medium">Contact conférencier :</span>{" "}
-            {speaker?.name || "—"}
-            {speaker?.phone ? ` - ${speaker.phone}` : ""}
+          <p className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="font-medium">Contact conférencier :</span>
+            <span>{speaker?.name || "—"}</span>
+            <span>-</span>
+            {editing ? (
+              <EditableField value={speakerPhone} onChange={setSpeakerPhone} type="tel" placeholder="Téléphone" />
+            ) : (
+              <span>{speakerPhone || "À définir"}</span>
+            )}
           </p>
         </section>
+
 
         {/* Commentaires */}
         <section className="mb-8">
