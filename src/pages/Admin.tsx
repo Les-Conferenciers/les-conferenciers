@@ -1380,7 +1380,8 @@ const AdminProposalsContent = () => {
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
         await createTasksForProposal(proposal.id, sentAt, proposalType, internalNotes.trim() || null);
 
-        // Mise à jour d'une proposition précédente : archiver + copier notes + supprimer tâches pending
+        // Mise à jour d'une proposition précédente : copier notes + supprimer tâches pending.
+        // L'ancienne reste en statut "sent" et apparaît dans l'onglet Envoyées (regroupée par client).
         if (updatingFromProposalId) {
           const { data: prevTasks } = await supabase
             .from("proposal_tasks")
@@ -1396,19 +1397,12 @@ const AdminProposalsContent = () => {
                 .eq("task_type", t.task_type);
             }
           }
+          // Supprime les relances en attente sur l'ancienne version pour ne plus rappeler l'agenda dessus.
           await supabase
             .from("proposal_tasks")
             .delete()
             .eq("proposal_id", updatingFromProposalId)
             .eq("status", "pending");
-          await supabase
-            .from("proposals")
-            .update({
-              status: "archived",
-              lost_reason: "[Mise à jour] Remplacée par une nouvelle proposition",
-              lost_at: new Date().toISOString(),
-            } as any)
-            .eq("id", updatingFromProposalId);
         }
         toast.success(
           updatingFromProposalId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !",

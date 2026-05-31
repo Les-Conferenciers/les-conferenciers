@@ -21,9 +21,23 @@ Deno.serve(async (req) => {
 
     if (selErr) throw selErr;
 
+    // Exclure les propositions remplacées par une mise à jour (elles restent en "sent" mais ne doivent pas être ré-archivées).
+    const { data: supersedingRows } = await supabase
+      .from("proposals")
+      .select("previous_proposal_id")
+      .not("previous_proposal_id", "is", null);
+    const supersededIds = new Set(
+      (supersedingRows || []).map((r: any) => r.previous_proposal_id).filter(Boolean),
+    );
+
     const now = new Date().toISOString();
     let archived = 0;
+    let skippedSuperseded = 0;
     for (const p of candidates || []) {
+      if (supersededIds.has(p.id)) {
+        skippedSuperseded++;
+        continue;
+      }
       const reason = p.lost_reason && p.lost_reason.trim()
         ? p.lost_reason
         : "[Sans réponse] Pas de réponse après relances";
@@ -34,9 +48,10 @@ Deno.serve(async (req) => {
       if (!error) archived++;
     }
 
-    return new Response(JSON.stringify({ ok: true, archived, candidates: candidates?.length || 0 }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ ok: true, archived, skippedSuperseded, candidates: candidates?.length || 0 }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     console.error("auto-archive-proposals error", e);
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
