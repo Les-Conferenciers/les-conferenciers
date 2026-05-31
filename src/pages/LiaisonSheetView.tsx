@@ -135,6 +135,8 @@ const LiaisonSheetView = () => {
       tech_needs: eventTechNeeds || null,
       room_setup: eventRoomSetup || null,
       notes: eventNotes || null,
+      contact_on_site_phone: clientPhone || null,
+      speaker_contact_phone: speakerPhone || null,
     } as any).eq("id", data.event.id);
 
     let contractErr: any = null;
