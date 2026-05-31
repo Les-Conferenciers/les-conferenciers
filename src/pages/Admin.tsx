@@ -1105,10 +1105,19 @@ const AdminProposalsContent = () => {
   };
   const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(applySearch(applyHideTest(items))));
 
+  // Les ancêtres d'une chaîne de mise à jour (archivés mais référencés par une autre proposition)
+  // remontent dans l'onglet Envoyées et sont exclus de l'onglet Archivées.
+  const supersededIds = new Set(
+    proposals.map((p: any) => p.previous_proposal_id).filter(Boolean) as string[],
+  );
   const drafts = filterAndSort(proposals.filter((p) => p.status === "draft"));
-  const sent = filterAndSort(proposals.filter((p) => p.status === "sent"));
+  const sent = filterAndSort(
+    proposals.filter((p) => p.status === "sent" || (p.status === "archived" && supersededIds.has(p.id))),
+  );
   const accepted = filterAndSort(proposals.filter((p) => p.status === "accepted"));
-  const archived = filterAndSort(proposals.filter((p) => p.status === "archived"));
+  const archived = filterAndSort(
+    proposals.filter((p) => p.status === "archived" && !supersededIds.has(p.id)),
+  );
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter((c) => c.speaker_id === speakerId);
 
@@ -1380,7 +1389,8 @@ const AdminProposalsContent = () => {
         await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
         await createTasksForProposal(proposal.id, sentAt, proposalType, internalNotes.trim() || null);
 
-        // Mise à jour d'une proposition précédente : archiver + copier notes + supprimer tâches pending
+        // Mise à jour d'une proposition précédente : copier notes + supprimer tâches pending.
+        // L'ancienne reste en statut "sent" et apparaît dans l'onglet Envoyées (regroupée par client).
         if (updatingFromProposalId) {
           const { data: prevTasks } = await supabase
             .from("proposal_tasks")
@@ -1396,11 +1406,13 @@ const AdminProposalsContent = () => {
                 .eq("task_type", t.task_type);
             }
           }
+          // Supprime les relances en attente sur l'ancienne version pour ne plus rappeler l'agenda dessus.
           await supabase
             .from("proposal_tasks")
             .delete()
             .eq("proposal_id", updatingFromProposalId)
             .eq("status", "pending");
+          // Archive l'ancienne : elle reste visible dans l'onglet Envoyées (groupée) mais toute action est verrouillée.
           await supabase
             .from("proposals")
             .update({
@@ -2919,6 +2931,20 @@ const AdminProposalsContent = () => {
             {mode === "sent" && p.status === "accepted" && pipelineInfo && (
               <span className={`text-xs px-2 py-1 rounded-full ${pipelineInfo.color}`}>{pipelineInfo.label}</span>
             )}
+            {mode === "sent" && p.status === "archived" && (() => {
+              let v = 1;
+              let cur: any = p;
+              const byId = new Map(proposals.map((x: any) => [x.id, x]));
+              while (cur?.previous_proposal_id && byId.has(cur.previous_proposal_id)) {
+                v++;
+                cur = byId.get(cur.previous_proposal_id);
+              }
+              return (
+                <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                  Archivée{v > 1 ? ` v${v}` : ""}
+                </span>
+              );
+            })()}
             {mode === "completed" && (
               <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">✓ Mission terminée</span>
             )}
@@ -2935,7 +2961,18 @@ const AdminProposalsContent = () => {
                   {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
               )}
+              {mode === "sent" && p.status === "archived" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setArchiveDetailsId(p.id)}
+                  title="Voir détails"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
+
                 {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
               </Button>
               <Button variant="ghost" size="sm" asChild title="Voir en ligne">
@@ -3027,7 +3064,7 @@ const AdminProposalsContent = () => {
                     <Send className="h-3 w-3" /> Convertir
                   </Button>
                 )}
-              {mode === "sent" && (p.status === "sent" || p.status === "archived") && (
+              {mode === "sent" && p.status === "sent" && (
                 <Button
                   variant="outline"
                   size="sm"

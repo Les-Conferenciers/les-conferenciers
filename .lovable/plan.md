@@ -1,47 +1,36 @@
+## Objectif
+
+Afficher et permettre l'édition des numéros de téléphone client et conférencier sur la feuille de liaison publique (`/feuille-liaison/:token`), sans toucher aux numéros stockés dans `clients.phone` ou `speakers.phone`.
+
 ## Constat
 
-Aujourd'hui le bouton **Modifier** est toujours actif, même après envoi ou signature, sans aucun garde-fou. Ce n'est ni rigoureux juridiquement, ni traçable.
+- Les téléphones sont déjà affichés dans `src/pages/LiaisonSheetView.tsx` (section "Contact", lignes 271-284).
+- Côté client, le fallback est : `event.contact_on_site_phone || proposal.client_phone`.
+- Côté conférencier, c'est `speaker.phone` direct, **pas de champ d'override**.
+- La table `events` possède déjà deux colonnes parfaites pour stocker les overrides sans toucher au profil de référence :
+  - `contact_on_site_phone` (déjà utilisé pour le client)
+  - `speaker_contact_phone` (existe mais pas utilisé dans la vue)
 
-## Proposition
+## Modifications (frontend uniquement, 1 fichier)
 
-Logique selon le statut du contrat :
+`src/pages/LiaisonSheetView.tsx` :
 
-| Statut | Action | Comportement |
-|---|---|---|
-| `draft` | Modifier | Édition libre comme aujourd'hui. |
-| `sent` (envoyé, non signé) | Modifier | Ouvre l'éditeur avec un bandeau orange : « Ce contrat a déjà été envoyé. Toute modification créera une nouvelle version qui annulera la précédente. » Au save → bump `version`, statut repasse à `draft`, on enregistre un historique. Au renvoi suivant → l'objet de mail est préfixé `[ANNULE ET REMPLACE — v{n}]` et le PDF affiche la mention « Cette version annule et remplace la version précédente du {date} ». |
-| `signed` | Modifier | Bouton remplacé par **Créer un avenant** → duplique le contrat avec `version = n+1`, `replaces_contract_id = ancien`, statut `draft`. L'ancien contrat signé reste intouchable, visible dans un encart « Versions précédentes ». |
+1. Ajouter deux états locaux `clientPhone` et `speakerPhone` initialisés depuis :
+   - `clientPhone` ← `ev.contact_on_site_phone || proposal.client_phone || ""`
+   - `speakerPhone` ← `ev.speaker_contact_phone || speaker.phone || ""`
 
-## Changements techniques
+2. Dans la section "Contact" (lignes 273-284) :
+   - En mode lecture : afficher `Nom - téléphone` comme aujourd'hui mais à partir des nouveaux états.
+   - En mode `editing` : remplacer l'affichage du téléphone par un `<input>` éditable (style cohérent avec les autres champs éditables de la page).
 
-### 1. Migration SQL (`contracts`)
+3. Dans la fonction de sauvegarde (mode édition), persister :
+   - `events.contact_on_site_phone = clientPhone`
+   - `events.speaker_contact_phone = speakerPhone`
+   
+   Les tables `clients` et `speakers` ne sont jamais touchées : le numéro de référence en base reste intact, seul l'override propre à cet événement est mis à jour.
 
-Ajouter :
-- `version int not null default 1`
-- `replaces_contract_id uuid` (FK logique vers contracts.id, sans contrainte forte)
-- `superseded_at timestamptz`
-- `superseded_by_contract_id uuid`
+## Hors scope
 
-Aucune RLS à toucher.
-
-### 2. UI `EventDossier.tsx` (zone contrat ~1689-1707)
-
-- Bouton **Modifier** :
-  - `draft` → comportement actuel.
-  - `sent` → ouvre le dialogue avec bandeau d'avertissement + au save, appelle `reviseContract()` qui crée la nouvelle version, marque l'ancienne `superseded_at = now()`, et bascule l'affichage sur la nouvelle.
-  - `signed` → bouton renommé **Créer un avenant**, même flux que `sent` mais le nouveau contrat démarre vide-pré-rempli et garde la référence.
-- Ajouter un petit composant « Versions précédentes » sous le contrat actif listant les anciennes versions cliquables (lien `/admin/contrat/{id}`).
-
-### 3. Email de renvoi (`send-contract-email`)
-
-- Si `version > 1` → sujet préfixé `[ANNULE ET REMPLACE — v{n}]` et corps mentionnant l'annulation de la version précédente.
-
-### 4. PDF contrat (`ContractView.tsx`)
-
-- Si `version > 1`, ajouter en tête du contrat la mention :  
-  « **Cette version annule et remplace la version v{n-1} émise le {date}.** »
-
-## Hors scope (à valider ensuite)
-
-- Faut-il aussi conserver une copie PDF figée de chaque version envoyée dans le bucket `signed-contracts` ? (utile en cas de litige) — je peux l'ajouter si tu veux.
-- Faut-le appliquer le même principe aux **factures** envoyées ?
+- Aucun changement de schéma DB (les colonnes existent déjà).
+- Aucun changement dans l'admin / EventDossier (la feuille publique est éditable in-line par l'utilisateur authentifié).
+- Pas de modification des emails de liaison.
