@@ -1403,6 +1403,15 @@ const AdminProposalsContent = () => {
             .delete()
             .eq("proposal_id", updatingFromProposalId)
             .eq("status", "pending");
+          // Archive l'ancienne : elle reste visible dans l'onglet Envoyées (groupée) mais toute action est verrouillée.
+          await supabase
+            .from("proposals")
+            .update({
+              status: "archived",
+              lost_reason: "[Mise à jour] Remplacée par une nouvelle proposition",
+              lost_at: new Date().toISOString(),
+            } as any)
+            .eq("id", updatingFromProposalId);
         }
         toast.success(
           updatingFromProposalId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !",
