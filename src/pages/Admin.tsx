@@ -1105,10 +1105,19 @@ const AdminProposalsContent = () => {
   };
   const filterAndSort = (items: Proposal[]) => applyDateSort(applyTypeFilter(applySearch(applyHideTest(items))));
 
+  // Les ancêtres d'une chaîne de mise à jour (archivés mais référencés par une autre proposition)
+  // remontent dans l'onglet Envoyées et sont exclus de l'onglet Archivées.
+  const supersededIds = new Set(
+    proposals.map((p: any) => p.previous_proposal_id).filter(Boolean) as string[],
+  );
   const drafts = filterAndSort(proposals.filter((p) => p.status === "draft"));
-  const sent = filterAndSort(proposals.filter((p) => p.status === "sent"));
+  const sent = filterAndSort(
+    proposals.filter((p) => p.status === "sent" || (p.status === "archived" && supersededIds.has(p.id))),
+  );
   const accepted = filterAndSort(proposals.filter((p) => p.status === "accepted"));
-  const archived = filterAndSort(proposals.filter((p) => p.status === "archived"));
+  const archived = filterAndSort(
+    proposals.filter((p) => p.status === "archived" && !supersededIds.has(p.id)),
+  );
 
   const getConferencesForSpeaker = (speakerId: string) => conferences.filter((c) => c.speaker_id === speakerId);
 
