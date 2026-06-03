@@ -3066,7 +3066,7 @@ const AdminProposalsContent = () => {
                     <Send className="h-3 w-3" /> Convertir
                   </Button>
                 )}
-              {mode === "sent" && p.status === "sent" && (
+              {mode === "sent" && p.status === "sent" && !isSuperseded && (
                 <Button
                   variant="outline"
                   size="sm"
