@@ -3025,7 +3025,7 @@ const AdminProposalsContent = () => {
                   <Check className="h-3 w-3" />
                 </Button>
               )}
-              {mode === "sent" && p.status === "sent" && (
+              {mode === "sent" && p.status === "sent" && !isSuperseded && (
                 <>
                   {!expired && (
                     <Button
