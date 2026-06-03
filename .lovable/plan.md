@@ -1,36 +1,38 @@
-## Objectif
-
-Afficher et permettre l'édition des numéros de téléphone client et conférencier sur la feuille de liaison publique (`/feuille-liaison/:token`), sans toucher aux numéros stockés dans `clients.phone` ou `speakers.phone`.
-
 ## Constat
 
-- Les téléphones sont déjà affichés dans `src/pages/LiaisonSheetView.tsx` (section "Contact", lignes 271-284).
-- Côté client, le fallback est : `event.contact_on_site_phone || proposal.client_phone`.
-- Côté conférencier, c'est `speaker.phone` direct, **pas de champ d'override**.
-- La table `events` possède déjà deux colonnes parfaites pour stocker les overrides sans toucher au profil de référence :
-  - `contact_on_site_phone` (déjà utilisé pour le client)
-  - `speaker_contact_phone` (existe mais pas utilisé dans la vue)
+- Baugeois v1 (envoyée le 01/06) a `status = 'sent'` en base, alors qu'elle est remplacée par la v2 (créée le 03/06, `previous_proposal_id` pointant sur v1).
+- Davido Consulting fonctionne correctement parce que toutes les anciennes versions ont `status = 'archived'`.
+- Dans `src/pages/Admin.tsx` (lignes 3026–3082), les boutons **Relances**, **Accepter**, **Mettre à jour** et **Archiver** sont gatés uniquement par `p.status === "sent"` / `p.status !== "archived"`. Ils ignorent le fait que la proposition soit déjà remplacée par une version plus récente.
+- L'archivage automatique de l'ancienne version ne se déclenche que dans la branche "créer + envoyer" (ligne 1394 de `Admin.tsx`). Si la v2 a été créée comme brouillon puis envoyée séparément (ou si la mise à jour de la v1 a échoué silencieusement), la v1 reste `sent` → tous les boutons d'action restent actifs, comme sur la capture.
 
-## Modifications (frontend uniquement, 1 fichier)
+`supersededIds` est déjà calculé (ligne 1110) et utilisé pour regrouper l'affichage, mais pas pour verrouiller les actions.
 
-`src/pages/LiaisonSheetView.tsx` :
+## Modifications
 
-1. Ajouter deux états locaux `clientPhone` et `speakerPhone` initialisés depuis :
-   - `clientPhone` ← `ev.contact_on_site_phone || proposal.client_phone || ""`
-   - `speakerPhone` ← `ev.speaker_contact_phone || speaker.phone || ""`
+**1. `src/pages/Admin.tsx` — verrouiller toute version remplacée (frontend, durable)**
 
-2. Dans la section "Contact" (lignes 273-284) :
-   - En mode lecture : afficher `Nom - téléphone` comme aujourd'hui mais à partir des nouveaux états.
-   - En mode `editing` : remplacer l'affichage du téléphone par un `<input>` éditable (style cohérent avec les autres champs éditables de la page).
+Dans `renderProposalRow`, calculer `isSuperseded = supersededIds.has(p.id)` (passer le Set en paramètre ou y accéder via la closure existante) et :
 
-3. Dans la fonction de sauvegarde (mode édition), persister :
-   - `events.contact_on_site_phone = clientPhone`
-   - `events.speaker_contact_phone = speakerPhone`
-   
-   Les tables `clients` et `speakers` ne sont jamais touchées : le numéro de référence en base reste intact, seul l'override propre à cet événement est mis à jour.
+- Remplacer les conditions `mode === "sent" && p.status === "sent"` aux lignes 3026 et 3067 par `mode === "sent" && p.status === "sent" && !isSuperseded` → masque **Relances**, **Accepter**, **Mettre à jour**.
+- Remplacer `p.status !== "archived"` ligne 3078 par `p.status !== "archived" && !isSuperseded` → masque **Archiver**.
+- Étendre le badge "Archivée vX" (ligne 2934) pour qu'il s'affiche aussi quand `isSuperseded` (et pas seulement `status === "archived"`), en utilisant un libellé "Remplacée vX" si la version n'est pas encore archivée — ainsi l'utilisateur comprend pourquoi les actions ont disparu.
+
+**2. Correctif de données — archiver Baugeois v1**
+
+Mettre à jour la ligne `32fb5cec-3d3a-422f-a01d-166e20c5f504` :
+```sql
+UPDATE proposals
+SET status = 'archived',
+    lost_at = now(),
+    lost_reason = '[Mise à jour] Remplacée par une nouvelle proposition'
+WHERE id = '32fb5cec-3d3a-422f-a01d-166e20c5f504';
+```
+Et supprimer ses éventuelles `proposal_tasks` `pending` pour ne plus la voir dans l'agenda :
+```sql
+DELETE FROM proposal_tasks WHERE proposal_id = '32fb5cec-3d3a-422f-a01d-166e20c5f504' AND status = 'pending';
+```
 
 ## Hors scope
 
-- Aucun changement de schéma DB (les colonnes existent déjà).
-- Aucun changement dans l'admin / EventDossier (la feuille publique est éditable in-line par l'utilisateur authentifié).
-- Pas de modification des emails de liaison.
+- Pas de modification de la branche "création + envoi" (elle archive déjà correctement la version précédente).
+- Pas de refonte du flow "brouillon puis envoi" : le gating frontend par `isSuperseded` suffit à éviter tout futur cas similaire, même si l'archivage automatique a été contourné.
