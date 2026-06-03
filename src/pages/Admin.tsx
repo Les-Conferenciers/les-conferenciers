@@ -2776,6 +2776,7 @@ const AdminProposalsContent = () => {
     const expired = isExpired(p.expires_at);
     const pipelineStatus = p.status === "accepted" ? getPipelineStatus(p) : null;
     const pipelineInfo = pipelineStatus ? getPipelineLabel(pipelineStatus) : null;
+    const isSuperseded = supersededIds.has(p.id);
 
     return (
       <React.Fragment key={p.id}>
@@ -2931,7 +2932,7 @@ const AdminProposalsContent = () => {
             {mode === "sent" && p.status === "accepted" && pipelineInfo && (
               <span className={`text-xs px-2 py-1 rounded-full ${pipelineInfo.color}`}>{pipelineInfo.label}</span>
             )}
-            {mode === "sent" && p.status === "archived" && (() => {
+            {mode === "sent" && (p.status === "archived" || isSuperseded) && (() => {
               let v = 1;
               let cur: any = p;
               const byId = new Map(proposals.map((x: any) => [x.id, x]));
@@ -2939,9 +2940,10 @@ const AdminProposalsContent = () => {
                 v++;
                 cur = byId.get(cur.previous_proposal_id);
               }
+              const label = p.status === "archived" ? "Archivée" : "Remplacée";
               return (
                 <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
-                  Archivée{v > 1 ? ` v${v}` : ""}
+                  {label}{v > 1 ? ` v${v}` : ""}
                 </span>
               );
             })()}
@@ -3023,7 +3025,7 @@ const AdminProposalsContent = () => {
                   <Check className="h-3 w-3" />
                 </Button>
               )}
-              {mode === "sent" && p.status === "sent" && (
+              {mode === "sent" && p.status === "sent" && !isSuperseded && (
                 <>
                   {!expired && (
                     <Button
@@ -3064,7 +3066,7 @@ const AdminProposalsContent = () => {
                     <Send className="h-3 w-3" /> Convertir
                   </Button>
                 )}
-              {mode === "sent" && p.status === "sent" && (
+              {mode === "sent" && p.status === "sent" && !isSuperseded && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -3075,7 +3077,7 @@ const AdminProposalsContent = () => {
                   <RefreshCw className="h-3 w-3" /> Mettre à jour
                 </Button>
               )}
-              {mode !== "completed" && p.status !== "archived" && (
+              {mode !== "completed" && p.status !== "archived" && !isSuperseded && (
                 <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver">
                   <Archive className="h-4 w-4 text-muted-foreground" />
                 </Button>
