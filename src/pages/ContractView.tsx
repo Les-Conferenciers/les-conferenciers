@@ -151,14 +151,14 @@ const ContractView = () => {
       event_location: evLocation || null,
       event_time: evTime || null,
       event_format: evFormat || null,
-      event_description: evDescription || null,
+      event_description: evDescription.trim() || null,
     } as any).eq("id", contract.id);
 
     let evErr: any = null;
     if (event?.id) {
       const { error } = await supabase.from("events").update({
         audience_size: evAudience || null,
-        theme: evTheme || null,
+        theme: evTheme.trim() || null,
       } as any).eq("id", event.id);
       evErr = error;
     }
