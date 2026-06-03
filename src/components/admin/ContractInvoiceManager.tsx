@@ -905,10 +905,20 @@ Nelly Sabde - Les Conférenciers`);
                 />
               </div>
             </div>
-            <Button className="w-full" onClick={handleSendContractEmail} disabled={sendingContract}>
-              <Send className="h-4 w-4 mr-2" />
-              {sendingContract ? "Envoi en cours…" : "Envoyer le contrat par email"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleSaveContractEmailDraft}
+                disabled={savingContractDraft || sendingContract}
+              >
+                {savingContractDraft ? "Enregistrement…" : "Enregistrer le brouillon"}
+              </Button>
+              <Button className="flex-1" onClick={handleSendContractEmail} disabled={sendingContract || savingContractDraft}>
+                <Send className="h-4 w-4 mr-2" />
+                {sendingContract ? "Envoi en cours…" : "Envoyer le contrat par email"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
