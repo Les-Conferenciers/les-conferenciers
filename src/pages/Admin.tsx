@@ -725,6 +725,10 @@ const AdminProposalsContent = () => {
   const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [expandedArchivedGroupId, setExpandedArchivedGroupId] = useState<string | null>(null);
+  const [linkDialog, setLinkDialog] = useState<{
+    candidate: { id: string; created_at: string; recipient_name: string | null; client_name: string };
+    andSend: boolean;
+  } | null>(null);
 
   useEffect(() => {
     Promise.all([
