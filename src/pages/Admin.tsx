@@ -2896,7 +2896,7 @@ const AdminProposalsContent = () => {
             {mode === "draft" && (
               <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Brouillon</span>
             )}
-            {mode === "sent" && p.status === "sent" && (
+            {mode === "sent" && p.status === "sent" && !isSuperseded && (
               <div className="space-y-1">
                 <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">En attente</span>
                 {!expired && <div className="text-[10px] text-muted-foreground">{remaining}j restants</div>}
