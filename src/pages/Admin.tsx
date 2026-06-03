@@ -2776,6 +2776,7 @@ const AdminProposalsContent = () => {
     const expired = isExpired(p.expires_at);
     const pipelineStatus = p.status === "accepted" ? getPipelineStatus(p) : null;
     const pipelineInfo = pipelineStatus ? getPipelineLabel(pipelineStatus) : null;
+    const isSuperseded = supersededIds.has(p.id);
 
     return (
       <React.Fragment key={p.id}>
