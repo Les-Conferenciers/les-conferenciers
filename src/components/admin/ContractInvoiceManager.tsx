@@ -56,6 +56,8 @@ type Contract = {
   discount_percent: number | null;
   deposit_required?: boolean | null;
   custom_clauses?: any;
+  email_subject?: string | null;
+  email_body?: string | null;
 };
 
 type Invoice = {
