@@ -1277,6 +1277,38 @@ const AdminProposalsContent = () => {
       toast.error("Sélectionnez un conférencier");
       return;
     }
+
+    // Détection automatique : si une proposition envoyée existe déjà pour cet email
+    // (et que l'utilisateur n'est pas déjà en mode "mise à jour"), proposer de la
+    // remplacer comme nouvelle version pour qu'elle bascule en archivée.
+    if (!updatingFromProposalId) {
+      const { data: candidates } = await supabase
+        .from("proposals")
+        .select("id, created_at, recipient_name, client_name, previous_proposal_id")
+        .eq("client_email", clientEmail)
+        .eq("status", "sent")
+        .order("created_at", { ascending: false });
+      const list = (candidates || []) as any[];
+      const successorOf = new Set(list.map((c) => c.previous_proposal_id).filter(Boolean));
+      const active = list.filter((c) => !successorOf.has(c.id));
+      if (active.length > 0) {
+        setLinkDialog({
+          candidate: {
+            id: active[0].id,
+            created_at: active[0].created_at,
+            recipient_name: active[0].recipient_name,
+            client_name: active[0].client_name,
+          },
+          andSend,
+        });
+        return;
+      }
+    }
+
+    await doCreate(andSend, updatingFromProposalId);
+  };
+
+  const doCreate = async (andSend: boolean, linkId: string | null) => {
     setSubmitting(true);
 
     // Auto-create or link client
@@ -1350,7 +1382,7 @@ const AdminProposalsContent = () => {
         event_date_text: eventDateText || null,
         audience_size: audienceSize || null,
         client_phone: clientPhone || null,
-        previous_proposal_id: updatingFromProposalId || null,
+        previous_proposal_id: linkId || null,
         internal_notes: internalNotes.trim() || null,
       } as any)
       .select()
@@ -1395,11 +1427,11 @@ const AdminProposalsContent = () => {
 
         // Mise à jour d'une proposition précédente : copier notes + supprimer tâches pending.
         // L'ancienne reste en statut "sent" et apparaît dans l'onglet Envoyées (regroupée par client).
-        if (updatingFromProposalId) {
+        if (linkId) {
           const { data: prevTasks } = await supabase
             .from("proposal_tasks")
             .select("task_type, note")
-            .eq("proposal_id", updatingFromProposalId);
+            .eq("proposal_id", linkId);
           const notesToCopy = (prevTasks || []).filter((t: any) => t.note && t.note.trim());
           if (notesToCopy.length > 0) {
             for (const t of notesToCopy as any[]) {
@@ -1414,7 +1446,7 @@ const AdminProposalsContent = () => {
           await supabase
             .from("proposal_tasks")
             .delete()
-            .eq("proposal_id", updatingFromProposalId)
+            .eq("proposal_id", linkId)
             .eq("status", "pending");
           // Archive l'ancienne : elle reste visible dans l'onglet Envoyées (groupée) mais toute action est verrouillée.
           await supabase
@@ -1424,10 +1456,10 @@ const AdminProposalsContent = () => {
               lost_reason: "[Mise à jour] Remplacée par une nouvelle proposition",
               lost_at: new Date().toISOString(),
             } as any)
-            .eq("id", updatingFromProposalId);
+            .eq("id", linkId);
         }
         toast.success(
-          updatingFromProposalId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !",
+          linkId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !",
         );
       } catch {
         toast.error("Proposition créée mais erreur d'envoi");
@@ -1442,6 +1474,7 @@ const AdminProposalsContent = () => {
     fetchTasks();
     setSubmitting(false);
   };
+
 
   const resetForm = () => {
     setClientName("");
