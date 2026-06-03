@@ -1,38 +1,41 @@
-## Constat
+## 1. Champs « Lieu » et « Horaires » trop courts (édition du contrat)
 
-- Baugeois v1 (envoyée le 01/06) a `status = 'sent'` en base, alors qu'elle est remplacée par la v2 (créée le 03/06, `previous_proposal_id` pointant sur v1).
-- Davido Consulting fonctionne correctement parce que toutes les anciennes versions ont `status = 'archived'`.
-- Dans `src/pages/Admin.tsx` (lignes 3026–3082), les boutons **Relances**, **Accepter**, **Mettre à jour** et **Archiver** sont gatés uniquement par `p.status === "sent"` / `p.status !== "archived"`. Ils ignorent le fait que la proposition soit déjà remplacée par une version plus récente.
-- L'archivage automatique de l'ancienne version ne se déclenche que dans la branche "créer + envoyer" (ligne 1394 de `Admin.tsx`). Si la v2 a été créée comme brouillon puis envoyée séparément (ou si la mise à jour de la v1 a échoué silencieusement), la v1 reste `sent` → tous les boutons d'action restent actifs, comme sur la capture.
+`src/pages/ContractView.tsx` lignes 296–306 : les `<input>` ont `min-w-[260px]` / `min-w-[200px]`, insuffisant pour une adresse complète ou un horaire détaillé.
 
-`supersededIds` est déjà calculé (ligne 1110) et utilisé pour regrouper l'affichage, mais pas pour verrouiller les actions.
+→ Élargir : `w-full max-w-[640px]` pour le lieu, `w-full max-w-[420px]` pour les horaires (toujours dans la même ligne, mais largeur fluide jusqu'à la marge du conteneur).
 
-## Modifications
+## 2. Thématique et Détails uniquement s'ils sont renseignés (édition incluse)
 
-**1. `src/pages/Admin.tsx` — verrouiller toute version remplacée (frontend, durable)**
+Toujours `ContractView.tsx`, lignes 315–330. Aujourd'hui en mode édition ces deux champs sont toujours visibles ; on veut qu'ils n'apparaissent **que** s'ils contiennent quelque chose.
 
-Dans `renderProposalRow`, calculer `isSuperseded = supersededIds.has(p.id)` (passer le Set en paramètre ou y accéder via la closure existante) et :
+→ Modifier :
+- Retirer la condition `editing ||` : n'afficher la ligne « Thématique » que si `event?.theme` a une valeur ; idem « Détails » uniquement si `contract.event_description` a une valeur.
+- En mode édition, ajouter deux petits boutons « + Ajouter thématique » / « + Ajouter détails » sous le bloc, visibles uniquement quand le champ correspondant est vide. Cliquer place une chaîne vide initiale dans le state local (et donc fait apparaître l'input correspondant).
+- Le rendu non-édition est déjà conforme : aucun changement visible côté client final.
 
-- Remplacer les conditions `mode === "sent" && p.status === "sent"` aux lignes 3026 et 3067 par `mode === "sent" && p.status === "sent" && !isSuperseded` → masque **Relances**, **Accepter**, **Mettre à jour**.
-- Remplacer `p.status !== "archived"` ligne 3078 par `p.status !== "archived" && !isSuperseded` → masque **Archiver**.
-- Étendre le badge "Archivée vX" (ligne 2934) pour qu'il s'affiche aussi quand `isSuperseded` (et pas seulement `status === "archived"`), en utilisant un libellé "Remplacée vX" si la version n'est pas encore archivée — ainsi l'utilisateur comprend pourquoi les actions ont disparu.
+## 3. Enregistrer le mail du contrat sans l'envoyer
 
-**2. Correctif de données — archiver Baugeois v1**
+Aujourd'hui (`ContractInvoiceManager.tsx`, dialog lignes 848–887) : un seul bouton « Envoyer le contrat par email ». Objet et corps ne sont jamais persistés — toute modification est perdue à la fermeture du dialog.
 
-Mettre à jour la ligne `32fb5cec-3d3a-422f-a01d-166e20c5f504` :
-```sql
-UPDATE proposals
-SET status = 'archived',
-    lost_at = now(),
-    lost_reason = '[Mise à jour] Remplacée par une nouvelle proposition'
-WHERE id = '32fb5cec-3d3a-422f-a01d-166e20c5f504';
-```
-Et supprimer ses éventuelles `proposal_tasks` `pending` pour ne plus la voir dans l'agenda :
-```sql
-DELETE FROM proposal_tasks WHERE proposal_id = '32fb5cec-3d3a-422f-a01d-166e20c5f504' AND status = 'pending';
-```
+### Schéma DB
+
+Migration : ajouter deux colonnes optionnelles sur `contracts` :
+- `email_subject text`
+- `email_body text`
+
+### UI
+
+Dans le dialog « Envoyer le contrat » :
+- À l'ouverture (`openContractEmail`) : si `contract.email_subject` / `contract.email_body` existent, les pré-remplir avec ces valeurs ; sinon utiliser les valeurs par défaut générées actuellement.
+- Ajouter un bouton secondaire **« Enregistrer le brouillon »** à gauche du bouton d'envoi. Il fait `update contracts set email_subject, email_body where id=...`, affiche un toast « Brouillon enregistré » et ferme le dialog **sans changer `status`** (le contrat reste `draft` ou son statut courant).
+- Le bouton « Envoyer le contrat par email » continue de fonctionner comme aujourd'hui (envoi + passage à `status='sent'`), en sauvegardant aussi les valeurs courantes des champs en base avant l'invocation de l'edge function, pour que la prochaine ouverture retrouve le dernier état.
+
+### Types
+
+Mettre à jour le type local `ContractRow` dans `ContractInvoiceManager.tsx` (lignes ~40–60) pour inclure les deux nouveaux champs ; les types Supabase régénérés couvriront le reste.
 
 ## Hors scope
 
-- Pas de modification de la branche "création + envoi" (elle archive déjà correctement la version précédente).
-- Pas de refonte du flow "brouillon puis envoi" : le gating frontend par `isSuperseded` suffit à éviter tout futur cas similaire, même si l'archivage automatique a été contourné.
+- Pas de modification de l'edge function `send-contract-email` : elle reçoit déjà `email_subject` et `email_body` dans le body.
+- Pas de changement du flow d'invoice / facture.
+- Pas de modification de la page `SpeakerContractView` (contrat conférencier).

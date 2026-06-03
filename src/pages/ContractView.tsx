@@ -151,14 +151,14 @@ const ContractView = () => {
       event_location: evLocation || null,
       event_time: evTime || null,
       event_format: evFormat || null,
-      event_description: evDescription || null,
+      event_description: evDescription.trim() || null,
     } as any).eq("id", contract.id);
 
     let evErr: any = null;
     if (event?.id) {
       const { error } = await supabase.from("events").update({
         audience_size: evAudience || null,
-        theme: evTheme || null,
+        theme: evTheme.trim() || null,
       } as any).eq("id", event.id);
       evErr = error;
     }
@@ -295,13 +295,13 @@ const ContractView = () => {
             <p>
               <span className="text-gray-600">Lieu de l'intervention :</span>{" "}
               {editing
-                ? <input type="text" value={evLocation} onChange={e => setEvLocation(e.target.value)} className={inputCls + " min-w-[260px]"} />
+                ? <input type="text" value={evLocation} onChange={e => setEvLocation(e.target.value)} className={inputCls + " w-full max-w-[640px]"} />
                 : (contract.event_location || "À définir")}
             </p>
             <p>
               <span className="text-gray-600">Horaires de l'intervention :</span>{" "}
               {editing
-                ? <input type="text" value={evTime} onChange={e => setEvTime(e.target.value)} className={inputCls + " min-w-[200px]"} />
+                ? <input type="text" value={evTime} onChange={e => setEvTime(e.target.value)} className={inputCls + " w-full max-w-[420px]"} />
                 : (contract.event_time || "À définir")}
             </p>
             {(editing || displayAudience) && (
@@ -312,20 +312,34 @@ const ContractView = () => {
                   : `${displayAudience} personnes attendues`}
               </p>
             )}
-            {(editing || event?.theme) && (
+            {(editing ? evTheme.length > 0 : !!event?.theme) && (
               <p>
                 <span className="text-gray-600">Thématique :</span>{" "}
                 {editing
-                  ? <input type="text" value={evTheme} onChange={e => setEvTheme(e.target.value)} className={inputCls + " min-w-[260px]"} />
+                  ? <input type="text" value={evTheme} onChange={e => setEvTheme(e.target.value)} className={inputCls + " w-full max-w-[640px]"} autoFocus />
                   : event?.theme}
               </p>
             )}
-            {(editing || contract.event_description) && (
+            {(editing ? evDescription.length > 0 : !!contract.event_description) && (
               <div>
                 <span className="text-gray-600">Détails :</span>{" "}
                 {editing
-                  ? <textarea value={evDescription} onChange={e => setEvDescription(e.target.value)} rows={3} className={"block w-full mt-1 " + inputCls} />
+                  ? <textarea value={evDescription} onChange={e => setEvDescription(e.target.value)} rows={3} className={"block w-full mt-1 " + inputCls} autoFocus />
                   : <span className="whitespace-pre-line">{contract.event_description}</span>}
+              </div>
+            )}
+            {editing && (evTheme.length === 0 || evDescription.length === 0) && (
+              <div className="flex gap-2 pt-2">
+                {evTheme.length === 0 && (
+                  <button type="button" onClick={() => setEvTheme(" ")} className="text-xs px-2 py-1 border border-dashed border-gray-400 rounded hover:bg-gray-50 text-gray-600">
+                    + Ajouter une thématique
+                  </button>
+                )}
+                {evDescription.length === 0 && (
+                  <button type="button" onClick={() => setEvDescription(" ")} className="text-xs px-2 py-1 border border-dashed border-gray-400 rounded hover:bg-gray-50 text-gray-600">
+                    + Ajouter des détails
+                  </button>
+                )}
               </div>
             )}
           </div>
