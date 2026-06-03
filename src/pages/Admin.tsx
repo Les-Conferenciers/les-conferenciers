@@ -2973,16 +2973,19 @@ const AdminProposalsContent = () => {
                   <Eye className="h-4 w-4" />
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
-
-                {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="sm" asChild title="Voir en ligne">
-                <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-              {p.status !== "draft" && (p as any).proposal_type !== "info" && (
+              {!isSuperseded && (
+                <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
+                  {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              )}
+              {!isSuperseded && (
+                <Button variant="ghost" size="sm" asChild title="Voir en ligne">
+                  <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+              {!isSuperseded && p.status !== "draft" && (p as any).proposal_type !== "info" && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -2997,7 +3000,7 @@ const AdminProposalsContent = () => {
                   <FileText className="h-4 w-4" />
                 </Button>
               )}
-              {(mode === "draft" || (mode === "sent" && p.status === "sent")) && (
+              {!isSuperseded && (mode === "draft" || (mode === "sent" && p.status === "sent")) && (
                 <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)} title="Éditer">
                   <Pencil className="h-4 w-4" />
                 </Button>
