@@ -329,8 +329,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     const dateStr = contract.event_date
       ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
       : "à définir";
-    setContractEmailSubject(`Contrat de prestation — ${proposal.client_name} — Les Conférenciers`);
-    setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+    const defaultSubject = `Contrat de prestation — ${proposal.client_name} — Les Conférenciers`;
+    const defaultBody = `Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
 Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l’intervention de ${speakerSummary}
 
@@ -346,14 +346,38 @@ N’hésitez pas à me contacter si vous avez la moindre question, je reste à v
 Dans l’attente de votre retour, je vous souhaite une très belle journée.
 
 Bien cordialement,
-Nelly Sabde - Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`;
+    setContractEmailSubject(contract.email_subject || defaultSubject);
+    setContractEmailBody(contract.email_body || defaultBody);
     setContractEmailOpen(true);
+  };
+
+  const handleSaveContractEmailDraft = async () => {
+    if (!contract) return;
+    setSavingContractDraft(true);
+    const { error } = await supabase
+      .from("contracts")
+      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+      .eq("id", contract.id);
+    if (error) {
+      toast.error("Erreur d'enregistrement");
+    } else {
+      toast.success("Brouillon enregistré");
+      setContractEmailOpen(false);
+      fetchData();
+    }
+    setSavingContractDraft(false);
   };
 
   const handleSendContractEmail = async () => {
     if (!contract) return;
     setSendingContract(true);
     try {
+      // Persist current draft before sending so the next open reflects last state
+      await supabase
+        .from("contracts")
+        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+        .eq("id", contract.id);
       const { error } = await supabase.functions.invoke("send-contract-email", {
         body: {
           contract_id: contract.id,
