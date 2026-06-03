@@ -2940,7 +2940,7 @@ const AdminProposalsContent = () => {
                 v++;
                 cur = byId.get(cur.previous_proposal_id);
               }
-              const label = p.status === "archived" ? "Archivée" : "Remplacée";
+              const label = "Archivée";
               return (
                 <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
                   {label}{v > 1 ? ` v${v}` : ""}
