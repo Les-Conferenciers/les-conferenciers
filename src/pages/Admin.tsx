@@ -2963,7 +2963,7 @@ const AdminProposalsContent = () => {
                   {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
               )}
-              {mode === "sent" && p.status === "archived" && (
+              {mode === "sent" && (p.status === "archived" || isSuperseded) && (
                 <Button
                   variant="ghost"
                   size="sm"
