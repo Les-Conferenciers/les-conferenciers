@@ -4333,7 +4333,54 @@ const AdminProposalsContent = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog : proposition existante détectée pour ce client */}
+      <Dialog open={!!linkDialog} onOpenChange={(o) => !o && setLinkDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Proposition existante détectée</DialogTitle>
+            <DialogDescription>
+              Une proposition envoyée existe déjà pour <strong>{clientEmail}</strong>
+              {linkDialog?.candidate.recipient_name ? ` (destinataire : ${linkDialog.candidate.recipient_name})` : ""}
+              , créée le{" "}
+              {linkDialog?.candidate.created_at
+                ? new Date(linkDialog.candidate.created_at).toLocaleDateString("fr-FR")
+                : ""}
+              .
+              <br />
+              <br />
+              Voulez-vous créer une nouvelle version qui remplacera l'ancienne (archivée
+              automatiquement) ?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              onClick={() => {
+                const d = linkDialog;
+                setLinkDialog(null);
+                if (d) doCreate(d.andSend, d.candidate.id);
+              }}
+            >
+              Oui, nouvelle version
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const d = linkDialog;
+                setLinkDialog(null);
+                if (d) doCreate(d.andSend, null);
+              }}
+            >
+              Non, proposition indépendante
+            </Button>
+            <Button variant="ghost" onClick={() => setLinkDialog(null)}>
+              Annuler
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
 
