@@ -3077,7 +3077,7 @@ const AdminProposalsContent = () => {
                   <RefreshCw className="h-3 w-3" /> Mettre à jour
                 </Button>
               )}
-              {mode !== "completed" && p.status !== "archived" && (
+              {mode !== "completed" && p.status !== "archived" && !isSuperseded && (
                 <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver">
                   <Archive className="h-4 w-4 text-muted-foreground" />
                 </Button>
