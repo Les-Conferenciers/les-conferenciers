@@ -157,6 +157,54 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          available_variables: Json
+          body_html: string
+          category: string
+          created_at: string
+          default_body_html: string
+          default_subject: string
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          subject: string
+          trigger_description: string
+          updated_at: string
+        }
+        Insert: {
+          available_variables?: Json
+          body_html?: string
+          category: string
+          created_at?: string
+          default_body_html?: string
+          default_subject?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          subject?: string
+          trigger_description: string
+          updated_at?: string
+        }
+        Update: {
+          available_variables?: Json
+          body_html?: string
+          category?: string
+          created_at?: string
+          default_body_html?: string
+          default_subject?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          subject?: string
+          trigger_description?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           arrival_info: string | null

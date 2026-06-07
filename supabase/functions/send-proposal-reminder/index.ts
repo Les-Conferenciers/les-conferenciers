@@ -87,12 +87,43 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
-    // Use custom subject/body if provided, otherwise use defaults
+    // Variable rendering helper (Mustache-lite)
+    const render = (tpl: string, vars: Record<string, string>) =>
+      tpl.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : ""));
+
+    const speakerName = (proposal.proposal_speakers || [])?.[0]?.speakers?.name || "l'intervenant";
+    const templateVars: Record<string, string> = {
+      prenom_destinataire: recipientFirstName,
+      nom_destinataire: proposal.recipient_name || "",
+      nom_client: proposal.client_name || "",
+      conferencier: speakerName,
+      numero_relance: String(reminderNum),
+      agent_nom: "Nelly Sabde",
+      agent_telephone: "06 95 93 97 91",
+      agent_email: "nellysabde@lesconferenciers.com",
+    };
+
+    // Load template from email_templates table (with fallback to hardcoded text)
+    const templateKey =
+      proposalType === "info"
+        ? "proposal_reminder_info"
+        : proposalType === "unique"
+          ? (reminderNum === 1 ? "proposal_reminder_1_unique" : "proposal_reminder_2_unique")
+          : (reminderNum === 1 ? "proposal_reminder_1_classic" : "proposal_reminder_2_classic");
+
+    const { data: tplRow } = await adminClient
+      .from("email_templates")
+      .select("subject, body_html, is_active")
+      .eq("key", templateKey)
+      .maybeSingle();
+
     let emailSubject: string;
     let bodyHtml: string;
 
     if (custom_subject) {
       emailSubject = custom_subject;
+    } else if (tplRow?.is_active && tplRow.subject) {
+      emailSubject = render(tplRow.subject, templateVars);
     } else {
       emailSubject = reminderNum === 1
         ? `Votre sélection de conférenciers - ${proposal.client_name}`
@@ -100,28 +131,24 @@ Deno.serve(async (req) => {
     }
 
     if (custom_html_body) {
-      // Use the custom HTML body directly
       bodyHtml = custom_html_body;
+    } else if (tplRow?.is_active && tplRow.body_html) {
+      const rendered = render(tplRow.body_html, templateVars);
+      // If the template is plain text (no HTML tags), wrap in styled div
+      bodyHtml = /<\/?[a-z][\s\S]*>/i.test(rendered)
+        ? `<div style="color:#333;font-size:14px;line-height:1.7;">${rendered}</div>`
+        : `<div style="color:#333;font-size:14px;line-height:1.7;white-space:pre-wrap;">${rendered.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
     } else {
-      // Default templates per type
-      const speakerName = (proposal.proposal_speakers || [])?.[0]?.speakers?.name || "l'intervenant";
+      // Hardcoded fallback (legacy)
       let messageText: string;
-
       if (proposalType === "unique") {
-        if (reminderNum === 1) {
-          messageText = `Bonjour,\n\nJ'espère que vous allez bien ! 🙂\n\nJe me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants.\n\nJe souhaitais savoir si le profil de ${speakerName} avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.\n\nJe reste bien évidemment à votre disposition si besoin est.\n\nDans l'attente de votre retour.\n\nTrès belle fin de journée à vous.`;
-        } else {
-          messageText = `Bonjour,\n\nJe reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants. 🙂\n\nJe souhaitais savoir si l'intervention de ${speakerName} était toujours d'actualité.\n\nJe reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.\n\nDans l'attente de votre retour, je vous souhaite une très belle fin de journée.\n\nBien à vous,`;
-        }
+        messageText = reminderNum === 1
+          ? `Bonjour,\n\nJe me permets de revenir vers vous concernant ${speakerName}.`
+          : `Bonjour,\n\nJe reviens vers vous concernant ${speakerName}.`;
       } else if (proposalType === "info") {
-        messageText = `Bonjour,\n\nJe reviens vers vous suite à mon précédent mail.\n\nAvez-vous pu en prendre connaissance ?\n\nVotre recherche d'intervenant est-elle toujours d'actualité ?\n\nVous remerciant par avance de votre retour et restant à votre écoute, je vous souhaite une excellente journée.`;
+        messageText = `Bonjour,\n\nJe reviens vers vous suite à mon précédent mail.`;
       } else {
-        // classique
-        if (reminderNum === 1) {
-          messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJ'espère que vous allez bien !\n\nJe me permets de revenir vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂\n\nJe souhaitais savoir si un des profils avait retenu particulièrement votre attention ou si vous souhaitiez éventuellement que nous continuions les recherches.\n\nJe reste bien évidemment à votre disposition si besoin est.\n\nDans l'attente de votre retour.\n\nTrès belle fin de journée à vous.`;
-        } else {
-          messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJe reviens vers vous suite à nos précédents échanges concernant votre recherche d'intervenants 🙂\n\nJe souhaitais savoir si vous aviez pu avancer dans votre réflexion quant au choix de l'intervenant qui correspondrait le mieux à vos besoins.\n\nJe reste bien entendu à votre entière disposition pour échanger ou répondre à vos questions.\n\nDans l'attente de votre retour, je vous souhaite une très belle fin de journée.`;
-        }
+        messageText = `Bonjour${recipientFirstName ? ` ${recipientFirstName}` : ""},\n\nJe reviens vers vous concernant votre recherche d'intervenants.`;
       }
       bodyHtml = `<div style="color:#333;font-size:14px;line-height:1.7;white-space:pre-wrap;">${messageText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
     }
