@@ -205,6 +205,14 @@ const getDefaultEmailBody = (
   eventContext?: string,
   _templateName?: string,
 ) => {
+  const tpl = renderTpl("proposal_classic", {
+    prenom_destinataire: firstName(recipientName),
+    nom_destinataire: recipientName,
+    nom_client: clientName,
+    event_context: eventContext || "",
+    ...AGENT_VARS,
+  });
+  if (tpl?.body) return tpl.body;
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
