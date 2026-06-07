@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
+import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
 
 type Proposal = {
   id: string;
