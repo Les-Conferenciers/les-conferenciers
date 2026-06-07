@@ -341,7 +341,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       date_evenement: dateStr,
       lieu_evenement: contract.event_location || "à définir",
       montant_ttc: totals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 }),
-      numero_bdc: contract.bdc_number || "",
+      numero_bdc: (contract as any).bdc_number || "",
       agent_nom: "Nelly Sabde",
       agent_telephone: "06 95 93 97 91",
     });
