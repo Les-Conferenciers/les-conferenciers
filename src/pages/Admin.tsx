@@ -160,7 +160,7 @@ import {
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 import { renderTpl } from "@/lib/emailTemplates";
-import { EmailPreviewCard, toEmailBodyHtml as toEmailBodyHtmlShared } from "@/components/admin/EmailPreviewCard";
+import { EmailPreviewCard } from "@/components/admin/EmailPreviewCard";
 
 
 const AGENT_VARS = {
@@ -578,12 +578,8 @@ const getProposalSpeakerTotal = (
 ) =>
   speaker?.total_price ??
   (speaker?.speaker_fee || 0) + (speaker?.travel_costs || 0) + (speaker?.agency_commission || 0);
-const toEmailBodyHtml = (value: string) => {
-  if (!value?.trim()) return "";
-  if (hasHtmlContent(value)) return value;
+// toEmailBodyHtml now lives in @/components/admin/EmailPreviewCard (shared)
 
-  return escapeEmailHtml(value).replace(/\n/g, "<br>");
-};
 
 const getResolvedEmailSubject = (type: ProposalType, subject: string, clientName: string) => {
   if (subject?.trim()) return subject;
