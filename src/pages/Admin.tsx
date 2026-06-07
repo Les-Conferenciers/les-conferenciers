@@ -156,6 +156,15 @@ import {
 } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
+import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
+
+const AGENT_VARS = {
+  agent_nom: "Nelly Sabde",
+  agent_telephone: "06 95 93 97 91",
+  agent_email: "nellysabde@lesconferenciers.com",
+};
+
+const firstName = (s?: string) => (s ? s.split(" ")[0] : "");
 
 const getDefaultMessage = (recipientName: string, clientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-joint un fichier PDF présentant une sélection de conférenciers, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers`;
