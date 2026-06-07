@@ -635,94 +635,9 @@ const getResolvedEmailBody = ({
   return getDefaultEmailBody(recipientName, clientName, eventContext);
 };
 
-const EmailPreviewCard = ({
-  to,
-  subject,
-  body,
-  showProposalButton,
-}: {
-  to: string;
-  subject: string;
-  body: string;
-  showProposalButton: boolean;
-}) => {
-  const bodyHtml = toEmailBodyHtml(body);
+// EmailPreviewCard is imported from "@/components/admin/EmailPreviewCard"
+// (source unique de vérité pour l'aperçu des emails, partagé avec l'onglet Emails).
 
-  return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      <div className="bg-muted px-4 py-2 text-xs text-muted-foreground space-y-1">
-        <p>
-          <strong>De :</strong> Les Conférenciers &lt;nellysabde@lesconferenciers.com&gt;
-        </p>
-        <p>
-          <strong>À :</strong> {to || "-"}
-        </p>
-        <p>
-          <strong>Objet :</strong> {subject || "-"}
-        </p>
-      </div>
-      <div className="bg-white">
-        <div style={{ background: "#1a2332", padding: "20px 30px", textAlign: "center" }}>
-          <span style={{ color: "#f5f0e8", fontSize: "20px", fontWeight: "bold", fontFamily: "Georgia, serif" }}>
-            Agence Les Conférenciers
-          </span>
-        </div>
-        <div style={{ padding: "30px 30px 20px" }}>
-          <div
-            style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }}
-            className="[&_p]:mt-0 [&_p]:mb-4 [&_p:last-child]:mb-0"
-            dangerouslySetInnerHTML={{ __html: bodyHtml }}
-          />
-          {showProposalButton && (
-            <>
-              <div style={{ textAlign: "center", margin: "30px 0" }}>
-                <span
-                  style={{
-                    display: "inline-block",
-                    background: "#1a2332",
-                    color: "#f5f0e8",
-                    padding: "14px 32px",
-                    borderRadius: "8px",
-                    fontSize: "15px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Consulter la proposition complète
-                </span>
-              </div>
-              <div
-                style={{
-                  background: "#f0f7ff",
-                  border: "1px solid #d0e3f7",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  margin: "20px 0",
-                }}
-              >
-                <p style={{ color: "#1a5276", fontSize: "13px", margin: 0, textAlign: "center" }}>
-                  📅 Cette proposition est <strong>valable 90 jours</strong>. Vous pouvez y revenir autant de fois que
-                  vous le souhaitez et <strong>y répondre directement en ligne</strong>.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-        <div style={{ padding: "0 30px 30px" }}>
-          <img
-            src="https://www.lesconferenciers.com/images/les-conferenciers-signature.png"
-            alt="Nelly SABDE | Agence Les Conférenciers"
-            style={{ width: "100%", maxWidth: "500px", display: "block" }}
-          />
-        </div>
-        <div style={{ background: "#1a2332", padding: "16px", textAlign: "center" }}>
-          <p style={{ color: "#f5f0e8", opacity: 0.5, fontSize: "11px", margin: 0 }}>
-            Proposition confidentielle - Les Conférenciers
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const AdminProposalsContent = () => {
   const [, setSearchParams] = useSearchParams();
