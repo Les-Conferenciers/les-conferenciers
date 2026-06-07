@@ -28,6 +28,8 @@ const Admin = () => {
         return;
       }
       setAuthed(true);
+      // Charge les templates email pour le pré-remplissage des compositions
+      loadEmailTemplates().catch(() => {});
     };
     check();
   }, []);
