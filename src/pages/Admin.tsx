@@ -3,12 +3,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Users, Mic, Building2, FileText as FileTextIcon, ClipboardCheck } from "lucide-react";
+import { LogOut, Users, Mic, Building2, FileText as FileTextIcon, ClipboardCheck, Mail } from "lucide-react";
 import nugget from "@/assets/nugget.png";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
 import AdminClients from "@/components/admin/AdminClients";
 import AdminEventDossiers from "@/components/admin/AdminEventDossiers";
+import AdminEmailTemplates from "@/components/admin/AdminEmailTemplates";
 
 const Admin = () => {
   const navigate = useNavigate();
