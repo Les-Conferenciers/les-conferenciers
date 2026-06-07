@@ -79,6 +79,9 @@ const Admin = () => {
             <TabsTrigger value="leads" className="gap-2">
               <Users className="h-4 w-4" /> Leads
             </TabsTrigger>
+            <TabsTrigger value="emails" className="gap-2">
+              <MailIcon className="h-4 w-4" /> Emails
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="speakers">
