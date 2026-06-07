@@ -10,6 +10,7 @@ import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
 import AdminClients from "@/components/admin/AdminClients";
 import AdminEventDossiers from "@/components/admin/AdminEventDossiers";
 import AdminEmailTemplates from "@/components/admin/AdminEmailTemplates";
+import { loadEmailTemplates } from "@/lib/emailTemplates";
 
 const Admin = () => {
   const navigate = useNavigate();
