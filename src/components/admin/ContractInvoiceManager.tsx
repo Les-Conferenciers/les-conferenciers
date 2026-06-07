@@ -476,11 +476,24 @@ Nelly Sabde - Les Conférenciers`;
     fetchData();
   };
 
-  const openInvoiceEmail = (inv: Invoice) => {
+  const openInvoiceEmail = async (inv: Invoice) => {
+    await loadEmailTemplates();
     setEmailInvoice(inv);
     const typeLabel = inv.invoice_type === "acompte" ? "d'acompte" : inv.invoice_type === "solde" ? "de solde" : "";
-    setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} — ${proposal.client_name}`);
-    setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+    const recipientFirst = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
+    const tpl = renderTpl("invoice_to_client", {
+      prenom_destinataire: recipientFirst,
+      nom_client: proposal.client_name,
+      conferencier: speakerSummary,
+      numero_facture: inv.invoice_number,
+      montant_ht: inv.amount_ht.toLocaleString("fr-FR"),
+      montant_ttc: inv.amount_ttc.toLocaleString("fr-FR"),
+      tva_rate: String(inv.tva_rate),
+      echeance: inv.due_date ? new Date(inv.due_date).toLocaleDateString("fr-FR") : "",
+      agent_nom: "Nelly Sabde",
+    });
+    setInvoiceEmailSubject(tpl?.subject || `Facture ${typeLabel} ${inv.invoice_number} — ${proposal.client_name}`);
+    setInvoiceEmailBody(tpl?.body || `Bonjour${recipientFirst ? ` ${recipientFirst}` : ""},
 
 Veuillez trouver ci-dessous votre facture ${typeLabel} pour la prestation de conférence.
 
