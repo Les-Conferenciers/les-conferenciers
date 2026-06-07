@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { Eye, RotateCcw, Save, Mail } from "lucide-react";
+import { EmailPreviewCard, previewSettingsForTemplateKey } from "@/components/admin/EmailPreviewCard";
+
 
 type Variable = { key: string; label: string; example: string };
 type Template = {
@@ -255,28 +257,36 @@ export default function AdminEmailTemplates() {
       </div>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Aperçu — {selected?.name}</DialogTitle>
+            <DialogTitle>Aperçu réel — {selected?.name}</DialogTitle>
           </DialogHeader>
-          {selected && (
-            <div className="space-y-3">
-              <div className="text-xs text-muted-foreground">
-                Valeurs d'exemple appliquées aux variables.
+          {selected && (() => {
+            const settings = previewSettingsForTemplateKey(selected.key);
+            const recipientExample =
+              exampleVars.email ||
+              exampleVars.email_client ||
+              "destinataire@example.com";
+            return (
+              <div className="space-y-3">
+                <div className="text-xs text-muted-foreground">
+                  Aperçu rendu avec des valeurs d'exemple pour les variables. C'est exactement la
+                  mise en forme reçue par le destinataire.
+                </div>
+                <EmailPreviewCard
+                  to={recipientExample}
+                  subject={renderTemplateString(subject, exampleVars)}
+                  body={renderTemplateString(body, exampleVars)}
+                  variant={settings.variant}
+                  showProposalButton={settings.showProposalButton}
+                  ctaLabel={settings.ctaLabel}
+                />
               </div>
-              <div className="border border-border rounded p-3 bg-muted/30">
-                <div className="text-xs text-muted-foreground mb-1">Sujet</div>
-                <div className="font-medium">{renderTemplateString(subject, exampleVars)}</div>
-              </div>
-              <div
-                className="border border-border rounded p-4 bg-white text-sm leading-relaxed"
-                style={{ whiteSpace: /<\/?[a-z]/i.test(body) ? "normal" : "pre-wrap" }}
-                dangerouslySetInnerHTML={{ __html: renderTemplateString(body, exampleVars) }}
-              />
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+
