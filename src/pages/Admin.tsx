@@ -242,7 +242,22 @@ const getFollowUpEmailBody = (
   clientName: string,
   eventContext?: string,
   _templateName?: string,
+  eventDateText?: string,
+  eventLocation?: string,
+  audienceSize?: string,
 ) => {
+  const formattedDate = formatFrenchEventDate(eventDateText) || eventDateText || "";
+  const tpl = renderTpl("proposal_update", {
+    prenom_destinataire: firstName(recipientName),
+    nom_destinataire: recipientName,
+    nom_client: clientName,
+    event_context: eventContext || "",
+    date_evenement: formattedDate,
+    lieu_evenement: eventLocation || "",
+    auditoire: audienceSize || "",
+    ...AGENT_VARS,
+  });
+  if (tpl?.body) return tpl.body;
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Suite à notre récent échange, je suis ravie de vous adresser une <strong>nouvelle sélection de conférenciers</strong> qui, je l'espère, correspondra davantage à vos attentes.</p>
@@ -263,6 +278,7 @@ ${
 
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 };
+
 
 const formatFrenchEventDate = (text?: string): string => {
   if (!text) return "";
@@ -1583,7 +1599,7 @@ const AdminProposalsContent = () => {
     );
     setMessage(getFollowUpMessage(rName, cName));
     setEmailSubject(getFollowUpEmailSubject(cName));
-    setEmailBody(getFollowUpEmailBody(rName, cName, ctx));
+    setEmailBody(getFollowUpEmailBody(rName, cName, ctx, undefined, dateFmt, (latest as any).event_location || "", (latest as any).audience_size || ""));
     // Reporter les notes internes de la version précédente (avec fallback sur la note de relance_1)
     (async () => {
       const previousNotes = ((latest as any).internal_notes || "").trim();
