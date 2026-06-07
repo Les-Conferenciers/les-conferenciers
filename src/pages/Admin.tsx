@@ -160,6 +160,8 @@ import {
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
 import { renderTpl } from "@/lib/emailTemplates";
+import { EmailPreviewCard, toEmailBodyHtml as toEmailBodyHtmlShared } from "@/components/admin/EmailPreviewCard";
+
 
 const AGENT_VARS = {
   agent_nom: "Nelly Sabde",
