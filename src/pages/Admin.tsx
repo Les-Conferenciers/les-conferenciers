@@ -172,8 +172,11 @@ const getDefaultMessage = (recipientName: string, clientName: string) =>
 const getFollowUpMessage = (recipientName: string, clientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à notre récent échange, je suis ravie de vous adresser une nouvelle sélection de conférenciers qui, je l'espère, correspondra davantage à vos attentes.\n\nVous trouverez ci-joint un fichier PDF présentant cette nouvelle sélection, sous réserve de la disponibilité des intervenants.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers`;
 
-const getDefaultEmailSubject = (clientName: string) =>
-  `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
+const getDefaultEmailSubject = (clientName: string) => {
+  const tpl = renderTpl("proposal_classic", { nom_client: clientName });
+  if (tpl?.subject) return tpl.subject;
+  return `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
+};
 
 const getFollowUpEmailSubject = (clientName: string) =>
   `Votre nouvelle sélection de conférenciers - ${clientName || "Les Conférenciers"}`;
