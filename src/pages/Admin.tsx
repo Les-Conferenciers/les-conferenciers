@@ -103,6 +103,10 @@ const Admin = () => {
           <TabsContent value="leads">
             <AdminLeads />
           </TabsContent>
+
+          <TabsContent value="emails">
+            <AdminEmailTemplates />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
