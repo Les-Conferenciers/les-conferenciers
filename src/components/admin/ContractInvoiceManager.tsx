@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
+import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
 
 type Proposal = {
   id: string;
@@ -322,18 +323,32 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     setSaving(false);
   };
 
-  const openContractEmail = () => {
+  const openContractEmail = async () => {
     if (!contract) return;
+    await loadEmailTemplates();
     const lines = getEffectiveLines();
     const disc = contract.discount_percent || 0;
     const totals = computeTotals(lines, disc);
     const dateStr = contract.event_date
       ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
       : "à définir";
-    const defaultSubject = `Contrat de prestation — ${proposal.client_name} — Les Conférenciers`;
-    const defaultBody = `Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+    const recipientFirst = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
+    const tpl = renderTpl("contract_to_client", {
+      prenom_destinataire: recipientFirst,
+      nom_destinataire: proposal.recipient_name || "",
+      nom_client: proposal.client_name,
+      conferencier: speakerSummary,
+      date_evenement: dateStr,
+      lieu_evenement: contract.event_location || "à définir",
+      montant_ttc: totals.totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 }),
+      numero_bdc: (contract as any).bdc_number || "",
+      agent_nom: "Nelly Sabde",
+      agent_telephone: "06 95 93 97 91",
+    });
+    const defaultSubject = tpl?.subject || `Contrat de prestation — ${proposal.client_name} — Les Conférenciers`;
+    const defaultBody = tpl?.body || `Bonjour${recipientFirst ? ` ${recipientFirst}` : ""},
 
-Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l’intervention de ${speakerSummary}
+Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l'intervention de ${speakerSummary}
 
 📋 Voici un petit récapitulatif :
 • Conférencier(s) : ${speakerSummary}
@@ -343,8 +358,8 @@ Suite à nos précédents échanges, je suis ravie de vous adresser le bon de co
 
 👉 Vous pouvez consulter le contrat et le signer électroniquement en cliquant sur le bouton ci-dessous.
 
-N’hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.
-Dans l’attente de votre retour, je vous souhaite une très belle journée.
+N'hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.
+Dans l'attente de votre retour, je vous souhaite une très belle journée.
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`;
@@ -461,11 +476,24 @@ Nelly Sabde - Les Conférenciers`;
     fetchData();
   };
 
-  const openInvoiceEmail = (inv: Invoice) => {
+  const openInvoiceEmail = async (inv: Invoice) => {
+    await loadEmailTemplates();
     setEmailInvoice(inv);
     const typeLabel = inv.invoice_type === "acompte" ? "d'acompte" : inv.invoice_type === "solde" ? "de solde" : "";
-    setInvoiceEmailSubject(`Facture ${typeLabel} ${inv.invoice_number} — ${proposal.client_name}`);
-    setInvoiceEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+    const recipientFirst = proposal.recipient_name ? proposal.recipient_name.split(" ")[0] : "";
+    const tpl = renderTpl("invoice_to_client", {
+      prenom_destinataire: recipientFirst,
+      nom_client: proposal.client_name,
+      conferencier: speakerSummary,
+      numero_facture: inv.invoice_number,
+      montant_ht: inv.amount_ht.toLocaleString("fr-FR"),
+      montant_ttc: inv.amount_ttc.toLocaleString("fr-FR"),
+      tva_rate: String(inv.tva_rate),
+      echeance: inv.due_date ? new Date(inv.due_date).toLocaleDateString("fr-FR") : "",
+      agent_nom: "Nelly Sabde",
+    });
+    setInvoiceEmailSubject(tpl?.subject || `Facture ${typeLabel} ${inv.invoice_number} — ${proposal.client_name}`);
+    setInvoiceEmailBody(tpl?.body || `Bonjour${recipientFirst ? ` ${recipientFirst}` : ""},
 
 Veuillez trouver ci-dessous votre facture ${typeLabel} pour la prestation de conférence.
 
