@@ -159,7 +159,7 @@ import {
 } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
-import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
+import { renderTpl } from "@/lib/emailTemplates";
 
 const AGENT_VARS = {
   agent_nom: "Nelly Sabde",
