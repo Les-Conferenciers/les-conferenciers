@@ -36,6 +36,7 @@ import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
 
 const REMOVED_CLAUSE = "__REMOVED__";
 
