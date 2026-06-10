@@ -1187,7 +1187,8 @@ ${liaisonButtonHtml()}
 <p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
-  const openLiaisonDialog = () => {
+  const openLiaisonDialog = async () => {
+    await loadEmailTemplates();
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
     const speakerFirstName = speakerName.split(" ")[0];
