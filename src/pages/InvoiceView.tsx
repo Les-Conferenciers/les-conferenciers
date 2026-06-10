@@ -83,8 +83,9 @@ const InvoiceView = () => {
     ? "FACTURE DE SOLDE"
     : "FACTURE";
 
-  const statusLabel = invoice.status === "paid" ? "PAYÉE" : invoice.status === "sent" ? "EN ATTENTE" : "BROUILLON";
-  const statusColor = invoice.status === "paid" ? "text-green-600 bg-green-50" : invoice.status === "sent" ? "text-amber-600 bg-amber-50" : "text-gray-500 bg-gray-50";
+  // Pas de mention "BROUILLON" affichée sur la facture (admin = aperçu du document final)
+  const statusLabel = invoice.status === "paid" ? "PAYÉE" : invoice.status === "sent" ? "EN ATTENTE" : null;
+  const statusColor = invoice.status === "paid" ? "text-green-600 bg-green-50" : "text-amber-600 bg-amber-50";
 
   const speakerName = speaker?.speakers?.name || "—";
   const eventDate = contract?.event_date || event?.event_date;
@@ -137,9 +138,11 @@ const InvoiceView = () => {
             {invoice.due_date && (
               <p className="text-xs text-gray-500">Échéance : {formatDate(invoice.due_date)}</p>
             )}
-            <span className={`inline-block mt-2 text-xs font-semibold px-2 py-1 rounded ${statusColor}`}>
-              {statusLabel}
-            </span>
+            {statusLabel && (
+              <span className={`inline-block mt-2 text-xs font-semibold px-2 py-1 rounded ${statusColor}`}>
+                {statusLabel}
+              </span>
+            )}
           </div>
         </div>
 

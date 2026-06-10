@@ -587,7 +587,7 @@ Nelly Sabde - Les Conférenciers`);
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
                 : contract.status === "sent"
                   ? "Envoyé"
-                  : "Brouillon"}
+                  : "À envoyer"}
             </span>
             {(contract.status === "draft" || contract.status === "sent") && (
               <>

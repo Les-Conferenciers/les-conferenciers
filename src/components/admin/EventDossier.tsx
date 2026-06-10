@@ -1962,7 +1962,7 @@ Nelly Sabde - Les Conférenciers`);
                     </span>
                   ) : (
                     <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium">
-                      Brouillon
+                      À envoyer
                     </span>
                   )}
                 </div>
@@ -3162,12 +3162,7 @@ Nelly Sabde - Les Conférenciers`);
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Corps du mail</Label>
-                    <Textarea
-                      value={liaisonClientBody}
-                      onChange={(e) => setLiaisonClientBody(e.target.value)}
-                      rows={10}
-                      className="text-sm"
-                    />
+                    <RichTextEditor value={liaisonClientBody} onChange={setLiaisonClientBody} />
                   </div>
                   <Button className="w-full" onClick={() => handleSendLiaisonEmail("client")} disabled={sendingLiaison}>
                     <Send className="h-4 w-4 mr-2" />
