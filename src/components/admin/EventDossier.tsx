@@ -1067,15 +1067,39 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
 <p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
-  const openSpeakerEmail = (type: "info" | "contract") => {
+  const openSpeakerEmail = async (type: "info" | "contract") => {
     setSpeakerEmailType(type);
     const speaker = getSelectedSpeakerInfo();
     const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
     setSpeakerEmailAddressing(initialAddressing);
     setSpeakerEmailTo(speaker?.email || "");
     setSpeakerEmailCc("");
-    setSpeakerEmailSubject(buildSpeakerEmailSubject(type));
-    setSpeakerEmailBody(buildSpeakerEmailBody(type, initialAddressing));
+
+    // Try DB template (speaker_event_info / contract_to_speaker), fallback to hardcoded
+    await loadEmailTemplates();
+    const speakerName = speaker?.name || "";
+    const firstName = speakerName.split(" ")[0] || "";
+    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
+    const ps = getSelectedSpeaker();
+    const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const tplKey = type === "info" ? "speaker_event_info" : "contract_to_speaker";
+    const tpl = renderTpl(tplKey, {
+      prenom_conferencier: firstName,
+      conferencier: speakerName,
+      client: proposal.client_name,
+      date_evenement: eventDateLong || "à définir",
+      lieu_evenement: contract?.event_location || "à définir",
+      horaires: contract?.event_time || "à définir",
+      conference: event?.conference_title || "",
+      duree: event?.conference_duration || "",
+      auditoire: event?.audience_size || "à définir",
+      thematique: event?.theme || "à définir",
+      budget: budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir",
+      dress_code: event?.dress_code || "",
+      agent_nom: "Nelly Sabde",
+    });
+    setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));
+    setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, initialAddressing));
     setSpeakerEmailOpen(true);
   };
 
