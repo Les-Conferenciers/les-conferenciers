@@ -1,70 +1,67 @@
-## Promesse à tenir
+## Plan d'implémentation (8 sujets)
 
-Pour chaque mail (proposition, lead, contrat, facture) :
-1. Tu édites le template dans l'onglet Emails → il devient la **source de vérité**.
-2. Quand tu ouvres la fenêtre de composition, le champ sujet + corps est **pré-rempli** avec le template (variables résolues avec les vraies données : prénom, conférencier, date, etc.).
-3. Tu peux **toujours personnaliser** ce texte avant l'envoi — la modif ne touche pas le template global, c'est juste pour cet envoi.
-4. Si tu rouvres une proposition déjà créée, c'est ton texte personnalisé qui s'affiche (déjà sauvegardé sur la proposition).
+### 1. Variable `{{conferencier}}` dans le template "Bon de commande envoyé au client"
+- Mettre à jour le template `contract_client_send` dans `email_templates` : ajouter `{{conferencier}}` dans `available_variables` + l'insérer dans le `body_html` par défaut.
+- Côté `ContractInvoiceManager.tsx` (fonction `openContractEmail`) : passer le nom du conférencier sélectionné dans les variables de `renderTpl`.
 
-Comportement = **template = valeur par défaut intelligente**, jamais une cage.
+### 2. Photo selfies sur /contact
+- Uploader `selfies-avec-nelly.png` via `lovable-assets` (CDN).
+- Remplacer dans `src/pages/Contact.tsx` l'image actuelle de Nelly par le nouvel asset. Mise en page conservée (même conteneur), ajustement minimal de l'`object-fit` si besoin.
 
-## Architecture
+### 3. PDF Proposition / Profil conférencier
+- **Pitch de conférence dans le PDF proposition** : dans `ProposalView.tsx`, ajouter le rendu du pitch (description courte de chaque conférence du conférencier) sous le bloc conférencier, visible aussi en mode impression.
+- **Profil PDF individuel** : ajouter un bouton "Télécharger le profil (PDF)" dans l'admin (CRM conférencier / fiche admin) qui ouvre une route imprimable `/admin/conferencier/:slug/pdf` avec photo, bio, spécialités, conférences (titres + pitchs), références. Réservé à l'admin.
+- **En-têtes/pieds navigateur** : conserver l'impression navigateur. J'ajoute simplement une note discrète "Astuce : décochez 'En-têtes et pieds de page' dans le dialogue d'impression" sur les pages d'impression admin. Aucune génération PDF serveur.
 
-Nouveau hook front `useEmailTemplates()` :
-- Charge tous les templates une fois (`select * from email_templates`)
-- Expose `renderTemplate(key, vars)` qui retourne `{ subject, body }` avec variables résolues
-- Cache en mémoire, refetch quand on revient sur l'onglet
+### 4. Pipeline Contrats : masquer "Acompte client" quand pas d'acompte
+- Dans `ContractPipeline.tsx` : si `contract.deposit_amount` est nul/0 OU le flag "pas d'acompte" est coché, ne pas afficher la colonne/étape "Acompte client" pour ce dossier (passage direct facture finale).
+- Vérifier que les jalons du dossier événementiel reflètent aussi cette logique.
 
-Helper Deno partagé `supabase/functions/_shared/load-template.ts` (même logique côté serveur, déjà fait pour les relances).
+### 5. Templates manquants dans l'onglet "Emails"
+Ajouter 5 nouveaux templates dans `email_templates` :
+- `contract_speaker_send` — Envoi contrat agence au conférencier
+- `speaker_event_info` — Envoi infos événement au conférencier
+- `liaison_sheet_send` — Feuille de liaison
+- `preparatory_call` — Visio préparatoire (proposition de créneaux)
+- `invoice_send` — Envoi de facture
 
-## Branchements à faire
+Chaque template : variables disponibles (event_date, lieu, client, conférencier, lien...), wording par défaut basé sur les emails actuellement codés en dur. Brancher les call sites correspondants via `renderTpl(...)`.
 
-### A. Compose proposition (`src/pages/Admin.tsx`)
-Remplacer les 4 fonctions hardcodées par des appels au hook :
-- `getDefaultEmailSubject` → `renderTemplate('proposal_classic', vars).subject`
-- `getDefaultEmailBody` → `renderTemplate('proposal_classic', vars).body`
-- `getUniqueEmailBody` → `renderTemplate('proposal_unique', vars).body`
-- `getInfoEmailBody` → `renderTemplate('proposal_info', vars).body`
+### 6. Factures
+- **Champ "Notes internes"** : ajouter colonne `internal_notes TEXT` dans `invoices`. Textarea dans le formulaire de création/édition de facture, affichée uniquement dans l'admin (jamais sur le PDF client).
+- **Retirer la mention "Brouillon"** : supprimer le badge "BROUILLON" / filigrane sur `InvoiceView.tsx` quel que soit le statut.
+- **En-têtes/pieds navigateur** : voir point 3 — note d'astuce affichée sur la page facture admin.
 
-Variables passées : `prenom_destinataire`, `nom_client`, `date_evenement`, `lieu_evenement`, `auditoire`, `conferencier`, `tarif_conferencier`, `url_proposition`, `agent_nom`, `agent_telephone`.
+### 7. Aperçu mail feuille de liaison (HTML visible)
+- Localiser le call site qui ouvre le mail liaison (probablement `LiaisonSheetView` ou `EventDossier`).
+- Le corps doit être passé à `EmailPreviewCard` comme HTML rendu, pas comme texte échappé. Bug probablement dû à un double-échappement ou à un `pre`/`textContent` au lieu de `dangerouslySetInnerHTML`.
 
-**Garanties** :
-- L'éditeur de sujet/corps existant reste tel quel → tu modifies librement avant envoi
-- Le bouton « Réinitialiser au template » (à ajouter) recharge depuis le template courant
-- Les propositions déjà créées avec `email_body` rempli → on continue à afficher leur version (pas de régression)
+### 8. Police uniforme dans "envoi des infos au conférencier"
+- L'éditeur Rich Text utilisé par ce mail produit des `<span style="font-size:...">` quand on tape, mais le wrapper email applique une autre taille → désaccord visuel.
+- Corriger en : 
+  1. Forçant le `RichTextEditor` à ne pas injecter de `font-size` inline par défaut (utiliser la taille héritée).
+  2. Côté wrapper d'envoi : enrober dans un conteneur avec `font-size: 15px; font-family: Arial` et `* { font-size: inherit; font-family: inherit; }` ciblé sur le bloc corps pour neutraliser les tailles disparates.
 
-### B. Lead confirmation (`send-contact-email`)
-Lecture serveur du template `lead_confirmation` avant envoi. Fallback texte hardcodé si template désactivé. Pas d'édition manuelle (envoi automatique).
+---
 
-### C. Compose contrat client (`ContractInvoiceManager.tsx` / `ContractPipeline.tsx`)
-- Trouver où le champ `email_subject`/`email_body` est pré-rempli avant envoi du BDC
-- Pré-remplir depuis template `contract_to_client` avec variables `numero_bdc`, `prenom_destinataire`, `nom_client`, etc.
-- Édition manuelle conservée
+## Détails techniques
 
-### D. Compose facture (`ContractInvoiceManager.tsx`)
-- Pré-remplir depuis template `invoice_to_client` avec `numero_facture`, `montant_ttc`, etc.
-- Édition manuelle conservée
+**Migration SQL** : 1 migration unique pour
+- ajout colonne `invoices.internal_notes`
+- insertion des 5 templates email manquants
+- mise à jour du template `contract_client_send` (variables + body)
 
-### E. Communication conférencier
-À identifier avec toi : il existe l'envoi du **contrat agence** au conférencier (`send-contract-email` ou variante ?). Je vérifie pendant l'implémentation et j'ajoute un template `contract_to_speaker` si pertinent.
+**Fichiers principaux touchés**
+- `src/pages/Contact.tsx`
+- `src/pages/ProposalView.tsx` (pitch)
+- `src/pages/InvoiceView.tsx` (suppression brouillon + champ notes admin)
+- nouveau : `src/pages/SpeakerPdfView.tsx` + route admin
+- `src/components/admin/ContractInvoiceManager.tsx` (variable conférencier, notes facture, branchement des nouveaux templates)
+- `src/components/admin/ContractPipeline.tsx` (masquer acompte)
+- `src/components/admin/EventDossier.tsx` (liaison email, infos conférencier)
+- `src/components/admin/RichTextEditor.tsx` (normalisation font-size)
+- `src/components/admin/EmailPreviewCard.tsx` (HTML rendering safe)
+- `src/components/admin/AdminSpeakersCRM.tsx` (bouton PDF profil)
+- nouvel asset : `src/assets/selfies-avec-nelly.png.asset.json`
 
-## Ajouts UX dans la fenêtre de composition
-
-Petit bouton **« 🔄 Recharger le template »** à côté du sujet → si tu as personnalisé puis tu veux repartir du template à jour, un clic suffit. Sinon tes modifs persistent.
-
-## Vérifications de non-régression
-
-- Propositions existantes : `email_body` déjà sauvegardé → continue d'être utilisé tel quel ✅
-- Si template désactivé (`is_active=false`) : fallback sur le texte hardcodé actuel (sécurité) ✅
-- Variables manquantes : on garde `{{var}}` visible pour que tu remarques (pas de chaîne vide silencieuse)
-
-## Hors scope
-
-- Pas de versionnage / historique des modifs de template
-- Pas de modification du HTML d'enrobage (header sombre, signature image)
-- Pas de duplication de templates (1 template par type)
-
-## Questions
-
-1. **Bouton "Recharger le template"** dans la fenêtre de composition : OK / pas utile ?
-2. **Communication conférencier** : tu vises quels mails précisément ? (envoi contrat, demande de bio, relance signature, autre ?)
+**Pas dans le scope** : génération PDF serveur, modification du SEO/sitemap, refonte du pipeline d'événement.
