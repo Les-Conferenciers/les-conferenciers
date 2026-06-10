@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send, CheckCircle2, Clock, Star, Quote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import nellyBuste from "@/assets/nelly-buste-detouree.png";
+import selfiesAsset from "@/assets/selfies-avec-nelly.png.asset.json";
+
+const selfiesAvecNelly = selfiesAsset.url;
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis").max(100, "100 caractères max"),
@@ -279,12 +281,12 @@ const Contact = () => {
           <div className="lg:col-span-1 order-2 space-y-6">
             {/* Nelly card */}
             <div className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm">
-              <div className="flex justify-center bg-muted/30 pt-5 px-6">
+              <div className="bg-muted/30 px-3 pt-4 pb-2">
                 <img
-                  src={nellyBuste}
-                  alt="Nelly, fondatrice de l'agence"
-                  className="w-28 h-auto object-contain drop-shadow-xl py-[10px] pt-0"
-                  style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.15))" }}
+                  src={selfiesAvecNelly}
+                  alt="Nelly avec des conférenciers de l'agence (Marc Lievremont, Dorine Bourneton, Nina Métayer, Florence Servan-Schreiber, Michaël Aguilar, Thierry Loine)"
+                  className="w-full h-auto block"
+                  loading="lazy"
                 />
               </div>
               <div className="px-5 pb-5 pt-3 text-center">
