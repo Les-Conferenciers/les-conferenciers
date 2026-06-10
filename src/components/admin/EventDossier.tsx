@@ -1215,19 +1215,50 @@ ${liaisonButtonHtml()}
     // Date FR longue pour les objets de mail
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
 
-    // Client email template (nouveau wording, sans prix)
-    setLiaisonClientSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
-    setLiaisonClientBody(`<p>${clientFirstName ? clientFirstName : "Bonjour"},</p>
+    // Variables communes pour les templates de liaison
+    const tplVars = {
+      prenom_destinataire: clientFirstName,
+      prenom_conferencier: speakerFirstName,
+      conferencier: speakerName,
+      client: proposal.client_name,
+      date_evenement: eventDateLong || "à définir",
+      lieu_evenement: contract?.event_location || "à définir",
+      bouton_liaison: liaisonButtonHtml(),
+      lien_liaison: liaisonPublicUrl(),
+    };
+
+    // Client email — template DB avec fallback
+    const tplClient = renderTpl("liaison_to_client", tplVars);
+    setLiaisonClientSubject(
+      tplClient?.subject || `Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`
+    );
+    setLiaisonClientBody(
+      (tplClient?.body
+        ? // Si le template ne contient pas déjà le bouton, on l'ajoute
+          tplClient.body.includes("{{bouton_liaison}}") || tplClient.body.includes(liaisonPublicUrl())
+          ? tplClient.body
+          : tplClient.body + liaisonButtonHtml()
+        : `<p>${clientFirstName ? clientFirstName : "Bonjour"},</p>
 <p>Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !</p>
 <p>Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.</p>
 ${liaisonButtonHtml()}
 <p>Vous en souhaitant bonne réception et restant à votre disposition si besoin est.</p>
 <p>Excellente fin de journée à vous !</p>
-<p>Nelly Sabde - Les Conférenciers</p>`);
+<p>Nelly Sabde - Les Conférenciers</p>`)
+    );
 
-    // Speaker email template — adressage piloté par le sélecteur dans la pop-up
-    setLiaisonSpeakerSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
-    setLiaisonSpeakerBody(buildLiaisonSpeakerBody(initialAddressing, speakerFirstName));
+    // Speaker email — template DB avec fallback (adressage formel/informel via fallback)
+    const tplSpeaker = renderTpl("liaison_to_speaker", tplVars);
+    setLiaisonSpeakerSubject(
+      tplSpeaker?.subject || `Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`
+    );
+    setLiaisonSpeakerBody(
+      tplSpeaker?.body
+        ? tplSpeaker.body.includes(liaisonPublicUrl())
+          ? tplSpeaker.body
+          : tplSpeaker.body + liaisonButtonHtml()
+        : buildLiaisonSpeakerBody(initialAddressing, speakerFirstName)
+    );
 
     // Pre-fill recipients (editable) — pas de CC conférencier sur le mail client
     const speakerEmail = speaker?.email || "";
