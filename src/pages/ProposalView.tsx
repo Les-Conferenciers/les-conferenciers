@@ -21,21 +21,25 @@ type SpeakerConference = {
   description: string | null;
 };
 
-const ConferenceAccordion = ({ conf }: { conf: SpeakerConference }) => {
-  const [open, setOpen] = useState(false);
+const ConferenceAccordion = ({ conf, defaultOpen = false }: { conf: SpeakerConference; defaultOpen?: boolean }) => {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors text-left"
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors text-left print:hidden"
       >
         <p className="text-sm font-semibold text-foreground">« {conf.title} »</p>
         <span className="text-xs text-accent ml-3 whitespace-nowrap">
           {open ? "Masquer ▲" : "Voir le détail ▼"}
         </span>
       </button>
-      {open && conf.description && (
-        <div className="px-3 pb-3 pt-1 text-sm text-muted-foreground leading-relaxed border-t border-border/30">
+      {/* En mode impression / PDF, on affiche systématiquement le titre + la description (pitch) */}
+      <div className="hidden print:block px-3 py-2">
+        <p className="text-sm font-semibold text-foreground">« {conf.title} »</p>
+      </div>
+      {(open || true) && conf.description && (
+        <div className={`px-3 pb-3 pt-1 text-sm text-muted-foreground leading-relaxed border-t border-border/30 ${open ? "" : "hidden print:block"}`}>
           <div dangerouslySetInnerHTML={{ __html: conf.description }} />
         </div>
       )}
