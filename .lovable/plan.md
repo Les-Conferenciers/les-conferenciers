@@ -1,60 +1,83 @@
-## Bloc de contenu SEO riche après le listing (landings)
+## Refonte UX/UI du bloc éditorial SEO (landings)
 
-### 1. Base de données (migration)
-Ajouter deux colonnes à `speaker_profiles` :
-- `rich_content` (jsonb) — contenu structuré généré par IA
-- `rich_content_updated_at` (timestamptz)
+### Objectifs
+- Aérer la lecture, hiérarchie claire, rythme visuel CRO (scan → preuve → action).
+- Édition admin via éditeur de texte riche (pas de textarea brute).
+- Bloc "Pourquoi l'agence" repositionné comme encart de réassurance différenciant.
+- "Points clés" recontextualisés autour du type de profil (titre, intro courte).
 
-Structure JSON attendue :
+---
+
+### 1. Page publique `ProfileLanding.tsx` — refonte visuelle
+
+**Chapô intro**
+- Bandeau d'introduction `max-w-3xl mx-auto` centré, typo `text-xl leading-[1.8]`, premier mot/phrase en `drop-cap` éditorial (lettrine accent gold).
+- Rendu HTML (issu du rich text editor) au lieu de `whitespace-pre-line` → vrais paragraphes espacés (`prose-styles` avec `space-y-5`).
+
+**Bloc "Points clés" — recontextualisé**
+- Nouveau titre dynamique : « Pourquoi choisir un·e {profile.landing_label} » (généré par IA dans le JSON sous `key_points_title`) + sous-titre court (1 phrase) `key_points_intro`.
+- Grille `md:grid-cols-3` de cartes avec icône `Sparkles`/`Check`/`Target`, titre court (`label`) + 1 phrase d'appui (`description`). Structure JSON enrichie : `key_points: [{label, description}]`.
+- Fond `bg-card`, bordure douce, `hover:shadow-md transition`, padding généreux.
+
+**Sections thématiques**
+- Largeur `max-w-3xl`, `space-y-16` entre sections.
+- `<h2>` `text-3xl font-bold` avec barre accent à gauche (`border-l-4 border-accent pl-4`).
+- Corps rendu HTML (prose) avec paragraphes aérés (`leading-[1.8]`, `space-y-4`).
+- Conférenciers cités : grille `sm:grid-cols-3` de mini-cartes (photo ronde 64px + nom + rôle), hover gold, fond `bg-muted/40` `rounded-xl p-4`.
+
+**Encart "Pourquoi faire appel à notre agence" — repositionné juste avant le CTA contact**
+- Encart premium pleine largeur `max-w-4xl`, fond `bg-primary` texte clair, accent gold, coins `rounded-3xl`, ombre `shadow-xl`.
+- Layout 2 colonnes : à gauche titre + texte ; à droite 3 piliers en liste avec icônes :
+  1. **Connaissance fine des profils** (on rencontre, briefe et suit nos conférenciers)
+  2. **Maîtrise du contenu des conférences** (on connaît leurs sujets, angles, formats)
+  3. **Matching événement × audience × conférencier** (recommandation sur-mesure)
+- CTA secondaire intégré « Parler à un conseiller » → `/contact`.
+- Suppression de l'ancien encart fond `bg-primary/5` simple.
+
+**Espacement global**
+- `mt-24` après la grille de conférenciers, `space-y-20` entre blocs.
+
+---
+
+### 2. Édition admin `AdminLandingPages.tsx` — éditeur riche
+
+- Remplacer chaque `<Textarea>` du contenu éditorial par `<SimpleRichTextEditor>` (composant existant) pour : `intro`, `sections[].body`, `why_agency`.
+- Champs texte courts en `<Input>` : `key_points_title`, `key_points_intro`, `sections[].title`, `key_points[].label`, `key_points[].description`.
+- Wording UI ajusté : « Chapô d'introduction », « Sections de contenu », « Points clés du profil (titre + intro + 3 à 6 cartes) », « Encart Pourquoi l'agence ».
+- Bouton « Générer avec l'IA » inchangé mais prompt mis à jour pour produire la nouvelle structure JSON.
+
+---
+
+### 3. Edge function `generate-landing-content` — schéma mis à jour
+
+Nouveau JSON cible :
 ```json
 {
-  "intro": "200-300 mots d'intro contextuelle",
-  "sections": [
-    { "title": "Pourquoi faire appel à un [profil]", "body": "…" },
-    { "title": "Dans quels contextes les inviter", "body": "…" },
-    { "title": "Notre sélection de profils", "body": "…", "speakers": ["id1","id2","id3"] }
+  "intro": "<p>…</p><p>…</p>",
+  "key_points_title": "Pourquoi choisir un·e {profil}",
+  "key_points_intro": "Une phrase qui plante le décor.",
+  "key_points": [
+    { "label": "…", "description": "…" }
   ],
-  "why_agency": "Pourquoi passer par l'agence Les Conférenciers",
-  "key_points": ["point fort 1", "point fort 2", "…"]
+  "sections": [
+    { "title": "…", "body": "<p>…</p>", "speaker_ids": ["…"] }
+  ],
+  "why_agency": "<p>Connaissance des profils… contenu des conférences… matching…</p>"
 }
 ```
+- Prompt enrichi : insister sur connaissance des profils, des contenus des conférences, et expertise de matching événement/audience/conférencier dans `why_agency`.
+- Contenu HTML léger autorisé (`<p>`, `<strong>`, `<ul>`, `<li>`) pour l'éditeur riche.
+- Tonalité, apostrophes droites, anti-plagiat inchangés.
 
-### 2. Edge function `generate-landing-content`
-- Input : `profile_id`
-- Récupère le profil (nom, landing_label, subtitle), la liste des conférenciers associés (nom + rôle + 2-3 lignes de bio) et les profils liés
-- Appelle Lovable AI (Gemini) avec un prompt strict :
-  - Tonalité éditoriale "Les Conférenciers" (premium, francophone, factuel, apostrophes droites)
-  - 200-300 mots d'intro + 3 sections thématiques + bloc "Pourquoi l'agence"
-  - Cite 2-3 conférenciers du profil en exemple (nom + rôle), pas de plagiat
-  - Interdit : copier toute formulation d'un site concurrent, mentionner des agences concurrentes, gras automatique
-  - Sortie JSON structurée (schema strict)
-- Sauvegarde dans `rich_content` + timestamp
+---
 
-### 3. Admin `AdminLandingPages.tsx`
-Remplacer le `<Textarea>` "Intro complémentaire (HTML)" par un nouveau bloc **"Contenu éditorial SEO (généré par IA)"** :
-- Bouton **"Générer avec l'IA"** (ou "Régénérer" si déjà présent) → appelle l'edge function, toast de progression
-- Aperçu structuré éditable inline : intro, sections (titre + texte), bloc "pourquoi l'agence", key points (chip list), conférenciers cités (multi-select parmi ceux du profil)
-- Boutons "Ajouter une section" / supprimer / réordonner
-- Date de dernière génération affichée
-- L'ancien champ `intro_html` est conservé pour ne rien casser mais déplacé dans un sous-bloc "Avancé (HTML legacy)"
+### 4. Compatibilité ancien format
+- Si `key_points` est un tableau de strings (ancien format), le mapper à `{label: str, description: ""}` côté front pour ne rien casser.
+- Si `intro` / `why_agency` sont en texte brut, les afficher en `<p>` simples.
 
-### 4. Page publique `ProfileLanding.tsx`
-Nouveau composant `<LandingRichContent profile={...} speakers={...} />` inséré **après la grille de conférenciers et avant le bloc CTA "Nous contacter"** :
-- Mise en page éditoriale en `max-w-4xl mx-auto`
-- Intro en chapô (typo plus grande, leading généreux)
-- Sections en `<h2>` + paragraphes, alternance fond `bg-card`/transparent pour le rythme
-- Bloc "key points" en grille d'icônes (lucide `Check`/`Sparkles`)
-- Bloc "Pourquoi faire appel à l'agence" mis en avant (fond `bg-primary/5`, bordure `border-accent`)
-- Vignettes médaillon (rondes) des conférenciers cités, cliquables vers leur fiche
-- Pas de copie d'image ni de texte d'un site concurrent
-- Si `rich_content` vide → bloc masqué (pas de fallback texte)
-
-### 5. SEO
-- `<h2>` sémantiques pour chaque section (le `<h1>` reste celui du hero)
-- Contenu rendu côté React (SPA) — pas de SSR ajouté
-- Le contenu reste éditable manuellement après génération
+---
 
 ### Hors scope
-- Pas de changement sur les filtres, le hero, les FAQ existantes, l'image héro, le CRM
-- Pas de génération automatique pour toutes les landings d'un coup (un bouton par landing)
-- Pas de migration des `intro_html` existants vers le nouveau format
+- Pas de changement sur le hero, la grille de conférenciers, les FAQ, le CTA contact existant en bas, le CRM.
+- Pas de migration BDD (la colonne `rich_content` JSONB accepte le nouveau schéma).
+- Pas de régénération automatique pour toutes les landings existantes.
