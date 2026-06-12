@@ -8,9 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ExternalLink, Eye, Plus, Trash2, Save, ChevronUp, ChevronDown, X } from "lucide-react";
+import { ExternalLink, Eye, Plus, Trash2, Save, ChevronUp, ChevronDown, X, Sparkles, Loader2 } from "lucide-react";
 
 type FaqItem = { question: string; answer: string };
+type RichSection = { title: string; body: string; speaker_ids?: string[] };
+type RichContent = {
+  intro: string;
+  sections: RichSection[];
+  why_agency: string;
+  key_points: string[];
+};
 type Profile = {
   id: string;
   slug: string;
@@ -27,6 +34,8 @@ type Profile = {
   extra_speaker_ids: string[];
   faq: FaqItem[];
   display_order: number;
+  rich_content: RichContent | null;
+  rich_content_updated_at: string | null;
 };
 
 type SpeakerLite = { id: string; name: string; role: string | null; profile_id: string | null };
