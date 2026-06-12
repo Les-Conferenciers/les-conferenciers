@@ -397,7 +397,32 @@ const Speakers = () => {
         </div>
       </div>
 
+      {/* FAQ — SEO "trouver un conférencier" */}
+      <section className="bg-background py-16 px-4 border-t border-border/40">
+        <div className="container mx-auto max-w-3xl">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3 text-center tracking-tight">
+            Questions fréquentes pour trouver un conférencier
+          </h2>
+          <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">
+            Tout ce qu'il faut savoir avant de réserver un conférencier pour votre événement.
+          </p>
+          <Accordion type="single" collapsible className="w-full">
+            {FAQ_ITEMS.map((item, idx) => (
+              <AccordionItem key={idx} value={`faq-${idx}`}>
+                <AccordionTrigger className="text-left text-base md:text-lg font-semibold text-foreground">
+                  {item.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-sm md:text-base leading-relaxed">
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
       <Footer />
+
     </div>
   );
 };
