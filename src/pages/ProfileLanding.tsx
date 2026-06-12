@@ -51,7 +51,11 @@ const ProfileLanding = () => {
       const { data, error } = await q.maybeSingle();
       if (error) throw error;
       if (!data) return null;
-      return { ...data, faq: Array.isArray(data.faq) ? (data.faq as unknown as FaqItem[]) : [] } as Profile;
+      return {
+        ...data,
+        faq: Array.isArray(data.faq) ? (data.faq as unknown as FaqItem[]) : [],
+        rich_content: (data.rich_content as unknown as RichContent) || null,
+      } as unknown as Profile;
     },
     enabled: !!slug,
   });
