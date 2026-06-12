@@ -28,11 +28,11 @@ import {
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { parseThemes } from "@/lib/parseThemes";
+
 
 const Index = () => {
   const [speakerCount, setSpeakerCount] = useState(0);
-  const [topThemes, setTopThemes] = useState<string[]>([]);
+  
   const navigate = useNavigate();
 
   // SEO: structured data for home page
@@ -146,31 +146,11 @@ const Index = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data, count } = await supabase
+      const { count } = await supabase
         .from("speakers")
-        .select("themes", { count: "exact" })
-        .eq("archived", false)
-        .limit(500);
+        .select("themes", { count: "exact", head: true })
+        .eq("archived", false);
       setSpeakerCount(count || 0);
-
-      // Extract top themes for category search
-      if (data) {
-        const excludedThemes = ["Communication", "Bien-être au travail", "Bien être au travail", "Confiance en soi"];
-        const renameMap: Record<string, string> = { "Gestion du stress": "Gestion de crise" };
-        const counts = new Map<string, number>();
-        data.forEach((s: any) => {
-          parseThemes(s.themes).forEach((t: string) => {
-            if (excludedThemes.includes(t)) return;
-            const displayName = renameMap[t] || t;
-            counts.set(displayName, (counts.get(displayName) || 0) + 1);
-          });
-        });
-        const sorted = Array.from(counts.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 9)
-          .map(([theme]) => theme);
-        setTopThemes(sorted);
-      }
     };
     fetchData();
   }, []);
@@ -225,18 +205,6 @@ const Index = () => {
             ))}
           </div>
 
-          {/* CTA mobile only - above the fold */}
-          <div className="md:hidden flex justify-center mb-8 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <Button
-              size="lg"
-              onClick={() => navigate("/contact")}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold text-base px-8 py-3 rounded-full shadow-lg"
-            >
-              Demander un devis
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
-
           {/* Rating */}
           <div
             className="flex items-center justify-center gap-2 mb-10 animate-fade-in"
@@ -250,26 +218,27 @@ const Index = () => {
             <span className="text-primary-foreground font-semibold text-lg">5/5</span>
           </div>
 
-          {/* Category search (rubriques only, no name search) */}
+          {/* Double CTA */}
           <div
-            className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto animate-fade-in"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 max-w-xl mx-auto animate-fade-in"
             style={{ animationDelay: "0.3s" }}
           >
-            {topThemes.map((theme) => (
-              <button
-                key={theme}
-                onClick={() => navigate(`/conferencier?theme=${encodeURIComponent(theme)}`)}
-                className="px-4 py-2 rounded-full bg-primary-foreground/10 border border-primary-foreground/20 text-sm text-primary-foreground/90 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-200"
-              >
-                {theme}
-              </button>
-            ))}
-            <button
+            <Button
+              size="lg"
               onClick={() => navigate("/conferencier")}
-              className="px-4 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-all duration-200 py-[8px]"
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold text-base px-8 py-3 rounded-full shadow-lg"
             >
-              Tous les conférenciers →
-            </button>
+              Trouver un conférencier
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate("/contact")}
+              className="bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground font-semibold text-base px-8 py-3 rounded-full"
+            >
+              Demander un devis
+            </Button>
           </div>
         </div>
       </section>
