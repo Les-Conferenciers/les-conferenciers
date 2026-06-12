@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { User } from "lucide-react";
 
@@ -16,6 +18,7 @@ type Row = {
   themes: string[] | null;
   image_url: string | null;
   profile_id: string | null;
+  archived: boolean | null;
 };
 
 const NONE = "__none__";
