@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Eye, RotateCcw, Save, Mail } from "lucide-react";
+import { Eye, RotateCcw, Save, Mail, FileCode, FileText } from "lucide-react";
 import { EmailPreviewCard, previewSettingsForTemplateKey } from "@/components/admin/EmailPreviewCard";
+import { loadEmailTemplates, htmlToPlain, plainToHtml, type EmailFormat } from "@/lib/emailTemplates";
 
 
 type Variable = { key: string; label: string; example: string };
@@ -23,6 +24,7 @@ type Template = {
   default_body_html: string;
   available_variables: Variable[];
   is_active: boolean;
+  format: EmailFormat;
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -45,6 +47,7 @@ export default function AdminEmailTemplates() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [format, setFormat] = useState<EmailFormat>("html");
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -59,7 +62,10 @@ export default function AdminEmailTemplates() {
       if (error) {
         toast({ title: "Erreur de chargement", description: error.message, variant: "destructive" });
       } else {
-        const list = (data || []) as unknown as Template[];
+        const list = ((data || []) as unknown as Template[]).map((t) => ({
+          ...t,
+          format: (t.format === "plain" ? "plain" : "html") as EmailFormat,
+        }));
         setTemplates(list);
         if (list.length && !selectedId) setSelectedId(list[0].id);
       }
@@ -74,6 +80,7 @@ export default function AdminEmailTemplates() {
     if (selected) {
       setSubject(selected.subject);
       setBody(selected.body_html);
+      setFormat(selected.format || "html");
     }
   }, [selectedId]);
 
@@ -98,14 +105,18 @@ export default function AdminEmailTemplates() {
     setSaving(true);
     const { error } = await supabase
       .from("email_templates" as any)
-      .update({ subject, body_html: body })
+      .update({ subject, body_html: body, format })
       .eq("id", selected.id);
     setSaving(false);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Template enregistré" });
-      setTemplates((prev) => prev.map((t) => (t.id === selected.id ? { ...t, subject, body_html: body } : t)));
+      setTemplates((prev) =>
+        prev.map((t) => (t.id === selected.id ? { ...t, subject, body_html: body, format } : t))
+      );
+      // Force-refresh the in-memory cache used by renderTpl across the app
+      await loadEmailTemplates(true);
     }
   };
 
@@ -127,7 +138,18 @@ export default function AdminEmailTemplates() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       setTemplates((prev) => prev.map((t) => (t.id === selected.id ? { ...t, is_active: newVal } : t)));
+      await loadEmailTemplates(true);
     }
+  };
+
+  const handleSwitchFormat = (next: EmailFormat) => {
+    if (next === format) return;
+    if (next === "plain") {
+      setBody(htmlToPlain(body));
+    } else {
+      setBody(plainToHtml(body));
+    }
+    setFormat(next);
   };
 
   const insertVariable = (key: string) => {
