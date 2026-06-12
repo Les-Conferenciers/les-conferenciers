@@ -377,7 +377,8 @@ const Speakers = () => {
 
           </>
         )}
-      </div>
+      </main>
+
 
       {/* CTA block */}
       <div className="bg-muted/50 py-12 px-4">
