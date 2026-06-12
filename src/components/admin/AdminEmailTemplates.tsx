@@ -228,15 +228,45 @@ export default function AdminEmailTemplates() {
             </div>
 
             <div>
-              <Label className="text-sm">Corps du message</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label className="text-sm">Corps du message</Label>
+                <div className="inline-flex rounded-md border border-border overflow-hidden text-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchFormat("html")}
+                    className={`px-2.5 py-1 flex items-center gap-1.5 transition ${
+                      format === "html" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                    }`}
+                    title="HTML enrichi — accepte balises, mises en forme, liens cliquables"
+                  >
+                    <FileCode className="h-3.5 w-3.5" /> HTML
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchFormat("plain")}
+                    className={`px-2.5 py-1 flex items-center gap-1.5 transition border-l border-border ${
+                      format === "plain" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                    }`}
+                    title="Texte simple — sauts de ligne préservés, aucune balise"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> Texte simple
+                  </button>
+                </div>
+              </div>
               <textarea
                 id="template-body"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 rows={18}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {format === "plain"
+                  ? "Texte brut. Une ligne vide = nouveau paragraphe. Sera converti en HTML simple à l'envoi."
+                  : "HTML autorisé : <p>, <br>, <strong>, <a>, etc."}
+              </p>
             </div>
+
 
             <div>
               <Label className="text-sm mb-2 block">Variables disponibles (cliquer pour insérer)</Label>
