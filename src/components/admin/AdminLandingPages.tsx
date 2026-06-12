@@ -151,18 +151,16 @@ const AdminLandingPages = () => {
                     )}
                   </div>
                 </AccordionTrigger>
-                {p.landing_enabled && (
-                  <a
-                    href={`/conferencier/profil/${p.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-muted-foreground hover:text-foreground"
-                    title="Voir la landing"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                )}
+                <a
+                  href={p.landing_enabled ? `/conferencier/profil/${p.slug}` : `/conferencier/profil/${p.slug}?preview=1`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+                  title={p.landing_enabled ? "Voir la landing en ligne" : "Aperçu (non publiée)"}
+                >
+                  {p.landing_enabled ? <ExternalLink className="h-4 w-4" /> : <><Eye className="h-4 w-4" /> Aperçu</>}
+                </a>
               </div>
 
               <AccordionContent className="pt-2 pb-4 space-y-3">
