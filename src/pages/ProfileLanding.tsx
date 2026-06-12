@@ -217,24 +217,31 @@ const ProfileLanding = () => {
           </div>
         )}
 
-        {profile?.rich_content && (profile.rich_content.intro || (profile.rich_content.sections || []).length > 0) && (() => {
+        <div className="mt-12 max-w-2xl mx-auto text-center bg-card rounded-2xl p-8 shadow-sm border border-border/30">
+          <p className="text-foreground text-sm md:text-base leading-relaxed mb-6 whitespace-pre-line">
+            {profile?.cta_text || "Tous nos conférenciers ne sont pas présents sur le site. Vous cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement."}
+          </p>
+          <Button
+            variant="outline"
+            className="rounded-xl font-semibold gap-2 border-foreground/20 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
+            onClick={() => window.location.href = "/contact"}
+          >
+            {profile?.cta_button_label || "Nous contacter"} <ChevronDown className="h-4 w-4 -rotate-90" />
+          </Button>
+        </div>
+
+        {profile?.rich_content && ((profile.rich_content.sections || []).length > 0 || normalizeKeyPoints(profile.rich_content.key_points).length > 0 || profile.rich_content.why_agency) && (() => {
           const rc = profile.rich_content!;
           const keyPoints = normalizeKeyPoints(rc.key_points);
           const kpIcons = [Sparkles, Target, Check, BookOpen, Users, ArrowRight];
+          const sections = rc.sections || [];
           return (
-            <article className="max-w-4xl mx-auto mt-24 space-y-20">
-              {rc.intro && (
-                <div
-                  className="text-lg md:text-xl text-foreground leading-[1.8] space-y-5 [&_p]:mb-4 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_strong]:text-foreground"
-                  dangerouslySetInnerHTML={{ __html: ensureHtml(rc.intro) }}
-                />
-              )}
-
+            <article className="max-w-4xl mx-auto mt-20 space-y-20">
               {keyPoints.length > 0 && (
                 <section>
                   <div className="text-center max-w-2xl mx-auto mb-8">
                     <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3 tracking-tight">
-                      {rc.key_points_title || `Pourquoi choisir un·e ${profile.landing_label}`}
+                      {rc.key_points_title || `Ce que ces profils apportent à votre événement`}
                     </h2>
                     {rc.key_points_intro && (
                       <p className="text-muted-foreground leading-relaxed">{rc.key_points_intro}</p>
@@ -259,52 +266,27 @@ const ProfileLanding = () => {
                 </section>
               )}
 
-              {(rc.sections || []).map((sec, i) => {
-                const citedSpeakers = (sec.speaker_ids || [])
-                  .map((id) => (speakers || []).find((s) => s.id === id))
-                  .filter(Boolean) as Speaker[];
-                return (
-                  <section key={i}>
-                    {sec.title && (
-                      <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 tracking-tight border-l-4 border-accent pl-4">
-                        {sec.title}
-                      </h2>
-                    )}
-                    {sec.body && (
-                      <div
-                        className="text-foreground/85 text-base md:text-lg leading-[1.8] space-y-4 [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_strong]:font-semibold [&_strong]:text-foreground"
-                        dangerouslySetInnerHTML={{ __html: ensureHtml(sec.body) }}
-                      />
-                    )}
-                    {citedSpeakers.length > 0 && (
-                      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {citedSpeakers.map((s) => (
-                          <Link
-                            key={s.id}
-                            to={`/conferencier/${s.slug}`}
-                            className="flex items-center gap-3 bg-muted/40 hover:bg-card rounded-xl p-3 border border-transparent hover:border-accent/40 transition-all group"
-                          >
-                            {s.image_url ? (
-                              <img
-                                src={s.image_url}
-                                alt={s.name}
-                                loading="lazy"
-                                className="h-14 w-14 rounded-full object-cover shrink-0"
-                              />
-                            ) : (
-                              <div className="h-14 w-14 rounded-full bg-muted shrink-0" />
-                            )}
-                            <div className="min-w-0">
-                              <div className="font-semibold text-sm text-foreground group-hover:text-accent transition-colors truncate">{s.name}</div>
-                              {s.role && <div className="text-xs text-muted-foreground truncate">{s.role}</div>}
-                            </div>
-                          </Link>
-                        ))}
+              {sections.length > 0 && (
+                <section>
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 tracking-tight border-l-4 border-accent pl-4">
+                    Pourquoi inviter un·e {profile.landing_label} à votre événement
+                  </h2>
+                  <div className="space-y-10 text-foreground/85 text-base md:text-lg leading-[1.8] [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_strong]:font-semibold [&_strong]:text-foreground">
+                    {sections.map((sec, i) => (
+                      <div key={i}>
+                        {sec.title && (
+                          <h3 className="text-xl md:text-2xl font-semibold text-foreground mb-3 leading-snug">
+                            {sec.title}
+                          </h3>
+                        )}
+                        {sec.body && (
+                          <div dangerouslySetInnerHTML={{ __html: ensureHtml(sec.body) }} />
+                        )}
                       </div>
-                    )}
-                  </section>
-                );
-              })}
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {rc.why_agency && (
                 <section className="relative rounded-3xl bg-primary text-primary-foreground p-8 md:p-12 shadow-xl overflow-hidden">
@@ -353,19 +335,6 @@ const ProfileLanding = () => {
           );
         })()}
 
-
-        <div className="mt-12 max-w-2xl mx-auto text-center bg-card rounded-2xl p-8 shadow-sm border border-border/30">
-          <p className="text-foreground text-sm md:text-base leading-relaxed mb-6 whitespace-pre-line">
-            {profile?.cta_text || "Tous nos conférenciers ne sont pas présents sur le site. Vous cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement."}
-          </p>
-          <Button
-            variant="outline"
-            className="rounded-xl font-semibold gap-2 border-foreground/20 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
-            onClick={() => window.location.href = "/contact"}
-          >
-            {profile?.cta_button_label || "Nous contacter"} <ChevronDown className="h-4 w-4 -rotate-90" />
-          </Button>
-        </div>
 
         {profile?.faq && profile.faq.length > 0 && (
           <section className="max-w-3xl mx-auto mt-16">
