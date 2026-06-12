@@ -99,10 +99,35 @@ const AdminLandingPages = () => {
       extra_speaker_ids: p.extra_speaker_ids,
       faq: p.faq as any,
       display_order: p.display_order,
+      rich_content: (p.rich_content as any) ?? null,
     } as any).eq("id", p.id);
     setSavingId(null);
     if (error) { toast.error("Erreur lors de la sauvegarde"); return; }
     toast.success("Profil enregistré");
+  };
+
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const generateRich = async (p: Profile) => {
+    setGeneratingId(p.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-landing-content", {
+        body: { profile_id: p.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const rc = (data as any).rich_content as RichContent;
+      updateLocal(p.id, { rich_content: rc, rich_content_updated_at: new Date().toISOString() });
+      toast.success("Contenu éditorial généré");
+    } catch (e: any) {
+      toast.error(`Génération échouée : ${e.message || e}`);
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
+  const updateRich = (p: Profile, patch: Partial<RichContent>) => {
+    const base: RichContent = p.rich_content || { intro: "", sections: [], why_agency: "", key_points: [] };
+    updateLocal(p.id, { rich_content: { ...base, ...patch } });
   };
 
   const toggleEnabled = async (p: Profile, enabled: boolean) => {
