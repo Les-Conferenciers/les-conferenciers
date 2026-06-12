@@ -31,19 +31,22 @@ const AdminSpeakerProfiles = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkProfile, setBulkProfile] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   const load = async () => {
     setLoading(true);
+    let query = supabase.from("speakers").select("id, name, role, themes, image_url, profile_id, archived").order("name");
+    if (!includeArchived) query = query.eq("archived", false);
     const [p, s] = await Promise.all([
       supabase.from("speaker_profiles").select("id, slug, name").order("display_order"),
-      supabase.from("speakers").select("id, name, role, themes, image_url, profile_id").eq("archived", false).order("name"),
+      query,
     ]);
     if (p.data) setProfiles(p.data as Profile[]);
     if (s.data) setRows(s.data as Row[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [includeArchived]);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
