@@ -73,6 +73,22 @@ Deno.serve(async (req) => {
   </url>`;
   }
 
+  // Profile landings
+  const { data: profiles } = await supabase
+    .from("speaker_profiles")
+    .select("slug, updated_at")
+    .eq("landing_enabled", true);
+  for (const p of profiles || []) {
+    const lastmod = p.updated_at ? p.updated_at.split("T")[0] : now;
+    xml += `
+  <url>
+    <loc>${baseUrl}/conferencier/profil/${p.slug}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>${lastmod}</lastmod>
+  </url>`;
+  }
+
   // Blog articles
   const blogSlugs = [
     "combien-coute-un-conferencier",
