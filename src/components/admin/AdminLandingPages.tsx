@@ -231,10 +231,123 @@ const AdminLandingPages = () => {
                   <Textarea rows={2} value={p.meta_description || ""} onChange={e => updateLocal(p.id, { meta_description: e.target.value })} />
                 </div>
 
-                <div>
-                  <Label className="text-xs">Intro complémentaire (HTML, optionnel)</Label>
-                  <Textarea rows={3} value={p.intro_html || ""} onChange={e => updateLocal(p.id, { intro_html: e.target.value })} />
+                <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <Label className="text-sm font-semibold flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-accent-foreground" /> Contenu éditorial SEO
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        Bloc affiché sous la liste des conférenciers. Généré par IA, éditable manuellement.
+                        {p.rich_content_updated_at && (
+                          <> — Dernière génération : {new Date(p.rich_content_updated_at).toLocaleString("fr-FR")}</>
+                        )}
+                      </p>
+                    </div>
+                    <Button
+                      type="button" size="sm" variant="outline"
+                      onClick={() => generateRich(p)}
+                      disabled={generatingId === p.id}
+                    >
+                      {generatingId === p.id
+                        ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Génération…</>
+                        : <><Sparkles className="h-3 w-3 mr-1" /> {p.rich_content ? "Régénérer" : "Générer avec l'IA"}</>}
+                    </Button>
+                  </div>
+
+                  {p.rich_content && (
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-xs">Chapô (intro, 200-300 mots)</Label>
+                        <Textarea rows={6} value={p.rich_content.intro || ""} onChange={e => updateRich(p, { intro: e.target.value })} />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <Label className="text-xs">Sections</Label>
+                          <Button
+                            type="button" size="sm" variant="ghost"
+                            onClick={() => updateRich(p, { sections: [...(p.rich_content?.sections || []), { title: "", body: "", speaker_ids: [] }] })}
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> Ajouter une section
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          {(p.rich_content.sections || []).map((sec, idx) => (
+                            <div key={idx} className="border rounded p-2 bg-background space-y-2">
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  value={sec.title}
+                                  placeholder="Titre de la section"
+                                  onChange={e => {
+                                    const next = [...(p.rich_content?.sections || [])];
+                                    next[idx] = { ...next[idx], title: e.target.value };
+                                    updateRich(p, { sections: next });
+                                  }}
+                                />
+                                <Button type="button" size="icon" variant="ghost" disabled={idx === 0}
+                                  onClick={() => {
+                                    const next = [...(p.rich_content?.sections || [])];
+                                    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                                    updateRich(p, { sections: next });
+                                  }}><ChevronUp className="h-4 w-4" /></Button>
+                                <Button type="button" size="icon" variant="ghost" disabled={idx === (p.rich_content?.sections.length || 0) - 1}
+                                  onClick={() => {
+                                    const next = [...(p.rich_content?.sections || [])];
+                                    [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+                                    updateRich(p, { sections: next });
+                                  }}><ChevronDown className="h-4 w-4" /></Button>
+                                <Button type="button" size="icon" variant="ghost"
+                                  onClick={() => updateRich(p, { sections: (p.rich_content?.sections || []).filter((_, i) => i !== idx) })}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                              <Textarea
+                                rows={4}
+                                value={sec.body}
+                                placeholder="Contenu de la section"
+                                onChange={e => {
+                                  const next = [...(p.rich_content?.sections || [])];
+                                  next[idx] = { ...next[idx], body: e.target.value };
+                                  updateRich(p, { sections: next });
+                                }}
+                              />
+                            </div>
+                          ))}
+                          {(p.rich_content.sections || []).length === 0 && (
+                            <p className="text-[11px] text-muted-foreground">Aucune section.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs">Pourquoi faire appel à l'agence</Label>
+                        <Textarea rows={4} value={p.rich_content.why_agency || ""} onChange={e => updateRich(p, { why_agency: e.target.value })} />
+                      </div>
+
+                      <div>
+                        <Label className="text-xs">Points clés (un par ligne)</Label>
+                        <Textarea
+                          rows={4}
+                          value={(p.rich_content.key_points || []).join("\n")}
+                          onChange={e => updateRich(p, { key_points: e.target.value.split("\n").map(s => s.trim()).filter(Boolean) })}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                <details className="group">
+                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">Avancé : Intro HTML legacy</summary>
+                  <Textarea
+                    className="mt-1"
+                    rows={3}
+                    value={p.intro_html || ""}
+                    onChange={e => updateLocal(p.id, { intro_html: e.target.value })}
+                    placeholder="HTML libre affiché sous le H1 du hero (optionnel)"
+                  />
+                </details>
+
 
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
                   <div>
