@@ -144,6 +144,12 @@ const ProfileLanding = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
+      {profile && !profile.landing_enabled && (
+        <div className="bg-yellow-400 text-yellow-950 text-center text-sm py-2 px-4 font-medium">
+          Aperçu — cette landing n'est pas publiée. Active-la dans l'admin pour la rendre visible publiquement.
+        </div>
+      )}
+
 
       <section className="relative bg-primary py-12 px-4 text-center overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
