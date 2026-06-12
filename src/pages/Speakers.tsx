@@ -10,25 +10,143 @@ import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const PAGE_SIZE = 20;
 const SCROLL_KEY = "speakers-scroll-pos";
 const DISPLAY_COUNT_KEY = "speakers-display-count";
 
+const PAGE_URL = "https://www.lesconferenciers.com/conferencier";
+const PAGE_TITLE = "Trouver un conférencier pour votre événement | Les Conférenciers";
+const PAGE_DESCRIPTION = "Trouver un conférencier professionnel adapté à votre événement : 300+ profils experts, accompagnement sur mesure et devis rapide partout en France.";
+
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  {
+    q: "Comment trouver un bon conférencier pour son événement ?",
+    a: "Pour trouver le bon conférencier, partez du thème de votre événement, du profil de votre audience et du message clé à transmettre. Notre agence vous accompagne pas à pas : nous présélectionnons des profils alignés avec vos objectifs, partageons vidéos et références, puis vous proposons une short-list adaptée à votre budget.",
+  },
+  {
+    q: "Quel est le tarif d'un conférencier professionnel ?",
+    a: "Le tarif d'un conférencier varie généralement entre 3 000 € et 30 000 € selon sa notoriété, son expertise, la durée d'intervention et le lieu. Les experts métiers démarrent autour de 3 000 à 6 000 €, tandis que les personnalités médiatiques, sportives ou dirigeantes de renom se situent au-delà. Nous vous communiquons un devis précis sous 24h après cadrage de votre besoin.",
+  },
+  {
+    q: "Combien de temps à l'avance faut-il réserver un conférencier ?",
+    a: "Nous recommandons d'anticiper 2 à 6 mois avant votre événement, en particulier pour les profils très demandés (sportifs de haut niveau, dirigeants, personnalités médiatiques). Pour les demandes urgentes, notre réseau de 300+ conférenciers permet souvent de proposer des alternatives qualifiées en quelques jours.",
+  },
+  {
+    q: "Quelle différence entre un conférencier, un intervenant et un keynote speaker ?",
+    a: "Le terme conférencier désigne tout intervenant qui prend la parole devant une audience. Un keynote speaker délivre la conférence d'ouverture ou de clôture, plus stratégique et inspirante. Un intervenant peut animer table ronde, atelier ou masterclass. Nous vous aidons à choisir le format le plus pertinent selon votre événement.",
+  },
+  {
+    q: "Comment choisir le conférencier adapté à son thème et à son audience ?",
+    a: "Le bon match repose sur trois critères : la pertinence du contenu par rapport à votre thématique, la capacité à embarquer votre audience (ton, énergie, storytelling) et l'expérience scénique. Notre expertise consiste précisément à connaître chaque profil en profondeur pour matcher événement, audience et conférencier.",
+  },
+  {
+    q: "Pourquoi passer par une agence pour trouver un conférencier ?",
+    a: "Une agence vous fait gagner du temps, sécurise la prestation (contrat, logistique, voyage) et vous donne accès à un réseau qualifié bien au-delà des profils visibles en ligne. Chez Les Conférenciers, nous connaissons personnellement chaque intervenant et le contenu de ses conférences, ce qui nous permet de garantir un choix pertinent et un événement réussi.",
+  },
+  {
+    q: "Peut-on faire intervenir un conférencier en visio ou à l'étranger ?",
+    a: "Oui, nos conférenciers interviennent en présentiel partout en France et à l'international, ainsi qu'en distanciel (visio, hybride, plateau TV). Précisez-nous le format souhaité et nous adaptons la proposition en conséquence.",
+  },
+  {
+    q: "Que comprend la prestation d'un conférencier ?",
+    a: "La prestation inclut généralement la préparation en amont avec un brief personnalisé, l'intervention elle-même (keynote, table ronde, atelier), les échanges avec l'audience, ainsi que les frais de déplacement et d'hébergement le cas échéant. Tous les détails sont formalisés dans le devis et le contrat.",
+  },
+];
+
 const Speakers = () => {
   // SEO meta
   useEffect(() => {
-    document.title = "Découvrez tous nos conférenciers professionnels pour vos événements";
-    const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", "Parmi nos 300+ conférenciers et intervenants d'exception, trouvez celui qui marquera votre événement.");
+    document.title = PAGE_TITLE;
+
+    const ensureMeta = (selector: string, create: () => HTMLMetaElement, content: string) => {
+      let el = document.head.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = create();
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+
+    ensureMeta('meta[name="description"]', () => {
+      const m = document.createElement("meta");
+      m.setAttribute("name", "description");
+      return m;
+    }, PAGE_DESCRIPTION);
+
+    ensureMeta('meta[name="robots"]', () => {
+      const m = document.createElement("meta");
+      m.setAttribute("name", "robots");
+      return m;
+    }, "index, follow");
+
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canonical) {
       canonical = document.createElement("link");
       canonical.setAttribute("rel", "canonical");
       document.head.appendChild(canonical);
     }
-    canonical.href = "https://www.lesconferenciers.com/conferencier";
-    return () => { document.querySelector('link[rel="canonical"]')?.remove(); };
+    canonical.href = PAGE_URL;
+
+    const ogTags: { prop: string; content: string; twitter?: boolean }[] = [
+      { prop: "og:title", content: PAGE_TITLE },
+      { prop: "og:description", content: PAGE_DESCRIPTION },
+      { prop: "og:url", content: PAGE_URL },
+      { prop: "og:type", content: "website" },
+      { prop: "twitter:card", content: "summary_large_image", twitter: true },
+      { prop: "twitter:title", content: PAGE_TITLE, twitter: true },
+      { prop: "twitter:description", content: PAGE_DESCRIPTION, twitter: true },
+    ];
+    ogTags.forEach(({ prop, content, twitter }) => {
+      const selector = twitter ? `meta[name="${prop}"]` : `meta[property="${prop}"]`;
+      ensureMeta(selector, () => {
+        const m = document.createElement("meta");
+        m.setAttribute(twitter ? "name" : "property", prop);
+        return m;
+      }, content);
+    });
+
+    const ldData = [
+      {
+        id: "ld-faq-speakers",
+        json: {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: FAQ_ITEMS.map((it) => ({
+            "@type": "Question",
+            name: it.q,
+            acceptedAnswer: { "@type": "Answer", text: it.a },
+          })),
+        },
+      },
+      {
+        id: "ld-breadcrumb-speakers",
+        json: {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Accueil", item: "https://www.lesconferenciers.com/" },
+            { "@type": "ListItem", position: 2, name: "Conférenciers", item: PAGE_URL },
+          ],
+        },
+      },
+    ];
+    ldData.forEach(({ id, json }) => {
+      let s = document.getElementById(id) as HTMLScriptElement | null;
+      if (!s) {
+        s = document.createElement("script");
+        s.type = "application/ld+json";
+        s.id = id;
+        document.head.appendChild(s);
+      }
+      s.textContent = JSON.stringify(json);
+    });
+
+    return () => {
+      document.querySelector('link[rel="canonical"]')?.remove();
+      ldData.forEach(({ id }) => document.getElementById(id)?.remove());
+    };
   }, []);
 
   const [searchParams, setSearchParams] = useSearchParams();
