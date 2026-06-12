@@ -32,16 +32,15 @@ const BASE_URL = "https://www.lesconferenciers.com";
 
 const ProfileLanding = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get("preview") === "1";
 
   const { data: profile, isLoading: pLoading } = useQuery({
-    queryKey: ["profile-landing", slug],
+    queryKey: ["profile-landing", slug, isPreview],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("speaker_profiles")
-        .select("*")
-        .eq("slug", slug!)
-        .eq("landing_enabled", true)
-        .maybeSingle();
+      let q = supabase.from("speaker_profiles").select("*").eq("slug", slug!);
+      if (!isPreview) q = q.eq("landing_enabled", true);
+      const { data, error } = await q.maybeSingle();
       if (error) throw error;
       if (!data) return null;
       return { ...data, faq: Array.isArray(data.faq) ? (data.faq as unknown as FaqItem[]) : [] } as Profile;
