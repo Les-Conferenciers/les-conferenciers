@@ -65,6 +65,8 @@ const AdminLandingPages = () => {
       faq: Array.isArray(x.faq) ? x.faq : [],
       linked_profile_ids: x.linked_profile_ids || [],
       extra_speaker_ids: x.extra_speaker_ids || [],
+      rich_content: x.rich_content || null,
+      rich_content_updated_at: x.rich_content_updated_at || null,
     })));
   };
 
