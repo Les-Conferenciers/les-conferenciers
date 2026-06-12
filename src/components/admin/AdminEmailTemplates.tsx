@@ -78,9 +78,11 @@ export default function AdminEmailTemplates() {
 
   useEffect(() => {
     if (selected) {
+      const fmt = (selected.format || "html") as EmailFormat;
       setSubject(selected.subject);
-      setBody(selected.body_html);
-      setFormat(selected.format || "html");
+      // Plain templates may still contain residual HTML — strip on display.
+      setBody(fmt === "plain" ? htmlToPlain(selected.body_html || "") : selected.body_html);
+      setFormat(fmt);
     }
   }, [selectedId]);
 
