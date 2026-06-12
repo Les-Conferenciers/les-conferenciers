@@ -885,44 +885,59 @@ export type Database = {
       speaker_profiles: {
         Row: {
           created_at: string
+          cta_button_label: string | null
+          cta_text: string | null
           display_order: number
+          extra_speaker_ids: string[]
           faq: Json
           id: string
           intro_html: string | null
           landing_enabled: boolean
           landing_label: string
+          linked_profile_ids: string[]
           meta_description: string | null
           name: string
           seo_title: string | null
           slug: string
+          subtitle: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          cta_button_label?: string | null
+          cta_text?: string | null
           display_order?: number
+          extra_speaker_ids?: string[]
           faq?: Json
           id?: string
           intro_html?: string | null
           landing_enabled?: boolean
           landing_label: string
+          linked_profile_ids?: string[]
           meta_description?: string | null
           name: string
           seo_title?: string | null
           slug: string
+          subtitle?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          cta_button_label?: string | null
+          cta_text?: string | null
           display_order?: number
+          extra_speaker_ids?: string[]
           faq?: Json
           id?: string
           intro_html?: string | null
           landing_enabled?: boolean
           landing_label?: string
+          linked_profile_ids?: string[]
           meta_description?: string | null
           name?: string
           seo_title?: string | null
           slug?: string
+          subtitle?: string | null
           updated_at?: string
         }
         Relationships: []

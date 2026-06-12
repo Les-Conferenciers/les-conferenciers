@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,6 @@ import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { ChevronDown } from "lucide-react";
 
 type FaqItem = { question: string; answer: string };
@@ -21,6 +20,11 @@ type Profile = {
   seo_title: string | null;
   meta_description: string | null;
   intro_html: string | null;
+  subtitle: string | null;
+  cta_text: string | null;
+  cta_button_label: string | null;
+  linked_profile_ids: string[] | null;
+  extra_speaker_ids: string[] | null;
   faq: FaqItem[];
 };
 
@@ -28,7 +32,6 @@ const BASE_URL = "https://www.lesconferenciers.com";
 
 const ProfileLanding = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
 
   const { data: profile, isLoading: pLoading } = useQuery({
     queryKey: ["profile-landing", slug],
@@ -47,20 +50,33 @@ const ProfileLanding = () => {
   });
 
   const { data: speakers, isLoading: sLoading } = useQuery({
-    queryKey: ["profile-speakers", profile?.id],
+    queryKey: ["profile-speakers", profile?.id, profile?.linked_profile_ids, profile?.extra_speaker_ids],
     enabled: !!profile?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const profileIds = [profile!.id, ...(profile!.linked_profile_ids || [])];
+      const extraIds = profile!.extra_speaker_ids || [];
+
+      const byProfilePromise = supabase
         .from("speakers")
         .select("*")
         .eq("archived", false)
-        .eq("profile_id", profile!.id)
+        .in("profile_id", profileIds)
         .limit(500);
-      if (error) throw error;
-      const list = data as (Speaker & { display_order?: number })[];
-      list.sort((a, b) => {
-        const ao = (a as any).display_order ?? 999;
-        const bo = (b as any).display_order ?? 999;
+
+      const byExtraPromise = extraIds.length
+        ? supabase.from("speakers").select("*").eq("archived", false).in("id", extraIds)
+        : Promise.resolve({ data: [] as any[], error: null });
+
+      const [r1, r2] = await Promise.all([byProfilePromise, byExtraPromise]);
+      if (r1.error) throw r1.error;
+      if ((r2 as any).error) throw (r2 as any).error;
+
+      const map = new Map<string, Speaker & { display_order?: number }>();
+      [...((r1.data as any[]) || []), ...((r2 as any).data || [])].forEach((s: any) => map.set(s.id, s));
+      const list = Array.from(map.values());
+      list.sort((a: any, b: any) => {
+        const ao = a.display_order ?? 999;
+        const bo = b.display_order ?? 999;
         if (ao !== bo) return ao - bo;
         return a.name.localeCompare(b.name, "fr");
       });
@@ -70,7 +86,6 @@ const ProfileLanding = () => {
 
   const canonical = `${BASE_URL}/conferencier/profil/${slug}`;
 
-  // SEO meta
   useEffect(() => {
     if (!profile) return;
     document.title = profile.seo_title || profile.landing_label;
@@ -82,7 +97,6 @@ const ProfileLanding = () => {
     return () => { document.querySelector('link[rel="canonical"]')?.remove(); };
   }, [profile, canonical]);
 
-  // FAQ JSON-LD
   useEffect(() => {
     if (!profile?.faq?.length) return;
     const script = document.createElement("script");
@@ -100,19 +114,6 @@ const ProfileLanding = () => {
     document.head.appendChild(script);
     return () => { script.remove(); };
   }, [profile]);
-
-  const themes = useMemo(() => {
-    if (!speakers) return [] as string[];
-    const counts = new Map<string, number>();
-    speakers.forEach(s => parseThemes(s.themes).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([t]) => t);
-  }, [speakers]);
-
-  const visible = useMemo(() => {
-    if (!speakers) return [];
-    if (!selectedTheme) return speakers;
-    return speakers.filter(s => parseThemes(s.themes).includes(selectedTheme));
-  }, [speakers, selectedTheme]);
 
   if (!pLoading && !profile) {
     return (
@@ -141,9 +142,12 @@ const ProfileLanding = () => {
           <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
             {profile?.landing_label || <Skeleton className="h-10 w-96 mx-auto" />}
           </h1>
+          {profile?.subtitle && (
+            <p className="text-primary-foreground/80 text-lg">{profile.subtitle}</p>
+          )}
           {profile?.intro_html && (
             <div
-              className="text-primary-foreground/80 text-lg [&_a]:underline"
+              className="text-primary-foreground/80 text-lg [&_a]:underline mt-4"
               dangerouslySetInnerHTML={{ __html: profile.intro_html }}
             />
           )}
@@ -151,26 +155,6 @@ const ProfileLanding = () => {
       </section>
 
       <div className="container mx-auto px-4 py-8 flex-grow">
-        {themes.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8">
-            <button
-              onClick={() => setSelectedTheme(null)}
-              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
-                !selectedTheme ? "bg-accent text-accent-foreground border-accent" : "bg-card text-muted-foreground border-border hover:border-accent/50"
-              }`}
-            >Tous</button>
-            {themes.map(t => (
-              <button
-                key={t}
-                onClick={() => setSelectedTheme(t === selectedTheme ? null : t)}
-                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
-                  selectedTheme === t ? "ring-2 ring-accent ring-offset-1 " + getThemeColor(t) : getThemeColor(t) + " hover:opacity-80"
-                }`}
-              >{t}</button>
-            ))}
-          </div>
-        )}
-
         {(pLoading || sLoading) ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -180,15 +164,28 @@ const ProfileLanding = () => {
               </div>
             ))}
           </div>
-        ) : visible.length === 0 ? (
+        ) : !speakers || speakers.length === 0 ? (
           <p className="text-center py-20 text-muted-foreground">Aucun conférencier pour ce profil pour l'instant.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {visible.map(s => (
-              <SpeakerCard key={s.id} speaker={s} onThemeClick={(t) => setSelectedTheme(t === selectedTheme ? null : t)} />
+            {speakers.map(s => (
+              <SpeakerCard key={s.id} speaker={s} />
             ))}
           </div>
         )}
+
+        <div className="mt-12 max-w-2xl mx-auto text-center bg-card rounded-2xl p-8 shadow-sm border border-border/30">
+          <p className="text-foreground text-sm md:text-base leading-relaxed mb-6 whitespace-pre-line">
+            {profile?.cta_text || "Tous nos conférenciers ne sont pas présents sur le site. Vous cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement."}
+          </p>
+          <Button
+            variant="outline"
+            className="rounded-xl font-semibold gap-2 border-foreground/20 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
+            onClick={() => window.location.href = "/contact"}
+          >
+            {profile?.cta_button_label || "Nous contacter"} <ChevronDown className="h-4 w-4 -rotate-90" />
+          </Button>
+        </div>
 
         {profile?.faq && profile.faq.length > 0 && (
           <section className="max-w-3xl mx-auto mt-16">
@@ -203,21 +200,6 @@ const ProfileLanding = () => {
             </Accordion>
           </section>
         )}
-      </div>
-
-      <div className="bg-muted/50 py-12 px-4">
-        <div className="container mx-auto max-w-2xl text-center bg-card rounded-2xl p-8 shadow-sm border border-border/30">
-          <p className="text-foreground text-sm md:text-base leading-relaxed mb-6">
-            <strong>Besoin d'un conférencier de ce profil ?</strong> Contactez-nous pour une proposition personnalisée adaptée à votre événement.
-          </p>
-          <Button
-            variant="outline"
-            className="rounded-xl font-semibold gap-2 border-foreground/20 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
-            onClick={() => window.location.href = "/contact"}
-          >
-            Nous contacter <ChevronDown className="h-4 w-4 -rotate-90" />
-          </Button>
-        </div>
       </div>
 
       <Footer />
