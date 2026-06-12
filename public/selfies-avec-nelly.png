@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google-site-verification" content="FQzjPLE8SpmC6BEPJTNONq-ZX-7NC19HNgQIohgcJPg" />
+
+    <!-- Preload LCP hero background image -->
+    <link rel="preload" as="image" href="https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg" fetchpriority="high" />
+
+    <!-- Google Ads (gtag.js) — deferred to not block rendering -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-10981211591');
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-10981211591"></script>
+    <title>Agence de conférenciers et de célébrités | Les Conférenciers</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <link rel="canonical" href="https://www.lesconferenciers.com/" />
+    <meta name="description" content="Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Caveat:wght@500;700&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Caveat:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Caveat:wght@500;700&display=swap" rel="stylesheet" /></noscript>
+    <link rel="preconnect" href="https://ibvjijamybwagxrniyjv.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://ibvjijamybwagxrniyjv.supabase.co" />
+    <meta name="author" content="Les Conférenciers" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Les Conférenciers" />
+    <meta property="og:url" content="https://www.lesconferenciers.com/" />
+    <meta property="og:title" content="Agence de conférenciers et de célébrités | Les Conférenciers">
+    <meta property="og:description" content="Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme">
+    <meta property="og:image" content="https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:alt" content="Les Conférenciers - Agence de conférenciers et de célébrités">
+    <meta property="og:locale" content="fr_FR" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Agence de conférenciers et de célébrités | Les Conférenciers">
+    <meta name="twitter:description" content="Nous vous aidons à trouver le conférencier idéal pour vos événements professionnels. Accompagnement sur mesure | Réactivité | Disponibilité | Enthousiasme">
+    <meta name="twitter:image" content="https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg">
+    <meta name="twitter:image:alt" content="Les Conférenciers - Agence de conférenciers et de célébrités">
+  <script type="module" crossorigin src="/assets/index-C1MB4rg_.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/vendor-B9vX50vK.js">
+  <link rel="modulepreload" crossorigin href="/assets/query-BXlbueQy.js">
+  <link rel="modulepreload" crossorigin href="/assets/supabase-D_2IiIQD.js">
+  <link rel="modulepreload" crossorigin href="/assets/ui-C6Ny22rc.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-DBSKbUY9.css">
+<script>
+  // On vérifie si l'URL contient "netlify.app" (préprod) ou si ce n'est pas ton domaine final
+  if (window.location.hostname.includes('netlify.app') || window.location.hostname === 'main--les-conferenciers.netlify.app') {
+    var meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, nofollow';
+    document.getElementsByTagName('head')[0].appendChild(meta);
+    console.log("SEO : Mode No-Index activé sur cet environnement.");
+  }
+</script></head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
