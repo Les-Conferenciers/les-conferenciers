@@ -1,0 +1,2 @@
+ALTER TABLE public.email_templates ADD COLUMN IF NOT EXISTS format text NOT NULL DEFAULT 'html' CHECK (format IN ('html','plain'));
+UPDATE public.email_templates SET format = 'plain' WHERE key = 'proposal_info';
