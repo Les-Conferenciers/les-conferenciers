@@ -897,6 +897,8 @@ export type Database = {
           linked_profile_ids: string[]
           meta_description: string | null
           name: string
+          rich_content: Json | null
+          rich_content_updated_at: string | null
           seo_title: string | null
           slug: string
           subtitle: string | null
@@ -916,6 +918,8 @@ export type Database = {
           linked_profile_ids?: string[]
           meta_description?: string | null
           name: string
+          rich_content?: Json | null
+          rich_content_updated_at?: string | null
           seo_title?: string | null
           slug: string
           subtitle?: string | null
@@ -935,6 +939,8 @@ export type Database = {
           linked_profile_ids?: string[]
           meta_description?: string | null
           name?: string
+          rich_content?: Json | null
+          rich_content_updated_at?: string | null
           seo_title?: string | null
           slug?: string
           subtitle?: string | null
