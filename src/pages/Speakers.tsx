@@ -286,7 +286,11 @@ const Speakers = () => {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-8 flex-grow">
+      <main className="container mx-auto px-4 py-8 flex-grow">
+        <p className="sr-only">
+          Trouver un conférencier professionnel, un keynote speaker ou un intervenant expert pour vos événements d'entreprise, séminaires, conventions et conférences en France comme à l'international.
+        </p>
+
 
         {/* Theme filters */}
         <div className="flex flex-wrap gap-2 mb-4">
