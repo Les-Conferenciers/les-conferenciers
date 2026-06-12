@@ -114,6 +114,11 @@ const AdminSpeakerProfiles = () => {
           </SelectContent>
         </Select>
 
+        <div className="flex items-center gap-2">
+          <Switch id="inc-arch" checked={includeArchived} onCheckedChange={setIncludeArchived} />
+          <Label htmlFor="inc-arch" className="text-sm cursor-pointer">Inclure les archivés</Label>
+        </div>
+
         {selected.size > 0 && (
           <div className="flex items-center gap-2 ml-auto">
             <span className="text-sm text-muted-foreground">{selected.size} sélectionné(s)</span>
@@ -166,7 +171,10 @@ const AdminSpeakerProfiles = () => {
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"><User className="w-4 h-4 text-muted-foreground" /></div>
                   )}
                 </td>
-                <td className="p-2 font-medium">{r.name}</td>
+                <td className="p-2 font-medium">
+                  {r.name}
+                  {r.archived && <span className="ml-2 inline-block text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Archivé</span>}
+                </td>
                 <td className="p-2 text-muted-foreground">{r.role}</td>
                 <td className="p-2">
                   <Select
