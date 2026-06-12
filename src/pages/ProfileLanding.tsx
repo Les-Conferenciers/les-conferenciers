@@ -8,7 +8,7 @@ import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Check, Sparkles } from "lucide-react";
 
 type FaqItem = { question: string; answer: string };
 type RichSection = { title: string; body: string; speaker_ids?: string[] };
