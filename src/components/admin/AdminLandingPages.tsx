@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ExternalLink, Plus, Trash2, Save, ChevronUp, ChevronDown, X } from "lucide-react";
+import { ExternalLink, Eye, Plus, Trash2, Save, ChevronUp, ChevronDown, X } from "lucide-react";
 
 type FaqItem = { question: string; answer: string };
 type Profile = {
