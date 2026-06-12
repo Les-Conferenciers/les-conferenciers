@@ -28,7 +28,7 @@ import {
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { parseThemes } from "@/lib/parseThemes";
+
 
 const Index = () => {
   const [speakerCount, setSpeakerCount] = useState(0);
