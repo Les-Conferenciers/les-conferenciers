@@ -15,6 +15,19 @@ function normalizeApostrophes(s: string): string {
   return s.replace(/[’‘]/g, "'").replace(/[“”]/g, '"');
 }
 
+// Keep only a safe subset of inline HTML tags
+function sanitizeRichHtml(s: string | null | undefined): string {
+  if (!s) return "";
+  let out = normalizeApostrophes(String(s));
+  // remove scripts/styles
+  out = out.replace(/<\/?(script|style|meta|link|font)[^>]*>/gi, "");
+  // strip attributes from allowed tags (keep only tag name)
+  out = out.replace(/<(\/?)(p|strong|em|ul|ol|li|br)(\s[^>]*)?>/gi, "<$1$2>");
+  // remove any other tag
+  out = out.replace(/<(?!\/?(p|strong|em|ul|ol|li|br)\b)[^>]+>/gi, "");
+  return out.trim();
+}
+
 async function callAI(apiKey: string, system: string, user: string): Promise<string> {
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -95,41 +108,49 @@ Deno.serve(async (req) => {
       bio_excerpt: stripHtml(s.biography).slice(0, 280),
     }));
 
+    const profileLabel = profile.landing_label || profile.name;
+
     const system = `Tu es la plume éditoriale de l'agence francophone "Les Conférenciers" (https://www.lesconferenciers.com), agence premium de conférenciers.
 Ton : professionnel, premium, factuel, chaleureux, jamais commercial agressif, jamais "wow". Français impeccable. Toujours apostrophes droites (').
 Interdictions absolues :
 - Pas de plagiat, ne reprends jamais la formulation d'un site concurrent (wechamp, etc.)
 - Ne cite jamais d'agence concurrente
-- Pas de mise en gras automatique, pas de markdown **, pas de HTML
 - Pas d'invention de faits sur des personnes nommées (reste générique sur leur apport)
 - Pas de superlatifs vides ("incroyable", "exceptionnel à couper le souffle")
+- Pas de mise en gras automatique (n'utilise pas <strong>)
+HTML autorisé UNIQUEMENT : <p>, <em>, <ul>, <ol>, <li>, <br>. Aucun autre tag, aucun attribut, aucune classe.
 Tu réponds STRICTEMENT en JSON valide, sans texte autour.`;
 
-    const user = `Profil de landing : "${profile.landing_label || profile.name}"
+    const user = `Profil de landing : "${profileLabel}"
 ${profile.subtitle ? `Sous-titre : ${profile.subtitle}` : ""}
 
 Conférenciers représentatifs disponibles dans ce profil (pour exemples concrets) :
 ${speakerSummaries.map((s) => `- ${s.name}${s.role ? ` (${s.role})` : ""}`).join("\n")}
 
 Rédige un bloc éditorial SEO destiné à apparaître APRÈS la liste des conférenciers sur la page profil.
-Objectif SEO : remonter sur la requête type "[profil] conférencier" et expliquer pourquoi faire appel à l'agence pour ce type d'intervenant.
+Objectif SEO : remonter sur la requête type "${profileLabel} conférencier" et expliquer pourquoi faire appel à l'agence pour ce type d'intervenant.
 
 Tu dois retourner un JSON strict avec ce schéma :
 {
-  "intro": "Chapô de 200 à 300 mots qui contextualise ce type de profil, son intérêt pour un événement d'entreprise, et le type de prise de parole attendue. Ton éditorial, pas de liste.",
-  "sections": [
-    { "title": "Pourquoi inviter un [profil] à votre événement", "body": "2-3 paragraphes" },
-    { "title": "Dans quels contextes les solliciter", "body": "2-3 paragraphes : séminaires, conventions, kick-off, soirées d'entreprise, formats keynote/atelier/table ronde, etc." },
-    { "title": "Notre sélection de profils", "body": "1-2 paragraphes citant 2 à 4 conférenciers de la liste ci-dessus par leur nom + rôle, sans inventer de faits précis", "speaker_ids": ["id1","id2","id3"] }
+  "intro": "<p>...</p><p>...</p> — Chapô de 200 à 300 mots qui contextualise ce type de profil, son intérêt pour un événement d'entreprise, et le type de prise de parole attendue. Ton éditorial. Format : 2 à 3 paragraphes <p>.",
+  "key_points_title": "Titre court (max 8 mots) qui contextualise les points clés, par exemple : 'Pourquoi choisir un ${profileLabel}' ou 'Ce que ces profils apportent à votre événement'",
+  "key_points_intro": "Une phrase (max 25 mots) de transition entre l'intro et les cartes de points clés, pour expliquer ce qu'on va trouver.",
+  "key_points": [
+    { "label": "Titre court de la carte (3 à 6 mots)", "description": "Une phrase d'appui (15-25 mots) qui développe le bénéfice concret pour l'événement." }
   ],
-  "why_agency": "1 paragraphe (80-120 mots) sur la valeur ajoutée de passer par Les Conférenciers : sourcing sur-mesure, conseil sur le bon profil selon le thème de la conférence, sécurisation logistique, accompagnement de A à Z.",
-  "key_points": ["4 à 6 points courts (max 8 mots chacun) résumant la valeur du profil"]
+  "sections": [
+    { "title": "Pourquoi inviter un ${profileLabel} à votre événement", "body": "<p>...</p><p>...</p> — 2-3 paragraphes" },
+    { "title": "Dans quels contextes les solliciter", "body": "<p>...</p> — 2-3 paragraphes : séminaires, conventions, kick-off, soirées d'entreprise, formats keynote/atelier/table ronde, etc." },
+    { "title": "Notre sélection de profils", "body": "<p>...</p> — 1-2 paragraphes citant 2 à 4 conférenciers de la liste ci-dessus par leur nom + rôle, sans inventer de faits précis", "speaker_ids": ["id1","id2","id3"] }
+  ],
+  "why_agency": "<p>...</p><p>...</p> — 2 paragraphes (120-180 mots au total). Insiste IMPÉRATIVEMENT sur 3 axes : 1) la connaissance fine de chaque conférencier (rencontres, briefs, suivi), 2) la maîtrise du contenu de leurs conférences (sujets, angles, formats, exemples), 3) l'expertise de matching entre un événement, son audience, ses objectifs et le bon conférencier. Évite les généralités vagues type 'accompagnement de A à Z'."
 }
 
 Contraintes :
-- intro : 200 à 300 mots impérativement
+- intro : 200 à 300 mots impérativement, formatés en paragraphes <p>
+- key_points : 4 à 6 cartes maximum
 - speaker_ids : utilise les ids exacts depuis la liste fournie : ${JSON.stringify(speakerSummaries.map((s) => ({ id: s.id, name: s.name })))}
-- Ne mets aucune balise HTML, aucun markdown
+- HTML autorisé : <p>, <em>, <ul>, <ol>, <li>, <br>. PAS de <strong>, PAS de classes, PAS d'attributs.
 - Apostrophes droites uniquement (')`;
 
     const raw = await callAI(LOVABLE_API_KEY, system, user);
@@ -142,25 +163,33 @@ Contraintes :
       });
     }
 
-    // Sanitize: strip HTML, normalize apostrophes
-    const clean = (s: any) => normalizeApostrophes(stripHtml(String(s || "")));
     const validIds = new Set(speakerSummaries.map((s) => s.id));
+    const cleanText = (s: any) => normalizeApostrophes(stripHtml(String(s || "")));
+
+    const rawKeyPoints = Array.isArray(parsed.key_points) ? parsed.key_points : [];
+    const key_points = rawKeyPoints.slice(0, 6).map((p: any) => {
+      if (typeof p === "string") return { label: cleanText(p), description: "" };
+      return {
+        label: cleanText(p?.label),
+        description: cleanText(p?.description),
+      };
+    }).filter((p: any) => p.label);
 
     const rich_content = {
-      intro: clean(parsed.intro),
+      intro: sanitizeRichHtml(parsed.intro),
+      key_points_title: cleanText(parsed.key_points_title),
+      key_points_intro: cleanText(parsed.key_points_intro),
+      key_points,
       sections: Array.isArray(parsed.sections)
         ? parsed.sections.slice(0, 6).map((sec: any) => ({
-            title: clean(sec.title),
-            body: clean(sec.body),
+            title: cleanText(sec.title),
+            body: sanitizeRichHtml(sec.body),
             speaker_ids: Array.isArray(sec.speaker_ids)
               ? sec.speaker_ids.filter((id: any) => validIds.has(id)).slice(0, 6)
               : [],
           }))
         : [],
-      why_agency: clean(parsed.why_agency),
-      key_points: Array.isArray(parsed.key_points)
-        ? parsed.key_points.slice(0, 8).map((p: any) => clean(p)).filter(Boolean)
-        : [],
+      why_agency: sanitizeRichHtml(parsed.why_agency),
     };
 
     const { error: uErr } = await supabase

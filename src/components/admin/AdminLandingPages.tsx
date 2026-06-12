@@ -9,14 +9,18 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ExternalLink, Eye, Plus, Trash2, Save, ChevronUp, ChevronDown, X, Sparkles, Loader2 } from "lucide-react";
+import SimpleRichTextEditor from "./SimpleRichTextEditor";
 
 type FaqItem = { question: string; answer: string };
 type RichSection = { title: string; body: string; speaker_ids?: string[] };
+type KeyPoint = { label: string; description: string };
 type RichContent = {
   intro: string;
+  key_points_title?: string;
+  key_points_intro?: string;
+  key_points: KeyPoint[] | string[];
   sections: RichSection[];
   why_agency: string;
-  key_points: string[];
 };
 type Profile = {
   id: string;
@@ -126,8 +130,13 @@ const AdminLandingPages = () => {
   };
 
   const updateRich = (p: Profile, patch: Partial<RichContent>) => {
-    const base: RichContent = p.rich_content || { intro: "", sections: [], why_agency: "", key_points: [] };
+    const base: RichContent = p.rich_content || { intro: "", key_points_title: "", key_points_intro: "", sections: [], why_agency: "", key_points: [] };
     updateLocal(p.id, { rich_content: { ...base, ...patch } });
+  };
+
+  const normalizeKeyPoints = (kp: KeyPoint[] | string[] | undefined): KeyPoint[] => {
+    if (!kp) return [];
+    return (kp as any[]).map(p => typeof p === "string" ? { label: p, description: "" } : { label: p?.label || "", description: p?.description || "" });
   };
 
   const toggleEnabled = async (p: Profile, enabled: boolean) => {
@@ -255,16 +264,82 @@ const AdminLandingPages = () => {
                     </Button>
                   </div>
 
-                  {p.rich_content && (
-                    <div className="space-y-3">
+                  {p.rich_content && (() => {
+                    const kp = normalizeKeyPoints(p.rich_content.key_points);
+                    return (
+                    <div className="space-y-5">
                       <div>
-                        <Label className="text-xs">Chapô (intro, 200-300 mots)</Label>
-                        <Textarea rows={6} value={p.rich_content.intro || ""} onChange={e => updateRich(p, { intro: e.target.value })} />
+                        <Label className="text-xs font-semibold">Chapô d'introduction (200-300 mots)</Label>
+                        <p className="text-[11px] text-muted-foreground mb-1">Posé en haut du bloc éditorial, contextualise le type de profil.</p>
+                        <SimpleRichTextEditor
+                          value={p.rich_content.intro || ""}
+                          onChange={(v) => updateRich(p, { intro: v })}
+                          rows={6}
+                          placeholder="Chapô éditorial…"
+                        />
+                      </div>
+
+                      <div className="border rounded-md p-3 bg-background space-y-3">
+                        <Label className="text-xs font-semibold">Points clés du profil</Label>
+                        <div className="grid md:grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[11px]">Titre du bloc</Label>
+                            <Input
+                              value={p.rich_content.key_points_title || ""}
+                              onChange={e => updateRich(p, { key_points_title: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[11px]">Phrase d'intro</Label>
+                            <Input
+                              value={p.rich_content.key_points_intro || ""}
+                              onChange={e => updateRich(p, { key_points_intro: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          {kp.map((point, idx) => (
+                            <div key={idx} className="border rounded p-2 bg-muted/30 space-y-2">
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  value={point.label}
+                                  placeholder="Titre de la carte"
+                                  onChange={e => {
+                                    const next = [...kp];
+                                    next[idx] = { ...next[idx], label: e.target.value };
+                                    updateRich(p, { key_points: next });
+                                  }}
+                                />
+                                <Button type="button" size="icon" variant="ghost"
+                                  onClick={() => updateRich(p, { key_points: kp.filter((_, i) => i !== idx) })}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                              <Textarea
+                                rows={2}
+                                value={point.description}
+                                onChange={e => {
+                                  const next = [...kp];
+                                  next[idx] = { ...next[idx], description: e.target.value };
+                                  updateRich(p, { key_points: next });
+                                }}
+                                aria-label="Description"
+                              />
+                            </div>
+                          ))}
+                          <Button
+                            type="button" size="sm" variant="outline"
+                            onClick={() => updateRich(p, { key_points: [...kp, { label: "", description: "" }] })}
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> Ajouter une carte
+                          </Button>
+                        </div>
                       </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <Label className="text-xs">Sections</Label>
+                          <Label className="text-xs font-semibold">Sections de contenu</Label>
                           <Button
                             type="button" size="sm" variant="ghost"
                             onClick={() => updateRich(p, { sections: [...(p.rich_content?.sections || []), { title: "", body: "", speaker_ids: [] }] })}
@@ -272,7 +347,7 @@ const AdminLandingPages = () => {
                             <Plus className="h-3 w-3 mr-1" /> Ajouter une section
                           </Button>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {(p.rich_content.sections || []).map((sec, idx) => (
                             <div key={idx} className="border rounded p-2 bg-background space-y-2">
                               <div className="flex items-center gap-1">
@@ -302,15 +377,15 @@ const AdminLandingPages = () => {
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
-                              <Textarea
-                                rows={4}
-                                value={sec.body}
-                                placeholder="Contenu de la section"
-                                onChange={e => {
+                              <SimpleRichTextEditor
+                                value={sec.body || ""}
+                                onChange={(v) => {
                                   const next = [...(p.rich_content?.sections || [])];
-                                  next[idx] = { ...next[idx], body: e.target.value };
+                                  next[idx] = { ...next[idx], body: v };
                                   updateRich(p, { sections: next });
                                 }}
+                                rows={5}
+                                placeholder="Contenu de la section…"
                               />
                             </div>
                           ))}
@@ -321,20 +396,17 @@ const AdminLandingPages = () => {
                       </div>
 
                       <div>
-                        <Label className="text-xs">Pourquoi faire appel à l'agence</Label>
-                        <Textarea rows={4} value={p.rich_content.why_agency || ""} onChange={e => updateRich(p, { why_agency: e.target.value })} />
-                      </div>
-
-                      <div>
-                        <Label className="text-xs">Points clés (un par ligne)</Label>
-                        <Textarea
-                          rows={4}
-                          value={(p.rich_content.key_points || []).join("\n")}
-                          onChange={e => updateRich(p, { key_points: e.target.value.split("\n").map(s => s.trim()).filter(Boolean) })}
+                        <Label className="text-xs font-semibold">Encart « Pourquoi faire appel à notre agence »</Label>
+                        <p className="text-[11px] text-muted-foreground mb-1">Insiste sur la connaissance des profils, du contenu des conférences et l'expertise de matching.</p>
+                        <SimpleRichTextEditor
+                          value={p.rich_content.why_agency || ""}
+                          onChange={(v) => updateRich(p, { why_agency: v })}
+                          rows={5}
                         />
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 <details className="group">
