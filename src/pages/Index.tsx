@@ -32,7 +32,7 @@ import { parseThemes } from "@/lib/parseThemes";
 
 const Index = () => {
   const [speakerCount, setSpeakerCount] = useState(0);
-  const [topThemes, setTopThemes] = useState<string[]>([]);
+  
   const navigate = useNavigate();
 
   // SEO: structured data for home page
@@ -153,24 +153,6 @@ const Index = () => {
         .limit(500);
       setSpeakerCount(count || 0);
 
-      // Extract top themes for category search
-      if (data) {
-        const excludedThemes = ["Communication", "Bien-être au travail", "Bien être au travail", "Confiance en soi"];
-        const renameMap: Record<string, string> = { "Gestion du stress": "Gestion de crise" };
-        const counts = new Map<string, number>();
-        data.forEach((s: any) => {
-          parseThemes(s.themes).forEach((t: string) => {
-            if (excludedThemes.includes(t)) return;
-            const displayName = renameMap[t] || t;
-            counts.set(displayName, (counts.get(displayName) || 0) + 1);
-          });
-        });
-        const sorted = Array.from(counts.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 9)
-          .map(([theme]) => theme);
-        setTopThemes(sorted);
-      }
     };
     fetchData();
   }, []);
