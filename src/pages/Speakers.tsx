@@ -278,10 +278,10 @@ const Speakers = () => {
         <div className="absolute inset-0 bg-primary/80" />
         <div className="relative z-10">
           <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
-            Conférenciers professionnels pour vos événements
+            Trouver un conférencier pour votre événement
           </h1>
           <p className="text-primary-foreground/80 max-w-2xl mx-auto text-lg font-normal">
-            Parmi nos 300 conférenciers et intervenants d'exception, trouvez celui qui marquera votre événement.
+            Plus de 300 conférenciers professionnels, experts et personnalités d'exception. Trouvez en quelques clics le profil idéal pour marquer votre événement d'entreprise.
           </p>
         </div>
       </section>
