@@ -36,6 +36,7 @@ import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
 
 const REMOVED_CLAUSE = "__REMOVED__";
 
@@ -1066,15 +1067,39 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
 <p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
-  const openSpeakerEmail = (type: "info" | "contract") => {
+  const openSpeakerEmail = async (type: "info" | "contract") => {
     setSpeakerEmailType(type);
     const speaker = getSelectedSpeakerInfo();
     const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
     setSpeakerEmailAddressing(initialAddressing);
     setSpeakerEmailTo(speaker?.email || "");
     setSpeakerEmailCc("");
-    setSpeakerEmailSubject(buildSpeakerEmailSubject(type));
-    setSpeakerEmailBody(buildSpeakerEmailBody(type, initialAddressing));
+
+    // Try DB template (speaker_event_info / contract_to_speaker), fallback to hardcoded
+    await loadEmailTemplates();
+    const speakerName = speaker?.name || "";
+    const firstName = speakerName.split(" ")[0] || "";
+    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
+    const ps = getSelectedSpeaker();
+    const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const tplKey = type === "info" ? "speaker_event_info" : "contract_to_speaker";
+    const tpl = renderTpl(tplKey, {
+      prenom_conferencier: firstName,
+      conferencier: speakerName,
+      client: proposal.client_name,
+      date_evenement: eventDateLong || "à définir",
+      lieu_evenement: contract?.event_location || "à définir",
+      horaires: contract?.event_time || "à définir",
+      conference: event?.conference_title || "",
+      duree: event?.conference_duration || "",
+      auditoire: event?.audience_size || "à définir",
+      thematique: event?.theme || "à définir",
+      budget: budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir",
+      dress_code: event?.dress_code || "",
+      agent_nom: "Nelly Sabde",
+    });
+    setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));
+    setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, initialAddressing));
     setSpeakerEmailOpen(true);
   };
 
@@ -1162,7 +1187,8 @@ ${liaisonButtonHtml()}
 <p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
-  const openLiaisonDialog = () => {
+  const openLiaisonDialog = async () => {
+    await loadEmailTemplates();
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
     const speakerFirstName = speakerName.split(" ")[0];
@@ -1189,19 +1215,50 @@ ${liaisonButtonHtml()}
     // Date FR longue pour les objets de mail
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
 
-    // Client email template (nouveau wording, sans prix)
-    setLiaisonClientSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
-    setLiaisonClientBody(`<p>${clientFirstName ? clientFirstName : "Bonjour"},</p>
+    // Variables communes pour les templates de liaison
+    const tplVars = {
+      prenom_destinataire: clientFirstName,
+      prenom_conferencier: speakerFirstName,
+      conferencier: speakerName,
+      client: proposal.client_name,
+      date_evenement: eventDateLong || "à définir",
+      lieu_evenement: contract?.event_location || "à définir",
+      bouton_liaison: liaisonButtonHtml(),
+      lien_liaison: liaisonPublicUrl(),
+    };
+
+    // Client email — template DB avec fallback
+    const tplClient = renderTpl("liaison_to_client", tplVars);
+    setLiaisonClientSubject(
+      tplClient?.subject || `Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`
+    );
+    setLiaisonClientBody(
+      (tplClient?.body
+        ? // Si le template ne contient pas déjà le bouton, on l'ajoute
+          tplClient.body.includes("{{bouton_liaison}}") || tplClient.body.includes(liaisonPublicUrl())
+          ? tplClient.body
+          : tplClient.body + liaisonButtonHtml()
+        : `<p>${clientFirstName ? clientFirstName : "Bonjour"},</p>
 <p>Un grand merci pour nos échanges${event?.visio_date ? " de ce matin" : ""} !</p>
 <p>Vous trouverez ci-joint comme convenu la feuille de liaison pour l'intervention de ${speakerName}, laissant apparaître ses coordonnées téléphoniques.</p>
 ${liaisonButtonHtml()}
 <p>Vous en souhaitant bonne réception et restant à votre disposition si besoin est.</p>
 <p>Excellente fin de journée à vous !</p>
-<p>Nelly Sabde - Les Conférenciers</p>`);
+<p>Nelly Sabde - Les Conférenciers</p>`)
+    );
 
-    // Speaker email template — adressage piloté par le sélecteur dans la pop-up
-    setLiaisonSpeakerSubject(`Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`);
-    setLiaisonSpeakerBody(buildLiaisonSpeakerBody(initialAddressing, speakerFirstName));
+    // Speaker email — template DB avec fallback (adressage formel/informel via fallback)
+    const tplSpeaker = renderTpl("liaison_to_speaker", tplVars);
+    setLiaisonSpeakerSubject(
+      tplSpeaker?.subject || `Conférence du ${eventDateLong || "(date à confirmer)"} - ${proposal.client_name}`
+    );
+    setLiaisonSpeakerBody(
+      tplSpeaker?.body
+        ? tplSpeaker.body.includes(liaisonPublicUrl())
+          ? tplSpeaker.body
+          : tplSpeaker.body + liaisonButtonHtml()
+        : buildLiaisonSpeakerBody(initialAddressing, speakerFirstName)
+    );
 
     // Pre-fill recipients (editable) — pas de CC conférencier sur le mail client
     const speakerEmail = speaker?.email || "";
@@ -1962,7 +2019,7 @@ Nelly Sabde - Les Conférenciers`);
                     </span>
                   ) : (
                     <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium">
-                      Brouillon
+                      À envoyer
                     </span>
                   )}
                 </div>
@@ -3162,12 +3219,7 @@ Nelly Sabde - Les Conférenciers`);
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Corps du mail</Label>
-                    <Textarea
-                      value={liaisonClientBody}
-                      onChange={(e) => setLiaisonClientBody(e.target.value)}
-                      rows={10}
-                      className="text-sm"
-                    />
+                    <RichTextEditor value={liaisonClientBody} onChange={setLiaisonClientBody} />
                   </div>
                   <Button className="w-full" onClick={() => handleSendLiaisonEmail("client")} disabled={sendingLiaison}>
                     <Send className="h-4 w-4 mr-2" />

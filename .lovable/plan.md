@@ -1,41 +1,67 @@
-## 1. Champs « Lieu » et « Horaires » trop courts (édition du contrat)
+## Plan d'implémentation (8 sujets)
 
-`src/pages/ContractView.tsx` lignes 296–306 : les `<input>` ont `min-w-[260px]` / `min-w-[200px]`, insuffisant pour une adresse complète ou un horaire détaillé.
+### 1. Variable `{{conferencier}}` dans le template "Bon de commande envoyé au client"
+- Mettre à jour le template `contract_client_send` dans `email_templates` : ajouter `{{conferencier}}` dans `available_variables` + l'insérer dans le `body_html` par défaut.
+- Côté `ContractInvoiceManager.tsx` (fonction `openContractEmail`) : passer le nom du conférencier sélectionné dans les variables de `renderTpl`.
 
-→ Élargir : `w-full max-w-[640px]` pour le lieu, `w-full max-w-[420px]` pour les horaires (toujours dans la même ligne, mais largeur fluide jusqu'à la marge du conteneur).
+### 2. Photo selfies sur /contact
+- Uploader `selfies-avec-nelly.png` via `lovable-assets` (CDN).
+- Remplacer dans `src/pages/Contact.tsx` l'image actuelle de Nelly par le nouvel asset. Mise en page conservée (même conteneur), ajustement minimal de l'`object-fit` si besoin.
 
-## 2. Thématique et Détails uniquement s'ils sont renseignés (édition incluse)
+### 3. PDF Proposition / Profil conférencier
+- **Pitch de conférence dans le PDF proposition** : dans `ProposalView.tsx`, ajouter le rendu du pitch (description courte de chaque conférence du conférencier) sous le bloc conférencier, visible aussi en mode impression.
+- **Profil PDF individuel** : ajouter un bouton "Télécharger le profil (PDF)" dans l'admin (CRM conférencier / fiche admin) qui ouvre une route imprimable `/admin/conferencier/:slug/pdf` avec photo, bio, spécialités, conférences (titres + pitchs), références. Réservé à l'admin.
+- **En-têtes/pieds navigateur** : conserver l'impression navigateur. J'ajoute simplement une note discrète "Astuce : décochez 'En-têtes et pieds de page' dans le dialogue d'impression" sur les pages d'impression admin. Aucune génération PDF serveur.
 
-Toujours `ContractView.tsx`, lignes 315–330. Aujourd'hui en mode édition ces deux champs sont toujours visibles ; on veut qu'ils n'apparaissent **que** s'ils contiennent quelque chose.
+### 4. Pipeline Contrats : masquer "Acompte client" quand pas d'acompte
+- Dans `ContractPipeline.tsx` : si `contract.deposit_amount` est nul/0 OU le flag "pas d'acompte" est coché, ne pas afficher la colonne/étape "Acompte client" pour ce dossier (passage direct facture finale).
+- Vérifier que les jalons du dossier événementiel reflètent aussi cette logique.
 
-→ Modifier :
-- Retirer la condition `editing ||` : n'afficher la ligne « Thématique » que si `event?.theme` a une valeur ; idem « Détails » uniquement si `contract.event_description` a une valeur.
-- En mode édition, ajouter deux petits boutons « + Ajouter thématique » / « + Ajouter détails » sous le bloc, visibles uniquement quand le champ correspondant est vide. Cliquer place une chaîne vide initiale dans le state local (et donc fait apparaître l'input correspondant).
-- Le rendu non-édition est déjà conforme : aucun changement visible côté client final.
+### 5. Templates manquants dans l'onglet "Emails"
+Ajouter 5 nouveaux templates dans `email_templates` :
+- `contract_speaker_send` — Envoi contrat agence au conférencier
+- `speaker_event_info` — Envoi infos événement au conférencier
+- `liaison_sheet_send` — Feuille de liaison
+- `preparatory_call` — Visio préparatoire (proposition de créneaux)
+- `invoice_send` — Envoi de facture
 
-## 3. Enregistrer le mail du contrat sans l'envoyer
+Chaque template : variables disponibles (event_date, lieu, client, conférencier, lien...), wording par défaut basé sur les emails actuellement codés en dur. Brancher les call sites correspondants via `renderTpl(...)`.
 
-Aujourd'hui (`ContractInvoiceManager.tsx`, dialog lignes 848–887) : un seul bouton « Envoyer le contrat par email ». Objet et corps ne sont jamais persistés — toute modification est perdue à la fermeture du dialog.
+### 6. Factures
+- **Champ "Notes internes"** : ajouter colonne `internal_notes TEXT` dans `invoices`. Textarea dans le formulaire de création/édition de facture, affichée uniquement dans l'admin (jamais sur le PDF client).
+- **Retirer la mention "Brouillon"** : supprimer le badge "BROUILLON" / filigrane sur `InvoiceView.tsx` quel que soit le statut.
+- **En-têtes/pieds navigateur** : voir point 3 — note d'astuce affichée sur la page facture admin.
 
-### Schéma DB
+### 7. Aperçu mail feuille de liaison (HTML visible)
+- Localiser le call site qui ouvre le mail liaison (probablement `LiaisonSheetView` ou `EventDossier`).
+- Le corps doit être passé à `EmailPreviewCard` comme HTML rendu, pas comme texte échappé. Bug probablement dû à un double-échappement ou à un `pre`/`textContent` au lieu de `dangerouslySetInnerHTML`.
 
-Migration : ajouter deux colonnes optionnelles sur `contracts` :
-- `email_subject text`
-- `email_body text`
+### 8. Police uniforme dans "envoi des infos au conférencier"
+- L'éditeur Rich Text utilisé par ce mail produit des `<span style="font-size:...">` quand on tape, mais le wrapper email applique une autre taille → désaccord visuel.
+- Corriger en : 
+  1. Forçant le `RichTextEditor` à ne pas injecter de `font-size` inline par défaut (utiliser la taille héritée).
+  2. Côté wrapper d'envoi : enrober dans un conteneur avec `font-size: 15px; font-family: Arial` et `* { font-size: inherit; font-family: inherit; }` ciblé sur le bloc corps pour neutraliser les tailles disparates.
 
-### UI
+---
 
-Dans le dialog « Envoyer le contrat » :
-- À l'ouverture (`openContractEmail`) : si `contract.email_subject` / `contract.email_body` existent, les pré-remplir avec ces valeurs ; sinon utiliser les valeurs par défaut générées actuellement.
-- Ajouter un bouton secondaire **« Enregistrer le brouillon »** à gauche du bouton d'envoi. Il fait `update contracts set email_subject, email_body where id=...`, affiche un toast « Brouillon enregistré » et ferme le dialog **sans changer `status`** (le contrat reste `draft` ou son statut courant).
-- Le bouton « Envoyer le contrat par email » continue de fonctionner comme aujourd'hui (envoi + passage à `status='sent'`), en sauvegardant aussi les valeurs courantes des champs en base avant l'invocation de l'edge function, pour que la prochaine ouverture retrouve le dernier état.
+## Détails techniques
 
-### Types
+**Migration SQL** : 1 migration unique pour
+- ajout colonne `invoices.internal_notes`
+- insertion des 5 templates email manquants
+- mise à jour du template `contract_client_send` (variables + body)
 
-Mettre à jour le type local `ContractRow` dans `ContractInvoiceManager.tsx` (lignes ~40–60) pour inclure les deux nouveaux champs ; les types Supabase régénérés couvriront le reste.
+**Fichiers principaux touchés**
+- `src/pages/Contact.tsx`
+- `src/pages/ProposalView.tsx` (pitch)
+- `src/pages/InvoiceView.tsx` (suppression brouillon + champ notes admin)
+- nouveau : `src/pages/SpeakerPdfView.tsx` + route admin
+- `src/components/admin/ContractInvoiceManager.tsx` (variable conférencier, notes facture, branchement des nouveaux templates)
+- `src/components/admin/ContractPipeline.tsx` (masquer acompte)
+- `src/components/admin/EventDossier.tsx` (liaison email, infos conférencier)
+- `src/components/admin/RichTextEditor.tsx` (normalisation font-size)
+- `src/components/admin/EmailPreviewCard.tsx` (HTML rendering safe)
+- `src/components/admin/AdminSpeakersCRM.tsx` (bouton PDF profil)
+- nouvel asset : `src/assets/selfies-avec-nelly.png.asset.json`
 
-## Hors scope
-
-- Pas de modification de l'edge function `send-contract-email` : elle reçoit déjà `email_subject` et `email_body` dans le body.
-- Pas de changement du flow d'invoice / facture.
-- Pas de modification de la page `SpeakerContractView` (contrat conférencier).
+**Pas dans le scope** : génération PDF serveur, modification du SEO/sitemap, refonte du pipeline d'événement.

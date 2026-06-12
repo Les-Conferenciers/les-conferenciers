@@ -3,12 +3,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Users, Mic, Building2, FileText as FileTextIcon, ClipboardCheck } from "lucide-react";
+import { LogOut, Users, Mic, Building2, FileText as FileTextIcon, ClipboardCheck, Mail as MailIcon } from "lucide-react";
 import nugget from "@/assets/nugget.png";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
 import AdminClients from "@/components/admin/AdminClients";
 import AdminEventDossiers from "@/components/admin/AdminEventDossiers";
+import AdminEmailTemplates from "@/components/admin/AdminEmailTemplates";
+import { loadEmailTemplates } from "@/lib/emailTemplates";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -27,6 +29,8 @@ const Admin = () => {
         return;
       }
       setAuthed(true);
+      // Charge les templates email pour le pré-remplissage des compositions
+      loadEmailTemplates().catch(() => {});
     };
     check();
   }, []);
@@ -78,6 +82,9 @@ const Admin = () => {
             <TabsTrigger value="leads" className="gap-2">
               <Users className="h-4 w-4" /> Leads
             </TabsTrigger>
+            <TabsTrigger value="emails" className="gap-2">
+              <MailIcon className="h-4 w-4" /> Emails
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="speakers">
@@ -98,6 +105,10 @@ const Admin = () => {
 
           <TabsContent value="leads">
             <AdminLeads />
+          </TabsContent>
+
+          <TabsContent value="emails">
+            <AdminEmailTemplates />
           </TabsContent>
         </Tabs>
       </div>
@@ -148,6 +159,17 @@ import {
 } from "lucide-react";
 import EventDossier from "@/components/admin/EventDossier";
 import { toast } from "sonner";
+import { renderTpl } from "@/lib/emailTemplates";
+import { EmailPreviewCard } from "@/components/admin/EmailPreviewCard";
+
+
+const AGENT_VARS = {
+  agent_nom: "Nelly Sabde",
+  agent_telephone: "06 95 93 97 91",
+  agent_email: "nellysabde@lesconferenciers.com",
+};
+
+const firstName = (s?: string) => (s ? s.split(" ")[0] : "");
 
 const getDefaultMessage = (recipientName: string, clientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.\n\nVous trouverez ci-joint un fichier PDF présentant une sélection de conférenciers, sous réserve de leur disponibilité.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers`;
@@ -155,8 +177,11 @@ const getDefaultMessage = (recipientName: string, clientName: string) =>
 const getFollowUpMessage = (recipientName: string, clientName: string) =>
   `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nSuite à notre récent échange, je suis ravie de vous adresser une nouvelle sélection de conférenciers qui, je l'espère, correspondra davantage à vos attentes.\n\nVous trouverez ci-joint un fichier PDF présentant cette nouvelle sélection, sous réserve de la disponibilité des intervenants.\n\nLes tarifs indiqués sont exprimés en HT et hors frais de voyage, d'hébergement et de restauration.\n\nJe reste bien entendu à votre disposition pour tout complément d'information. Et si aucun de ces profils ne correspondait pleinement à vos attentes, nous pourrions poursuivre ensemble les recherches afin d'identifier l'intervenant idéal.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers`;
 
-const getDefaultEmailSubject = (clientName: string) =>
-  `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
+const getDefaultEmailSubject = (clientName: string) => {
+  const tpl = renderTpl("proposal_classic", { nom_client: clientName });
+  if (tpl?.subject) return tpl.subject;
+  return `Votre sélection de conférenciers sur mesure - ${clientName || "Les Conférenciers"}`;
+};
 
 const getFollowUpEmailSubject = (clientName: string) =>
   `Votre nouvelle sélection de conférenciers - ${clientName || "Les Conférenciers"}`;
@@ -185,6 +210,14 @@ const getDefaultEmailBody = (
   eventContext?: string,
   _templateName?: string,
 ) => {
+  const tpl = renderTpl("proposal_classic", {
+    prenom_destinataire: firstName(recipientName),
+    nom_destinataire: recipientName,
+    nom_client: clientName,
+    event_context: eventContext || "",
+    ...AGENT_VARS,
+  });
+  if (tpl?.body) return tpl.body;
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Suite à votre mail et à notre conversation téléphonique, je suis ravie de vous accompagner dans votre recherche d'intervenants.</p>
@@ -211,7 +244,22 @@ const getFollowUpEmailBody = (
   clientName: string,
   eventContext?: string,
   _templateName?: string,
+  eventDateText?: string,
+  eventLocation?: string,
+  audienceSize?: string,
 ) => {
+  const formattedDate = formatFrenchEventDate(eventDateText) || eventDateText || "";
+  const tpl = renderTpl("proposal_update", {
+    prenom_destinataire: firstName(recipientName),
+    nom_destinataire: recipientName,
+    nom_client: clientName,
+    event_context: eventContext || "",
+    date_evenement: formattedDate,
+    lieu_evenement: eventLocation || "",
+    auditoire: audienceSize || "",
+    ...AGENT_VARS,
+  });
+  if (tpl?.body) return tpl.body;
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Suite à notre récent échange, je suis ravie de vous adresser une <strong>nouvelle sélection de conférenciers</strong> qui, je l'espère, correspondra davantage à vos attentes.</p>
@@ -232,6 +280,7 @@ ${
 
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 };
+
 
 const formatFrenchEventDate = (text?: string): string => {
   if (!text) return "";
@@ -275,13 +324,28 @@ const getUniqueEmailBody = (
 
 <p><strong>👉 À ce titre, pourriez-vous m'indiquer la taille de l'auditoire envisagé ainsi que l'enveloppe budgétaire disponible ?</strong></p>`;
 
+  const profileUrl = `https://www.lesconferenciers.com/conferencier/${speakerSlug}`;
+  const tpl = renderTpl("proposal_unique", {
+    prenom_destinataire: firstName(recipientName),
+    nom_destinataire: recipientName,
+    conferencier: speakerName,
+    tarif_conferencier: totalAmount,
+    url_proposition: profileUrl,
+    event_context: hasEventContext ? `concernant votre événement ${contextParts.join(", ")}` : "",
+    date_evenement: formattedDate,
+    lieu_evenement: eventLocation || "",
+    auditoire: audienceSize || "",
+    ...AGENT_VARS,
+  });
+  if (tpl?.body) return tpl.body;
+
   return `<p>Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},</p>
 
 <p>Je fais suite à votre mail et à ma tentative de vous joindre par téléphone.</p>
 
 <p>${introPhrase} Le tarif de son intervention est de ${totalAmount} € HT, hors frais VHR.</p>
 
-<p><strong>👉 <a href="https://www.lesconferenciers.com/conferencier/${speakerSlug}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></strong> (sous réserve de sa disponibilité)</p>
+<p><strong>👉 <a href="${profileUrl}" target="_blank" rel="noopener noreferrer">Découvrir le profil de ${speakerName}</a></strong> (sous réserve de sa disponibilité)</p>
 
 ${alternativePhrase}
 
@@ -292,8 +356,15 @@ ${alternativePhrase}
 <p>Nelly Sabde - Les Conférenciers<br>📞 06 95 93 97 91</p>`;
 };
 
-const getInfoEmailBody = (recipientName: string) =>
-  `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n\nConcernant votre enveloppe budgétaire : le tarif moyen des conférenciers se situe entre 4K et 7K HT, hors frais VHR. L'idéal serait de nous indiquer si votre budget se situe dans cette fourchette, au-dessus ou en-dessous, sachant que les premiers tarifs de notre offre se situent autour de 2,5K HT, hors frais VHR.\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
+const getInfoEmailBody = (recipientName: string) => {
+  const tpl = renderTpl("proposal_info", {
+    prenom_destinataire: firstName(recipientName),
+    nom_destinataire: recipientName,
+    ...AGENT_VARS,
+  });
+  if (tpl?.body) return tpl.body;
+  return `Bonjour${recipientName ? ` ${recipientName.split(" ")[0]}` : ""},\n\nMerci pour votre message. J'ai tenté de vous joindre par téléphone sans succès et me permets donc de revenir vers vous par écrit.\n\nJe serais ravie de vous accompagner dans votre recherche d'intervenants. Afin de pouvoir vous proposer des profils parfaitement adaptés à vos besoins, pourriez-vous m'apporter quelques précisions concernant :\n\n• La taille de l'auditoire\n• Le profil des participants (commerciaux, managers, experts, etc.)\n• La durée souhaitée pour l'intervention\n• La thématique à aborder\n\nConcernant votre enveloppe budgétaire : le tarif moyen des conférenciers se situe entre 4K et 7K HT, hors frais VHR. L'idéal serait de nous indiquer si votre budget se situe dans cette fourchette, au-dessus ou en-dessous, sachant que les premiers tarifs de notre offre se situent autour de 2,5K HT, hors frais VHR.\n\nCes informations me permettront de cibler au mieux les conférenciers à vous suggérer.\n\nJe reste bien entendu à votre disposition pour en discuter de vive voix si vous le souhaitez.\n\nDans l'attente de votre retour, je vous souhaite une très belle journée.\n\nNelly Sabde - Les Conférenciers\n📞 06 95 93 97 91`;
+};
 
 type ProposalType = "classique" | "unique" | "info";
 
@@ -507,12 +578,8 @@ const getProposalSpeakerTotal = (
 ) =>
   speaker?.total_price ??
   (speaker?.speaker_fee || 0) + (speaker?.travel_costs || 0) + (speaker?.agency_commission || 0);
-const toEmailBodyHtml = (value: string) => {
-  if (!value?.trim()) return "";
-  if (hasHtmlContent(value)) return value;
+// toEmailBodyHtml now lives in @/components/admin/EmailPreviewCard (shared)
 
-  return escapeEmailHtml(value).replace(/\n/g, "<br>");
-};
 
 const getResolvedEmailSubject = (type: ProposalType, subject: string, clientName: string) => {
   if (subject?.trim()) return subject;
@@ -564,94 +631,9 @@ const getResolvedEmailBody = ({
   return getDefaultEmailBody(recipientName, clientName, eventContext);
 };
 
-const EmailPreviewCard = ({
-  to,
-  subject,
-  body,
-  showProposalButton,
-}: {
-  to: string;
-  subject: string;
-  body: string;
-  showProposalButton: boolean;
-}) => {
-  const bodyHtml = toEmailBodyHtml(body);
+// EmailPreviewCard is imported from "@/components/admin/EmailPreviewCard"
+// (source unique de vérité pour l'aperçu des emails, partagé avec l'onglet Emails).
 
-  return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      <div className="bg-muted px-4 py-2 text-xs text-muted-foreground space-y-1">
-        <p>
-          <strong>De :</strong> Les Conférenciers &lt;nellysabde@lesconferenciers.com&gt;
-        </p>
-        <p>
-          <strong>À :</strong> {to || "-"}
-        </p>
-        <p>
-          <strong>Objet :</strong> {subject || "-"}
-        </p>
-      </div>
-      <div className="bg-white">
-        <div style={{ background: "#1a2332", padding: "20px 30px", textAlign: "center" }}>
-          <span style={{ color: "#f5f0e8", fontSize: "20px", fontWeight: "bold", fontFamily: "Georgia, serif" }}>
-            Agence Les Conférenciers
-          </span>
-        </div>
-        <div style={{ padding: "30px 30px 20px" }}>
-          <div
-            style={{ color: "#333", fontSize: "15px", lineHeight: "1.6" }}
-            className="[&_p]:mt-0 [&_p]:mb-4 [&_p:last-child]:mb-0"
-            dangerouslySetInnerHTML={{ __html: bodyHtml }}
-          />
-          {showProposalButton && (
-            <>
-              <div style={{ textAlign: "center", margin: "30px 0" }}>
-                <span
-                  style={{
-                    display: "inline-block",
-                    background: "#1a2332",
-                    color: "#f5f0e8",
-                    padding: "14px 32px",
-                    borderRadius: "8px",
-                    fontSize: "15px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Consulter la proposition complète
-                </span>
-              </div>
-              <div
-                style={{
-                  background: "#f0f7ff",
-                  border: "1px solid #d0e3f7",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  margin: "20px 0",
-                }}
-              >
-                <p style={{ color: "#1a5276", fontSize: "13px", margin: 0, textAlign: "center" }}>
-                  📅 Cette proposition est <strong>valable 90 jours</strong>. Vous pouvez y revenir autant de fois que
-                  vous le souhaitez et <strong>y répondre directement en ligne</strong>.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-        <div style={{ padding: "0 30px 30px" }}>
-          <img
-            src="https://www.lesconferenciers.com/images/les-conferenciers-signature.png"
-            alt="Nelly SABDE | Agence Les Conférenciers"
-            style={{ width: "100%", maxWidth: "500px", display: "block" }}
-          />
-        </div>
-        <div style={{ background: "#1a2332", padding: "16px", textAlign: "center" }}>
-          <p style={{ color: "#f5f0e8", opacity: 0.5, fontSize: "11px", margin: 0 }}>
-            Proposition confidentielle - Les Conférenciers
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const AdminProposalsContent = () => {
   const [, setSearchParams] = useSearchParams();
@@ -725,6 +707,10 @@ const AdminProposalsContent = () => {
   const [leadsDialogProposal, setLeadsDialogProposal] = useState<Proposal | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [expandedArchivedGroupId, setExpandedArchivedGroupId] = useState<string | null>(null);
+  const [linkDialog, setLinkDialog] = useState<{
+    candidate: { id: string; created_at: string; recipient_name: string | null; client_name: string };
+    andSend: boolean;
+  } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -1273,6 +1259,38 @@ const AdminProposalsContent = () => {
       toast.error("Sélectionnez un conférencier");
       return;
     }
+
+    // Détection automatique : si une proposition envoyée existe déjà pour cet email
+    // (et que l'utilisateur n'est pas déjà en mode "mise à jour"), proposer de la
+    // remplacer comme nouvelle version pour qu'elle bascule en archivée.
+    if (!updatingFromProposalId) {
+      const { data: candidates } = await supabase
+        .from("proposals")
+        .select("id, created_at, recipient_name, client_name, previous_proposal_id")
+        .eq("client_email", clientEmail)
+        .eq("status", "sent")
+        .order("created_at", { ascending: false });
+      const list = (candidates || []) as any[];
+      const successorOf = new Set(list.map((c) => c.previous_proposal_id).filter(Boolean));
+      const active = list.filter((c) => !successorOf.has(c.id));
+      if (active.length > 0) {
+        setLinkDialog({
+          candidate: {
+            id: active[0].id,
+            created_at: active[0].created_at,
+            recipient_name: active[0].recipient_name,
+            client_name: active[0].client_name,
+          },
+          andSend,
+        });
+        return;
+      }
+    }
+
+    await doCreate(andSend, updatingFromProposalId);
+  };
+
+  const doCreate = async (andSend: boolean, linkId: string | null) => {
     setSubmitting(true);
 
     // Auto-create or link client
@@ -1346,7 +1364,7 @@ const AdminProposalsContent = () => {
         event_date_text: eventDateText || null,
         audience_size: audienceSize || null,
         client_phone: clientPhone || null,
-        previous_proposal_id: updatingFromProposalId || null,
+        previous_proposal_id: linkId || null,
         internal_notes: internalNotes.trim() || null,
       } as any)
       .select()
@@ -1391,11 +1409,11 @@ const AdminProposalsContent = () => {
 
         // Mise à jour d'une proposition précédente : copier notes + supprimer tâches pending.
         // L'ancienne reste en statut "sent" et apparaît dans l'onglet Envoyées (regroupée par client).
-        if (updatingFromProposalId) {
+        if (linkId) {
           const { data: prevTasks } = await supabase
             .from("proposal_tasks")
             .select("task_type, note")
-            .eq("proposal_id", updatingFromProposalId);
+            .eq("proposal_id", linkId);
           const notesToCopy = (prevTasks || []).filter((t: any) => t.note && t.note.trim());
           if (notesToCopy.length > 0) {
             for (const t of notesToCopy as any[]) {
@@ -1410,7 +1428,7 @@ const AdminProposalsContent = () => {
           await supabase
             .from("proposal_tasks")
             .delete()
-            .eq("proposal_id", updatingFromProposalId)
+            .eq("proposal_id", linkId)
             .eq("status", "pending");
           // Archive l'ancienne : elle reste visible dans l'onglet Envoyées (groupée) mais toute action est verrouillée.
           await supabase
@@ -1420,10 +1438,10 @@ const AdminProposalsContent = () => {
               lost_reason: "[Mise à jour] Remplacée par une nouvelle proposition",
               lost_at: new Date().toISOString(),
             } as any)
-            .eq("id", updatingFromProposalId);
+            .eq("id", linkId);
         }
         toast.success(
-          updatingFromProposalId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !",
+          linkId ? "Proposition mise à jour et renvoyée !" : "Proposition créée et envoyée !",
         );
       } catch {
         toast.error("Proposition créée mais erreur d'envoi");
@@ -1438,6 +1456,7 @@ const AdminProposalsContent = () => {
     fetchTasks();
     setSubmitting(false);
   };
+
 
   const resetForm = () => {
     setClientName("");
@@ -1493,7 +1512,7 @@ const AdminProposalsContent = () => {
     );
     setMessage(getFollowUpMessage(rName, cName));
     setEmailSubject(getFollowUpEmailSubject(cName));
-    setEmailBody(getFollowUpEmailBody(rName, cName, ctx));
+    setEmailBody(getFollowUpEmailBody(rName, cName, ctx, undefined, dateFmt, (latest as any).event_location || "", (latest as any).audience_size || ""));
     // Reporter les notes internes de la version précédente (avec fallback sur la note de relance_1)
     (async () => {
       const previousNotes = ((latest as any).internal_notes || "").trim();
@@ -2896,7 +2915,7 @@ const AdminProposalsContent = () => {
             {mode === "draft" && (
               <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Brouillon</span>
             )}
-            {mode === "sent" && p.status === "sent" && (
+            {mode === "sent" && p.status === "sent" && !isSuperseded && (
               <div className="space-y-1">
                 <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">En attente</span>
                 {!expired && <div className="text-[10px] text-muted-foreground">{remaining}j restants</div>}
@@ -2940,7 +2959,7 @@ const AdminProposalsContent = () => {
                 v++;
                 cur = byId.get(cur.previous_proposal_id);
               }
-              const label = p.status === "archived" ? "Archivée" : "Remplacée";
+              const label = "Archivée";
               return (
                 <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
                   {label}{v > 1 ? ` v${v}` : ""}
@@ -2963,7 +2982,7 @@ const AdminProposalsContent = () => {
                   {expandedId === p.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
               )}
-              {mode === "sent" && p.status === "archived" && (
+              {mode === "sent" && (p.status === "archived" || isSuperseded) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -2973,16 +2992,19 @@ const AdminProposalsContent = () => {
                   <Eye className="h-4 w-4" />
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
-
-                {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="sm" asChild title="Voir en ligne">
-                <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-              {p.status !== "draft" && (p as any).proposal_type !== "info" && (
+              {!isSuperseded && (
+                <Button variant="ghost" size="sm" onClick={() => copyLink(p)} title="Copier le lien">
+                  {copiedId === p.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              )}
+              {!isSuperseded && (
+                <Button variant="ghost" size="sm" asChild title="Voir en ligne">
+                  <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+              {!isSuperseded && p.status !== "draft" && (p as any).proposal_type !== "info" && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -2997,7 +3019,7 @@ const AdminProposalsContent = () => {
                   <FileText className="h-4 w-4" />
                 </Button>
               )}
-              {(mode === "draft" || (mode === "sent" && p.status === "sent")) && (
+              {!isSuperseded && (mode === "draft" || (mode === "sent" && p.status === "sent")) && (
                 <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)} title="Éditer">
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -4293,7 +4315,54 @@ const AdminProposalsContent = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog : proposition existante détectée pour ce client */}
+      <Dialog open={!!linkDialog} onOpenChange={(o) => !o && setLinkDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Proposition existante détectée</DialogTitle>
+            <DialogDescription>
+              Une proposition envoyée existe déjà pour <strong>{clientEmail}</strong>
+              {linkDialog?.candidate.recipient_name ? ` (destinataire : ${linkDialog.candidate.recipient_name})` : ""}
+              , créée le{" "}
+              {linkDialog?.candidate.created_at
+                ? new Date(linkDialog.candidate.created_at).toLocaleDateString("fr-FR")
+                : ""}
+              .
+              <br />
+              <br />
+              Voulez-vous créer une nouvelle version qui remplacera l'ancienne (archivée
+              automatiquement) ?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              onClick={() => {
+                const d = linkDialog;
+                setLinkDialog(null);
+                if (d) doCreate(d.andSend, d.candidate.id);
+              }}
+            >
+              Oui, nouvelle version
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const d = linkDialog;
+                setLinkDialog(null);
+                if (d) doCreate(d.andSend, null);
+              }}
+            >
+              Non, proposition indépendante
+            </Button>
+            <Button variant="ghost" onClick={() => setLinkDialog(null)}>
+              Annuler
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
 

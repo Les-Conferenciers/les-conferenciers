@@ -668,7 +668,7 @@ const RichTextEditor = ({ value, onChange, placeholder, minHeight = "200px" }: R
           focus:ring-0
           ${isDragging ? "cursor-grabbing" : ""}
         `}
-        style={{ minHeight }}
+        style={{ minHeight, fontFamily: "Arial, sans-serif", fontSize: "15px", lineHeight: 1.6, color: "#333" }}
       />
     </div>
   );

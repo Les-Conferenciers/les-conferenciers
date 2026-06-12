@@ -172,7 +172,62 @@ ${message}
 
     // ─── Auto-confirmation to the prospect (allows future proposal email to thread as a "Re:") ───
     const firstNameOnly = name.trim().split(/\s+/)[0] || "";
-    const confirmationSubject = `Votre demande - Les Conférenciers`;
+
+    // Try to load the lead_confirmation template from DB (editable from Admin > Emails)
+    let tplSubject: string | null = null;
+    let tplBodyHtml: string | null = null;
+    try {
+      const { data: tplRow } = await sb
+        .from("email_templates")
+        .select("subject, body_html, is_active")
+        .eq("key", "lead_confirmation")
+        .maybeSingle();
+      if (tplRow && (tplRow as any).is_active) {
+        tplSubject = (tplRow as any).subject || null;
+        tplBodyHtml = (tplRow as any).body_html || null;
+      }
+    } catch (e) {
+      console.error("Failed to load lead_confirmation template:", e);
+    }
+
+    const substitute = (s: string, vars: Record<string, string>) =>
+      s.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, k) => (vars[k] !== undefined ? vars[k] : `{{${k}}}`));
+
+    const vars: Record<string, string> = {
+      prenom_destinataire: firstNameOnly,
+      nom_destinataire: name,
+      nom_client: company || "",
+      email: email,
+      telephone: phone || "",
+      date_evenement: eventDate || "",
+      lieu_evenement: eventLocation || "",
+      auditoire: audienceSize || "",
+      message: message,
+      nom_agent: "Nelly Sabde",
+    };
+
+    const confirmationSubject = tplSubject
+      ? substitute(tplSubject, vars)
+      : `Votre demande - Les Conférenciers`;
+
+    const rappelBlock = (eventDate || eventLocation || audienceSize || message)
+      ? `<hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+      <p style="font-size:12px;color:#888;margin:0 0 8px;"><em>Pour rappel, votre demande :</em></p>
+      ${(eventDate || eventLocation || audienceSize) ? `<table cellpadding="0" cellspacing="0" style="font-size:13px;color:#555;margin:0 0 12px;">
+        ${eventDate ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Date :</td><td style="padding:2px 0;">${String(eventDate).replace(/</g, "&lt;")}</td></tr>` : ""}
+        ${eventLocation ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Lieu :</td><td style="padding:2px 0;">${String(eventLocation).replace(/</g, "&lt;")}</td></tr>` : ""}
+        ${audienceSize ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Auditoire :</td><td style="padding:2px 0;">${String(audienceSize).replace(/</g, "&lt;")} personnes</td></tr>` : ""}
+      </table>` : ""}
+      <blockquote style="border-left:3px solid #d9c9a3;padding:8px 12px;margin:0;color:#555;font-size:13px;white-space:pre-wrap;">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</blockquote>`
+      : "";
+
+    const innerBody = tplBodyHtml
+      ? substitute(tplBodyHtml, vars)
+      : `<p>Bonjour${firstNameOnly ? ` ${firstNameOnly}` : ""},</p>
+      <p>Merci pour votre demande, je l'ai bien reçue et reviens vers vous très rapidement avec une proposition adaptée à votre événement.</p>
+      <p>Belle journée,</p>
+      <p><strong>Nelly Sabde</strong><br/>Agence Les Conférenciers<br/>📞 06 95 93 97 91</p>`;
+
     const confirmationHtml = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -180,23 +235,14 @@ ${message}
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
     ${emailHeader}
     <div style="padding:30px;color:#333;font-size:15px;line-height:1.6;">
-      <p>Bonjour${firstNameOnly ? ` ${firstNameOnly}` : ""},</p>
-      <p>Merci pour votre demande, je l'ai bien reçue et reviens vers vous très rapidement avec une proposition adaptée à votre événement.</p>
-      <p>Belle journée,</p>
-      <p><strong>Nelly Sabde</strong><br/>Agence Les Conférenciers<br/>📞 06 95 93 97 91</p>
-      <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-      <p style="font-size:12px;color:#888;margin:0 0 8px;"><em>Pour rappel, votre demande :</em></p>
-      ${(eventDate || eventLocation || audienceSize) ? `<table cellpadding="0" cellspacing="0" style="font-size:13px;color:#555;margin:0 0 12px;">
-        ${eventDate ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Date :</td><td style="padding:2px 0;">${String(eventDate).replace(/</g, "&lt;")}</td></tr>` : ""}
-        ${eventLocation ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Lieu :</td><td style="padding:2px 0;">${String(eventLocation).replace(/</g, "&lt;")}</td></tr>` : ""}
-        ${audienceSize ? `<tr><td style="padding:2px 8px 2px 0;color:#888;">Auditoire :</td><td style="padding:2px 0;">${String(audienceSize).replace(/</g, "&lt;")} personnes</td></tr>` : ""}
-      </table>` : ""}
-      <blockquote style="border-left:3px solid #d9c9a3;padding:8px 12px;margin:0;color:#555;font-size:13px;white-space:pre-wrap;">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</blockquote>
+      ${innerBody}
+      ${rappelBlock}
     </div>
     ${emailSignature}
     ${emailFooter}
   </div>
 </body></html>`;
+
 
     // Generate our own deterministic Message-ID so we can reliably thread the proposal as a reply.
     const customMessageIdCore = `lead-${leadId || crypto.randomUUID()}-${Date.now()}@lesconferenciers.com`;
