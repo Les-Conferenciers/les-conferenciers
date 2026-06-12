@@ -78,9 +78,11 @@ export default function AdminEmailTemplates() {
 
   useEffect(() => {
     if (selected) {
+      const fmt = (selected.format || "html") as EmailFormat;
       setSubject(selected.subject);
-      setBody(selected.body_html);
-      setFormat(selected.format || "html");
+      // Plain templates may still contain residual HTML — strip on display.
+      setBody(fmt === "plain" ? htmlToPlain(selected.body_html || "") : selected.body_html);
+      setFormat(fmt);
     }
   }, [selectedId]);
 
@@ -103,17 +105,20 @@ export default function AdminEmailTemplates() {
   const handleSave = async () => {
     if (!selected) return;
     setSaving(true);
+    // Plain templates are stored as plain text in body_html — strip any HTML the user may have pasted.
+    const bodyToSave = format === "plain" ? htmlToPlain(body) : body;
     const { error } = await supabase
       .from("email_templates" as any)
-      .update({ subject, body_html: body, format })
+      .update({ subject, body_html: bodyToSave, format })
       .eq("id", selected.id);
     setSaving(false);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Template enregistré" });
+      if (format === "plain") setBody(bodyToSave);
       setTemplates((prev) =>
-        prev.map((t) => (t.id === selected.id ? { ...t, subject, body_html: body, format } : t))
+        prev.map((t) => (t.id === selected.id ? { ...t, subject, body_html: bodyToSave, format } : t))
       );
       // Force-refresh the in-memory cache used by renderTpl across the app
       await loadEmailTemplates(true);
