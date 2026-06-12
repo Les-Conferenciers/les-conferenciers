@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -32,16 +32,15 @@ const BASE_URL = "https://www.lesconferenciers.com";
 
 const ProfileLanding = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get("preview") === "1";
 
   const { data: profile, isLoading: pLoading } = useQuery({
-    queryKey: ["profile-landing", slug],
+    queryKey: ["profile-landing", slug, isPreview],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("speaker_profiles")
-        .select("*")
-        .eq("slug", slug!)
-        .eq("landing_enabled", true)
-        .maybeSingle();
+      let q = supabase.from("speaker_profiles").select("*").eq("slug", slug!);
+      if (!isPreview) q = q.eq("landing_enabled", true);
+      const { data, error } = await q.maybeSingle();
       if (error) throw error;
       if (!data) return null;
       return { ...data, faq: Array.isArray(data.faq) ? (data.faq as unknown as FaqItem[]) : [] } as Profile;
@@ -94,8 +93,19 @@ const ProfileLanding = () => {
     let canon = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canon) { canon = document.createElement("link"); canon.setAttribute("rel", "canonical"); document.head.appendChild(canon); }
     canon.href = canonical;
-    return () => { document.querySelector('link[rel="canonical"]')?.remove(); };
-  }, [profile, canonical]);
+    let robots: HTMLMetaElement | null = null;
+    if (isPreview || !profile.landing_enabled) {
+      robots = document.createElement("meta");
+      robots.name = "robots";
+      robots.content = "noindex, nofollow";
+      robots.dataset.preview = "1";
+      document.head.appendChild(robots);
+    }
+    return () => {
+      document.querySelector('link[rel="canonical"]')?.remove();
+      document.querySelector('meta[data-preview="1"]')?.remove();
+    };
+  }, [profile, canonical, isPreview]);
 
   useEffect(() => {
     if (!profile?.faq?.length) return;
@@ -134,6 +144,12 @@ const ProfileLanding = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
+      {profile && !profile.landing_enabled && (
+        <div className="bg-yellow-400 text-yellow-950 text-center text-sm py-2 px-4 font-medium">
+          Aperçu — cette landing n'est pas publiée. Active-la dans l'admin pour la rendre visible publiquement.
+        </div>
+      )}
+
 
       <section className="relative bg-primary py-12 px-4 text-center overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
