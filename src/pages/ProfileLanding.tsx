@@ -11,6 +11,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ChevronDown } from "lucide-react";
 
 type FaqItem = { question: string; answer: string };
+type RichSection = { title: string; body: string; speaker_ids?: string[] };
+type RichContent = {
+  intro: string;
+  sections: RichSection[];
+  why_agency: string;
+  key_points: string[];
+};
 type Profile = {
   id: string;
   slug: string;
@@ -26,6 +33,7 @@ type Profile = {
   linked_profile_ids: string[] | null;
   extra_speaker_ids: string[] | null;
   faq: FaqItem[];
+  rich_content: RichContent | null;
 };
 
 const BASE_URL = "https://www.lesconferenciers.com";
