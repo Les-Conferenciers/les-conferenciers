@@ -25,6 +25,7 @@ const ContractSign = lazy(() => import("./pages/ContractSign"));
 const InvoiceView = lazy(() => import("./pages/InvoiceView"));
 const SpeakerContractView = lazy(() => import("./pages/SpeakerContractView"));
 const LiaisonSheetView = lazy(() => import("./pages/LiaisonSheetView"));
+const ProfileLanding = lazy(() => import("./pages/ProfileLanding"));
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/conferencier" element={<Speakers />} />
+            <Route path="/conferencier/profil/:slug" element={<ProfileLanding />} />
             <Route path="/conferenciers" element={<Navigate to="/conferencier" replace />} />
             <Route path="/conferencier/:slug" element={<SpeakerDetail />} />
             <Route path="/speakers" element={<Navigate to="/conferencier" replace />} />

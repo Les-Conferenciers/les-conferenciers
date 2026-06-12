@@ -1,41 +1,82 @@
-# Correction affichage photo "Nelly selfies" sur /contact
+# Profils conférenciers + landings dédiées
 
-## Problème
+## 1. Modèle de données (backend)
 
-Sur la page `/contact`, le bloc "Nelly, votre interlocutrice" n'affiche que le texte alternatif au lieu de la photo. La photo est référencée via :
+### Table `speaker_profiles`
+- `slug` (texte, unique, ex: `anciens-du-gign`) — sert d'URL
+- `name` (texte, ex: "Anciens du GIGN") — libellé interne
+- `landing_label` (texte, ex: "Conférenciers anciens du GIGN") — H1 de la landing
+- `landing_enabled` (bool) — true seulement pour les profils qui ont une landing publique
+- `seo_title`, `meta_description` (textes)
+- `intro_html` (texte riche) — paragraphe d'intro de la landing
+- `faq` (JSONB, tableau `[{question, answer}]`) — éditable dans l'admin
+- `display_order` (int)
+- RLS : lecture publique, écriture admin uniquement
 
-```ts
-import selfiesAsset from "@/assets/selfies-avec-nelly.png.asset.json";
-const selfiesAvecNelly = selfiesAsset.url; // /__l5e/assets-v1/.../selfies-avec-nelly.png
-```
+### Table `speakers`
+- Ajout `profile_id` (uuid, FK nullable vers `speaker_profiles`)
+- Un seul profil par conférencier (relation 1↔N)
 
-Le fichier réel n'est PAS dans le repo : il est servi par le CDN Lovable via un chemin `/__l5e/...`. Ce chemin pose plusieurs soucis en production Netlify :
-- bloqué par certains adblockers/filtres entreprise (préfixe inhabituel),
-- dépend du proxy Lovable pour résoudre à travers Netlify,
-- aucun cache long terme côté Netlify.
+### Profils initiaux (16) à seeder
+Anciens du GIGN, Astronautes, Navigateurs, Rugbymen, Artistes, Économistes, Philosophes, Experts IA, Chefs d'entreprise, Sportifs de haut niveau, Aventuriers / explorateurs, Chefs cuisiniers, Journalistes, Scientifiques, Militaires (hors GIGN), Médecins.
 
-Toutes les autres images du site (logos partenaires, blog…) sont servies depuis `/public/` localement — c'est la convention du projet (cf. mémoire `Logo Assets`).
+Sur les 16, ces 7 auront `landing_enabled = true` dès le départ : Navigateurs, IA, Astronautes, Rugby, GIGN, Économistes, Philosophes.
 
-## Solution
+### Affectation initiale des 204 conférenciers actifs
+Script d'auto-attribution depuis `role`/`themes`/`biography` (mots-clés : "GIGN", "astronaute", "navigateur", "rugby", "philosophe", "économiste", "chef cuisinier", "artiste", "IA / intelligence artificielle", etc.). Si rien ne matche, fallback `Chefs d'entreprise`. Tu réajustes ensuite manuellement dans le sous-onglet "Profils".
 
-Réhéberger l'image directement dans `/public/` et la référencer en chemin statique.
+## 2. Sous-onglet "Profils" (sous CRM speakers)
 
-### Étapes
+Nouveau composant `AdminSpeakerProfiles.tsx`, ajouté comme sous-onglet de CRM speakers.
 
-1. Télécharger le binaire depuis le CDN Lovable :
-   `curl -o public/selfies-avec-nelly.png https://www.lesconferenciers.com/__l5e/assets-v1/680c7df7-d88d-4c49-b01a-911819887898/selfies-avec-nelly.png`
+Vue tableau de tous les conférenciers actifs :
+- Colonnes : Photo, Nom, Rôle, Thèmes, **Profil (Select inline éditable)**
+- Filtres en haut : Recherche texte, filtre par profil (multi), filtre "sans profil"
+- Bulk action : sélection multiple → assignation d'un profil
+- Compteur par profil affiché en haut
 
-2. Modifier `src/pages/Contact.tsx` :
-   - Supprimer l'import `selfiesAsset` du JSON.
-   - Remplacer `const selfiesAvecNelly = selfiesAsset.url;` par `const selfiesAvecNelly = "/selfies-avec-nelly.png";`
+Édition rapide : changer le `Select` d'une ligne enregistre immédiatement dans Supabase.
 
-3. Supprimer `src/assets/selfies-avec-nelly.png.asset.json` (devenu inutile).
+## 3. Sous-onglet "Landings" (sous CRM speakers)
 
-### Vérification
+Nouveau composant `AdminLandingPages.tsx`.
 
-- Build + ouvrir `/contact` dans le preview : la photo doit s'afficher dans le cadre "Nelly, votre interlocutrice".
-- Le fichier sera servi par Netlify avec un cache statique long terme.
+Liste des profils avec :
+- Toggle `landing_enabled`
+- Édition inline : slug, H1, SEO title, meta description, intro, FAQ (éditeur question/réponse avec ajout/suppression/réordonnancement)
+- Bouton "Voir la landing" → ouvre `/conferencier/profil/{slug}` dans un nouvel onglet
+- Compteur de conférenciers rattachés
 
-## Hors scope
+## 4. Landing page publique
 
-Pas de changement de layout, de wording, ni d'autres composants.
+### URL
+`https://www.lesconferenciers.com/conferencier/profil/{slug}`
+(évite la collision avec la route existante `/conferencier/:slug` des fiches conférenciers)
+
+### Composant `ProfileLanding.tsx`
+Structure quasi identique à `/conferencier?theme=…` :
+1. Hero (même image de fond) avec H1 = `landing_label`, sous-titre = `intro_html` (court)
+2. Grille des conférenciers du profil (mêmes `SpeakerCard`, tri par `display_order`)
+3. Filtres thèmes (réutilisés depuis `Speakers.tsx`)
+4. Bloc FAQ éditorial (Accordion shadcn) + JSON-LD `FAQPage`
+5. CTA "Nous contacter" identique
+6. Balises SEO dynamiques (title, description, canonical, OG) — utilise `seo_title` / `meta_description` du profil
+
+### SEO
+- Ajout de chaque profil `landing_enabled = true` au sitemap (edge function `generate-sitemap`)
+- JSON-LD `FAQPage` injecté
+- Canonical : `https://www.lesconferenciers.com/conferencier/profil/{slug}` (sans slash final)
+
+## 5. Détails techniques
+
+- Migration Supabase : table `speaker_profiles` + colonne `speakers.profile_id` + RLS (lecture publique, écriture admin via `has_role('admin')`) + GRANTs
+- Seed des 16 profils via INSERT
+- Script d'auto-mapping initial des 204 conférenciers (via `supabase--insert`)
+- `App.tsx` : nouvelle route `<Route path="/conferencier/profil/:slug" element={<ProfileLanding />} />`
+- Mise à jour edge function `generate-sitemap` pour inclure les profils avec landing activée
+- Aucun changement aux pages publiques existantes hors ajout de la route
+
+## Hors scope (pour plus tard)
+- Templates de proposition par profil (l'infra data sera prête : `proposals` pourra lire `speakers.profile_id`)
+- Export / import CSV des affectations
+- Multi-profils par conférencier
