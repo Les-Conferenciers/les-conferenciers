@@ -165,6 +165,7 @@ export type Database = {
           created_at: string
           default_body_html: string
           default_subject: string
+          format: string
           id: string
           is_active: boolean
           key: string
@@ -180,6 +181,7 @@ export type Database = {
           created_at?: string
           default_body_html?: string
           default_subject?: string
+          format?: string
           id?: string
           is_active?: boolean
           key: string
@@ -195,6 +197,7 @@ export type Database = {
           created_at?: string
           default_body_html?: string
           default_subject?: string
+          format?: string
           id?: string
           is_active?: boolean
           key?: string
