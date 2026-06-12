@@ -103,8 +103,14 @@ const AdminSpeakersCRM = () => {
   const [manualForm, setManualForm] = useState({
     name: "", specialty: "", city: "", base_fee: "" as string, fee_details: "",
     phone: "", email: "", gender: "male", themes: [] as string[], languages: "Français",
-    biography: "", archived: false,
+    biography: "", archived: false, profile_id: "" as string,
   });
+  const [profiles, setProfiles] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    supabase.from("speaker_profiles").select("id, name").order("display_order").then(({ data }) => {
+      if (data) setProfiles(data as { id: string; name: string }[]);
+    });
+  }, []);
   const [creatingManual, setCreatingManual] = useState(false);
 
   // Enrichment state
@@ -441,12 +447,13 @@ const AdminSpeakersCRM = () => {
       languages: manualForm.languages ? manualForm.languages.split(",").map(l => l.trim()).filter(Boolean) : [],
       biography: manualForm.biography || null,
       archived: manualForm.archived,
+      profile_id: manualForm.profile_id || null,
     } as any).select().single();
     setCreatingManual(false);
     if (error) { toast.error(`Erreur : ${error.message}`); return; }
     toast.success(`${manualForm.name} créé avec succès ! Ouvrez la fiche pour compléter les détails.`);
     setShowManualCreate(false);
-    setManualForm({ name: "", specialty: "", city: "", base_fee: "", fee_details: "", phone: "", email: "", gender: "male", themes: [], languages: "Français", biography: "", archived: false });
+    setManualForm({ name: "", specialty: "", city: "", base_fee: "", fee_details: "", phone: "", email: "", gender: "male", themes: [], languages: "Français", biography: "", archived: false, profile_id: "" });
     await fetchSpeakers();
     // Auto-open edit dialog for the newly created speaker
     if (inserted) {
