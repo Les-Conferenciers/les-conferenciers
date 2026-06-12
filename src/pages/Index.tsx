@@ -146,13 +146,11 @@ const Index = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data, count } = await supabase
+      const { count } = await supabase
         .from("speakers")
-        .select("themes", { count: "exact" })
-        .eq("archived", false)
-        .limit(500);
+        .select("themes", { count: "exact", head: true })
+        .eq("archived", false);
       setSpeakerCount(count || 0);
-
     };
     fetchData();
   }, []);
