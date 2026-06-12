@@ -8,15 +8,18 @@ import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ChevronDown, Check, Sparkles } from "lucide-react";
+import { ChevronDown, Check, Sparkles, BookOpen, Users, Target, ArrowRight } from "lucide-react";
 
 type FaqItem = { question: string; answer: string };
 type RichSection = { title: string; body: string; speaker_ids?: string[] };
+type KeyPointObj = { label: string; description: string };
 type RichContent = {
   intro: string;
+  key_points_title?: string;
+  key_points_intro?: string;
+  key_points: (KeyPointObj | string)[];
   sections: RichSection[];
   why_agency: string;
-  key_points: string[];
 };
 type Profile = {
   id: string;
@@ -34,6 +37,18 @@ type Profile = {
   extra_speaker_ids: string[] | null;
   faq: FaqItem[];
   rich_content: RichContent | null;
+};
+
+const normalizeKeyPoints = (kp: (KeyPointObj | string)[] | undefined): KeyPointObj[] => {
+  if (!kp) return [];
+  return kp.map(p => typeof p === "string" ? { label: p, description: "" } : { label: p.label || "", description: p.description || "" });
+};
+
+// Wrap plain text in <p> if no HTML tag detected
+const ensureHtml = (s: string): string => {
+  if (!s) return "";
+  if (/<\/?(p|ul|ol|li|br|strong|em)\b/i.test(s)) return s;
+  return s.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
 };
 
 const BASE_URL = "https://www.lesconferenciers.com";
