@@ -8,9 +8,16 @@ import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Check, Sparkles } from "lucide-react";
 
 type FaqItem = { question: string; answer: string };
+type RichSection = { title: string; body: string; speaker_ids?: string[] };
+type RichContent = {
+  intro: string;
+  sections: RichSection[];
+  why_agency: string;
+  key_points: string[];
+};
 type Profile = {
   id: string;
   slug: string;
@@ -26,6 +33,7 @@ type Profile = {
   linked_profile_ids: string[] | null;
   extra_speaker_ids: string[] | null;
   faq: FaqItem[];
+  rich_content: RichContent | null;
 };
 
 const BASE_URL = "https://www.lesconferenciers.com";
@@ -43,7 +51,11 @@ const ProfileLanding = () => {
       const { data, error } = await q.maybeSingle();
       if (error) throw error;
       if (!data) return null;
-      return { ...data, faq: Array.isArray(data.faq) ? (data.faq as unknown as FaqItem[]) : [] } as Profile;
+      return {
+        ...data,
+        faq: Array.isArray(data.faq) ? (data.faq as unknown as FaqItem[]) : [],
+        rich_content: (data.rich_content as unknown as RichContent) || null,
+      } as unknown as Profile;
     },
     enabled: !!slug,
   });
@@ -189,6 +201,88 @@ const ProfileLanding = () => {
             ))}
           </div>
         )}
+
+        {profile?.rich_content && (profile.rich_content.intro || (profile.rich_content.sections || []).length > 0) && (
+          <article className="max-w-4xl mx-auto mt-20 space-y-12">
+            {profile.rich_content.intro && (
+              <div className="prose-styles">
+                <p className="text-lg md:text-xl text-foreground leading-relaxed whitespace-pre-line">
+                  {profile.rich_content.intro}
+                </p>
+              </div>
+            )}
+
+            {(profile.rich_content.key_points || []).length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-card rounded-2xl border border-border/40 p-6">
+                {profile.rich_content.key_points.map((pt, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm md:text-base text-foreground">
+                    <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" aria-hidden="true" />
+                    <span>{pt}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {(profile.rich_content.sections || []).map((sec, i) => {
+              const citedSpeakers = (sec.speaker_ids || [])
+                .map((id) => (speakers || []).find((s) => s.id === id))
+                .filter(Boolean) as Speaker[];
+              return (
+                <section key={i} className={i % 2 === 1 ? "bg-card rounded-2xl border border-border/40 p-6 md:p-8" : ""}>
+                  {sec.title && (
+                    <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4 tracking-tight">
+                      {sec.title}
+                    </h2>
+                  )}
+                  {sec.body && (
+                    <div className="text-foreground/85 text-base leading-relaxed whitespace-pre-line">
+                      {sec.body}
+                    </div>
+                  )}
+                  {citedSpeakers.length > 0 && (
+                    <div className="mt-6 flex flex-wrap gap-4">
+                      {citedSpeakers.map((s) => (
+                        <Link
+                          key={s.id}
+                          to={`/conferencier/${s.slug}`}
+                          className="flex items-center gap-3 group"
+                        >
+                          {s.image_url ? (
+                            <img
+                              src={s.image_url}
+                              alt={s.name}
+                              loading="lazy"
+                              className="h-14 w-14 rounded-full object-cover border-2 border-border/40 group-hover:border-accent transition-colors"
+                            />
+                          ) : (
+                            <div className="h-14 w-14 rounded-full bg-muted" />
+                          )}
+                          <div>
+                            <div className="font-semibold text-sm text-foreground group-hover:text-accent transition-colors">{s.name}</div>
+                            {s.role && <div className="text-xs text-muted-foreground">{s.role}</div>}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+
+            {profile.rich_content.why_agency && (
+              <section className="relative rounded-2xl border-2 border-accent/40 bg-primary/5 p-6 md:p-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-5 w-5 text-accent" aria-hidden="true" />
+                  <h2 className="text-xl md:text-2xl font-bold text-foreground">Pourquoi faire appel à notre agence</h2>
+                </div>
+                <p className="text-foreground/85 leading-relaxed whitespace-pre-line">
+                  {profile.rich_content.why_agency}
+                </p>
+              </section>
+            )}
+          </article>
+        )}
+
 
         <div className="mt-12 max-w-2xl mx-auto text-center bg-card rounded-2xl p-8 shadow-sm border border-border/30">
           <p className="text-foreground text-sm md:text-base leading-relaxed mb-6 whitespace-pre-line">
