@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { User } from "lucide-react";
 
@@ -16,6 +18,7 @@ type Row = {
   themes: string[] | null;
   image_url: string | null;
   profile_id: string | null;
+  archived: boolean | null;
 };
 
 const NONE = "__none__";
@@ -28,19 +31,22 @@ const AdminSpeakerProfiles = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkProfile, setBulkProfile] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   const load = async () => {
     setLoading(true);
+    let query = supabase.from("speakers").select("id, name, role, themes, image_url, profile_id, archived").order("name");
+    if (!includeArchived) query = query.eq("archived", false);
     const [p, s] = await Promise.all([
       supabase.from("speaker_profiles").select("id, slug, name").order("display_order"),
-      supabase.from("speakers").select("id, name, role, themes, image_url, profile_id").eq("archived", false).order("name"),
+      query,
     ]);
     if (p.data) setProfiles(p.data as Profile[]);
     if (s.data) setRows(s.data as Row[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [includeArchived]);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -108,6 +114,11 @@ const AdminSpeakerProfiles = () => {
           </SelectContent>
         </Select>
 
+        <div className="flex items-center gap-2">
+          <Switch id="inc-arch" checked={includeArchived} onCheckedChange={setIncludeArchived} />
+          <Label htmlFor="inc-arch" className="text-sm cursor-pointer">Inclure les archivés</Label>
+        </div>
+
         {selected.size > 0 && (
           <div className="flex items-center gap-2 ml-auto">
             <span className="text-sm text-muted-foreground">{selected.size} sélectionné(s)</span>
@@ -160,7 +171,10 @@ const AdminSpeakerProfiles = () => {
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"><User className="w-4 h-4 text-muted-foreground" /></div>
                   )}
                 </td>
-                <td className="p-2 font-medium">{r.name}</td>
+                <td className="p-2 font-medium">
+                  {r.name}
+                  {r.archived && <span className="ml-2 inline-block text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Archivé</span>}
+                </td>
                 <td className="p-2 text-muted-foreground">{r.role}</td>
                 <td className="p-2">
                   <Select
