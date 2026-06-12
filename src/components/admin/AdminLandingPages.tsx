@@ -268,16 +268,6 @@ const AdminLandingPages = () => {
                     const kp = normalizeKeyPoints(p.rich_content.key_points);
                     return (
                     <div className="space-y-5">
-                      <div>
-                        <Label className="text-xs font-semibold">Chapô d'introduction (200-300 mots)</Label>
-                        <p className="text-[11px] text-muted-foreground mb-1">Posé en haut du bloc éditorial, contextualise le type de profil.</p>
-                        <SimpleRichTextEditor
-                          value={p.rich_content.intro || ""}
-                          onChange={(v) => updateRich(p, { intro: v })}
-                          rows={6}
-                          placeholder="Chapô éditorial…"
-                        />
-                      </div>
 
                       <div className="border rounded-md p-3 bg-background space-y-3">
                         <Label className="text-xs font-semibold">Points clés du profil</Label>

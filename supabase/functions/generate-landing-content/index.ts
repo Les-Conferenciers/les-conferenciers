@@ -132,26 +132,25 @@ Objectif SEO : remonter sur la requête type "${profileLabel} conférencier" et 
 
 Tu dois retourner un JSON strict avec ce schéma :
 {
-  "intro": "<p>...</p><p>...</p> — Chapô de 200 à 300 mots qui contextualise ce type de profil, son intérêt pour un événement d'entreprise, et le type de prise de parole attendue. Ton éditorial. Format : 2 à 3 paragraphes <p>.",
-  "key_points_title": "Titre court (max 8 mots) qui contextualise les points clés, par exemple : 'Pourquoi choisir un ${profileLabel}' ou 'Ce que ces profils apportent à votre événement'",
-  "key_points_intro": "Une phrase (max 25 mots) de transition entre l'intro et les cartes de points clés, pour expliquer ce qu'on va trouver.",
+  "intro": "",
+  "key_points_title": "Titre court (max 8 mots) qui contextualise les points clés, par exemple : 'Ce que ces profils apportent à votre événement'",
+  "key_points_intro": "Une phrase (max 25 mots) qui pose le décor des bénéfices.",
   "key_points": [
     { "label": "Titre court de la carte (3 à 6 mots)", "description": "Une phrase d'appui (15-25 mots) qui développe le bénéfice concret pour l'événement." }
   ],
   "sections": [
-    { "title": "Pourquoi inviter un ${profileLabel} à votre événement", "body": "<p>...</p><p>...</p> — 2-3 paragraphes" },
-    { "title": "Dans quels contextes les solliciter", "body": "<p>...</p> — 2-3 paragraphes : séminaires, conventions, kick-off, soirées d'entreprise, formats keynote/atelier/table ronde, etc." },
-    { "title": "Notre sélection de profils", "body": "<p>...</p> — 1-2 paragraphes citant 2 à 4 conférenciers de la liste ci-dessus par leur nom + rôle, sans inventer de faits précis", "speaker_ids": ["id1","id2","id3"] }
+    { "title": "Sous-titre court", "body": "<p>...</p><p>...</p>" }
   ],
   "why_agency": "<p>...</p><p>...</p> — 2 paragraphes (120-180 mots au total). Insiste IMPÉRATIVEMENT sur 3 axes : 1) la connaissance fine de chaque conférencier (rencontres, briefs, suivi), 2) la maîtrise du contenu de leurs conférences (sujets, angles, formats, exemples), 3) l'expertise de matching entre un événement, son audience, ses objectifs et le bon conférencier. Évite les généralités vagues type 'accompagnement de A à Z'."
 }
 
 Contraintes :
-- intro : 200 à 300 mots impérativement, formatés en paragraphes <p>
-- key_points : 4 à 6 cartes maximum
-- speaker_ids : utilise les ids exacts depuis la liste fournie : ${JSON.stringify(speakerSummaries.map((s) => ({ id: s.id, name: s.name })))}
+- intro : laisser une chaîne vide "" (le chapô a été retiré de la page publique).
+- key_points : 4 à 6 cartes maximum.
+- sections : 2 à 4 sous-parties qui seront affichées en CONTINU sous un unique titre "Pourquoi inviter un·e ${profileLabel} à votre événement". Couvre : pourquoi inviter ce type de profil, les contextes d'intervention (séminaires, conventions, kick-off, soirées, formats keynote/atelier/table ronde…), les typologies de profils dans cette catégorie. NE cite PAS de noms de conférenciers individuels (la sélection est déjà affichée en haut de page). Pas de champ speaker_ids.
 - HTML autorisé : <p>, <em>, <ul>, <ol>, <li>, <br>. PAS de <strong>, PAS de classes, PAS d'attributs.
 - Apostrophes droites uniquement (')`;
+
 
     const raw = await callAI(LOVABLE_API_KEY, system, user);
     let parsed: any;
