@@ -40,7 +40,8 @@ const ProfileLanding = () => {
         .eq("landing_enabled", true)
         .maybeSingle();
       if (error) throw error;
-      return data as Profile | null;
+      if (!data) return null;
+      return { ...data, faq: Array.isArray(data.faq) ? (data.faq as unknown as FaqItem[]) : [] } as Profile;
     },
     enabled: !!slug,
   });
