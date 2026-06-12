@@ -93,8 +93,19 @@ const ProfileLanding = () => {
     let canon = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canon) { canon = document.createElement("link"); canon.setAttribute("rel", "canonical"); document.head.appendChild(canon); }
     canon.href = canonical;
-    return () => { document.querySelector('link[rel="canonical"]')?.remove(); };
-  }, [profile, canonical]);
+    let robots: HTMLMetaElement | null = null;
+    if (isPreview || !profile.landing_enabled) {
+      robots = document.createElement("meta");
+      robots.name = "robots";
+      robots.content = "noindex, nofollow";
+      robots.dataset.preview = "1";
+      document.head.appendChild(robots);
+    }
+    return () => {
+      document.querySelector('link[rel="canonical"]')?.remove();
+      document.querySelector('meta[data-preview="1"]')?.remove();
+    };
+  }, [profile, canonical, isPreview]);
 
   useEffect(() => {
     if (!profile?.faq?.length) return;
