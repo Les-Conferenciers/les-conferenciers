@@ -247,9 +247,9 @@ const ProfileLanding = () => {
                           to={`/conferencier/${s.slug}`}
                           className="flex items-center gap-3 group"
                         >
-                          {s.photo_url ? (
+                          {s.image_url ? (
                             <img
-                              src={s.photo_url}
+                              src={s.image_url}
                               alt={s.name}
                               loading="lazy"
                               className="h-14 w-14 rounded-full object-cover border-2 border-border/40 group-hover:border-accent transition-colors"
