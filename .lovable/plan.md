@@ -1,25 +1,18 @@
-## Mise à jour du wording des articles du contrat
+## Mise à jour du wording du contrat conférencier
 
-Remplacement intégral du contenu HTML par défaut des 11 articles dans `src/lib/contractClauses.ts` (`DEFAULT_CLAUSES`) par le wording exact fourni.
+Remplacement intégral du bloc "Conditions générales du contrat conférencier" dans `src/pages/SpeakerContractView.tsx` (lignes 148-195) par le wording complet fourni.
 
 ### Points clés
-- Correction des nombreuses fautes de saisie (« défnition », « confdentiel », « identifé », « profl », « modifer »…) en orthographe correcte (« définition », « confidentiel », « identifié », « profil », « modifier »…) : ces fautes étant des artefacts d'extraction PDF (lettres « fi » manquantes), je restitue les bons mots.
-- Apostrophes droites conservées (règle projet).
-- Structure HTML identique à l'existante (`<p>`, `<ul class="list-disc pl-5">`, `<strong>`, classes `mt-1`/`mt-2`).
-- **Article 5** : conservation du placeholder `{{PRICE_CLAUSE}}` pour 5.1 (généré dynamiquement selon `deposit_required`). Le wording fourni pour 5.1 (acompte 50% + solde 7j avant) sera intégré comme **fallback par défaut** du `PRICE_CLAUSE` côté code générant la clause prix — à vérifier dans `ContractView.tsx`/`SpeakerContractView.tsx`. Si le wording fourni doit **toujours** s'afficher (et écraser la logique conditionnelle), me le confirmer.
-- **Article 9** : ajout du bloc COVID-19 absent de la version actuelle.
-- **Article 10** : ajout du paragraphe "Ordre public" absent.
-- Aucun changement sur la logique d'overrides (`custom_clauses.articles[key]`), les `ClauseKey`, ni la signature des fonctions exportées.
-
-### Fichiers modifiés
-- `src/lib/contractClauses.ts` — remplacement de `defaultHtml` pour `art1`…`art11`.
+- Restitution de l'orthographe correcte (fautes d'extraction PDF type « défnir », « confdentiel », « afn », « justifcatif » → « définir », « confidentiel », « afin », « justificatif »).
+- Apostrophes droites (règle projet).
+- Structure HTML conservée : `<h3 class="font-bold mb-2">` + `<p>` / `<p class="mt-1">`, taille `text-[12px]`.
+- Articles 2.1 à 2.5 développés intégralement (vs version actuelle très résumée).
+- Articles 3, 5, 7 redéveloppés intégralement.
 
 ### Hors scope
-- Pas de modification du rendu (`ContractView.tsx`, `SpeakerContractView.tsx`).
-- Pas de migration SQL (les contrats existants conservent leurs `custom_clauses` ; les nouveaux contrats utiliseront le nouveau wording).
-- Pas de mise à jour rétroactive des contrats déjà signés.
+- Pas de modification du contrat client (déjà fait précédemment).
+- Pas de système d'overrides éditables côté admin pour le contrat conférencier (le wording reste codé en dur dans la page, conformément à l'architecture actuelle).
+- Pas de migration BDD.
 
-### Question
-Pour l'article 5.1, dois-je :
-- **(a)** garder la logique conditionnelle actuelle (acompte ou pas d'acompte selon `deposit_required`) avec le nouveau wording fourni comme version "avec acompte", ou
-- **(b)** imposer systématiquement le wording fourni (50% à 30j + 100% à 7j avant) quel que soit le réglage ?
+### Fichier modifié
+- `src/pages/SpeakerContractView.tsx` (bloc articles 1 à 8 uniquement).
