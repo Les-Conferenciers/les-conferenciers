@@ -100,18 +100,6 @@ const Speakers = () => {
 
     const ldData = [
       {
-        id: "ld-faq-speakers",
-        json: {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          mainEntity: FAQ_ITEMS.map((it) => ({
-            "@type": "Question",
-            name: it.q,
-            acceptedAnswer: { "@type": "Answer", text: it.a },
-          })),
-        },
-      },
-      {
         id: "ld-breadcrumb-speakers",
         json: {
           "@context": "https://schema.org",
@@ -123,6 +111,7 @@ const Speakers = () => {
         },
       },
     ];
+
     ldData.forEach(({ id, json }) => {
       let s = document.getElementById(id) as HTMLScriptElement | null;
       if (!s) {
