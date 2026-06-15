@@ -20,40 +20,19 @@ const PAGE_TITLE = "Trouver un conférencier pour votre événement, séminaire,
 const PAGE_DESCRIPTION =
   "Trouver un conférencier professionnel adapté à votre événement : 300+ profils experts, accompagnement sur mesure et devis rapide partout en France.";
 
-const FAQ_ITEMS: { q: string; a: string }[] = [
-  {
-    q: "Comment trouver un bon conférencier pour son événement ?",
-    a: "Pour trouver le bon conférencier, partez du thème de votre événement, du profil de votre audience et du message clé à transmettre. Notre agence vous accompagne pas à pas : nous présélectionnons des profils alignés avec vos objectifs, partageons vidéos et références, puis vous proposons une short-list adaptée à votre budget.",
-  },
-  {
-    q: "Quel est le tarif d'un conférencier professionnel ?",
-    a: "Le tarif d'un conférencier varie généralement entre 3 000 € et 30 000 € selon sa notoriété, son expertise, la durée d'intervention et le lieu. Les experts métiers démarrent autour de 3 000 à 6 000 €, tandis que les personnalités médiatiques, sportives ou dirigeantes de renom se situent au-delà. Nous vous communiquons un devis précis sous 24h après cadrage de votre besoin.",
-  },
-  {
-    q: "Combien de temps à l'avance faut-il réserver un conférencier ?",
-    a: "Nous recommandons d'anticiper 2 à 6 mois avant votre événement, en particulier pour les profils très demandés (sportifs de haut niveau, dirigeants, personnalités médiatiques). Pour les demandes urgentes, notre réseau de 300+ conférenciers permet souvent de proposer des alternatives qualifiées en quelques jours.",
-  },
-  {
-    q: "Quelle différence entre un conférencier, un intervenant et un keynote speaker ?",
-    a: "Le terme conférencier désigne tout intervenant qui prend la parole devant une audience. Un keynote speaker délivre la conférence d'ouverture ou de clôture, plus stratégique et inspirante. Un intervenant peut animer table ronde, atelier ou masterclass. Nous vous aidons à choisir le format le plus pertinent selon votre événement.",
-  },
-  {
-    q: "Comment choisir le conférencier adapté à son thème et à son audience ?",
-    a: "Le bon match repose sur trois critères : la pertinence du contenu par rapport à votre thématique, la capacité à embarquer votre audience (ton, énergie, storytelling) et l'expérience scénique. Notre expertise consiste précisément à connaître chaque profil en profondeur pour matcher événement, audience et conférencier.",
-  },
-  {
-    q: "Pourquoi passer par une agence pour trouver un conférencier ?",
-    a: "Une agence vous fait gagner du temps, sécurise la prestation (contrat, logistique, voyage) et vous donne accès à un réseau qualifié bien au-delà des profils visibles en ligne. Chez Les Conférenciers, nous connaissons personnellement chaque intervenant et le contenu de ses conférences, ce qui nous permet de garantir un choix pertinent et un événement réussi.",
-  },
-  {
-    q: "Peut-on faire intervenir un conférencier en visio ou à l'étranger ?",
-    a: "Oui, nos conférenciers interviennent en présentiel partout en France et à l'international, ainsi qu'en distanciel (visio, hybride, plateau TV). Précisez-nous le format souhaité et nous adaptons la proposition en conséquence.",
-  },
-  {
-    q: "Que comprend la prestation d'un conférencier ?",
-    a: "La prestation inclut généralement la préparation en amont avec un brief personnalisé, l'intervention elle-même (keynote, table ronde, atelier), les échanges avec l'audience, ainsi que les frais de déplacement et d'hébergement le cas échéant. Tous les détails sont formalisés dans le devis et le contrat.",
-  },
+type FaqItem = { question: string; answer: string };
+
+const FALLBACK_FAQ: FaqItem[] = [
+  { question: "Comment trouver un bon conférencier pour son événement ?", answer: "Définissez vos objectifs, votre audience et votre message clé. Une agence spécialisée vous fait gagner du temps en présélectionnant des profils adaptés." },
+  { question: "Quel est le tarif d'un conférencier professionnel ?", answer: "Les honoraires varient selon la notoriété, l'expertise, la durée et le lieu. Comptez de quelques milliers d'euros à plusieurs dizaines de milliers d'euros pour des personnalités reconnues." },
+  { question: "Combien de temps à l'avance faut-il réserver un conférencier ?", answer: "Idéalement 3 à 6 mois avant l'événement, jusqu'à 12 mois pour les profils très sollicités." },
+  { question: "Quelle est la différence entre un conférencier, un intervenant et un keynote speaker ?", answer: "Le conférencier intervient sur une thématique précise, l'intervenant est un terme plus large, le keynote speaker est l'orateur principal d'un événement." },
+  { question: "Comment choisir le conférencier adapté à son thème et à son audience ?", answer: "Vérifiez l'adéquation entre le message, le public et le style d'intervention." },
+  { question: "Pourquoi passer par une agence pour trouver un conférencier ?", answer: "Une agence vous fait gagner du temps, sécurise la prestation et donne accès à un réseau qualifié." },
+  { question: "Peut-on faire intervenir un conférencier en visio ou à l'étranger ?", answer: "Oui, les formats à distance et internationaux sont largement utilisés." },
+  { question: "Que comprend la prestation d'un conférencier ?", answer: "Préparation en amont, intervention le jour J, échanges avec l'audience et frais de déplacement le cas échéant." },
 ];
+
 
 const Speakers = () => {
   // SEO meta
