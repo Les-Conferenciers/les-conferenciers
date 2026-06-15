@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -17,8 +16,9 @@ const SCROLL_KEY = "speakers-scroll-pos";
 const DISPLAY_COUNT_KEY = "speakers-display-count";
 
 const PAGE_URL = "https://www.lesconferenciers.com/conferencier";
-const PAGE_TITLE = "Trouver un conférencier pour votre événement | Les Conférenciers";
-const PAGE_DESCRIPTION = "Trouver un conférencier professionnel adapté à votre événement : 300+ profils experts, accompagnement sur mesure et devis rapide partout en France.";
+const PAGE_TITLE = "Trouver un conférencier pour votre événement, séminaire, kick-off, convention | Les Conférenciers";
+const PAGE_DESCRIPTION =
+  "Trouver un conférencier professionnel adapté à votre événement : 300+ profils experts, accompagnement sur mesure et devis rapide partout en France.";
 
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
@@ -69,17 +69,25 @@ const Speakers = () => {
       el.setAttribute("content", content);
     };
 
-    ensureMeta('meta[name="description"]', () => {
-      const m = document.createElement("meta");
-      m.setAttribute("name", "description");
-      return m;
-    }, PAGE_DESCRIPTION);
+    ensureMeta(
+      'meta[name="description"]',
+      () => {
+        const m = document.createElement("meta");
+        m.setAttribute("name", "description");
+        return m;
+      },
+      PAGE_DESCRIPTION,
+    );
 
-    ensureMeta('meta[name="robots"]', () => {
-      const m = document.createElement("meta");
-      m.setAttribute("name", "robots");
-      return m;
-    }, "index, follow");
+    ensureMeta(
+      'meta[name="robots"]',
+      () => {
+        const m = document.createElement("meta");
+        m.setAttribute("name", "robots");
+        return m;
+      },
+      "index, follow",
+    );
 
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canonical) {
@@ -100,11 +108,15 @@ const Speakers = () => {
     ];
     ogTags.forEach(({ prop, content, twitter }) => {
       const selector = twitter ? `meta[name="${prop}"]` : `meta[property="${prop}"]`;
-      ensureMeta(selector, () => {
-        const m = document.createElement("meta");
-        m.setAttribute(twitter ? "name" : "property", prop);
-        return m;
-      }, content);
+      ensureMeta(
+        selector,
+        () => {
+          const m = document.createElement("meta");
+          m.setAttribute(twitter ? "name" : "property", prop);
+          return m;
+        },
+        content,
+      );
     });
 
     const ldData = [
@@ -174,7 +186,12 @@ const Speakers = () => {
   const { data: allSpeakers, isLoading } = useQuery({
     queryKey: ["speakers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("speakers").select("*").eq("archived", false).order("name", { ascending: true }).limit(500);
+      const { data, error } = await supabase
+        .from("speakers")
+        .select("*")
+        .eq("archived", false)
+        .order("name", { ascending: true })
+        .limit(500);
       if (error) throw error;
       const speakers = data as (Speaker & { display_order?: number })[];
       // Sort by display_order first, then by last name for those with default (999)
@@ -199,9 +216,8 @@ const Speakers = () => {
         counts.set(t, (counts.get(t) || 0) + 1);
       });
     });
-    const sorted = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1]);
-    
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+
     const top10 = sorted.slice(0, 10).map(([theme]) => theme);
     const all = sorted.map(([theme]) => theme).sort((a, b) => a.localeCompare(b, "fr"));
     return { topThemes: top10, allThemes: all };
@@ -211,7 +227,8 @@ const Speakers = () => {
 
   // Filter speakers
   const speakers = allSpeakers?.filter((s) => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch =
+      !searchQuery ||
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.biography?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -258,8 +275,10 @@ const Speakers = () => {
     const el = sentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMore(); },
-      { rootMargin: "200px" }
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
+      },
+      { rootMargin: "200px" },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -272,25 +291,30 @@ const Speakers = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      
+
       <section className="relative bg-primary py-12 px-4 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg')] bg-cover bg-center" aria-hidden="true" />
+        <div
+          className="absolute inset-0 bg-[url('https://ibvjijamybwagxrniyjv.supabase.co/storage/v1/object/public/speaker-photos/og/lesconferenciers.jpg')] bg-cover bg-center"
+          aria-hidden="true"
+        />
         <div className="absolute inset-0 bg-primary/80" />
         <div className="relative z-10">
           <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
             Trouver un conférencier pour votre événement
           </h1>
           <p className="text-primary-foreground/80 max-w-4xl mx-auto text-lg font-normal whitespace-pre-line">
-            {"Plus de 300 professionnels, experts et personnalités d'exception.\nTrouvez le conférencier idéal pour marquer votre séminaire, convention, kick-off"}
+            {
+              "Plus de 300 professionnels, experts et personnalités d'exception.\nTrouvez le conférencier idéal pour marquer votre séminaire, convention, kick-off"
+            }
           </p>
         </div>
       </section>
 
       <main className="container mx-auto px-4 py-8 flex-grow">
         <p className="sr-only">
-          Trouver un conférencier professionnel, un keynote speaker ou un intervenant expert pour vos événements d'entreprise, séminaires, conventions et conférences en France comme à l'international.
+          Trouver un conférencier professionnel, un keynote speaker ou un intervenant expert pour vos événements
+          d'entreprise, séminaires, conventions et conférences en France comme à l'international.
         </p>
-
 
         {/* Theme filters */}
         <div className="flex flex-wrap gap-2 mb-4">
@@ -348,7 +372,13 @@ const Speakers = () => {
         ) : speakers?.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-xl text-muted-foreground">Aucun conférencier ne correspond à votre recherche.</p>
-            <Button variant="link" onClick={() => { setSearchQuery(""); setSelectedTheme(null); }}>
+            <Button
+              variant="link"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedTheme(null);
+              }}
+            >
               Réinitialiser les filtres
             </Button>
           </div>
@@ -373,24 +403,21 @@ const Speakers = () => {
                 </div>
               </div>
             )}
-
-
           </>
         )}
       </main>
-
 
       {/* CTA block */}
       <div className="bg-muted/50 py-12 px-4">
         <div className="container mx-auto max-w-2xl text-center bg-card rounded-2xl p-8 shadow-sm border border-border/30">
           <p className="text-foreground text-sm md:text-base leading-relaxed mb-6">
-            <strong>Tous nos conférenciers ne sont pas présents sur le site.</strong>{" "}
-            Vous cherchez un profil en particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement.
+            <strong>Tous nos conférenciers ne sont pas présents sur le site.</strong> Vous cherchez un profil en
+            particulier ? Contactez-nous pour une proposition personnalisée adaptée à votre événement.
           </p>
           <Button
             variant="outline"
             className="rounded-xl font-semibold gap-2 border-foreground/20 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all"
-            onClick={() => window.location.href = "/contact"}
+            onClick={() => (window.location.href = "/contact")}
           >
             Nous contacter <ChevronDown className="h-4 w-4 -rotate-90" />
           </Button>
@@ -422,7 +449,6 @@ const Speakers = () => {
       </section>
 
       <Footer />
-
     </div>
   );
 };
