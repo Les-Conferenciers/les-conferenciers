@@ -175,6 +175,46 @@ const Speakers = () => {
     },
   });
 
+  // FAQ items chargés depuis la base (éditables via l'admin)
+  const { data: faqItems = FALLBACK_FAQ } = useQuery({
+    queryKey: ["page-faq", "conferencier"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("page_faqs")
+        .select("items")
+        .eq("page_key", "conferencier")
+        .maybeSingle();
+      if (error) throw error;
+      const items = (data?.items as FaqItem[] | null) ?? [];
+      return items.length > 0 ? items : FALLBACK_FAQ;
+    },
+  });
+
+  // Injecte le JSON-LD FAQPage dynamiquement quand les items changent
+  useEffect(() => {
+    const id = "ld-faq-speakers";
+    let s = document.getElementById(id) as HTMLScriptElement | null;
+    if (!s) {
+      s = document.createElement("script");
+      s.type = "application/ld+json";
+      s.id = id;
+      document.head.appendChild(s);
+    }
+    s.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((it) => ({
+        "@type": "Question",
+        name: it.question,
+        acceptedAnswer: { "@type": "Answer", text: it.answer },
+      })),
+    });
+    return () => {
+      document.getElementById(id)?.remove();
+    };
+  }, [faqItems]);
+
+
   // Extract all themes sorted by frequency
   const { topThemes, allThemes } = (() => {
     if (!allSpeakers) return { topThemes: [], allThemes: [] };
