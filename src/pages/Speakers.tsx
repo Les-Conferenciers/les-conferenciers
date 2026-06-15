@@ -281,7 +281,7 @@ const Speakers = () => {
             Trouver un conférencier pour votre événement
           </h1>
           <p className="text-primary-foreground/80 max-w-2xl mx-auto text-lg font-normal whitespace-pre-line">
-            {"Plus de 300 professionnels, experts et personnalités d'exception.\nTrouvez le conférencier idéal pour marquer votre séminaire, convention, kickoff, etc."}
+            {"Plus de 300 professionnels, experts et personnalités d'exception.\nTrouvez le conférencier idéal pour marquer votre séminaire, convention, kickoff"}
           </p>
         </div>
       </section>
