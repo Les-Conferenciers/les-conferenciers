@@ -87,6 +87,14 @@ const sanitizeConferenceHtml = (html: string): string => {
     return `<figure${cleanedFigAttrs} style="${figStyle}">${newImgTag}`;
   });
 
+  // Pass 3: ensure every <img> has loading="lazy" and decoding="async" to reduce CLS/LCP impact
+  out = out.replace(/<img\b([^>]*)>/gi, (match, attrs) => {
+    let a = attrs;
+    if (!/\bloading\s*=/i.test(a)) a += ' loading="lazy"';
+    if (!/\bdecoding\s*=/i.test(a)) a += ' decoding="async"';
+    return `<img${a}>`;
+  });
+
   return out;
 };
 
