@@ -126,7 +126,12 @@ const Admin = () => {
           <TabsContent value="emails">
             <AdminEmailTemplates />
           </TabsContent>
+
+          <TabsContent value="faq">
+            <AdminFaq />
+          </TabsContent>
         </Tabs>
+
       </div>
     </div>
   );
