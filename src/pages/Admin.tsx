@@ -7,6 +7,8 @@ import { LogOut, Users, Mic, Building2, FileText as FileTextIcon, ClipboardCheck
 import nugget from "@/assets/nugget.png";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
+import AdminSpeakerProfiles from "@/components/admin/AdminSpeakerProfiles";
+import AdminLandingPages from "@/components/admin/AdminLandingPages";
 import AdminClients from "@/components/admin/AdminClients";
 import AdminEventDossiers from "@/components/admin/AdminEventDossiers";
 import AdminEmailTemplates from "@/components/admin/AdminEmailTemplates";
@@ -88,7 +90,16 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="speakers">
-            <AdminSpeakersCRM />
+            <Tabs defaultValue="crm">
+              <TabsList className="mb-4">
+                <TabsTrigger value="crm">Fiches</TabsTrigger>
+                <TabsTrigger value="profiles">Profils</TabsTrigger>
+                <TabsTrigger value="landings">Landings</TabsTrigger>
+              </TabsList>
+              <TabsContent value="crm"><AdminSpeakersCRM /></TabsContent>
+              <TabsContent value="profiles"><AdminSpeakerProfiles /></TabsContent>
+              <TabsContent value="landings"><AdminLandingPages /></TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="propositions">

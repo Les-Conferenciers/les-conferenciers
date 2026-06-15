@@ -1,41 +1,65 @@
-# Correction affichage photo "Nelly selfies" sur /contact
+## Objectif
+Optimiser la page `/conferencier` (`src/pages/Speakers.tsx`) pour la requête SEO **« trouver un conférencier »** et ajouter une FAQ riche en bas de page.
 
-## Problème
+## 1. Balises SEO (Head)
 
-Sur la page `/contact`, le bloc "Nelly, votre interlocutrice" n'affiche que le texte alternatif au lieu de la photo. La photo est référencée via :
+Mise à jour dans le `useEffect` SEO de `Speakers.tsx` :
 
-```ts
-import selfiesAsset from "@/assets/selfies-avec-nelly.png.asset.json";
-const selfiesAvecNelly = selfiesAsset.url; // /__l5e/assets-v1/.../selfies-avec-nelly.png
-```
+- **`<title>`** (< 60 car.) :
+  `Trouver un conférencier pour votre événement | Les Conférenciers`
+- **`<meta name="description">`** (< 160 car.) :
+  `Trouver un conférencier professionnel adapté à votre événement : 300+ profils experts, accompagnement sur mesure et devis rapide partout en France.`
+- **`<link rel="canonical">`** : `https://www.lesconferenciers.com/conferencier` (déjà présent, vérifié — sans slash final conformément à la règle projet).
+- **Open Graph / Twitter** : ajout dynamique des balises `og:title`, `og:description`, `og:url`, `og:type=website`, `twitter:card`, `twitter:title`, `twitter:description` synchronisées avec le title/description ci-dessus (création/MAJ + cleanup au démontage).
+- **`<meta name="robots" content="index, follow">`** explicite.
 
-Le fichier réel n'est PAS dans le repo : il est servi par le CDN Lovable via un chemin `/__l5e/...`. Ce chemin pose plusieurs soucis en production Netlify :
-- bloqué par certains adblockers/filtres entreprise (préfixe inhabituel),
-- dépend du proxy Lovable pour résoudre à travers Netlify,
-- aucun cache long terme côté Netlify.
+## 2. Structure Hn et contenu visible
 
-Toutes les autres images du site (logos partenaires, blog…) sont servies depuis `/public/` localement — c'est la convention du projet (cf. mémoire `Logo Assets`).
+Dans le hero existant :
+- **`<h1>`** remplacé par : `Trouver un conférencier pour votre événement`
+- **Sous-titre** (`<p>`) : `Plus de 300 conférenciers professionnels et personnalités d'exception. Trouvez en quelques clics le profil idéal pour marquer votre événement d'entreprise.`
 
-## Solution
+Ajout d'un court paragraphe d'introduction SEO (1-2 phrases, sous les filtres ou au-dessus de la grille) pour densifier le champ lexical (« conférencier professionnel », « intervenant », « keynote speaker », « événement entreprise »), sans casser la mise en page actuelle.
 
-Réhéberger l'image directement dans `/public/` et la référencer en chemin statique.
+Les titres de filtres restent en éléments visuels (pas de `h2` parasite). Le bloc CTA existant garde sa structure.
 
-### Étapes
+## 3. Nouvelle section FAQ (en bas de page, avant le Footer)
 
-1. Télécharger le binaire depuis le CDN Lovable :
-   `curl -o public/selfies-avec-nelly.png https://www.lesconferenciers.com/__l5e/assets-v1/680c7df7-d88d-4c49-b01a-911819887898/selfies-avec-nelly.png`
+Composant inline utilisant `Accordion` shadcn (déjà dispo), titre `<h2>` : **« Questions fréquentes pour trouver un conférencier »**.
 
-2. Modifier `src/pages/Contact.tsx` :
-   - Supprimer l'import `selfiesAsset` du JSON.
-   - Remplacer `const selfiesAvecNelly = selfiesAsset.url;` par `const selfiesAvecNelly = "/selfies-avec-nelly.png";`
+Questions ciblées (issues de la SERP « trouver un conférencier ») :
+1. Comment trouver un bon conférencier pour son événement ?
+2. Quel est le tarif d'un conférencier professionnel ?
+3. Combien de temps à l'avance réserver un conférencier ?
+4. Quelle différence entre un conférencier, un intervenant et un keynote speaker ?
+5. Comment choisir le conférencier adapté à son thème et son audience ?
+6. Pourquoi passer par une agence de conférenciers ?
+7. Peut-on faire intervenir un conférencier en visio ou à l'étranger ?
+8. Que comprend la prestation d'un conférencier (préparation, voyage, droits) ?
 
-3. Supprimer `src/assets/selfies-avec-nelly.png.asset.json` (devenu inutile).
+Réponses rédigées 2-4 phrases, ton agence (vouvoiement, professionnel), apostrophes droites, lien interne vers `/contact` dans 1-2 réponses pour booster maillage + conversion.
 
-### Vérification
+## 4. JSON-LD structuré
 
-- Build + ouvrir `/contact` dans le preview : la photo doit s'afficher dans le cadre "Nelly, votre interlocutrice".
-- Le fichier sera servi par Netlify avec un cache statique long terme.
+Injection dans le head (via `useEffect`) de deux scripts `application/ld+json` :
+- **`FAQPage`** reprenant exactement les 8 Q/R (texte brut, sans HTML), pour éligibilité aux rich snippets FAQ Google.
+- **`CollectionPage`** + `breadcrumb` (`BreadcrumbList` : Accueil › Conférenciers) pour signaler la nature de listing.
+
+Les scripts sont créés avec `id` dédiés et supprimés au démontage pour éviter les doublons sur navigation SPA.
+
+## 5. Best practices techniques vérifiées
+
+- `ScrollToTop` global déjà actif (mémoire projet) — OK.
+- Sitemap dynamique inclut déjà `/conferencier` (généré côté edge function) — pas de modif.
+- `robots.txt` : déjà `Allow: /` — pas de modif.
+- Lazy-loading images conférenciers déjà en place dans `SpeakerCard`.
+- Balise `<main>` : la page utilise actuellement des `<section>`/`<div>`. Ajout d'un wrapper `<main>` autour du contenu central pour clarifier la structure sémantique aux crawlers.
+- Vérification : pas de `noindex`, un seul `<h1>`, hiérarchie h1 → h2 (FAQ) cohérente.
 
 ## Hors scope
+- Pas de modification de la grille / filtres / logique de pagination.
+- Pas de refonte visuelle du hero (seul le texte change).
+- Pas de changement backend ni de schéma BDD.
 
-Pas de changement de layout, de wording, ni d'autres composants.
+## Fichiers touchés
+- `src/pages/Speakers.tsx` (head, h1, intro, wrapper `<main>`, FAQ, JSON-LD).

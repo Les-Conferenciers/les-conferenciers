@@ -882,6 +882,72 @@ export type Database = {
           },
         ]
       }
+      speaker_profiles: {
+        Row: {
+          created_at: string
+          cta_button_label: string | null
+          cta_text: string | null
+          display_order: number
+          extra_speaker_ids: string[]
+          faq: Json
+          id: string
+          intro_html: string | null
+          landing_enabled: boolean
+          landing_label: string
+          linked_profile_ids: string[]
+          meta_description: string | null
+          name: string
+          rich_content: Json | null
+          rich_content_updated_at: string | null
+          seo_title: string | null
+          slug: string
+          subtitle: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_button_label?: string | null
+          cta_text?: string | null
+          display_order?: number
+          extra_speaker_ids?: string[]
+          faq?: Json
+          id?: string
+          intro_html?: string | null
+          landing_enabled?: boolean
+          landing_label: string
+          linked_profile_ids?: string[]
+          meta_description?: string | null
+          name: string
+          rich_content?: Json | null
+          rich_content_updated_at?: string | null
+          seo_title?: string | null
+          slug: string
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_button_label?: string | null
+          cta_text?: string | null
+          display_order?: number
+          extra_speaker_ids?: string[]
+          faq?: Json
+          id?: string
+          intro_html?: string | null
+          landing_enabled?: boolean
+          landing_label?: string
+          linked_profile_ids?: string[]
+          meta_description?: string | null
+          name?: string
+          rich_content?: Json | null
+          rich_content_updated_at?: string | null
+          seo_title?: string | null
+          slug?: string
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       speakers: {
         Row: {
           agent_email: string | null
@@ -909,6 +975,7 @@ export type Database = {
           meta_description: string | null
           name: string
           phone: string | null
+          profile_id: string | null
           role: string | null
           seo_title: string | null
           slug: string
@@ -945,6 +1012,7 @@ export type Database = {
           meta_description?: string | null
           name: string
           phone?: string | null
+          profile_id?: string | null
           role?: string | null
           seo_title?: string | null
           slug: string
@@ -981,6 +1049,7 @@ export type Database = {
           meta_description?: string | null
           name?: string
           phone?: string | null
+          profile_id?: string | null
           role?: string | null
           seo_title?: string | null
           slug?: string
@@ -991,7 +1060,15 @@ export type Database = {
           why_expertise?: string | null
           why_impact?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "speakers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "speaker_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
