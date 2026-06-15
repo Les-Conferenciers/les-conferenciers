@@ -481,23 +481,49 @@ const SpeakerDetail = () => {
   }, [speaker, conferences]);
 
   if (isLoading) {
+    // Skeleton mirrors the real hero/bio dimensions to avoid CLS when content swaps in.
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="bg-primary py-16 px-4">
-          <div className="container mx-auto max-w-5xl flex items-center gap-8">
-            <Skeleton className="w-32 h-32 rounded-full flex-shrink-0" />
-            <div className="space-y-3 flex-grow">
-              <Skeleton className="h-10 w-2/3" />
-              <Skeleton className="h-5 w-1/3" />
-              <Skeleton className="h-8 w-full" />
+        <section className="bg-primary text-primary-foreground py-12 md:py-16 px-4">
+          <div className="container mx-auto max-w-5xl">
+            {/* Breadcrumb placeholder */}
+            <div className="h-5 w-64 mb-8 bg-primary-foreground/10 rounded" />
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+              {/* Medallion — exact size of real one */}
+              <Skeleton className="w-36 h-36 md:w-44 md:h-44 rounded-full flex-shrink-0 bg-primary-foreground/10" />
+              <div className="flex-grow w-full space-y-5">
+                {/* H1 */}
+                <Skeleton className="h-10 md:h-12 w-3/4 bg-primary-foreground/10" />
+                {/* Specialty */}
+                <Skeleton className="h-6 w-1/2 bg-primary-foreground/10" />
+                {/* Themes badges */}
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-7 w-20 rounded-full bg-primary-foreground/10" />
+                  <Skeleton className="h-7 w-24 rounded-full bg-primary-foreground/10" />
+                  <Skeleton className="h-7 w-16 rounded-full bg-primary-foreground/10" />
+                </div>
+                {/* 4 key points */}
+                <div className="space-y-2 pt-2">
+                  <Skeleton className="h-4 w-full bg-primary-foreground/10" />
+                  <Skeleton className="h-4 w-11/12 bg-primary-foreground/10" />
+                  <Skeleton className="h-4 w-10/12 bg-primary-foreground/10" />
+                  <Skeleton className="h-4 w-9/12 bg-primary-foreground/10" />
+                </div>
+                {/* CTA */}
+                <Skeleton className="h-12 w-56 rounded-xl bg-primary-foreground/10 mt-4" />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="container mx-auto px-4 py-12 max-w-5xl space-y-6">
+        </section>
+        {/* Bio placeholder — reserves vertical space so the rest of the page doesn't jump */}
+        <div className="container mx-auto px-4 py-12 max-w-5xl space-y-4 min-h-[600px]">
           <Skeleton className="h-6 w-full" />
           <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-6 w-11/12" />
+          <Skeleton className="h-6 w-10/12" />
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-9/12" />
         </div>
       </div>
     );
