@@ -1,65 +1,79 @@
-## Objectif
-Optimiser la page `/conferencier` (`src/pages/Speakers.tsx`) pour la requête SEO **« trouver un conférencier »** et ajouter une FAQ riche en bas de page.
+## Diagnostic — Core Web Vitals mobile (Search Console)
 
-## 1. Balises SEO (Head)
+D'après ton rapport :
+- **CLS > 0,25** sur ~169 URL → critique
+- **LCP > 2,5 s** sur ~175 URL → à améliorer
+- **INP** déjà OK
 
-Mise à jour dans le `useEffect` SEO de `Speakers.tsx` :
+Les URL concernées sont quasi exclusivement les **fiches conférenciers** (300+ pages = 95 % du site). Les deux problèmes ont des causes identifiées dans le code :
 
-- **`<title>`** (< 60 car.) :
-  `Trouver un conférencier pour votre événement | Les Conférenciers`
-- **`<meta name="description">`** (< 160 car.) :
-  `Trouver un conférencier professionnel adapté à votre événement : 300+ profils experts, accompagnement sur mesure et devis rapide partout en France.`
-- **`<link rel="canonical">`** : `https://www.lesconferenciers.com/conferencier` (déjà présent, vérifié — sans slash final conformément à la règle projet).
-- **Open Graph / Twitter** : ajout dynamique des balises `og:title`, `og:description`, `og:url`, `og:type=website`, `twitter:card`, `twitter:title`, `twitter:description` synchronisées avec le title/description ci-dessus (création/MAJ + cleanup au démontage).
-- **`<meta name="robots" content="index, follow">`** explicite.
+### CLS — gros décalage de mise en page
 
-## 2. Structure Hn et contenu visible
+Le squelette de chargement (`SpeakerDetail.tsx` lignes 483-500) ne correspond pas du tout à la hauteur réelle du hero :
+- skeleton : médaillon 32×32 + 3 lignes courtes (~280 px de haut)
+- contenu réel : médaillon 44×44 + H1 + sous-titre + badges thèmes + 4 pépites + bouton CTA (~520 px+)
 
-Dans le hero existant :
-- **`<h1>`** remplacé par : `Trouver un conférencier pour votre événement`
-- **Sous-titre** (`<p>`) : `Plus de 300 conférenciers professionnels et personnalités d'exception. Trouvez en quelques clics le profil idéal pour marquer votre événement d'entreprise.`
+→ Quand les données Supabase arrivent, tout le bas de page « saute » de 200-300 px = CLS énorme.
 
-Ajout d'un court paragraphe d'introduction SEO (1-2 phrases, sous les filtres ou au-dessus de la grille) pour densifier le champ lexical (« conférencier professionnel », « intervenant », « keynote speaker », « événement entreprise »), sans casser la mise en page actuelle.
+Autres contributeurs CLS :
+- Images du HTML biographie sans `width`/`height` réservés (CSS `[&_img]:h-auto`)
+- Polices Playfair (H1 `text-5xl`) chargées en `media="print"` → FOUT marqué sur mobile
+- Section `SpeakerReviews` qui apparaît après chargement Google Places API
 
-Les titres de filtres restent en éléments visuels (pas de `h2` parasite). Le bloc CTA existant garde sa structure.
+### LCP — image hero pas optimisée
 
-## 3. Nouvelle section FAQ (en bas de page, avant le Footer)
+- L'élément LCP sur fiche = **photo du conférencier** (Supabase storage), pas préchargée
+- `index.html` précharge à la place `og/lesconferenciers.jpg` (1200×630) qui ne sert qu'au social → bande passante gaspillée et préempte la vraie image LCP
+- Photos Supabase servies sans transformations (souvent 1500-2500 px)
+- Fonts Google chargées en bloquant via `<link rel="stylesheet" media="print" onload>` + `noscript` fallback OK, mais Playfair pèse lourd
 
-Composant inline utilisant `Accordion` shadcn (déjà dispo), titre `<h2>` : **« Questions fréquentes pour trouver un conférencier »**.
+## Plan d'action
 
-Questions ciblées (issues de la SERP « trouver un conférencier ») :
-1. Comment trouver un bon conférencier pour son événement ?
-2. Quel est le tarif d'un conférencier professionnel ?
-3. Combien de temps à l'avance réserver un conférencier ?
-4. Quelle différence entre un conférencier, un intervenant et un keynote speaker ?
-5. Comment choisir le conférencier adapté à son thème et son audience ?
-6. Pourquoi passer par une agence de conférenciers ?
-7. Peut-on faire intervenir un conférencier en visio ou à l'étranger ?
-8. Que comprend la prestation d'un conférencier (préparation, voyage, droits) ?
+### 1. Fix CLS prioritaire — squelette de fiche
 
-Réponses rédigées 2-4 phrases, ton agence (vouvoiement, professionnel), apostrophes droites, lien interne vers `/contact` dans 1-2 réponses pour booster maillage + conversion.
+Refondre le skeleton dans `SpeakerDetail.tsx` pour qu'il **reproduise la hauteur réelle** du hero (médaillon 44×44, H1 ~48 px, badges thèmes ~32 px, 4 lignes pépites, bouton CTA). Réserver aussi une hauteur min sur la section biographie (`min-h-[600px]`) tant que le contenu n'est pas chargé.
 
-## 4. JSON-LD structuré
+### 2. Réserver les dimensions des images de biographie
 
-Injection dans le head (via `useEffect`) de deux scripts `application/ld+json` :
-- **`FAQPage`** reprenant exactement les 8 Q/R (texte brut, sans HTML), pour éligibilité aux rich snippets FAQ Google.
-- **`CollectionPage`** + `breadcrumb` (`BreadcrumbList` : Accueil › Conférenciers) pour signaler la nature de listing.
+Dans la chaîne `sanitizeConferenceHtml` :
+- Ajouter `loading="lazy"` + `decoding="async"` à chaque `<img>` qui n'en a pas
+- Ajouter un wrapper avec aspect-ratio inline si l'image a `width` mais pas `height` (ou inverser).
+- Sur `.bio-image-block img`, fixer `aspect-ratio` CSS pour éviter le shift au load.
 
-Les scripts sont créés avec `id` dédiés et supprimés au démontage pour éviter les doublons sur navigation SPA.
+### 3. Précharger la vraie LCP image
 
-## 5. Best practices techniques vérifiées
+- **Retirer** le `<link rel="preload" as="image" href=".../og/lesconferenciers.jpg">` de `index.html` (n'est jamais l'élément LCP sur les fiches, ni sur l'accueil — l'accueil utilise un fond Supabase déjà géré dans le composant Hero).
+- Sur `SpeakerDetail`, ajouter dynamiquement un `<link rel="preload" as="image">` pointant sur `speaker.image_url` dès que le slug est résolu (via `react-helmet-async` si dispo, sinon append manuel comme déjà fait pour les meta).
+- L'image hero a déjà `fetchPriority="high"` + `decoding="sync"` — bon.
 
-- `ScrollToTop` global déjà actif (mémoire projet) — OK.
-- Sitemap dynamique inclut déjà `/conferencier` (généré côté edge function) — pas de modif.
-- `robots.txt` : déjà `Allow: /` — pas de modif.
-- Lazy-loading images conférenciers déjà en place dans `SpeakerCard`.
-- Balise `<main>` : la page utilise actuellement des `<section>`/`<div>`. Ajout d'un wrapper `<main>` autour du contenu central pour clarifier la structure sémantique aux crawlers.
-- Vérification : pas de `noindex`, un seul `<h1>`, hiérarchie h1 → h2 (FAQ) cohérente.
+### 4. Réduire le poids des photos speaker (gain LCP majeur)
 
-## Hors scope
-- Pas de modification de la grille / filtres / logique de pagination.
-- Pas de refonte visuelle du hero (seul le texte change).
-- Pas de changement backend ni de schéma BDD.
+Deux options, je propose la première :
+- **A. Transformer à la volée via Supabase** : remplacer les URL `/storage/v1/object/public/...` par `/storage/v1/render/image/public/...?width=400&quality=75&format=origin` côté listing et `?width=600` côté hero détail. Gain : 60-80 % de poids.
+- B. (plus lourd) rehéberger en WebP optimisé — déjà fait selon `mem://tech/data-management/speaker-assets-storage`, donc à vérifier d'abord.
 
-## Fichiers touchés
-- `src/pages/Speakers.tsx` (head, h1, intro, wrapper `<main>`, FAQ, JSON-LD).
+### 5. Polices
+
+- Précharger uniquement le **woff2 Playfair-700** (utilisé par H1) en `<link rel="preload" as="font" crossorigin>` → réduit le FOUT le plus visible.
+- Garder Inter en swap normal (peu de différence visuelle avec la fallback sans-serif).
+
+### 6. Vérifier après déploiement
+
+- PageSpeed Insights sur 2-3 fiches représentatives (`/conferencier/xxx`).
+- Demander un nouveau scan Search Console (28 jours pour validation).
+
+---
+
+## Ce que je ne touche pas (déjà OK)
+
+- INP (mémoire `mem://tech/performance/core-web-vitals` indique déjà React.lazy + content-visibility).
+- Le format des photos déjà rehébergées (à confirmer rapidement avant action #4).
+- Le tracking Google Ads, le sitemap, les canonicals (sans rapport avec les Web Vitals).
+
+---
+
+## Si tu valides
+
+Je commence par les **fixes #1 (skeleton hero) et #3 (preload image LCP + retrait preload OG)** qui adressent ~80 % du problème CLS et LCP sans risque. Puis #2 (images bio), #4 (transformations Supabase), #5 (preload font) en deuxième passe.
+
+Ordre proposé : 1 → 3 → 4 → 2 → 5.

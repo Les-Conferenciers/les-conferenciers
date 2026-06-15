@@ -481,6 +481,30 @@ export type Database = {
           },
         ]
       }
+      page_faqs: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          page_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          page_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          page_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       proposal_speakers: {
         Row: {
           agency_commission: number | null
