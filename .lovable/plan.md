@@ -1,65 +1,44 @@
 ## Objectif
-Optimiser la page `/conferencier` (`src/pages/Speakers.tsx`) pour la requête SEO **« trouver un conférencier »** et ajouter une FAQ riche en bas de page.
 
-## 1. Balises SEO (Head)
+Remplacer les 8 Q/R de la FAQ `/conferencier` par les contenus longs fournis, et permettre à Nelly de les éditer depuis l'admin avec un éditeur simple (textareas).
 
-Mise à jour dans le `useEffect` SEO de `Speakers.tsx` :
+## 1. Base de données
 
-- **`<title>`** (< 60 car.) :
-  `Trouver un conférencier pour votre événement | Les Conférenciers`
-- **`<meta name="description">`** (< 160 car.) :
-  `Trouver un conférencier professionnel adapté à votre événement : 300+ profils experts, accompagnement sur mesure et devis rapide partout en France.`
-- **`<link rel="canonical">`** : `https://www.lesconferenciers.com/conferencier` (déjà présent, vérifié — sans slash final conformément à la règle projet).
-- **Open Graph / Twitter** : ajout dynamique des balises `og:title`, `og:description`, `og:url`, `og:type=website`, `twitter:card`, `twitter:title`, `twitter:description` synchronisées avec le title/description ci-dessus (création/MAJ + cleanup au démontage).
-- **`<meta name="robots" content="index, follow">`** explicite.
+Créer une table `page_faqs` (Lovable Cloud) pour stocker la FAQ par page :
 
-## 2. Structure Hn et contenu visible
+- `page_key` (text, unique) — ex. `"conferencier"`
+- `items` (jsonb) — tableau `[{ question, answer }]`, l'`answer` contient les paragraphes séparés par `\n\n`
 
-Dans le hero existant :
-- **`<h1>`** remplacé par : `Trouver un conférencier pour votre événement`
-- **Sous-titre** (`<p>`) : `Plus de 300 conférenciers professionnels et personnalités d'exception. Trouvez en quelques clics le profil idéal pour marquer votre événement d'entreprise.`
+Lecture publique autorisée (RLS `SELECT` pour `anon`/`authenticated`), écriture réservée aux admins authentifiés (même approche que les autres tables d'admin).
 
-Ajout d'un court paragraphe d'introduction SEO (1-2 phrases, sous les filtres ou au-dessus de la grille) pour densifier le champ lexical (« conférencier professionnel », « intervenant », « keynote speaker », « événement entreprise »), sans casser la mise en page actuelle.
+Seed initial avec les 8 Q/R fournies par l'utilisateur, telles quelles (typographie déjà ok — on normalisera juste les apostrophes courbes en droites conformément à la règle projet).
 
-Les titres de filtres restent en éléments visuels (pas de `h2` parasite). Le bloc CTA existant garde sa structure.
+## 2. Page `/conferencier` (`src/pages/Speakers.tsx`)
 
-## 3. Nouvelle section FAQ (en bas de page, avant le Footer)
+- Charger la FAQ via `useQuery` sur `page_faqs` où `page_key = 'conferencier'`.
+- Fallback : si la requête échoue ou renvoie vide, garder les 8 Q/R en dur actuellement présentes (sécurité SEO).
+- Affichage : conserver l'`Accordion` shadcn existant. Rendre la réponse avec `whitespace-pre-line` pour respecter les sauts de paragraphes (`\n\n`).
+- JSON-LD `FAQPage` : régénéré dynamiquement à partir des items chargés (toujours présent dans le `<head>`).
+- Aucune modification des balises title/H1/canonical/description (déjà optimisées dans l'itération précédente).
 
-Composant inline utilisant `Accordion` shadcn (déjà dispo), titre `<h2>` : **« Questions fréquentes pour trouver un conférencier »**.
+## 3. Admin — éditeur simple
 
-Questions ciblées (issues de la SERP « trouver un conférencier ») :
-1. Comment trouver un bon conférencier pour son événement ?
-2. Quel est le tarif d'un conférencier professionnel ?
-3. Combien de temps à l'avance réserver un conférencier ?
-4. Quelle différence entre un conférencier, un intervenant et un keynote speaker ?
-5. Comment choisir le conférencier adapté à son thème et son audience ?
-6. Pourquoi passer par une agence de conférenciers ?
-7. Peut-on faire intervenir un conférencier en visio ou à l'étranger ?
-8. Que comprend la prestation d'un conférencier (préparation, voyage, droits) ?
+Nouvel onglet **« FAQ »** dans `src/pages/Admin.tsx` (icône `HelpCircle`), composant `AdminFaq.tsx` :
 
-Réponses rédigées 2-4 phrases, ton agence (vouvoiement, professionnel), apostrophes droites, lien interne vers `/contact` dans 1-2 réponses pour booster maillage + conversion.
+- Sélecteur de page (pour l'instant une seule option : `Page Conférenciers — /conferencier`, extensible plus tard).
+- Liste ordonnée des Q/R avec, pour chaque item :
+  - `Input` pour la question
+  - `Textarea` multi-lignes (h ~ 240px) pour la réponse — saisie en texte brut, paragraphes séparés par une ligne vide
+  - Boutons monter / descendre / supprimer
+- Bouton « Ajouter une question » en bas de liste
+- Bouton « Enregistrer » qui `upsert` la ligne `page_faqs` correspondante
+- Respect des règles CRM : pas de placeholders dans les champs, apostrophes droites au save.
 
-## 4. JSON-LD structuré
+Pas de rich text, pas de WYSIWYG — textarea simple comme demandé.
 
-Injection dans le head (via `useEffect`) de deux scripts `application/ld+json` :
-- **`FAQPage`** reprenant exactement les 8 Q/R (texte brut, sans HTML), pour éligibilité aux rich snippets FAQ Google.
-- **`CollectionPage`** + `breadcrumb` (`BreadcrumbList` : Accueil › Conférenciers) pour signaler la nature de listing.
+## Détails techniques
 
-Les scripts sont créés avec `id` dédiés et supprimés au démontage pour éviter les doublons sur navigation SPA.
-
-## 5. Best practices techniques vérifiées
-
-- `ScrollToTop` global déjà actif (mémoire projet) — OK.
-- Sitemap dynamique inclut déjà `/conferencier` (généré côté edge function) — pas de modif.
-- `robots.txt` : déjà `Allow: /` — pas de modif.
-- Lazy-loading images conférenciers déjà en place dans `SpeakerCard`.
-- Balise `<main>` : la page utilise actuellement des `<section>`/`<div>`. Ajout d'un wrapper `<main>` autour du contenu central pour clarifier la structure sémantique aux crawlers.
-- Vérification : pas de `noindex`, un seul `<h1>`, hiérarchie h1 → h2 (FAQ) cohérente.
-
-## Hors scope
-- Pas de modification de la grille / filtres / logique de pagination.
-- Pas de refonte visuelle du hero (seul le texte change).
-- Pas de changement backend ni de schéma BDD.
-
-## Fichiers touchés
-- `src/pages/Speakers.tsx` (head, h1, intro, wrapper `<main>`, FAQ, JSON-LD).
+- Migration Supabase : `CREATE TABLE public.page_faqs` + GRANTs (`anon SELECT`, `authenticated ALL`, `service_role ALL`) + RLS (`SELECT` public, `INSERT/UPDATE/DELETE` réservé aux admins via `has_role(auth.uid(), 'admin')` si la fonction existe, sinon `authenticated` — à confirmer par lecture rapide des autres policies au moment de l'implémentation).
+- Seed : `INSERT ... ON CONFLICT (page_key) DO UPDATE` avec les 8 items fournis.
+- Côté front : un seul `useQuery(['page-faq', 'conferencier'])` ; `FAQ_ITEMS` actuel devient le fallback hardcodé.
+- `whitespace-pre-line` sur l'`AccordionContent` pour préserver les paragraphes sans introduire de HTML.
