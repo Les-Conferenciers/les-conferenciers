@@ -88,7 +88,11 @@ const Admin = () => {
             <TabsTrigger value="emails" className="gap-2">
               <MailIcon className="h-4 w-4" /> Emails
             </TabsTrigger>
+            <TabsTrigger value="faq" className="gap-2">
+              <HelpCircle className="h-4 w-4" /> FAQ
+            </TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="speakers">
             <Tabs defaultValue="crm">
