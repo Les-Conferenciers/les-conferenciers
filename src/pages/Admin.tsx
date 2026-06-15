@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Users, Mic, Building2, FileText as FileTextIcon, ClipboardCheck, Mail as MailIcon } from "lucide-react";
+import { LogOut, Users, Mic, Building2, FileText as FileTextIcon, ClipboardCheck, Mail as MailIcon, HelpCircle } from "lucide-react";
 import nugget from "@/assets/nugget.png";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSpeakersCRM from "@/components/admin/AdminSpeakersCRM";
@@ -12,6 +12,7 @@ import AdminLandingPages from "@/components/admin/AdminLandingPages";
 import AdminClients from "@/components/admin/AdminClients";
 import AdminEventDossiers from "@/components/admin/AdminEventDossiers";
 import AdminEmailTemplates from "@/components/admin/AdminEmailTemplates";
+import AdminFaq from "@/components/admin/AdminFaq";
 import { loadEmailTemplates } from "@/lib/emailTemplates";
 
 const Admin = () => {
@@ -87,7 +88,11 @@ const Admin = () => {
             <TabsTrigger value="emails" className="gap-2">
               <MailIcon className="h-4 w-4" /> Emails
             </TabsTrigger>
+            <TabsTrigger value="faq" className="gap-2">
+              <HelpCircle className="h-4 w-4" /> FAQ
+            </TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="speakers">
             <Tabs defaultValue="crm">
@@ -121,7 +126,12 @@ const Admin = () => {
           <TabsContent value="emails">
             <AdminEmailTemplates />
           </TabsContent>
+
+          <TabsContent value="faq">
+            <AdminFaq />
+          </TabsContent>
         </Tabs>
+
       </div>
     </div>
   );
