@@ -442,17 +442,18 @@ const Speakers = () => {
             Tout ce qu'il faut savoir avant de réserver un conférencier pour votre événement.
           </p>
           <Accordion type="single" collapsible className="w-full">
-            {FAQ_ITEMS.map((item, idx) => (
+            {faqItems.map((item, idx) => (
               <AccordionItem key={idx} value={`faq-${idx}`}>
                 <AccordionTrigger className="text-left text-base md:text-lg font-semibold text-foreground">
-                  {item.q}
+                  {item.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground text-sm md:text-base leading-relaxed">
-                  {item.a}
+                <AccordionContent className="text-muted-foreground text-sm md:text-base leading-relaxed whitespace-pre-line">
+                  {item.answer}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
+
         </div>
       </section>
 
