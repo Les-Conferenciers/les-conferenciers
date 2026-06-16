@@ -4071,6 +4071,47 @@ const AdminProposalsContent = () => {
                 {editingTasks.length === 0 && (
                   <p className="text-sm text-muted-foreground italic">Aucune tâche créée pour cette proposition.</p>
                 )}
+                {(() => {
+                  const email = (reminderProposal.client_email || "").trim().toLowerCase();
+                  const siblingTasks = proposalTasks.filter((t: any) => {
+                    if (t.proposal_id === reminderProposal.id) return false;
+                    if (t.status !== "pending") return false;
+                    const sib = proposals.find((p) => p.id === t.proposal_id);
+                    if (!sib) return false;
+                    if ((sib.client_email || "").trim().toLowerCase() !== email) return false;
+                    return sib.status === "sent" || sib.status === "accepted";
+                  });
+                  if (siblingTasks.length === 0) return null;
+                  return (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-2">
+                      <p className="text-xs font-medium text-amber-800">
+                        ⚠️ {siblingTasks.length} relance{siblingTasks.length > 1 ? "s" : ""} active{siblingTasks.length > 1 ? "s" : ""} sur une autre proposition de ce client
+                      </p>
+                      <ul className="text-xs text-amber-900 space-y-1">
+                        {siblingTasks.map((t: any) => {
+                          const sib = proposals.find((p) => p.id === t.proposal_id);
+                          return (
+                            <li key={t.id} className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {t.task_type === "relance_1" ? "Relance 1" : "Relance 2"}
+                              </span>
+                              <span>{t.due_date ? `prévue le ${new Date(t.due_date).toLocaleDateString("fr-FR")}` : "non planifiée"}</span>
+                              {sib && (
+                                <button
+                                  type="button"
+                                  className="ml-auto underline text-amber-700 hover:text-amber-900"
+                                  onClick={() => openReminderDialog(sib)}
+                                >
+                                  Ouvrir cette proposition →
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })()}
                 {editingTasks.map((task: any, idx: number) => (
                   <div
                     key={task.id}
