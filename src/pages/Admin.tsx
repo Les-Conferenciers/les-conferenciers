@@ -1753,6 +1753,7 @@ const AdminProposalsContent = () => {
         .from("proposals")
         .update({ [field]: new Date().toISOString() } as any)
         .eq("id", proposal.id);
+      await cancelSiblingPendingTasks(proposal.id, proposal.client_email);
       toast.success(`Relance ${reminderNum} envoyée !`);
       fetchProposals();
     } catch {
