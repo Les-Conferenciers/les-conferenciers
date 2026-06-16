@@ -1722,6 +1722,7 @@ const AdminProposalsContent = () => {
       const sentAt = new Date().toISOString();
       await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
       await createTasksForProposal(proposal.id, sentAt, (proposal as any).proposal_type);
+      await cancelSiblingPendingTasks(proposal.id, proposal.client_email);
       toast.success("Email envoyé !");
       fetchProposals();
     } catch {
