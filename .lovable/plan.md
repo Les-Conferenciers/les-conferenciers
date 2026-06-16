@@ -1,79 +1,57 @@
-## Diagnostic — Core Web Vitals mobile (Search Console)
+## Diagnostic
 
-D'après ton rapport :
-- **CLS > 0,25** sur ~169 URL → critique
-- **LCP > 2,5 s** sur ~175 URL → à améliorer
-- **INP** déjà OK
+J'ai vérifié les deux dossiers dans la base. Les deux bugs viennent de la même cause : **plusieurs propositions coexistent pour le même client, et les tâches de relance restent vivantes sur les anciennes versions**.
 
-Les URL concernées sont quasi exclusivement les **fiches conférenciers** (300+ pages = 95 % du site). Les deux problèmes ont des causes identifiées dans le code :
+### 1) GE HEALTHCARE — SABINE.BEAUVALLET@gehealthcare.com
 
-### CLS — gros décalage de mise en page
+Il y a **deux propositions distinctes** (non liées par `previous_proposal_id`) :
 
-Le squelette de chargement (`SpeakerDetail.tsx` lignes 483-500) ne correspond pas du tout à la hauteur réelle du hero :
-- skeleton : médaillon 32×32 + 3 lignes courtes (~280 px de haut)
-- contenu réel : médaillon 44×44 + H1 + sous-titre + badges thèmes + 4 pépites + bouton CTA (~520 px+)
+| Proposition | Envoyée le | Tâches |
+|---|---|---|
+| `412f34f6…` | 30/04/2026 | Relance 1 ✔ envoyée le 18/05 · **Relance 2 pending due 16/06 (aujourd'hui)** |
+| `a53d7106…` | 09/04/2026 | **Aucune tâche** (créée avant le système de tâches) |
 
-→ Quand les données Supabase arrivent, tout le bas de page « saute » de 200-300 px = CLS énorme.
+L'agenda d'aujourd'hui pointe donc sur la première. Mais dans le CRM, vous avez très probablement cliqué « Relances » sur la seconde (celle sans tâches) → le dialogue affiche « Aucune tâche créée pour cette proposition », donc impossible de reprogrammer la Relance 2 qui est sur l'autre proposition.
 
-Autres contributeurs CLS :
-- Images du HTML biographie sans `width`/`height` réservés (CSS `[&_img]:h-auto`)
-- Polices Playfair (H1 `text-5xl`) chargées en `media="print"` → FOUT marqué sur mobile
-- Section `SpeakerReviews` qui apparaît après chargement Google Places API
+### 2) PRO BTP — p.bonnac@probtp.com
 
-### LCP — image hero pas optimisée
+**Trois propositions** :
 
-- L'élément LCP sur fiche = **photo du conférencier** (Supabase storage), pas préchargée
-- `index.html` précharge à la place `og/lesconferenciers.jpg` (1200×630) qui ne sert qu'au social → bande passante gaspillée et préempte la vraie image LCP
-- Photos Supabase servies sans transformations (souvent 1500-2500 px)
-- Fonts Google chargées en bloquant via `<link rel="stylesheet" media="print" onload>` + `noscript` fallback OK, mais Playfair pèse lourd
+| Proposition | Envoyée le | Statut | Tâches |
+|---|---|---|---|
+| `9c224e05…` | 08/06 | sent | Relance 2 ✔ envoyée 15/06 · Relance 1 pending due **22/06** (J+8 que vous avez planifié hier) |
+| `658a8658…` | 22/05 | sent | Relance 1 ✔ envoyée 29/05 · **Relance 2 pending due 16/06 (l'agenda remonté ce matin)** |
+| `77318d32…` | 21/05 | archived | pending mais ignorée par le recap |
 
-## Plan d'action
+Votre diagnostic est exact : la tâche planifiée hier était sur la proposition de juin, et la Relance 2 de la proposition de mai est restée active.
 
-### 1. Fix CLS prioritaire — squelette de fiche
+## Plan de correction
 
-Refondre le skeleton dans `SpeakerDetail.tsx` pour qu'il **reproduise la hauteur réelle** du hero (médaillon 44×44, H1 ~48 px, badges thèmes ~32 px, 4 lignes pépites, bouton CTA). Réserver aussi une hauteur min sur la section biographie (`min-h-[600px]`) tant que le contenu n'est pas chargé.
+### A. Fermer automatiquement les tâches obsolètes d'une proposition sœur
 
-### 2. Réserver les dimensions des images de biographie
+Quand une relance est envoyée OU planifiée sur une proposition, marquer comme `cancelled` toutes les tâches `pending` des autres propositions partageant le même `client_email` (insensible à la casse) qui ne sont pas en statut `accepted` / `lost`.
 
-Dans la chaîne `sanitizeConferenceHtml` :
-- Ajouter `loading="lazy"` + `decoding="async"` à chaque `<img>` qui n'en a pas
-- Ajouter un wrapper avec aspect-ratio inline si l'image a `width` mais pas `height` (ou inverser).
-- Sur `.bio-image-block img`, fixer `aspect-ratio` CSS pour éviter le shift au load.
+- Déclencheurs côté code :
+  - `handleReminder` (envoi de relance dans `Admin.tsx`)
+  - `saveTaskEdits` (modification/reprogrammation d'une tâche)
+  - `handleSend` (envoi initial d'une nouvelle proposition à un client qui en a déjà)
+- Nouveau statut `cancelled` ajouté à `proposal_tasks.status` (par défaut `pending`/`completed` aujourd'hui).
+- Le récap quotidien (`daily-task-recap`) filtre déjà `lost/archived/accepted` ; ajouter le filtre `status != 'cancelled'` et également exclure les tâches dont une **proposition sœur plus récente** (même `client_email`) est en `sent`/`accepted`. Ceinture + bretelles.
 
-### 3. Précharger la vraie LCP image
+### B. Dialogue « Relances » plus tolérant
 
-- **Retirer** le `<link rel="preload" as="image" href=".../og/lesconferenciers.jpg">` de `index.html` (n'est jamais l'élément LCP sur les fiches, ni sur l'accueil — l'accueil utilise un fond Supabase déjà géré dans le composant Hero).
-- Sur `SpeakerDetail`, ajouter dynamiquement un `<link rel="preload" as="image">` pointant sur `speaker.image_url` dès que le slug est résolu (via `react-helmet-async` si dispo, sinon append manuel comme déjà fait pour les meta).
-- L'image hero a déjà `fetchPriority="high"` + `decoding="sync"` — bon.
+Dans `openReminderDialog`, charger non seulement les tâches de la proposition cliquée, mais aussi les tâches `pending` des propositions sœurs (même `client_email`). Les afficher dans une section « Tâches actives sur ce client » avec mention de la proposition d'origine, pour permettre la reprogrammation depuis n'importe quel point d'entrée. Cela règle aussi le cas GE HEALTHCARE.
 
-### 4. Réduire le poids des photos speaker (gain LCP majeur)
+### C. Nettoyage one-shot des données existantes
 
-Deux options, je propose la première :
-- **A. Transformer à la volée via Supabase** : remplacer les URL `/storage/v1/object/public/...` par `/storage/v1/render/image/public/...?width=400&quality=75&format=origin` côté listing et `?width=600` côté hero détail. Gain : 60-80 % de poids.
-- B. (plus lourd) rehéberger en WebP optimisé — déjà fait selon `mem://tech/data-management/speaker-assets-storage`, donc à vérifier d'abord.
+Migration de données :
+- Pour chaque `client_email`, conserver les tâches `pending` uniquement sur la proposition `sent`/`accepted` la plus récente ; passer les autres en `cancelled` avec une note `superseded_by=<proposal_id>`.
+- Concrètement : passera en `cancelled` la Relance 2 du 16/06 de PRO BTP `658a8658…` (déjà gérée par la nouvelle Relance 1 du 22/06 sur `9c224e05…`). Garde la Relance 2 du 16/06 de GE HEALTHCARE puisque c'est la proposition la plus récente du client.
 
-### 5. Polices
+### Détails techniques
 
-- Précharger uniquement le **woff2 Playfair-700** (utilisé par H1) en `<link rel="preload" as="font" crossorigin>` → réduit le FOUT le plus visible.
-- Garder Inter en swap normal (peu de différence visuelle avec la fallback sans-serif).
+- Fichiers modifiés : `src/pages/Admin.tsx` (handlers + dialogue), `supabase/functions/daily-task-recap/index.ts` (filtre).
+- Migration SQL : ajout (si absent) de la valeur `cancelled` dans le check de `proposal_tasks.status`, + UPDATE de nettoyage.
+- Pas de changement de schéma majeur.
 
-### 6. Vérifier après déploiement
-
-- PageSpeed Insights sur 2-3 fiches représentatives (`/conferencier/xxx`).
-- Demander un nouveau scan Search Console (28 jours pour validation).
-
----
-
-## Ce que je ne touche pas (déjà OK)
-
-- INP (mémoire `mem://tech/performance/core-web-vitals` indique déjà React.lazy + content-visibility).
-- Le format des photos déjà rehébergées (à confirmer rapidement avant action #4).
-- Le tracking Google Ads, le sitemap, les canonicals (sans rapport avec les Web Vitals).
-
----
-
-## Si tu valides
-
-Je commence par les **fixes #1 (skeleton hero) et #3 (preload image LCP + retrait preload OG)** qui adressent ~80 % du problème CLS et LCP sans risque. Puis #2 (images bio), #4 (transformations Supabase), #5 (preload font) en deuxième passe.
-
-Ordre proposé : 1 → 3 → 4 → 2 → 5.
+Souhaitez-vous que je lance ces 3 actions (A + B + C) ?
