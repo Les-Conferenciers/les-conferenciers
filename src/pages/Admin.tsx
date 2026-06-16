@@ -950,6 +950,30 @@ const AdminProposalsContent = () => {
     fetchTasks();
   };
 
+  // Annule toutes les tâches "pending" des propositions sœurs (même client_email)
+  // pour éviter que des relances obsolètes remontent dans le rappel quotidien
+  // lorsqu'une proposition plus récente coexiste pour le même client.
+  const cancelSiblingPendingTasks = async (currentProposalId: string, clientEmail?: string | null) => {
+    if (!clientEmail) return;
+    const email = clientEmail.trim().toLowerCase();
+    if (!email) return;
+    const siblingProposalIds = proposals
+      .filter(
+        (p) =>
+          p.id !== currentProposalId &&
+          (p.client_email || "").trim().toLowerCase() === email &&
+          (p.status === "sent" || p.status === "accepted" || p.status === "archived"),
+      )
+      .map((p) => p.id);
+    if (siblingProposalIds.length === 0) return;
+    await supabase
+      .from("proposal_tasks")
+      .update({ status: "cancelled", completed_at: new Date().toISOString() } as any)
+      .in("proposal_id", siblingProposalIds)
+      .eq("status", "pending");
+    fetchTasks();
+  };
+
   const getTasksForProposal = (proposalId: string) => proposalTasks.filter((t: any) => t.proposal_id === proposalId);
 
   const getReminderDefaultBody = (p: Proposal, num: 1 | 2) => {
