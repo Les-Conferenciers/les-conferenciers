@@ -1067,6 +1067,9 @@ const AdminProposalsContent = () => {
         .eq("id", reminderProposal.id);
     }
     toast.success("Tâches mises à jour");
+    if (reminderProposal) {
+      await cancelSiblingPendingTasks(reminderProposal.id, reminderProposal.client_email);
+    }
     fetchTasks();
     fetchProposals();
   };
