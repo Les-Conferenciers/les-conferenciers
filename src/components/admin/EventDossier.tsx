@@ -313,6 +313,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
   const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
+  const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
