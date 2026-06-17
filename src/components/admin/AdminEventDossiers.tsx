@@ -367,13 +367,13 @@ const AdminEventDossiers = () => {
       const archiveStatus: "gagne" | "perdu" | null = isLost ? "perdu" : (isWon ? "gagne" : null);
 
       // Build pipeline (10 stages)
-      const depositRequired = pContract?.deposit_required !== false;
+      const hasAcompteInvoice = pInvoices.some((i) => i.invoice_type === "acompte");
       const stages: PipelineStage[] = [
         { key: "contract_sent", label: "Contrat envoyé client", shortLabel: "Contrat env.", doneAt: contractSentClient,
           toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "contract_sent_at", valueType: "timestamp" } : undefined },
         { key: "client_signed", label: "Contrat signé client", shortLabel: "Signé client", doneAt: clientSigned,
           toggle: pContract ? { table: "contracts", rowId: pContract.id, field: "client_signed_received_at", valueType: "date" } : undefined },
-        ...(depositRequired ? [{ key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,
+        ...(hasAcompteInvoice ? [{ key: "client_deposit", label: "Acompte client reçu", shortLabel: "Acpte client", doneAt: clientDepositPaid,
           toggle: pEvent ? { table: "events" as const, rowId: pEvent.id, field: "client_deposit_paid_at", valueType: "date" as const } : undefined } as PipelineStage] : []),
         { key: "speaker_communication", label: "Communication speaker envoyée", shortLabel: "Comm. speaker", doneAt: pEvent?.info_sent_speaker_at || null,
           toggle: pEvent ? { table: "events", rowId: pEvent.id, field: "info_sent_speaker_at", valueType: "timestamp" } : undefined },
