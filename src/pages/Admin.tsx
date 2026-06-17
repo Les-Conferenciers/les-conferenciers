@@ -950,6 +950,30 @@ const AdminProposalsContent = () => {
     fetchTasks();
   };
 
+  // Annule toutes les tâches "pending" des propositions sœurs (même client_email)
+  // pour éviter que des relances obsolètes remontent dans le rappel quotidien
+  // lorsqu'une proposition plus récente coexiste pour le même client.
+  const cancelSiblingPendingTasks = async (currentProposalId: string, clientEmail?: string | null) => {
+    if (!clientEmail) return;
+    const email = clientEmail.trim().toLowerCase();
+    if (!email) return;
+    const siblingProposalIds = proposals
+      .filter(
+        (p) =>
+          p.id !== currentProposalId &&
+          (p.client_email || "").trim().toLowerCase() === email &&
+          (p.status === "sent" || p.status === "accepted" || p.status === "archived"),
+      )
+      .map((p) => p.id);
+    if (siblingProposalIds.length === 0) return;
+    await supabase
+      .from("proposal_tasks")
+      .update({ status: "cancelled", completed_at: new Date().toISOString() } as any)
+      .in("proposal_id", siblingProposalIds)
+      .eq("status", "pending");
+    fetchTasks();
+  };
+
   const getTasksForProposal = (proposalId: string) => proposalTasks.filter((t: any) => t.proposal_id === proposalId);
 
   const getReminderDefaultBody = (p: Proposal, num: 1 | 2) => {
@@ -1043,6 +1067,9 @@ const AdminProposalsContent = () => {
         .eq("id", reminderProposal.id);
     }
     toast.success("Tâches mises à jour");
+    if (reminderProposal) {
+      await cancelSiblingPendingTasks(reminderProposal.id, reminderProposal.client_email);
+    }
     fetchTasks();
     fetchProposals();
   };
@@ -1698,6 +1725,7 @@ const AdminProposalsContent = () => {
       const sentAt = new Date().toISOString();
       await supabase.from("proposals").update({ status: "sent", sent_at: sentAt }).eq("id", proposal.id);
       await createTasksForProposal(proposal.id, sentAt, (proposal as any).proposal_type);
+      await cancelSiblingPendingTasks(proposal.id, proposal.client_email);
       toast.success("Email envoyé !");
       fetchProposals();
     } catch {
@@ -1728,6 +1756,7 @@ const AdminProposalsContent = () => {
         .from("proposals")
         .update({ [field]: new Date().toISOString() } as any)
         .eq("id", proposal.id);
+      await cancelSiblingPendingTasks(proposal.id, proposal.client_email);
       toast.success(`Relance ${reminderNum} envoyée !`);
       fetchProposals();
     } catch {
@@ -4042,6 +4071,47 @@ const AdminProposalsContent = () => {
                 {editingTasks.length === 0 && (
                   <p className="text-sm text-muted-foreground italic">Aucune tâche créée pour cette proposition.</p>
                 )}
+                {(() => {
+                  const email = (reminderProposal.client_email || "").trim().toLowerCase();
+                  const siblingTasks = proposalTasks.filter((t: any) => {
+                    if (t.proposal_id === reminderProposal.id) return false;
+                    if (t.status !== "pending") return false;
+                    const sib = proposals.find((p) => p.id === t.proposal_id);
+                    if (!sib) return false;
+                    if ((sib.client_email || "").trim().toLowerCase() !== email) return false;
+                    return sib.status === "sent" || sib.status === "accepted";
+                  });
+                  if (siblingTasks.length === 0) return null;
+                  return (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-2">
+                      <p className="text-xs font-medium text-amber-800">
+                        ⚠️ {siblingTasks.length} relance{siblingTasks.length > 1 ? "s" : ""} active{siblingTasks.length > 1 ? "s" : ""} sur une autre proposition de ce client
+                      </p>
+                      <ul className="text-xs text-amber-900 space-y-1">
+                        {siblingTasks.map((t: any) => {
+                          const sib = proposals.find((p) => p.id === t.proposal_id);
+                          return (
+                            <li key={t.id} className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {t.task_type === "relance_1" ? "Relance 1" : "Relance 2"}
+                              </span>
+                              <span>{t.due_date ? `prévue le ${new Date(t.due_date).toLocaleDateString("fr-FR")}` : "non planifiée"}</span>
+                              {sib && (
+                                <button
+                                  type="button"
+                                  className="ml-auto underline text-amber-700 hover:text-amber-900"
+                                  onClick={() => openReminderDialog(sib)}
+                                >
+                                  Ouvrir cette proposition →
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })()}
                 {editingTasks.map((task: any, idx: number) => (
                   <div
                     key={task.id}

@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     // Fetch pending tasks due today
     const { data: rawTasks, error: tasksErr } = await supabase
       .from("proposal_tasks")
-      .select("*, proposals(client_name, client_email, client_phone, recipient_name, status)")
+      .select("*, proposals(id, client_name, client_email, client_phone, recipient_name, status, sent_at, created_at)")
       .eq("status", "pending")
       .eq("due_date", todayStr);
 
@@ -48,11 +48,42 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: tasksErr.message }), { status: 500, headers: corsHeaders });
     }
 
-    // Ignore tasks attached to lost / archived / accepted proposals
-    const tasks = (rawTasks || []).filter((t: any) => {
+    // Filter out tasks on lost/archived/accepted proposals
+    let tasks = (rawTasks || []).filter((t: any) => {
       const s = t.proposals?.status;
       return s !== "lost" && s !== "archived" && s !== "accepted";
     });
+
+    // Filter out tasks whose proposal is superseded by a newer sent/accepted proposal
+    // for the same client_email (case-insensitive).
+    if (tasks.length > 0) {
+      const emails = Array.from(
+        new Set(tasks.map((t: any) => (t.proposals?.client_email || "").trim().toLowerCase()).filter(Boolean)),
+      );
+      if (emails.length > 0) {
+        const { data: siblings } = await supabase
+          .from("proposals")
+          .select("id, client_email, status, sent_at, created_at")
+          .in("status", ["sent", "accepted"]);
+        const byEmail = new Map<string, any[]>();
+        for (const p of siblings || []) {
+          const key = (p.client_email || "").trim().toLowerCase();
+          if (!byEmail.has(key)) byEmail.set(key, []);
+          byEmail.get(key)!.push(p);
+        }
+        tasks = tasks.filter((t: any) => {
+          const selfEmail = (t.proposals?.client_email || "").trim().toLowerCase();
+          const selfTs = new Date(t.proposals?.sent_at || t.proposals?.created_at || 0).getTime();
+          const sibs = byEmail.get(selfEmail) || [];
+          const hasNewer = sibs.some((p) => {
+            if (p.id === t.proposals?.id) return false;
+            const ts = new Date(p.sent_at || p.created_at || 0).getTime();
+            return ts > selfTs;
+          });
+          return !hasNewer;
+        });
+      }
+    }
 
     if (!tasks || tasks.length === 0) {
       return new Response(JSON.stringify({ success: true, message: "No tasks due today" }), {

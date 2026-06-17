@@ -137,6 +137,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [editAmountHT, setEditAmountHT] = useState(0);
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
+  const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
@@ -452,6 +453,7 @@ Nelly Sabde - Les Conférenciers`;
     setEditAmountHT(inv.amount_ht);
     setEditTvaRate(inv.tva_rate);
     setEditDueDate(inv.due_date || "");
+    setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
     setEditInvoiceOpen(true);
   };
 
@@ -465,6 +467,7 @@ Nelly Sabde - Les Conférenciers`;
         tva_rate: editTvaRate,
         amount_ttc: Math.round(amountTTC * 100) / 100,
         due_date: editDueDate || null,
+        invoice_type: editInvoiceType,
       })
       .eq("id", editingInvoice.id);
     if (error) {
@@ -1128,6 +1131,23 @@ Nelly Sabde - Les Conférenciers`);
             <DialogTitle className="font-serif">Modifier la facture {editingInvoice?.invoice_number}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-xs">Type de facture</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["acompte", "solde", "total"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setEditInvoiceType(t)}
+                    className={`px-3 py-2 rounded-lg border text-sm capitalize transition-colors ${
+                      editInvoiceType === t ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    {t === "acompte" ? "Acompte 50%" : t === "solde" ? "Solde 50%" : "Total 100%"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Montant HT (€)</Label>
