@@ -453,6 +453,7 @@ Nelly Sabde - Les Conférenciers`;
     setEditAmountHT(inv.amount_ht);
     setEditTvaRate(inv.tva_rate);
     setEditDueDate(inv.due_date || "");
+    setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
     setEditInvoiceOpen(true);
   };
 
@@ -466,6 +467,7 @@ Nelly Sabde - Les Conférenciers`;
         tva_rate: editTvaRate,
         amount_ttc: Math.round(amountTTC * 100) / 100,
         due_date: editDueDate || null,
+        invoice_type: editInvoiceType,
       })
       .eq("id", editingInvoice.id);
     if (error) {
