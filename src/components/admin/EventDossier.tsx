@@ -1576,6 +1576,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEditTvaRate(inv.tva_rate);
     setEditDueDate(inv.due_date || "");
     setEditVhrEstimate(inv.vhr_estimate ?? "");
+    setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
     setEditInvoiceOpen(true);
   };
 
@@ -1590,6 +1591,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         amount_ttc: Math.round(amountTTC * 100) / 100,
         due_date: editDueDate || null,
         vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
+        invoice_type: editInvoiceType,
       } as any)
       .eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
