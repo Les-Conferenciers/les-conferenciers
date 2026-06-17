@@ -137,6 +137,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [editAmountHT, setEditAmountHT] = useState(0);
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
+  const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
