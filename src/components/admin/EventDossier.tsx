@@ -313,6 +313,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
   const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
+  const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
@@ -1575,6 +1576,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEditTvaRate(inv.tva_rate);
     setEditDueDate(inv.due_date || "");
     setEditVhrEstimate(inv.vhr_estimate ?? "");
+    setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
     setEditInvoiceOpen(true);
   };
 
@@ -1589,6 +1591,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         amount_ttc: Math.round(amountTTC * 100) / 100,
         due_date: editDueDate || null,
         vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
+        invoice_type: editInvoiceType,
       } as any)
       .eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
@@ -3694,6 +3697,23 @@ Nelly Sabde - Les Conférenciers`);
             <DialogTitle className="font-serif">Modifier {editingInvoice?.invoice_number}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-xs">Type de facture</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["acompte", "solde", "total"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setEditInvoiceType(t)}
+                    className={`px-3 py-2 rounded-lg border text-sm capitalize transition-colors ${
+                      editInvoiceType === t ? "border-primary bg-primary/5 font-medium" : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    {t === "acompte" ? "Acompte 50%" : t === "solde" ? "Solde 50%" : "Total 100%"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Montant HT (€)</Label>
