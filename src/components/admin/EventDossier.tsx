@@ -1047,10 +1047,11 @@ Nelly Sabde - Les Conférenciers`;
     }
     setSendingContract(true);
     try {
+      const ccList = parseCcEmails(contractEmailCc);
       // Persist draft before sending so reopening reflects last edits
       await supabase
         .from("contracts")
-        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, cc_emails: ccList } as any)
         .eq("id", contract.id);
       const { error } = await supabase.functions.invoke("send-contract-email", {
         body: {
@@ -1058,8 +1059,11 @@ Nelly Sabde - Les Conférenciers`;
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
           recipient_email: targetEmail,
+          cc_emails: ccList,
+          attachments: contractEmailAttachments,
         },
       });
+
       if (error) throw error;
       await supabase
         .from("contracts")
