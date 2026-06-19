@@ -1404,6 +1404,7 @@ const AdminProposalsContent = () => {
         finalBody = getDefaultEmailBody(recipientName, clientName, eventContext);
       }
     }
+    const defaultReminderDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const { data: proposal, error } = await supabase
       .from("proposals")
       .insert({
@@ -1421,9 +1422,11 @@ const AdminProposalsContent = () => {
         client_phone: clientPhone || null,
         previous_proposal_id: linkId || null,
         internal_notes: internalNotes.trim() || null,
+        next_reminder_date: defaultReminderDate,
       } as any)
       .select()
       .single();
+
     if (error || !proposal) {
       toast.error("Erreur création");
       setSubmitting(false);
