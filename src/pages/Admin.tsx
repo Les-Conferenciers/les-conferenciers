@@ -4072,71 +4072,96 @@ const AdminProposalsContent = () => {
 
               {/* Simplified reminder block */}
               <div className="space-y-4">
-                <h3 className="font-medium text-sm flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" /> Relance prévue
-                </h3>
+                {(reminderProposal as any).reminder2_sent_at ? (
+                  <>
+                    <h3 className="font-medium text-sm flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4" /> Rappel agenda complémentaire (pas d'email envoyé)
+                    </h3>
 
-                <div className="border border-border rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3 items-start">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
-                      <Input
-                        type="date"
-                        value={simpleReminderDate}
-                        onChange={(e) => setSimpleReminderDate(e.target.value)}
-                      />
-                      {(reminderProposal as any).reminder1_sent_at && (
-                        <p className="text-[10px] text-blue-600">
-                          R1 envoyée le{" "}
-                          {new Date((reminderProposal as any).reminder1_sent_at).toLocaleDateString("fr-FR")}
-                        </p>
-                      )}
-                      {(reminderProposal as any).reminder2_sent_at && (
-                        <p className="text-[10px] text-blue-600">
-                          R2 envoyée le{" "}
-                          {new Date((reminderProposal as any).reminder2_sent_at).toLocaleDateString("fr-FR")}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Notes</Label>
-                      <SimpleRichTextEditor
-                        value={simpleReminderNote}
-                        onChange={setSimpleReminderNote}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {(reminderProposal as any).reminder2_sent_at && (
-                  <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      📅 Rappel agenda complémentaire (pas d'email envoyé)
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3 items-start">
+                    <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Date du rappel</Label>
-                        <Input
-                          type="date"
-                          value={simpleFollowupDate}
-                          onChange={(e) => setSimpleFollowupDate(e.target.value)}
-                        />
+                        <p className="text-xs font-medium text-muted-foreground">Historique des relances</p>
+                        {(reminderProposal as any).reminder1_sent_at && (
+                          <p className="text-[11px] text-blue-600">
+                            • Relance 1 envoyée le{" "}
+                            {new Date((reminderProposal as any).reminder1_sent_at).toLocaleDateString("fr-FR")}
+                          </p>
+                        )}
+                        {(reminderProposal as any).reminder2_sent_at && (
+                          <p className="text-[11px] text-blue-600">
+                            • Relance 2 envoyée le{" "}
+                            {new Date((reminderProposal as any).reminder2_sent_at).toLocaleDateString("fr-FR")}
+                          </p>
+                        )}
+                        {simpleReminderNote && (
+                          <div className="mt-2 pt-2 border-t border-border/60">
+                            <p className="text-[10px] uppercase text-muted-foreground mb-1">Notes des relances précédentes</p>
+                            <div
+                              className="text-xs text-muted-foreground prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: simpleReminderNote }}
+                            />
+                          </div>
+                        )}
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Notes du rappel</Label>
-                        <SimpleRichTextEditor
-                          value={simpleFollowupNote}
-                          onChange={setSimpleFollowupNote}
-                        />
+
+                      <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3 items-start pt-2 border-t border-border/60">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Date du rappel agenda</Label>
+                          <Input
+                            type="date"
+                            value={simpleFollowupDate}
+                            onChange={(e) => setSimpleFollowupDate(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Notes du rappel</Label>
+                          <SimpleRichTextEditor
+                            value={simpleFollowupNote}
+                            onChange={setSimpleFollowupNote}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-medium text-sm flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4" /> Relance prévue
+                    </h3>
+
+                    <div className="border border-border rounded-lg p-4 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3 items-start">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                          <Input
+                            type="date"
+                            value={simpleReminderDate}
+                            onChange={(e) => setSimpleReminderDate(e.target.value)}
+                          />
+                          {(reminderProposal as any).reminder1_sent_at && (
+                            <p className="text-[10px] text-blue-600">
+                              R1 envoyée le{" "}
+                              {new Date((reminderProposal as any).reminder1_sent_at).toLocaleDateString("fr-FR")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Notes</Label>
+                          <SimpleRichTextEditor
+                            value={simpleReminderNote}
+                            onChange={setSimpleReminderNote}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <Button variant="outline" size="sm" className="gap-1" onClick={saveTaskEdits}>
                   <Save className="h-3 w-3" /> Enregistrer
                 </Button>
               </div>
+
 
 
               {/* Email template editor */}
