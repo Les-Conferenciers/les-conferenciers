@@ -968,10 +968,12 @@ Nelly Sabde - Les Conférenciers`;
   const handleSaveContractEmailDraft = async () => {
     if (!contract) return;
     setSavingContractDraft(true);
+    const ccList = parseCcEmails(contractEmailCc);
     const { error } = await supabase
       .from("contracts")
-      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, cc_emails: ccList } as any)
       .eq("id", contract.id);
+
     if (error) {
       toast.error("Erreur d'enregistrement");
     } else {
