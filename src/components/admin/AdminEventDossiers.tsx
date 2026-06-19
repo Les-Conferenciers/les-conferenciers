@@ -273,6 +273,7 @@ const AdminEventDossiers = () => {
       }
 
       // 1) Create accepted "direct" proposal (placeholder shell)
+      const defaultReminderDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const { data: prop, error: pErr } = await supabase.from("proposals").insert({
         client_name: clientName,
         client_email: clientEmail,
@@ -285,6 +286,7 @@ const AdminEventDossiers = () => {
         event_date_text: directEventDate || null,
         audience_size: directAudienceSize || null,
         message: "Contrat créé directement (sans proposition).",
+        next_reminder_date: defaultReminderDate,
       } as any).select("id").single();
       if (pErr || !prop) throw pErr || new Error("create proposal failed");
 
