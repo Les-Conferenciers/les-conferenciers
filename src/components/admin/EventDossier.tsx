@@ -3072,6 +3072,14 @@ Nelly Sabde - Les Conférenciers`);
               <Input value={contractEmailSubject} onChange={(e) => setContractEmailSubject(e.target.value)} />
             </div>
             <div className="space-y-2">
+              <Label className="text-xs">CC (séparés par virgule)</Label>
+              <Input
+                value={contractEmailCc}
+                onChange={(e) => setContractEmailCc(e.target.value)}
+                placeholder="email1@example.com, email2@example.com"
+              />
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs">Corps du mail</Label>
               <Textarea
                 value={contractEmailBody}
@@ -3080,6 +3088,34 @@ Nelly Sabde - Les Conférenciers`);
                 className="text-sm"
               />
             </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Pièces jointes (max 8 Mo par fichier)</Label>
+              <Input
+                type="file"
+                multiple
+                onChange={(e) => handleAttachmentsSelected(e.target.files)}
+                className="text-xs"
+              />
+              {contractEmailAttachments.length > 0 && (
+                <ul className="text-xs text-muted-foreground space-y-1 mt-1">
+                  {contractEmailAttachments.map((a, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span>📎 {a.filename}</span>
+                      <button
+                        type="button"
+                        className="text-destructive hover:underline"
+                        onClick={() =>
+                          setContractEmailAttachments(contractEmailAttachments.filter((_, idx) => idx !== i))
+                        }
+                      >
+                        retirer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
 
             {/* Recap */}
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
