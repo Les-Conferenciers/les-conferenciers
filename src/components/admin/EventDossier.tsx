@@ -820,6 +820,19 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       if (wasFrozen) {
         // Create a NEW version that supersedes the previous one
         const newVersion = (contract.version || 1) + 1;
+        // 1) Mark current as superseded FIRST to free the partial unique index
+        const supersededAt = new Date().toISOString();
+        const { error: supErr } = await supabase
+          .from("contracts")
+          .update({ superseded_at: supersededAt } as any)
+          .eq("id", contract.id);
+        if (supErr) {
+          toast.error("Erreur création nouvelle version");
+          console.error(supErr);
+          setSaving(false);
+          return;
+        }
+        // 2) Insert new active version
         const { data: inserted, error: insErr } = await supabase
           .from("contracts")
           .insert({
@@ -832,20 +845,23 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
           .select()
           .single();
         if (insErr || !inserted) {
+          // Rollback supersede
+          await supabase
+            .from("contracts")
+            .update({ superseded_at: null } as any)
+            .eq("id", contract.id);
           toast.error("Erreur création nouvelle version");
           console.error(insErr);
           setSaving(false);
           return;
         }
-        const { error: supErr } = await supabase
+        // 3) Link
+        await supabase
           .from("contracts")
-          .update({
-            superseded_at: new Date().toISOString(),
-            superseded_by_contract_id: (inserted as any).id,
-          } as any)
+          .update({ superseded_by_contract_id: (inserted as any).id } as any)
           .eq("id", contract.id);
-        if (supErr) console.error(supErr);
         toast.success(`Nouvelle version v${newVersion} créée — pensez à la renvoyer`);
+
       } else {
         const { error } = await supabase
           .from("contracts")
