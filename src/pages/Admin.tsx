@@ -4070,124 +4070,74 @@ const AdminProposalsContent = () => {
                 )}
               </div>
 
-              {/* Tasks */}
+              {/* Simplified reminder block */}
               <div className="space-y-4">
                 <h3 className="font-medium text-sm flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" /> Tâches de relance
+                  <CalendarDays className="h-4 w-4" /> Relance prévue
                 </h3>
-                {editingTasks.length === 0 && (
-                  <p className="text-sm text-muted-foreground italic">Aucune tâche créée pour cette proposition.</p>
-                )}
-                {(() => {
-                  const email = (reminderProposal.client_email || "").trim().toLowerCase();
-                  const siblingTasks = proposalTasks.filter((t: any) => {
-                    if (t.proposal_id === reminderProposal.id) return false;
-                    if (t.status !== "pending") return false;
-                    const sib = proposals.find((p) => p.id === t.proposal_id);
-                    if (!sib) return false;
-                    if ((sib.client_email || "").trim().toLowerCase() !== email) return false;
-                    return sib.status === "sent" || sib.status === "accepted";
-                  });
-                  if (siblingTasks.length === 0) return null;
-                  return (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-2">
-                      <p className="text-xs font-medium text-amber-800">
-                        ⚠️ {siblingTasks.length} relance{siblingTasks.length > 1 ? "s" : ""} active{siblingTasks.length > 1 ? "s" : ""} sur une autre proposition de ce client
-                      </p>
-                      <ul className="text-xs text-amber-900 space-y-1">
-                        {siblingTasks.map((t: any) => {
-                          const sib = proposals.find((p) => p.id === t.proposal_id);
-                          return (
-                            <li key={t.id} className="flex items-center gap-2">
-                              <span className="font-medium">
-                                {t.task_type === "relance_1" ? "Relance 1" : "Relance 2"}
-                              </span>
-                              <span>{t.due_date ? `prévue le ${new Date(t.due_date).toLocaleDateString("fr-FR")}` : "non planifiée"}</span>
-                              {sib && (
-                                <button
-                                  type="button"
-                                  className="ml-auto underline text-amber-700 hover:text-amber-900"
-                                  onClick={() => openReminderDialog(sib)}
-                                >
-                                  Ouvrir cette proposition →
-                                </button>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  );
-                })()}
-                {editingTasks.map((task: any, idx: number) => (
-                  <div
-                    key={task.id}
-                    className={`border rounded-lg p-4 space-y-3 ${task.status === "completed" ? "border-green-200 bg-green-50/50" : "border-border"}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs font-medium px-2 py-1 rounded-full ${task.task_type === "relance_1" ? "bg-amber-100 text-amber-700" : "bg-orange-100 text-orange-700"}`}
-                        >
-                          {task.task_type === "relance_1" ? "Relance 1 (J+7)" : "Relance 2"}
-                        </span>
-                        {task.status === "completed" && <span className="text-xs text-green-600">✓ Envoyée</span>}
-                        {(reminderProposal as any)[
-                          task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"
-                        ] && (
-                          <span className="text-[10px] text-blue-600">
-                            Envoyée le{" "}
-                            {new Date(
-                              (reminderProposal as any)[
-                                task.task_type === "relance_1" ? "reminder1_sent_at" : "reminder2_sent_at"
-                              ],
-                            ).toLocaleDateString("fr-FR")}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {task.status !== "completed" && (
-                        <div className="space-y-1 max-w-xs">
-                          <Label className="text-xs text-muted-foreground">
-                            Date de relance prévue{" "}
-                            {task.task_type === "relance_2" && !task.due_date && (
-                              <span className="italic">(non planifiée)</span>
-                            )}
-                          </Label>
-                          <Input
-                            type="date"
-                            value={task.due_date || ""}
-                            onChange={(e) => {
-                              const updated = [...editingTasks];
-                              updated[idx] = { ...updated[idx], due_date: e.target.value || null };
-                              setEditingTasks(updated);
-                            }}
-                          />
-                        </div>
+
+                <div className="border border-border rounded-lg p-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3 items-start">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Date de relance prévue</Label>
+                      <Input
+                        type="date"
+                        value={simpleReminderDate}
+                        onChange={(e) => setSimpleReminderDate(e.target.value)}
+                      />
+                      {(reminderProposal as any).reminder1_sent_at && (
+                        <p className="text-[10px] text-blue-600">
+                          R1 envoyée le{" "}
+                          {new Date((reminderProposal as any).reminder1_sent_at).toLocaleDateString("fr-FR")}
+                        </p>
                       )}
-                      {task.task_type === "relance_1" && (
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Notes</Label>
-                          <SimpleRichTextEditor
-                            value={task.note || ""}
-                            onChange={(val) => {
-                              const updated = [...editingTasks];
-                              updated[idx] = { ...updated[idx], note: val };
-                              setEditingTasks(updated);
-                            }}
-                          />
-                        </div>
+                      {(reminderProposal as any).reminder2_sent_at && (
+                        <p className="text-[10px] text-blue-600">
+                          R2 envoyée le{" "}
+                          {new Date((reminderProposal as any).reminder2_sent_at).toLocaleDateString("fr-FR")}
+                        </p>
                       )}
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Notes</Label>
+                      <SimpleRichTextEditor
+                        value={simpleReminderNote}
+                        onChange={setSimpleReminderNote}
+                      />
                     </div>
                   </div>
-                ))}
-                {editingTasks.length > 0 && (
-                  <Button variant="outline" size="sm" className="gap-1" onClick={saveTaskEdits}>
-                    <Save className="h-3 w-3" /> Sauvegarder les modifications
-                  </Button>
+                </div>
+
+                {(reminderProposal as any).reminder2_sent_at && (
+                  <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      📅 Rappel agenda complémentaire (pas d'email envoyé)
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3 items-start">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Date du rappel</Label>
+                        <Input
+                          type="date"
+                          value={simpleFollowupDate}
+                          onChange={(e) => setSimpleFollowupDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Notes du rappel</Label>
+                        <SimpleRichTextEditor
+                          value={simpleFollowupNote}
+                          onChange={setSimpleFollowupNote}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 )}
+
+                <Button variant="outline" size="sm" className="gap-1" onClick={saveTaskEdits}>
+                  <Save className="h-3 w-3" /> Enregistrer
+                </Button>
               </div>
+
 
               {/* Email template editor */}
               <div className="border-t border-border pt-4 space-y-4">
