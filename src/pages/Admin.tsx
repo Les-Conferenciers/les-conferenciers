@@ -1404,6 +1404,7 @@ const AdminProposalsContent = () => {
         finalBody = getDefaultEmailBody(recipientName, clientName, eventContext);
       }
     }
+    const defaultReminderDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const { data: proposal, error } = await supabase
       .from("proposals")
       .insert({
@@ -1421,9 +1422,11 @@ const AdminProposalsContent = () => {
         client_phone: clientPhone || null,
         previous_proposal_id: linkId || null,
         internal_notes: internalNotes.trim() || null,
+        next_reminder_date: defaultReminderDate,
       } as any)
       .select()
       .single();
+
     if (error || !proposal) {
       toast.error("Erreur création");
       setSubmitting(false);
@@ -3110,22 +3113,22 @@ const AdminProposalsContent = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
+                      className="h-8 w-8 p-0 text-amber-600 border-amber-200 hover:bg-amber-50"
                       onClick={() => openReminderDialog(p)}
                       title="Relances"
                     >
-                      <Bell className="h-3 w-3" /> Relances
+                      <Bell className="h-3.5 w-3.5" />
                     </Button>
                   )}
                   {(p as any).proposal_type !== "info" && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                      className="h-8 w-8 p-0 text-blue-600 border-blue-200 hover:bg-blue-50"
                       onClick={() => handleAccept(p.id)}
                       title="Accepter"
                     >
-                      <Check className="h-3 w-3" /> Accepter
+                      <Check className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </>
@@ -3135,27 +3138,28 @@ const AdminProposalsContent = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                    className="h-8 w-8 p-0 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
                     onClick={() => {
                       setInfoAcceptProposalId(p.id);
                       setInfoAcceptDialogOpen(true);
                     }}
                     title="Convertir en proposition"
                   >
-                    <Send className="h-3 w-3" /> Convertir
+                    <Send className="h-3.5 w-3.5" />
                   </Button>
                 )}
               {mode === "sent" && p.status === "sent" && !isSuperseded && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50"
+                  className="h-8 w-8 p-0 text-violet-600 border-violet-200 hover:bg-violet-50"
                   onClick={() => handleNewProposalForClient(p.client_id || "", p)}
                   title="Mettre à jour & renvoyer une nouvelle proposition"
                 >
-                  <RefreshCw className="h-3 w-3" /> Mettre à jour
+                  <RefreshCw className="h-3.5 w-3.5" />
                 </Button>
               )}
+
               {mode !== "completed" && p.status !== "archived" && !isSuperseded && (
                 <Button variant="ghost" size="sm" onClick={() => handleArchive(p.id)} title="Archiver">
                   <Archive className="h-4 w-4 text-muted-foreground" />
