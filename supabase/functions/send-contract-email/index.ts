@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { contract_id, email_subject, email_body, recipient_email } = await req.json();
+    const { contract_id, email_subject, email_body, recipient_email, cc_emails, attachments } = await req.json();
     if (!contract_id) {
       return new Response(JSON.stringify({ error: "contract_id required" }), { status: 400, headers: corsHeaders });
     }
@@ -100,15 +100,31 @@ Deno.serve(async (req) => {
   </div>
 </body></html>`;
 
+    const cleanCc = Array.isArray(cc_emails)
+      ? cc_emails
+          .map((e: any) => (typeof e === "string" ? e.trim() : ""))
+          .filter((e: string) => e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+      : [];
+
+    const cleanAttachments = Array.isArray(attachments)
+      ? attachments
+          .filter((a: any) => a && a.filename && a.content)
+          .map((a: any) => ({ filename: String(a.filename), content: String(a.content) }))
+      : [];
+
+    const payload: Record<string, unknown> = {
+      from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
+      to: [recipient_email || proposal.client_email],
+      subject,
+      html: emailHtml,
+    };
+    if (cleanCc.length > 0) payload.cc = cleanCc;
+    if (cleanAttachments.length > 0) payload.attachments = cleanAttachments;
+
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
-        to: [recipient_email || proposal.client_email],
-        subject,
-        html: emailHtml,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!resendRes.ok) {

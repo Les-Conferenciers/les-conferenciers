@@ -250,6 +250,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
+  const [contractEmailCc, setContractEmailCc] = useState("");
+  const [contractEmailAttachments, setContractEmailAttachments] = useState<{ filename: string; content: string }[]>([]);
+
   const [savingContractDraft, setSavingContractDraft] = useState(false);
   const [sendingContract, setSendingContract] = useState(false);
 
@@ -820,6 +823,19 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
       if (wasFrozen) {
         // Create a NEW version that supersedes the previous one
         const newVersion = (contract.version || 1) + 1;
+        // 1) Mark current as superseded FIRST to free the partial unique index
+        const supersededAt = new Date().toISOString();
+        const { error: supErr } = await supabase
+          .from("contracts")
+          .update({ superseded_at: supersededAt } as any)
+          .eq("id", contract.id);
+        if (supErr) {
+          toast.error("Erreur création nouvelle version");
+          console.error(supErr);
+          setSaving(false);
+          return;
+        }
+        // 2) Insert new active version
         const { data: inserted, error: insErr } = await supabase
           .from("contracts")
           .insert({
@@ -832,20 +848,23 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
           .select()
           .single();
         if (insErr || !inserted) {
+          // Rollback supersede
+          await supabase
+            .from("contracts")
+            .update({ superseded_at: null } as any)
+            .eq("id", contract.id);
           toast.error("Erreur création nouvelle version");
           console.error(insErr);
           setSaving(false);
           return;
         }
-        const { error: supErr } = await supabase
+        // 3) Link
+        await supabase
           .from("contracts")
-          .update({
-            superseded_at: new Date().toISOString(),
-            superseded_by_contract_id: (inserted as any).id,
-          } as any)
+          .update({ superseded_by_contract_id: (inserted as any).id } as any)
           .eq("id", contract.id);
-        if (supErr) console.error(supErr);
         toast.success(`Nouvelle version v${newVersion} créée — pensez à la renvoyer`);
+
       } else {
         const { error } = await supabase
           .from("contracts")
@@ -912,16 +931,49 @@ Nelly Sabde - Les Conférenciers`;
     // Restore previously saved draft if present
     setContractEmailSubject(contract.email_subject || defaultSubject);
     setContractEmailBody(contract.email_body || defaultBody);
+    setContractEmailCc((((contract as any).cc_emails as string[] | null) || []).join(", "));
+    setContractEmailAttachments([]);
     setContractEmailOpen(true);
   };
+
+  const parseCcEmails = (raw: string): string[] => {
+    return raw
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter((s) => s && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s));
+  };
+
+  const handleAttachmentsSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const next = [...contractEmailAttachments];
+    for (const f of Array.from(files)) {
+      if (f.size > 8 * 1024 * 1024) {
+        toast.error(`${f.name} dépasse 8 Mo`);
+        continue;
+      }
+      const buf = await f.arrayBuffer();
+      // Convert to base64 (chunked for large files)
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      next.push({ filename: f.name, content: btoa(binary) });
+    }
+    setContractEmailAttachments(next);
+  };
+
 
   const handleSaveContractEmailDraft = async () => {
     if (!contract) return;
     setSavingContractDraft(true);
+    const ccList = parseCcEmails(contractEmailCc);
     const { error } = await supabase
       .from("contracts")
-      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, cc_emails: ccList } as any)
       .eq("id", contract.id);
+
     if (error) {
       toast.error("Erreur d'enregistrement");
     } else {
@@ -995,10 +1047,11 @@ Nelly Sabde - Les Conférenciers`;
     }
     setSendingContract(true);
     try {
+      const ccList = parseCcEmails(contractEmailCc);
       // Persist draft before sending so reopening reflects last edits
       await supabase
         .from("contracts")
-        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, cc_emails: ccList } as any)
         .eq("id", contract.id);
       const { error } = await supabase.functions.invoke("send-contract-email", {
         body: {
@@ -1006,8 +1059,11 @@ Nelly Sabde - Les Conférenciers`;
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
           recipient_email: targetEmail,
+          cc_emails: ccList,
+          attachments: contractEmailAttachments,
         },
       });
+
       if (error) throw error;
       await supabase
         .from("contracts")
@@ -3016,6 +3072,14 @@ Nelly Sabde - Les Conférenciers`);
               <Input value={contractEmailSubject} onChange={(e) => setContractEmailSubject(e.target.value)} />
             </div>
             <div className="space-y-2">
+              <Label className="text-xs">CC (séparés par virgule)</Label>
+              <Input
+                value={contractEmailCc}
+                onChange={(e) => setContractEmailCc(e.target.value)}
+                placeholder="email1@example.com, email2@example.com"
+              />
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs">Corps du mail</Label>
               <Textarea
                 value={contractEmailBody}
@@ -3024,6 +3088,34 @@ Nelly Sabde - Les Conférenciers`);
                 className="text-sm"
               />
             </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Pièces jointes (max 8 Mo par fichier)</Label>
+              <Input
+                type="file"
+                multiple
+                onChange={(e) => handleAttachmentsSelected(e.target.files)}
+                className="text-xs"
+              />
+              {contractEmailAttachments.length > 0 && (
+                <ul className="text-xs text-muted-foreground space-y-1 mt-1">
+                  {contractEmailAttachments.map((a, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span>📎 {a.filename}</span>
+                      <button
+                        type="button"
+                        className="text-destructive hover:underline"
+                        onClick={() =>
+                          setContractEmailAttachments(contractEmailAttachments.filter((_, idx) => idx !== i))
+                        }
+                      >
+                        retirer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
 
             {/* Recap */}
             <div className="bg-muted/30 rounded-lg p-3 text-[10px] text-muted-foreground space-y-1">
