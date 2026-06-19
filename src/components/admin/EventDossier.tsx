@@ -1847,14 +1847,18 @@ Nelly Sabde - Les Conférenciers`);
               className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                 contract.status === "signed"
                   ? "bg-green-100 text-green-700 border border-green-300"
-                  : "bg-red-100 text-red-700 border border-red-300"
+                  : contract.status === "en_attente_paiement"
+                    ? "bg-orange-100 text-orange-700 border border-orange-300"
+                    : "bg-red-100 text-red-700 border border-red-300"
               }`}
             >
               {contract.status === "signed"
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
-                : contract.status === "sent"
-                  ? "⏳ Non signé (envoyé)"
-                  : "⚠️ Non signé (brouillon)"}
+                : contract.status === "en_attente_paiement"
+                  ? "💶 En attente de paiement"
+                  : contract.status === "sent"
+                    ? "⏳ Non signé (envoyé)"
+                    : "⚠️ Non signé (brouillon)"}
             </span>
             {(contract.version || 1) > 1 && (
               <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 border border-blue-300">
@@ -3033,10 +3037,25 @@ Nelly Sabde - Les Conférenciers`);
               )}
             </div>
 
-            <Button className="w-full" onClick={handleSendContractEmail} disabled={sendingContract}>
-              <Send className="h-4 w-4 mr-2" />
-              {sendingContract ? "Envoi…" : "Envoyer le contrat"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleSaveContractEmailDraft}
+                disabled={savingContractDraft || sendingContract}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {savingContractDraft ? "Enregistrement…" : "Enregistrer le brouillon"}
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSendContractEmail}
+                disabled={sendingContract || savingContractDraft}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {sendingContract ? "Envoi…" : "Envoyer le contrat"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -3811,6 +3830,16 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">
                 Voyage / Hébergement / Restauration. Ajoutée à la facture si renseignée.
               </p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">🗒️ Note interne (non affichée au client)</Label>
+              <Textarea
+                value={editInvoiceNotes}
+                onChange={(e) => setEditInvoiceNotes(e.target.value)}
+                rows={3}
+                placeholder="Infos internes sur cette facture…"
+                className="text-sm"
+              />
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
               <span>Total TTC</span>
