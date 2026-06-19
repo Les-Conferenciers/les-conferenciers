@@ -62,6 +62,7 @@ export type Database = {
       contracts: {
         Row: {
           agency_commission: number | null
+          cc_emails: string[] | null
           client_signed_received_at: string | null
           contract_lines: Json | null
           contract_sent_at: string | null
@@ -91,6 +92,7 @@ export type Database = {
         }
         Insert: {
           agency_commission?: number | null
+          cc_emails?: string[] | null
           client_signed_received_at?: string | null
           contract_lines?: Json | null
           contract_sent_at?: string | null
@@ -120,6 +122,7 @@ export type Database = {
         }
         Update: {
           agency_commission?: number | null
+          cc_emails?: string[] | null
           client_signed_received_at?: string | null
           contract_lines?: Json | null
           contract_sent_at?: string | null
