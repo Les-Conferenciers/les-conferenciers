@@ -368,7 +368,8 @@ Belle journée,`;
       return;
     }
 
-    const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null, client_id: clientId }).select().single();
+    const defaultReminderDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const { data: proposal, error } = await supabase.from("proposals").insert({ client_name: clientName, client_email: clientEmail, message: finalMessage || null, recipient_name: recipientName || null, client_id: clientId, next_reminder_date: defaultReminderDate }).select().single();
     if (error || !proposal) { toast.error("Erreur création"); setSubmitting(false); return; }
     await supabase.from("proposal_speakers").insert(selectedSpeakers.map((s, i) => ({
       proposal_id: proposal.id, speaker_id: s.speaker_id, speaker_fee: s.speaker_fee, travel_costs: s.travel_costs,
