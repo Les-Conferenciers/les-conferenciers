@@ -86,6 +86,8 @@ type Contract = {
   replaces_contract_id?: string | null;
   superseded_at?: string | null;
   superseded_by_contract_id?: string | null;
+  email_subject?: string | null;
+  email_body?: string | null;
 };
 
 
@@ -113,6 +115,7 @@ type Invoice = {
   paid_at: string | null;
   created_at: string;
   vhr_estimate?: number | null;
+  notes?: string | null;
 };
 
 type EventData = {
@@ -247,6 +250,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
+  const [savingContractDraft, setSavingContractDraft] = useState(false);
   const [sendingContract, setSendingContract] = useState(false);
 
   // Client contact for contract email
@@ -314,6 +318,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editDueDate, setEditDueDate] = useState("");
   const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
   const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
+  const [editInvoiceNotes, setEditInvoiceNotes] = useState("");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
