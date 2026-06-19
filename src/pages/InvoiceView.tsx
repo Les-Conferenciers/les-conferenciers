@@ -91,8 +91,46 @@ const InvoiceView = () => {
   const eventDate = contract?.event_date || event?.event_date;
   const eventLocation = contract?.event_location || "—";
   const eventTime = contract?.event_time || "—";
-  // Single designation line: prestation totale (cachet + commission + déplacement fusionnés)
-  const totalPrestationHT = invoice.amount_ht; // already prorated for the invoice (acompte/solde/total)
+
+  // Item 10 : lignes "Frais de déplacement" et "Autre" doivent apparaître séparément.
+  // Multiplicateur selon le type de facture (acompte/solde = 50%, total = 100%).
+  const invoiceShare = invoice.invoice_type === "total" ? 1 : 0.5;
+  const rawLines: any[] = Array.isArray(contract?.contract_lines) ? contract.contract_lines : [];
+  const speakerLines = rawLines.filter((l: any) => l.type === "speaker");
+  const extraLines = rawLines.filter((l: any) => l.type === "travel" || l.type === "custom");
+  const commission = (contract as any)?.agency_commission || 0;
+  const discountPct = contract?.discount_percent || 0;
+
+  // Speaker prestation fused (cachet + commission), prorated to the invoice share & discount.
+  const speakerLinesHT = speakerLines.reduce((s: number, l: any) => s + (l.amount_ht || 0), 0);
+  const extraLinesHT = extraLines.reduce((s: number, l: any) => s + (l.amount_ht || 0), 0);
+  const allLinesSubtotal = speakerLinesHT + commission + extraLinesHT;
+  const discountFactor = 1 - discountPct / 100;
+
+  // If we have detailed contract lines and total matches the invoice base, use them as breakdown.
+  // Otherwise fallback to a single fused line using invoice.amount_ht.
+  const hasDetailedBreakdown = allLinesSubtotal > 0;
+
+  const speakerPrestationHT = hasDetailedBreakdown
+    ? Math.round((speakerLinesHT + commission) * discountFactor * invoiceShare * 100) / 100
+    : invoice.amount_ht;
+
+  const detailedExtraLines = hasDetailedBreakdown
+    ? extraLines.map((l: any) => ({
+        label: l.label || (l.type === "travel" ? "Frais de déplacement" : "Autre"),
+        amount_ht: Math.round((l.amount_ht || 0) * discountFactor * invoiceShare * 100) / 100,
+      }))
+    : [];
+
+  const detailedTotalHT =
+    speakerPrestationHT + detailedExtraLines.reduce((s, l) => s + l.amount_ht, 0);
+
+  // When breakdown matches invoice.amount_ht (typical case), display lines.
+  // Otherwise fallback to single line with invoice.amount_ht to avoid mismatch.
+  const useBreakdown =
+    hasDetailedBreakdown && Math.abs(detailedTotalHT - invoice.amount_ht) < 1;
+
+  const totalPrestationHT = useBreakdown ? speakerPrestationHT : invoice.amount_ht;
   const vhr = invoice.vhr_estimate || 0;
 
   const clientDisplayName = client?.company_name || proposal?.client_name || "";
@@ -201,6 +239,19 @@ const InvoiceView = () => {
                 </td>
                 <td className="py-3 px-3 text-right font-medium">{totalPrestationHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</td>
               </tr>
+              {detailedExtraLines.map((l, i) => (
+                <tr key={i} className="border-b border-gray-200">
+                  <td className="py-3 px-3">
+                    <p className="font-medium">{l.label}</p>
+                    {invoice.invoice_type !== "total" && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {invoice.invoice_type === "acompte" ? "Acompte 50%" : "Solde 50%"}
+                      </p>
+                    )}
+                  </td>
+                  <td className="py-3 px-3 text-right font-medium">{l.amount_ht.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</td>
+                </tr>
+              ))}
               {vhr > 0 && (
                 <tr className="border-b border-gray-200">
                   <td className="py-3 px-3">
