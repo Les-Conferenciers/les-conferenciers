@@ -37,50 +37,34 @@ Deno.serve(async (req) => {
     const parisDate = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Paris" }));
     const todayStr = `${parisDate.getFullYear()}-${String(parisDate.getMonth() + 1).padStart(2, "0")}-${String(parisDate.getDate()).padStart(2, "0")}`;
 
-    // Fetch pending tasks due today
-    const { data: rawTasks, error: tasksErr } = await supabase
-      .from("proposal_tasks")
-      .select("*, proposals(id, client_name, client_email, client_phone, recipient_name, status, sent_at, created_at)")
-      .eq("status", "pending")
-      .eq("due_date", todayStr);
+    // Fetch proposals with reminders due today (new simplified system)
+    const { data: reminderProposals, error: rpErr } = await supabase
+      .from("proposals")
+      .select("id, client_name, client_email, client_phone, recipient_name, status, next_reminder_date, next_reminder_note, followup_reminder_date, followup_reminder_note")
+      .or(`next_reminder_date.eq.${todayStr},followup_reminder_date.eq.${todayStr}`);
 
-    if (tasksErr) {
-      return new Response(JSON.stringify({ error: tasksErr.message }), { status: 500, headers: corsHeaders });
+    if (rpErr) {
+      return new Response(JSON.stringify({ error: rpErr.message }), { status: 500, headers: corsHeaders });
     }
 
-    // Filter out tasks on lost/archived/accepted proposals
-    let tasks = (rawTasks || []).filter((t: any) => {
-      const s = t.proposals?.status;
-      return s !== "lost" && s !== "archived" && s !== "accepted";
-    });
-
-    // Filter out tasks whose proposal is superseded by a newer sent/accepted proposal
-    // for the same client_email (case-insensitive).
-    if (tasks.length > 0) {
-      const emails = Array.from(
-        new Set(tasks.map((t: any) => (t.proposals?.client_email || "").trim().toLowerCase()).filter(Boolean)),
-      );
-      if (emails.length > 0) {
-        const { data: siblings } = await supabase
-          .from("proposals")
-          .select("id, client_email, status, sent_at, created_at")
-          .in("status", ["sent", "accepted"]);
-        const byEmail = new Map<string, any[]>();
-        for (const p of siblings || []) {
-          const key = (p.client_email || "").trim().toLowerCase();
-          if (!byEmail.has(key)) byEmail.set(key, []);
-          byEmail.get(key)!.push(p);
-        }
-        tasks = tasks.filter((t: any) => {
-          const selfEmail = (t.proposals?.client_email || "").trim().toLowerCase();
-          const selfTs = new Date(t.proposals?.sent_at || t.proposals?.created_at || 0).getTime();
-          const sibs = byEmail.get(selfEmail) || [];
-          const hasNewer = sibs.some((p) => {
-            if (p.id === t.proposals?.id) return false;
-            const ts = new Date(p.sent_at || p.created_at || 0).getTime();
-            return ts > selfTs;
-          });
-          return !hasNewer;
+    // Build tasks from proposals, filter out lost/archived
+    let tasks: any[] = [];
+    for (const p of reminderProposals || []) {
+      if (p.status === "lost" || p.status === "archived") continue;
+      if (p.next_reminder_date === todayStr) {
+        tasks.push({
+          kind: "reminder",
+          label: "Relance prévue",
+          note: p.next_reminder_note,
+          proposals: p,
+        });
+      }
+      if (p.followup_reminder_date === todayStr) {
+        tasks.push({
+          kind: "followup",
+          label: "Rappel agenda",
+          note: p.followup_reminder_note,
+          proposals: p,
         });
       }
     }
@@ -90,6 +74,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
