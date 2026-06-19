@@ -1045,6 +1045,12 @@ const AdminProposalsContent = () => {
     const tasks = getTasksForProposal(p.id);
     setReminderProposal(p);
     setEditingTasks(tasks.map((t: any) => ({ ...t })));
+    setSimpleReminderDate(((p as any).next_reminder_date as string) || "");
+    setSimpleReminderNote(
+      ((p as any).next_reminder_note as string) || (p as any).internal_notes || "",
+    );
+    setSimpleFollowupDate(((p as any).followup_reminder_date as string) || "");
+    setSimpleFollowupNote(((p as any).followup_reminder_note as string) || "");
     setActiveReminderNum(1);
     setReminderSubject(getReminderDefaultSubject(p, 1));
     setReminderBody(getReminderDefaultBody(p, 1));
@@ -1052,32 +1058,28 @@ const AdminProposalsContent = () => {
   };
 
   const saveTaskEdits = async () => {
-    for (const task of editingTasks) {
-      await supabase
-        .from("proposal_tasks")
-        .update({
-          due_date: task.due_date,
-          note: task.note || null,
-        } as any)
-        .eq("id", task.id);
-    }
-    // Sync internal_notes on the proposal with the relance_1 note (single source of truth across versions)
-    if (reminderProposal) {
-      const r1 = editingTasks.find((t: any) => t.task_type === "relance_1");
-      const r2 = editingTasks.find((t: any) => t.task_type === "relance_2");
-      const noteToSync = (r1?.note && r1.note.trim()) || (r2?.note && r2.note.trim()) || null;
-      await supabase
-        .from("proposals")
-        .update({ internal_notes: noteToSync } as any)
-        .eq("id", reminderProposal.id);
-    }
-    toast.success("Tâches mises à jour");
-    if (reminderProposal) {
-      await cancelSiblingPendingTasks(reminderProposal.id, reminderProposal.client_email);
-    }
+    if (!reminderProposal) return;
+    const noteToSync =
+      (simpleReminderNote && simpleReminderNote.trim()) ||
+      (simpleFollowupNote && simpleFollowupNote.trim()) ||
+      null;
+    await supabase
+      .from("proposals")
+      .update({
+        next_reminder_date: simpleReminderDate || null,
+        next_reminder_note: simpleReminderNote || null,
+        followup_reminder_date: simpleFollowupDate || null,
+        followup_reminder_note: simpleFollowupNote || null,
+        internal_notes: noteToSync,
+      } as any)
+      .eq("id", reminderProposal.id);
+    toast.success("Relance mise à jour");
+    await cancelSiblingPendingTasks(reminderProposal.id, reminderProposal.client_email);
     fetchTasks();
     fetchProposals();
   };
+
+
 
   const applyTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
