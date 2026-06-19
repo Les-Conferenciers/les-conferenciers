@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     // Build task rows HTML
     const taskRows = tasks.map((t: any) => {
       const proposal = t.proposals;
-      const taskLabel = t.task_type === "relance_1" ? "Relance 1" : "Relance 2";
+      const taskLabel = t.label || "Relance";
       const clientName = proposal?.client_name || "—";
       const clientEmail = proposal?.client_email || "—";
       const clientPhone = proposal?.client_phone || "—";
