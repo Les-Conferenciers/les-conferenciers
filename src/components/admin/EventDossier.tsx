@@ -250,6 +250,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
+  const [contractEmailCc, setContractEmailCc] = useState("");
+  const [contractEmailAttachments, setContractEmailAttachments] = useState<{ filename: string; content: string }[]>([]);
+
   const [savingContractDraft, setSavingContractDraft] = useState(false);
   const [sendingContract, setSendingContract] = useState(false);
 
