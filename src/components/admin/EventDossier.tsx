@@ -931,8 +931,39 @@ Nelly Sabde - Les Conférenciers`;
     // Restore previously saved draft if present
     setContractEmailSubject(contract.email_subject || defaultSubject);
     setContractEmailBody(contract.email_body || defaultBody);
+    setContractEmailCc((((contract as any).cc_emails as string[] | null) || []).join(", "));
+    setContractEmailAttachments([]);
     setContractEmailOpen(true);
   };
+
+  const parseCcEmails = (raw: string): string[] => {
+    return raw
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter((s) => s && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s));
+  };
+
+  const handleAttachmentsSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const next = [...contractEmailAttachments];
+    for (const f of Array.from(files)) {
+      if (f.size > 8 * 1024 * 1024) {
+        toast.error(`${f.name} dépasse 8 Mo`);
+        continue;
+      }
+      const buf = await f.arrayBuffer();
+      // Convert to base64 (chunked for large files)
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      next.push({ filename: f.name, content: btoa(binary) });
+    }
+    setContractEmailAttachments(next);
+  };
+
 
   const handleSaveContractEmailDraft = async () => {
     if (!contract) return;
