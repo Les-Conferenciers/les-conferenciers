@@ -86,6 +86,8 @@ type Contract = {
   replaces_contract_id?: string | null;
   superseded_at?: string | null;
   superseded_by_contract_id?: string | null;
+  email_subject?: string | null;
+  email_body?: string | null;
 };
 
 
@@ -113,6 +115,7 @@ type Invoice = {
   paid_at: string | null;
   created_at: string;
   vhr_estimate?: number | null;
+  notes?: string | null;
 };
 
 type EventData = {
@@ -247,6 +250,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
+  const [savingContractDraft, setSavingContractDraft] = useState(false);
   const [sendingContract, setSendingContract] = useState(false);
 
   // Client contact for contract email
@@ -314,6 +318,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editDueDate, setEditDueDate] = useState("");
   const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
   const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
+  const [editInvoiceNotes, setEditInvoiceNotes] = useState("");
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
@@ -885,13 +890,12 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setShowCreateClient(false);
 
     const versionPrefix = (contract.version || 1) > 1 ? `[ANNULE ET REMPLACE — v${contract.version}] ` : "";
-    setContractEmailSubject(`${versionPrefix}Bon de commande - ${proposal.client_name} - Les Conférenciers`);
+    const defaultSubject = `${versionPrefix}Bon de commande - ${proposal.client_name} - Les Conférenciers`;
+    const defaultBody = `Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
 
-    setContractEmailBody(`Bonjour${proposal.recipient_name ? ` ${proposal.recipient_name.split(" ")[0]}` : ""},
+Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l'intervention de ${speakerSummary}
 
-Suite à nos précédents échanges, je suis ravie de vous adresser le bon de commande relatif à l’intervention de ${speakerSummary}
-
-📋 Voici un petit récapitulatif : :
+📋 Voici un petit récapitulatif :
 • Conférencier(s) : ${speakerSummary}
 • Date : ${dateStr}
 • Lieu : ${contract.event_location || "à définir"}
@@ -899,12 +903,33 @@ Suite à nos précédents échanges, je suis ravie de vous adresser le bon de co
 
 👉 Vous pouvez consulter le contrat et le signer électroniquement en cliquant sur le bouton ci-dessous.
 
-N’hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.
-Dans l’attente de votre retour, je vous souhaite une très belle journée.
+N'hésitez pas à me contacter si vous avez la moindre question, je reste à votre entière disposition.
+Dans l'attente de votre retour, je vous souhaite une très belle journée.
 
 Bien cordialement,
-Nelly Sabde - Les Conférenciers`);
+Nelly Sabde - Les Conférenciers`;
+
+    // Restore previously saved draft if present
+    setContractEmailSubject(contract.email_subject || defaultSubject);
+    setContractEmailBody(contract.email_body || defaultBody);
     setContractEmailOpen(true);
+  };
+
+  const handleSaveContractEmailDraft = async () => {
+    if (!contract) return;
+    setSavingContractDraft(true);
+    const { error } = await supabase
+      .from("contracts")
+      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+      .eq("id", contract.id);
+    if (error) {
+      toast.error("Erreur d'enregistrement");
+    } else {
+      toast.success("Brouillon enregistré");
+      setContractEmailOpen(false);
+      fetchData();
+    }
+    setSavingContractDraft(false);
   };
 
   const handleSelectClient = (clientId: string) => {
@@ -970,6 +995,11 @@ Nelly Sabde - Les Conférenciers`);
     }
     setSendingContract(true);
     try {
+      // Persist draft before sending so reopening reflects last edits
+      await supabase
+        .from("contracts")
+        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+        .eq("id", contract.id);
       const { error } = await supabase.functions.invoke("send-contract-email", {
         body: {
           contract_id: contract.id,
@@ -1032,13 +1062,14 @@ Nelly Sabde - Les Conférenciers`);
 ${line("📅 Date de l'évènement :", dateStr)}
 ${line("📍 Lieu de l'intervention :", contract?.event_location || "à définir")}
 ${line("🕐 Horaires de l'intervention :", contract?.event_time || "à définir")}
+${line("🎯 Format :", contract?.event_format)}
 ${line("🎤 Conférence :", event?.conference_title)}
 ${line("⏱ Durée :", event?.conference_duration)}
 ${line("👥 Auditoire :", event?.audience_size || "à définir")}
 ${line("📋 Thématique :", event?.theme || "à définir")}
+${contract?.event_description ? `<p>📝 Détails : <strong>${contract.event_description.replace(/\n/g, "<br>")}</strong></p>` : ""}
 ${line("🏢 Client :", proposal.client_name)}
 ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
-${line("👔 Dress code :", event?.dress_code)}
 ${event?.contact_on_site_name ? `<p>👤 Contact sur place : <strong>${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}</strong></p>` : ""}
 ${line("🚗 Arrivée :", event?.arrival_info)}
 ${line("🅿️ Parking :", event?.parking_info)}
@@ -1577,6 +1608,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEditDueDate(inv.due_date || "");
     setEditVhrEstimate(inv.vhr_estimate ?? "");
     setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
+    setEditInvoiceNotes(inv.notes || "");
     setEditInvoiceOpen(true);
   };
 
@@ -1592,6 +1624,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         due_date: editDueDate || null,
         vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
         invoice_type: editInvoiceType,
+        notes: editInvoiceNotes.trim() || null,
       } as any)
       .eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
@@ -1687,9 +1720,35 @@ Nelly Sabde - Les Conférenciers`);
         .from("invoices")
         .update({ status: "sent", sent_at: new Date().toISOString() })
         .eq("id", emailInvoice.id);
+
+      // Item 7 + 8 : facture solde/total envoyée → bascule contrat en "en attente de paiement"
+      // + crée un rappel agenda J+60 sur la proposition.
+      if (
+        (emailInvoice.invoice_type === "solde" || emailInvoice.invoice_type === "total") &&
+        contract
+      ) {
+        await supabase
+          .from("contracts")
+          .update({ status: "en_attente_paiement" } as any)
+          .eq("id", contract.id);
+
+        const due = new Date();
+        due.setDate(due.getDate() + 60);
+        const dueIso = due.toISOString().split("T")[0];
+        const bdcLabel = (event?.bdc_number || "").replace(/^BDC[- ]*/i, "");
+        await supabase
+          .from("proposals")
+          .update({
+            next_reminder_date: dueIso,
+            next_reminder_note: `Relancer paiement facture ${emailInvoice.invoice_number}${bdcLabel ? ` (BDC ${bdcLabel})` : ""}`,
+          } as any)
+          .eq("id", proposal.id);
+      }
+
       toast.success(`Facture ${emailInvoice.invoice_number} envoyée !`);
       setInvoiceEmailOpen(false);
       fetchData();
+      onUpdate();
     } catch {
       toast.error("Erreur d'envoi");
     }
@@ -1788,14 +1847,18 @@ Nelly Sabde - Les Conférenciers`);
               className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                 contract.status === "signed"
                   ? "bg-green-100 text-green-700 border border-green-300"
-                  : "bg-red-100 text-red-700 border border-red-300"
+                  : contract.status === "en_attente_paiement"
+                    ? "bg-orange-100 text-orange-700 border border-orange-300"
+                    : "bg-red-100 text-red-700 border border-red-300"
               }`}
             >
               {contract.status === "signed"
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
-                : contract.status === "sent"
-                  ? "⏳ Non signé (envoyé)"
-                  : "⚠️ Non signé (brouillon)"}
+                : contract.status === "en_attente_paiement"
+                  ? "💶 En attente de paiement"
+                  : contract.status === "sent"
+                    ? "⏳ Non signé (envoyé)"
+                    : "⚠️ Non signé (brouillon)"}
             </span>
             {(contract.version || 1) > 1 && (
               <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 border border-blue-300">
@@ -2974,10 +3037,25 @@ Nelly Sabde - Les Conférenciers`);
               )}
             </div>
 
-            <Button className="w-full" onClick={handleSendContractEmail} disabled={sendingContract}>
-              <Send className="h-4 w-4 mr-2" />
-              {sendingContract ? "Envoi…" : "Envoyer le contrat"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleSaveContractEmailDraft}
+                disabled={savingContractDraft || sendingContract}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {savingContractDraft ? "Enregistrement…" : "Enregistrer le brouillon"}
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSendContractEmail}
+                disabled={sendingContract || savingContractDraft}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {sendingContract ? "Envoi…" : "Envoyer le contrat"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -3752,6 +3830,16 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">
                 Voyage / Hébergement / Restauration. Ajoutée à la facture si renseignée.
               </p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">🗒️ Note interne (non affichée au client)</Label>
+              <Textarea
+                value={editInvoiceNotes}
+                onChange={(e) => setEditInvoiceNotes(e.target.value)}
+                rows={3}
+                placeholder="Infos internes sur cette facture…"
+                className="text-sm"
+              />
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
               <span>Total TTC</span>

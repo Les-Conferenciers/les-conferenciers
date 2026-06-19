@@ -151,7 +151,7 @@ export type Database = {
           {
             foreignKeyName: "contracts_proposal_id_fkey"
             columns: ["proposal_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "proposals"
             referencedColumns: ["id"]
           },
@@ -631,6 +631,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           audience_size: string | null
+          cc_emails: string[] | null
           client_email: string
           client_id: string | null
           client_name: string
@@ -641,11 +642,15 @@ export type Database = {
           event_date_text: string | null
           event_location: string | null
           expires_at: string
+          followup_reminder_date: string | null
+          followup_reminder_note: string | null
           id: string
           internal_notes: string | null
           lost_at: string | null
           lost_reason: string | null
           message: string | null
+          next_reminder_date: string | null
+          next_reminder_note: string | null
           previous_proposal_id: string | null
           proposal_type: string
           recipient_name: string | null
@@ -658,6 +663,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           audience_size?: string | null
+          cc_emails?: string[] | null
           client_email: string
           client_id?: string | null
           client_name: string
@@ -668,11 +674,15 @@ export type Database = {
           event_date_text?: string | null
           event_location?: string | null
           expires_at?: string
+          followup_reminder_date?: string | null
+          followup_reminder_note?: string | null
           id?: string
           internal_notes?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           message?: string | null
+          next_reminder_date?: string | null
+          next_reminder_note?: string | null
           previous_proposal_id?: string | null
           proposal_type?: string
           recipient_name?: string | null
@@ -685,6 +695,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           audience_size?: string | null
+          cc_emails?: string[] | null
           client_email?: string
           client_id?: string | null
           client_name?: string
@@ -695,11 +706,15 @@ export type Database = {
           event_date_text?: string | null
           event_location?: string | null
           expires_at?: string
+          followup_reminder_date?: string | null
+          followup_reminder_note?: string | null
           id?: string
           internal_notes?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           message?: string | null
+          next_reminder_date?: string | null
+          next_reminder_note?: string | null
           previous_proposal_id?: string | null
           proposal_type?: string
           recipient_name?: string | null
