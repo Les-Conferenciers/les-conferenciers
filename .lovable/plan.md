@@ -1,35 +1,33 @@
-## Objectif
-1. Permettre de changer le type (Acompte 50% / Solde 50% / Total 100%) depuis le dialogue **« Modifier »** d'une facture.
-2. Faire dépendre l'étape **« Acompte client »** du pipeline de la présence (ou non) d'une facture de type `acompte`, et plus du flag `deposit_required` du contrat.
+## Simplification du bloc Relances après la 2e relance
 
-## 1. Dialogue Modifier — ajout du sélecteur de type
+### Comportement actuel
+Après envoi de la Relance 2, deux blocs distincts apparaissent dans la fiche proposition (`src/pages/Admin.tsx`) :
+- Le bloc "Relance prévue" (date + notes) qui reste affiché
+- Un second bloc "Rappel agenda" (followup_reminder_date / followup_reminder_note)
 
-Fichiers : `src/components/admin/ContractInvoiceManager.tsx` et `src/components/admin/EventDossier.tsx`
+### Comportement souhaité
+Après envoi de la Relance 2, **un seul bloc** intitulé :
 
-- Ajouter un state `editInvoiceType` initialisé depuis `inv.invoice_type` dans `openEditInvoice`.
-- Insérer en tête du dialogue (au-dessus du Montant HT) le même bloc 3 boutons que la création :
-  - Acompte 50% / Solde 50% / Total 100%.
-- Inclure `invoice_type: editInvoiceType` dans le `update` de `handleSaveInvoice`.
-- Conserver le calcul libre du montant : changer le type ne recalcule **pas** automatiquement le HT (l'utilisateur ajuste si besoin) — sinon on écraserait une facture déjà émise.
+> 📅 Rappel agenda complémentaire (pas d'email envoyé)
 
-## 2. Pipeline — étape Acompte client conditionnée par le type
+Ce bloc contient :
+- **Historique** (lecture seule) : les dates de Relance 1 et Relance 2 effectuées + les notes saisies précédemment (`next_reminder_note` figée au moment de l'envoi de R2)
+- **Champs éditables** : une nouvelle date de rappel agenda + une note associée (réutilise `followup_reminder_date` / `followup_reminder_note`)
 
-Fichier : `src/components/admin/AdminEventDossiers.tsx` (ligne ~370).
+Aucun email n'est envoyé pour ce rappel — il alimente uniquement le récap quotidien à 9h (déjà câblé dans `daily-task-recap`).
 
-Remplacer :
-```ts
-const depositRequired = pContract?.deposit_required !== false;
-```
-par :
-```ts
-const hasAcompteInvoice = pInvoices.some((i) => i.invoice_type === "acompte");
-```
-et utiliser `hasAcompteInvoice` à la place de `depositRequired` pour insérer (ou non) l'étape `client_deposit` dans le tableau `stages`.
+### Modifications
 
-Effet : si une facture est en type `acompte` → l'étape « Acompte client reçu » apparaît. Si on bascule la facture en `solde` ou `total` via le dialogue Modifier → l'étape disparaît automatiquement (et réapparaît si on rebascule en `acompte`).
+1. **`src/pages/Admin.tsx`** — bloc d'affichage des relances :
+   - Si `reminders_sent >= 2` : masquer le bloc "Relance prévue" actuel et n'afficher que le bloc unique "Rappel agenda complémentaire" avec :
+     - Section historique : "Relance 1 envoyée le {date}", "Relance 2 envoyée le {date}", note figée (`next_reminder_note` si présente)
+     - Champs éditables : `followup_reminder_date` (date picker) + `followup_reminder_note` (textarea)
+   - Sinon (< 2 relances) : comportement actuel inchangé (un seul bloc "Relance prévue" éditable)
 
-Le compteur du bandeau de filtres (`{ key: "client_deposit", … count: count("client_deposit") }`) reste valide : il ne comptera que les dossiers où l'étape a été insérée.
+2. **Aucune migration SQL** nécessaire — les colonnes existent déjà (`next_reminder_date/note`, `followup_reminder_date/note`, `reminders_sent`, `last_reminder_at`).
 
-## Hors périmètre
-- Le toggle « Acompte client requis (50%) » du dialogue **création de contrat** reste tel quel : il pilote uniquement la clause de prix du contrat (50/50 vs 100%), pas le pipeline.
-- Pas de migration de données : le champ `invoice_type` existe déjà sur `invoices`.
+3. **`daily-task-recap`** : déjà compatible (scanne `followup_reminder_date`), aucun changement.
+
+### Détails techniques
+- Le handler `saveTaskEdits` existant continue de persister les deux champs `followup_*`.
+- L'historique de Relance 1/2 est reconstruit à partir de `reminders_sent` + `last_reminder_at` (pas d'historique fin par relance en base — on affichera "Dernière relance envoyée le {last_reminder_at}" + le compteur).
