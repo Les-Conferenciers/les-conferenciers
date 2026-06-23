@@ -3464,11 +3464,13 @@ const AdminProposalsContent = () => {
                 <Plus className="h-4 w-4" /> Nouvelle proposition
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden">
-              <DialogHeader>
+            <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+              <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
                 <DialogTitle className="font-serif">Créer une proposition</DialogTitle>
               </DialogHeader>
-              {renderSpeakerForm()}
+              <div className="px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+                {renderSpeakerForm()}
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -3728,10 +3730,11 @@ const AdminProposalsContent = () => {
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden">
-          <DialogHeader>
+        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">Éditer la proposition</DialogTitle>
           </DialogHeader>
+          <div className="px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
           {(() => {
             const editType = (editingProposal?.proposal_type || "classique") as ProposalType;
             const isLocked = !!editingProposal && editingProposal.status !== "draft";
@@ -3924,6 +3927,7 @@ const AdminProposalsContent = () => {
               </div>
             );
           })()}
+          </div>
         </DialogContent>
       </Dialog>
 
