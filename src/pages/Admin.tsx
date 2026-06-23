@@ -2018,7 +2018,7 @@ const AdminProposalsContent = () => {
   const eventContext = buildEventContextLine(eventLocation, eventDateText, audienceSize);
 
   const renderSpeakerForm = () => (
-    <div className="space-y-6 mt-4">
+    <div className="space-y-6 mt-4 min-w-0">
       {/* Proposal type selector */}
       <div className="space-y-2">
         <Label>Type de proposition</Label>
@@ -2049,7 +2049,7 @@ const AdminProposalsContent = () => {
           <div className="mt-3">
             <Label className="text-xs text-muted-foreground mb-1 block">📁 Appliquer un template</Label>
             <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={selectedTemplateId || ""}
               onChange={(e) => {
                 if (e.target.value) applyTemplate(e.target.value);
@@ -2248,7 +2248,7 @@ const AdminProposalsContent = () => {
                   : `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${contextParts.join(", ")}.`;
               return (
                 <div
-                  className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic"
+                  className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic break-words min-w-0"
                   dangerouslySetInnerHTML={{ __html: previewText }}
                 />
               );
@@ -3464,7 +3464,7 @@ const AdminProposalsContent = () => {
                 <Plus className="h-4 w-4" /> Nouvelle proposition
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
               <DialogHeader>
                 <DialogTitle className="font-serif">Créer une proposition</DialogTitle>
               </DialogHeader>
@@ -3728,7 +3728,7 @@ const AdminProposalsContent = () => {
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">Éditer la proposition</DialogTitle>
           </DialogHeader>
@@ -3929,7 +3929,7 @@ const AdminProposalsContent = () => {
 
       {/* Archive details dialog */}
       <Dialog open={!!archiveDetailsId} onOpenChange={(o) => !o && setArchiveDetailsId(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">Détails de la proposition archivée</DialogTitle>
           </DialogHeader>
@@ -4048,7 +4048,7 @@ const AdminProposalsContent = () => {
 
       {/* Reminder Dialog */}
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">🔔 Relances — {reminderProposal?.client_name}</DialogTitle>
           </DialogHeader>
@@ -4251,7 +4251,7 @@ const AdminProposalsContent = () => {
 
       {/* Leads matchés par email */}
       <Dialog open={!!leadsDialogProposal} onOpenChange={(o) => !o && setLeadsDialogProposal(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">Messages reçus du client</DialogTitle>
           </DialogHeader>

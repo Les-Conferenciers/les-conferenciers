@@ -122,6 +122,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [contractEmailOpen, setContractEmailOpen] = useState(false);
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
+  const [contractEmailAttachments, setContractEmailAttachments] = useState<{ filename: string; content: string }[]>([]);
   const [sendingContract, setSendingContract] = useState(false);
   const [savingContractDraft, setSavingContractDraft] = useState(false);
 
@@ -366,7 +367,28 @@ Bien cordialement,
 Nelly Sabde - Les Conférenciers`;
     setContractEmailSubject(contract.email_subject || defaultSubject);
     setContractEmailBody(contract.email_body || defaultBody);
+    setContractEmailAttachments([]);
     setContractEmailOpen(true);
+  };
+
+  const handleContractAttachmentsSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const next = [...contractEmailAttachments];
+    for (const f of Array.from(files)) {
+      if (f.size > 8 * 1024 * 1024) {
+        toast.error(`${f.name} dépasse 8 Mo`);
+        continue;
+      }
+      const buf = await f.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      next.push({ filename: f.name, content: btoa(binary) });
+    }
+    setContractEmailAttachments(next);
   };
 
   const handleSaveContractEmailDraft = async () => {
@@ -400,6 +422,7 @@ Nelly Sabde - Les Conférenciers`;
           contract_id: contract.id,
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
+          attachments: contractEmailAttachments,
         },
       });
       if (error) throw error;
@@ -925,6 +948,33 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">
                 Le bouton « Consulter et signer le contrat » est ajouté automatiquement.
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Pièces jointes (max 8 Mo par fichier)</Label>
+              <Input
+                type="file"
+                multiple
+                onChange={(e) => handleContractAttachmentsSelected(e.target.files)}
+                className="text-xs"
+              />
+              {contractEmailAttachments.length > 0 && (
+                <ul className="text-xs text-muted-foreground space-y-1 mt-1">
+                  {contractEmailAttachments.map((a, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span>📎 {a.filename}</span>
+                      <button
+                        type="button"
+                        className="text-destructive hover:underline"
+                        onClick={() =>
+                          setContractEmailAttachments(contractEmailAttachments.filter((_, idx) => idx !== i))
+                        }
+                      >
+                        retirer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Aperçu</Label>
