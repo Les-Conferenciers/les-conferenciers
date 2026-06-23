@@ -112,6 +112,8 @@ Deno.serve(async (req) => {
           .map((a: any) => ({ filename: String(a.filename), content: String(a.content) }))
       : [];
 
+    console.log(`[send-contract-email] attachments received: ${cleanAttachments.length}`, cleanAttachments.map(a => ({ filename: a.filename, contentLength: a.content.length })));
+
     const payload: Record<string, unknown> = {
       from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
       to: [recipient_email || proposal.client_email],
@@ -127,9 +129,11 @@ Deno.serve(async (req) => {
       body: JSON.stringify(payload),
     });
 
+    const resendBody = await resendRes.text();
+    console.log(`[send-contract-email] resend status=${resendRes.status} body=${resendBody.slice(0, 500)}`);
+
     if (!resendRes.ok) {
-      const errBody = await resendRes.text();
-      return new Response(JSON.stringify({ error: "Email send failed", details: errBody }), { status: 500, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Email send failed", details: resendBody }), { status: 500, headers: corsHeaders });
     }
 
     await adminClient.from("contracts").update({ status: "sent", contract_sent_at: new Date().toISOString() }).eq("id", contract_id);
