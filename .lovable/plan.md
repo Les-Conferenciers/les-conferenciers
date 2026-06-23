@@ -1,22 +1,28 @@
-Objectif : corriger la dialog “Éditer la proposition” pour qu’elle soit entièrement utilisable sur MacBook Air et PC, sans couper le contenu ni masquer la colonne de droite.
+## Plan
 
-Plan :
-1. Remplacer la structure actuelle de la dialog d’édition dans `src/pages/Admin.tsx` :
-   - garder la popup centrée avec une largeur bornée ;
-   - passer le conteneur en `flex flex-col overflow-hidden p-0` ;
-   - rendre seulement le contenu interne scrollable avec `overflow-y-auto`.
-2. Mettre le header de la popup en zone fixe :
-   - titre visible en haut ;
-   - padding/bordure cohérents avec les dialogs déjà corrigées.
-3. Encapsuler tout le formulaire d’édition dans une zone scrollable interne :
-   - `min-w-0`, `overflow-x-hidden`, `flex-1`, `min-h-0` ;
-   - éviter que le scroll appartienne à toute la dialog, ce qui provoque aujourd’hui l’effet “écran coupé”.
-4. Corriger les grilles internes qui forcent la largeur sur petit écran :
-   - champs client/email et champs tarifs en `grid-cols-1 sm:grid-cols-2` ;
-   - ajouter `min-w-0` aux blocs sensibles pour empêcher le débordement horizontal caché qui coupe la colonne “Email / Frais / Prix”.
-5. Appliquer le même pattern à la popup “Créer une proposition” de cette même page si elle partage le même formulaire et peut produire le même bug.
-6. Vérifier visuellement en viewport MacBook Air proche de la capture (`1139×779`) que :
-   - la dialog tient dans l’écran ;
-   - le titre reste visible ;
-   - la colonne droite n’est plus tronquée ;
-   - le contenu se parcourt par scroll vertical interne.
+Corriger la popup **Éditer la proposition** qui reste coupée sur desktop en mode édition.
+
+### Problème identifié
+La capture montre un **débordement horizontal** : la colonne de droite du formulaire sort de la popup. Le précédent correctif a surtout traité la hauteur et le scroll vertical, mais le formulaire interne garde encore des éléments en `grid-cols-2` et des contenus sans `min-w-0`, ce qui pousse la largeur réelle au-delà du conteneur.
+
+### Changements prévus
+1. **Rendre le contenu réellement contraint en largeur**
+   - Ajouter `w-full max-w-full min-w-0` sur le corps scrollable, le wrapper principal et le `fieldset`.
+   - Empêcher tout enfant de forcer une largeur supérieure à celle de la popup.
+
+2. **Corriger les grilles de champs**
+   - Remplacer les grilles fixes `grid-cols-2` par `grid-cols-1 md:grid-cols-2` ou `grid-cols-1 sm:grid-cols-2` selon l'espace disponible.
+   - Ajouter `min-w-0` sur chaque cellule de grille et sur les champs sensibles.
+
+3. **Neutraliser le composant qui déborde dans la section conférencier/tarifs**
+   - Ajuster la sortie de `renderSpeakerSelectionEditor` pour que les lignes conférencier + frais restent dans la popup.
+   - Passer les zones tarif/frais en grille responsive et empêcher les labels longs de pousser horizontalement.
+
+4. **Garder le comportement desktop propre**
+   - La popup restera centrée et large comme avant sur PC.
+   - Le scroll restera vertical interne.
+   - Aucun scroll horizontal ne doit apparaître dans la popup.
+
+5. **Vérification**
+   - Tester au viewport actuel `1139x779`.
+   - Confirmer que le champ email, la colonne frais et les boutons ne sont plus coupés en mode édition.
