@@ -1,28 +1,35 @@
-## Diagnostic
+## Constat
 
-Oui c'est normal : la fonction backend `send-contract-email` accepte bien un champ `attachments` (filename + content base64) et le transmet à Resend, **mais l'UI ne permet pas encore d'attacher de fichier**. Le bouton « Envoyer » dans le dialog Contrat envoie uniquement `contract_id`, `email_subject`, `email_body` — aucun fichier n'est joint à la requête, donc Resend reçoit un email sans pièce jointe.
+Sur les propositions récentes, le champ `proposals.next_reminder_date` (affiché en UI sous « Date de relance prévue ») est vide. Cependant, la table `proposal_tasks` contient bien une ligne `relance_1` avec une `due_date` correctement calculée (J+7 après l'envoi).
 
-## Plan : ajouter les pièces jointes au mail contrat
+Exemple : **Forvis Mazars** (22/06) → `next_reminder_date` vide, mais `proposal_tasks.relance_1.due_date = 29/06`.
 
-### 1. UI — `src/components/admin/ContractInvoiceManager.tsx` (dialog contrat email)
-- Ajouter un input `<input type="file" multiple />` dans le dialog d'envoi du contrat, sous la zone CC/destinataires.
-- État local : `const [contractAttachments, setContractAttachments] = useState<{ filename: string; content: string; size: number }[]>([])`.
-- À la sélection : lire chaque fichier via `FileReader.readAsDataURL`, extraire la partie base64 (après la virgule), stocker `{ filename, content, size }`.
-- Afficher la liste des fichiers ajoutés avec taille (Ko) + bouton « ✕ » pour retirer.
-- **Limite de taille** : refuser tout fichier > 8 Mo (Resend limite à ~40 Mo total, on garde une marge confortable) avec un toast d'erreur.
-- Limite cumulée 15 Mo (somme des `size`), bloquer l'ajout au-delà.
+Sur les 30 dernières propositions `sent`, **27 sont dans ce cas** (seules FFDM, ABRISUD et SOCOTEC du 19/06 ont une date renseignée sur la proposition).
 
-### 2. Envoi — même fichier, fonction `handleSendContractEmail`
-- Passer `attachments: contractAttachments.map(a => ({ filename: a.filename, content: a.content }))` dans le body de `supabase.functions.invoke("send-contract-email", …)`.
-- Vider l'état `contractAttachments` après envoi réussi.
+La cause est le refactor du système de relance vers `proposal_tasks` : la nouvelle logique a continué à écrire la `due_date` dans la tâche mais n'a plus alimenté `next_reminder_date` sur la proposition, et certains chemins ont même remis ce champ à `null`.
 
-### 3. Idem pour `src/components/admin/EventDossier.tsx` (ligne 1056)
-- Même UI + même payload, pour rester cohérent quand le contrat est envoyé depuis le dossier événement.
+## Correction proposée (data only)
 
-### 4. Backend — `supabase/functions/send-contract-email/index.ts`
-- Aucun changement nécessaire (le champ `attachments` est déjà géré, lignes 109-122).
-- Optionnel : ajouter un contrôle de taille côté serveur (refuser si payload > 20 Mo) pour éviter les timeouts.
+Backfill ponctuel via une requête SQL : remettre dans `proposals.next_reminder_date` la `due_date` de la tâche `relance_1` correspondante, **uniquement quand** :
 
-## Hors scope
-- Pas de stockage persistant des pièces jointes (elles ne sont attachées qu'à l'envoi, pas conservées dans `contracts`).
-- Pas de modification de la facture / proposition (à faire séparément si besoin).
+- `proposals.next_reminder_date IS NULL`
+- la proposition est encore active (`status IN ('sent','reminded_1','reminded_2')`)
+- la tâche `relance_1` existe avec une `due_date` non nulle et `status = 'pending'` (on ne ressuscite pas une relance déjà traitée ou annulée)
+
+```sql
+UPDATE public.proposals p
+SET next_reminder_date = t.due_date
+FROM public.proposal_tasks t
+WHERE t.proposal_id = p.id
+  AND t.task_type = 'relance_1'
+  AND t.status = 'pending'
+  AND t.due_date IS NOT NULL
+  AND p.next_reminder_date IS NULL
+  AND p.status IN ('sent','reminded_1','reminded_2');
+```
+
+Impact attendu : ~27 propositions mises à jour (dont Forvis Mazars → 29/06).
+
+## Hors périmètre
+
+Je ne touche pas au code des relances (la source de vérité reste `proposal_tasks`). Si tu veux qu'on corrige aussi le code pour que `next_reminder_date` reste synchronisé à l'avenir, on le fera dans un second temps — dis-le moi si tu le souhaites.
