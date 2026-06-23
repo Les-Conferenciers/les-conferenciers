@@ -2049,7 +2049,7 @@ const AdminProposalsContent = () => {
           <div className="mt-3">
             <Label className="text-xs text-muted-foreground mb-1 block">📁 Appliquer un template</Label>
             <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={selectedTemplateId || ""}
               onChange={(e) => {
                 if (e.target.value) applyTemplate(e.target.value);
