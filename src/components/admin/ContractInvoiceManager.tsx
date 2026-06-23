@@ -367,7 +367,28 @@ Bien cordialement,
 Nelly Sabde - Les Conférenciers`;
     setContractEmailSubject(contract.email_subject || defaultSubject);
     setContractEmailBody(contract.email_body || defaultBody);
+    setContractEmailAttachments([]);
     setContractEmailOpen(true);
+  };
+
+  const handleContractAttachmentsSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const next = [...contractEmailAttachments];
+    for (const f of Array.from(files)) {
+      if (f.size > 8 * 1024 * 1024) {
+        toast.error(`${f.name} dépasse 8 Mo`);
+        continue;
+      }
+      const buf = await f.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      next.push({ filename: f.name, content: btoa(binary) });
+    }
+    setContractEmailAttachments(next);
   };
 
   const handleSaveContractEmailDraft = async () => {
