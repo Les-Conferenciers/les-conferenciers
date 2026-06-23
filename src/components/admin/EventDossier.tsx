@@ -2215,8 +2215,8 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Contract form dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
-        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-w-0 [&_*]:box-border [&_button]:max-w-full [&_input]:max-w-full [&_textarea]:max-w-full [&_select]:max-w-full">
-          <DialogHeader>
+        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0 [&_*]:box-border [&_button]:max-w-full [&_input]:max-w-full [&_textarea]:max-w-full [&_select]:max-w-full">
+          <DialogHeader className="px-4 sm:px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">
               {editingContract
                 ? contract?.status === "signed"
@@ -2227,14 +2227,14 @@ Nelly Sabde - Les Conférenciers`);
             </DialogTitle>
           </DialogHeader>
           {editingContract && contract && (contract.status === "sent" || contract.status === "signed") && (
-            <div className="rounded-lg border border-orange-300 bg-orange-50 text-orange-800 text-xs p-3 mt-2">
+            <div className="mx-4 sm:mx-6 mt-2 rounded-lg border border-orange-300 bg-orange-50 text-orange-800 text-xs p-3 shrink-0">
               <strong>⚠️ Attention :</strong>{" "}
               {contract.status === "signed"
                 ? "ce contrat est signé. L'enregistrement créera un avenant (nouvelle version) qui annulera et remplacera le contrat actuel. Il devra être renvoyé au client pour signature."
                 : "ce contrat a déjà été envoyé au client. L'enregistrement créera une nouvelle version « annule et remplace » qu'il faudra renvoyer."}
             </div>
           )}
-          <div className="space-y-5 mt-2 min-w-0 max-w-full">
+          <div className="space-y-5 px-4 sm:px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0 max-w-full">
 
             {/* Client selector - mandatory */}
             <div className="space-y-3 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 min-w-0 max-w-full overflow-hidden">
