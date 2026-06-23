@@ -2653,7 +2653,8 @@ const AdminProposalsContent = () => {
         const imageUrl = getSpeakerImage(ps.speaker_id);
         const speakerConfs = getConferencesForSpeaker(ps.speaker_id);
         return (
-          <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3">
+          <div key={ps.speaker_id} className="border border-border rounded-lg p-4 space-y-3 min-w-0 w-full max-w-full">
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
@@ -2716,8 +2717,10 @@ const AdminProposalsContent = () => {
                 ))}
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
+
+              <div className="space-y-1 min-w-0">
+
                 <Label className="text-xs text-muted-foreground">Cachet conférencier (€)</Label>
                 {(() => {
                   const sp = speakers.find((s) => s.id === ps.speaker_id);
@@ -2771,13 +2774,15 @@ const AdminProposalsContent = () => {
                         </select>
                       )}
                       {feeDetails && (
-                        <p className="text-[10px] text-muted-foreground/70 italic leading-tight">{feeDetails}</p>
+                        <p className="text-[10px] text-muted-foreground/70 italic leading-tight break-words">{feeDetails}</p>
                       )}
+
                     </div>
                   );
                 })()}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
+
                 <Label className="text-xs text-muted-foreground">Frais déplacement (€)</Label>
                 <Input
                   type="text"
@@ -2797,7 +2802,8 @@ const AdminProposalsContent = () => {
                   onWheel={noScrollWheel}
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
+
                 <Label className="text-xs text-muted-foreground">Commission agence (€)</Label>
                 <Input
                   type="text"
@@ -2817,7 +2823,8 @@ const AdminProposalsContent = () => {
                   onWheel={noScrollWheel}
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
+
                 <Label className="text-xs text-muted-foreground">Prix total HT (€)</Label>
                 <Input
                   type="text"
