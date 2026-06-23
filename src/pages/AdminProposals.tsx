@@ -641,9 +641,9 @@ Belle journée,`;
               <Plus className="h-4 w-4" /> Nouvelle proposition
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
-            <DialogHeader><DialogTitle className="font-serif">{editingDraftId ? "Modifier la proposition" : "Créer une proposition"}</DialogTitle></DialogHeader>
-            <div className="space-y-6 mt-4">
+          <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+            <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border"><DialogTitle className="font-serif">{editingDraftId ? "Modifier la proposition" : "Créer une proposition"}</DialogTitle></DialogHeader>
+            <div className="space-y-6 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Société / Nom du client</Label><Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="SNCF" /></div>
                 <div className="space-y-2"><Label>Email du client</Label><Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@societe.com" /></div>
@@ -771,11 +771,11 @@ Belle journée,`;
 
         {/* Preview Dialog */}
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
-            <DialogHeader>
+          <DialogContent className="w-[min(48rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+            <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
               <DialogTitle className="font-serif">Prévisualisation</DialogTitle>
             </DialogHeader>
-            <Tabs value={previewTab} onValueChange={v => setPreviewTab(v as "email" | "proposal")}>
+            <div className="px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0"><Tabs value={previewTab} onValueChange={v => setPreviewTab(v as "email" | "proposal")}>
               <TabsList className="mb-4">
                 <TabsTrigger value="email">📧 Email</TabsTrigger>
                 <TabsTrigger value="proposal">📄 Proposition</TabsTrigger>
@@ -851,7 +851,7 @@ Belle journée,`;
                   })}
                 </div>
               </TabsContent>
-            </Tabs>
+            </Tabs></div>
           </DialogContent>
         </Dialog>
       </header>
