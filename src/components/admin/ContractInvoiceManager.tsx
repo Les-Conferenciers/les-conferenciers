@@ -950,6 +950,33 @@ Nelly Sabde - Les Conférenciers`);
               </p>
             </div>
             <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Pièces jointes (max 8 Mo par fichier)</Label>
+              <Input
+                type="file"
+                multiple
+                onChange={(e) => handleContractAttachmentsSelected(e.target.files)}
+                className="text-xs"
+              />
+              {contractEmailAttachments.length > 0 && (
+                <ul className="text-xs text-muted-foreground space-y-1 mt-1">
+                  {contractEmailAttachments.map((a, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span>📎 {a.filename}</span>
+                      <button
+                        type="button"
+                        className="text-destructive hover:underline"
+                        onClick={() =>
+                          setContractEmailAttachments(contractEmailAttachments.filter((_, idx) => idx !== i))
+                        }
+                      >
+                        retirer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Aperçu</Label>
               <div className="border rounded-md p-4 bg-white max-h-64 overflow-y-auto">
                 <div
