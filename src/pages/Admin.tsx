@@ -2248,7 +2248,7 @@ const AdminProposalsContent = () => {
                   : `Vous trouverez ci-joint une sélection de conférenciers (sous réserve de leur disponibilité) pour votre événement ${contextParts.join(", ")}.`;
               return (
                 <div
-                  className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic"
+                  className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 text-xs text-foreground italic break-words min-w-0"
                   dangerouslySetInnerHTML={{ __html: previewText }}
                 />
               );
