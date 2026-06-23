@@ -641,7 +641,7 @@ Belle journée,`;
               <Plus className="h-4 w-4" /> Nouvelle proposition
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader><DialogTitle className="font-serif">{editingDraftId ? "Modifier la proposition" : "Créer une proposition"}</DialogTitle></DialogHeader>
             <div className="space-y-6 mt-4">
               <div className="grid grid-cols-2 gap-4">
@@ -771,7 +771,7 @@ Belle journée,`;
 
         {/* Preview Dialog */}
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader>
               <DialogTitle className="font-serif">Prévisualisation</DialogTitle>
             </DialogHeader>

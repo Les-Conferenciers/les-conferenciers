@@ -1,33 +1,21 @@
-## Simplification du bloc Relances après la 2e relance
+## Problème
 
-### Comportement actuel
-Après envoi de la Relance 2, deux blocs distincts apparaissent dans la fiche proposition (`src/pages/Admin.tsx`) :
-- Le bloc "Relance prévue" (date + notes) qui reste affiché
-- Un second bloc "Rappel agenda" (followup_reminder_date / followup_reminder_note)
+La popup « Créer une proposition » (et les autres dialogs propositions) affiche une barre de scroll horizontale. Cause racine : `DialogContent` shadcn utilise `grid w-full max-w-lg`. Quand un enfant grid n'a pas `min-w-0`, il prend sa taille **min-content** et peut dépasser la largeur du conteneur si un élément interne (long texte HTML injecté, mots non sécables, `<select>` avec longues options, etc.) ne se rétracte pas. Résultat : la grille devient plus large que la dialog → scroll horizontal.
 
-### Comportement souhaité
-Après envoi de la Relance 2, **un seul bloc** intitulé :
+## Correctifs
 
-> 📅 Rappel agenda complémentaire (pas d'email envoyé)
+1. **`src/pages/Admin.tsx`** — sur toutes les `DialogContent` propositions/contrats (lignes 3467, 3731, 3932, 4051, 4254) :
+   - Ajouter `overflow-x-hidden` à côté de `overflow-y-auto`
+   
+2. **`src/pages/Admin.tsx` (renderSpeakerForm, ligne 2021)** :
+   - Ajouter `min-w-0` au wrapper racine `<div className="space-y-6 mt-4">` → `<div className="space-y-6 mt-4 min-w-0">`
+   - Sur le `<select>` template (ligne 2052), ajouter `min-w-0` pour éviter qu'une longue option ne pousse la grille
+   - Sur le `<div dangerouslySetInnerHTML>` (ligne 2250), ajouter `break-words` (déjà présent ? sinon `break-words min-w-0`)
 
-Ce bloc contient :
-- **Historique** (lecture seule) : les dates de Relance 1 et Relance 2 effectuées + les notes saisies précédemment (`next_reminder_note` figée au moment de l'envoi de R2)
-- **Champs éditables** : une nouvelle date de rappel agenda + une note associée (réutilise `followup_reminder_date` / `followup_reminder_note`)
+3. **`src/pages/AdminProposals.tsx`** — appliquer la même protection sur les `DialogContent` lignes 644 et 774 (`overflow-x-hidden`).
 
-Aucun email n'est envoyé pour ce rappel — il alimente uniquement le récap quotidien à 9h (déjà câblé dans `daily-task-recap`).
+## Résultat attendu
 
-### Modifications
-
-1. **`src/pages/Admin.tsx`** — bloc d'affichage des relances :
-   - Si `reminders_sent >= 2` : masquer le bloc "Relance prévue" actuel et n'afficher que le bloc unique "Rappel agenda complémentaire" avec :
-     - Section historique : "Relance 1 envoyée le {date}", "Relance 2 envoyée le {date}", note figée (`next_reminder_note` si présente)
-     - Champs éditables : `followup_reminder_date` (date picker) + `followup_reminder_note` (textarea)
-   - Sinon (< 2 relances) : comportement actuel inchangé (un seul bloc "Relance prévue" éditable)
-
-2. **Aucune migration SQL** nécessaire — les colonnes existent déjà (`next_reminder_date/note`, `followup_reminder_date/note`, `reminders_sent`, `last_reminder_at`).
-
-3. **`daily-task-recap`** : déjà compatible (scanne `followup_reminder_date`), aucun changement.
-
-### Détails techniques
-- Le handler `saveTaskEdits` existant continue de persister les deux champs `followup_*`.
-- L'historique de Relance 1/2 est reconstruit à partir de `reminders_sent` + `last_reminder_at` (pas d'historique fin par relance en base — on affichera "Dernière relance envoyée le {last_reminder_at}" + le compteur).
+- Plus de barre horizontale dans aucune popup propositions
+- Le contenu interne se rétracte proprement à la largeur de la dialog
+- Aucun changement fonctionnel (UI seulement)
