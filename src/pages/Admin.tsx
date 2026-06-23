@@ -2018,7 +2018,7 @@ const AdminProposalsContent = () => {
   const eventContext = buildEventContextLine(eventLocation, eventDateText, audienceSize);
 
   const renderSpeakerForm = () => (
-    <div className="space-y-6 mt-4">
+    <div className="space-y-6 mt-4 min-w-0">
       {/* Proposal type selector */}
       <div className="space-y-2">
         <Label>Type de proposition</Label>
