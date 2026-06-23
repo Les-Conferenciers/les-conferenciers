@@ -3730,11 +3730,14 @@ const AdminProposalsContent = () => {
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+        <DialogContent
+          style={{ width: "min(42rem, calc(100vw - 2rem))", maxHeight: "calc(100dvh - 2rem)" }}
+          className="max-w-none flex flex-col overflow-hidden p-0 min-w-0"
+        >
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">Éditer la proposition</DialogTitle>
           </DialogHeader>
-          <div className="px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+          <div className="px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0 w-full max-w-full">
           {(() => {
             const editType = (editingProposal?.proposal_type || "classique") as ProposalType;
             const isLocked = !!editingProposal && editingProposal.status !== "draft";
@@ -3746,7 +3749,7 @@ const AdminProposalsContent = () => {
                 })
               : null;
             return (
-              <div className="space-y-6 mt-4">
+              <div className="space-y-6 mt-4 min-w-0 w-full max-w-full">
                 {isLocked && (
                   <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                     🔒 Proposition{" "}
@@ -3757,7 +3760,7 @@ const AdminProposalsContent = () => {
                     proposition.
                   </div>
                 )}
-                <fieldset disabled={isLocked} className={isLocked ? "opacity-80 pointer-events-none" : ""}>
+                <fieldset disabled={isLocked} className={`min-w-0 w-full max-w-full space-y-6 ${isLocked ? "opacity-80 pointer-events-none" : ""}`}>
                   <div className="text-xs px-3 py-1.5 rounded-full bg-muted text-muted-foreground w-fit">
                     {editType === "unique"
                       ? "🎤 Conférencier unique"
@@ -3765,24 +3768,26 @@ const AdminProposalsContent = () => {
                         ? "📝 Demande d'infos"
                         : "📋 Classique"}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+                    <div className="space-y-2 min-w-0">
                       <Label>Société / Nom du client</Label>
-                      <Input value={editClientName} onChange={(e) => setEditClientName(e.target.value)} />
+                      <Input className="w-full min-w-0" value={editClientName} onChange={(e) => setEditClientName(e.target.value)} />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <Label>Email du client</Label>
                       <Input
+                        className="w-full min-w-0"
                         type="email"
                         value={editClientEmail}
                         onChange={(e) => setEditClientEmail(e.target.value)}
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0">
                     <Label>Prénom Nom du destinataire</Label>
-                    <Input value={editRecipientName} onChange={(e) => setEditRecipientName(e.target.value)} />
+                    <Input className="w-full min-w-0" value={editRecipientName} onChange={(e) => setEditRecipientName(e.target.value)} />
                   </div>
+
 
                   {editType !== "info" && (
                     <div className="border-t border-border pt-4">
