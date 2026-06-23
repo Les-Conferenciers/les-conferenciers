@@ -4251,7 +4251,7 @@ const AdminProposalsContent = () => {
 
       {/* Leads matchés par email */}
       <Dialog open={!!leadsDialogProposal} onOpenChange={(o) => !o && setLeadsDialogProposal(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
+        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">Messages reçus du client</DialogTitle>
           </DialogHeader>
