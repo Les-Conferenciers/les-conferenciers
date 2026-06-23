@@ -851,7 +851,7 @@ Belle journée,`;
                   })}
                 </div>
               </TabsContent>
-            </Tabs>
+            </Tabs></div>
           </DialogContent>
         </Dialog>
       </header>
