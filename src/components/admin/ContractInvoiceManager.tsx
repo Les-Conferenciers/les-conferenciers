@@ -422,6 +422,7 @@ Nelly Sabde - Les Conférenciers`;
           contract_id: contract.id,
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
+          attachments: contractEmailAttachments,
         },
       });
       if (error) throw error;
