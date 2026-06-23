@@ -3464,7 +3464,7 @@ const AdminProposalsContent = () => {
                 <Plus className="h-4 w-4" /> Nouvelle proposition
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+            <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden">
               <DialogHeader>
                 <DialogTitle className="font-serif">Créer une proposition</DialogTitle>
               </DialogHeader>
@@ -3728,7 +3728,7 @@ const AdminProposalsContent = () => {
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">Éditer la proposition</DialogTitle>
           </DialogHeader>
@@ -3929,7 +3929,7 @@ const AdminProposalsContent = () => {
 
       {/* Archive details dialog */}
       <Dialog open={!!archiveDetailsId} onOpenChange={(o) => !o && setArchiveDetailsId(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
+        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">Détails de la proposition archivée</DialogTitle>
           </DialogHeader>
@@ -4048,7 +4048,7 @@ const AdminProposalsContent = () => {
 
       {/* Reminder Dialog */}
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+        <DialogContent className="w-[min(48rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">🔔 Relances — {reminderProposal?.client_name}</DialogTitle>
           </DialogHeader>
@@ -4251,7 +4251,7 @@ const AdminProposalsContent = () => {
 
       {/* Leads matchés par email */}
       <Dialog open={!!leadsDialogProposal} onOpenChange={(o) => !o && setLeadsDialogProposal(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
+        <DialogContent className="w-[min(42rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="font-serif">Messages reçus du client</DialogTitle>
           </DialogHeader>

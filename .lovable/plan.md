@@ -1,8 +1,44 @@
-Je vais corriger le problème en ciblant les fenêtres modales de gestion propositions/contrats qui restent trop hautes sur écran type MacBook Air.
+# Fix popups coupées dans Admin.tsx
 
-Plan :
-1. Modifier les dialogs concernés dans `ContractInvoiceManager` pour utiliser une hauteur réellement contrainte au viewport : `max-height: calc(100dvh - marge)` plutôt que seulement `90vh`.
-2. Donner à ces dialogs une largeur responsive avec marges fixes (`min(largeur, 100vw - 2rem)`) et garder `overflow-x-hidden` pour éviter tout retour du scroll horizontal.
-3. Structurer les dialogs longs en conteneur scrollable fiable : header visible, contenu qui défile, bouton d'action accessible en bas même sur petit écran.
-4. Appliquer la même règle aux popups contrat/facture/email liées aux propositions, sans changer la logique métier ni les emails.
-5. Vérifier en viewport proche MacBook Air (`1139x779`) que la fenêtre complète reste visible et que le contenu est accessible par scroll vertical interne.
+Les dialogs de `src/pages/AdminProposals.tsx` et `ContractInvoiceManager.tsx` ont déjà été corrigés. Mais le dialog "Éditer la proposition" (et plusieurs autres dialogs frères) vit dans `src/pages/Admin.tsx` et utilise encore l'ancien pattern `max-h-[90vh]` → la fenêtre se retrouve coupée en bas sur MacBook Air.
+
+## Dialogs concernés dans `src/pages/Admin.tsx`
+
+| Ligne | Dialog |
+|------|--------|
+| 3467 | (premier dialog, max-w-2xl) |
+| 3731 | **Éditer la proposition** |
+| 3932 | dialog max-w-2xl (max-h-[85vh]) |
+| 4051 | dialog max-w-3xl |
+| 4254 | dialog max-w-2xl |
+
+## Changement à appliquer
+
+Pour chacun de ces 5 `DialogContent`, remplacer la classe actuelle par le même pattern que `ContractInvoiceManager` / `AdminProposals` :
+
+```tsx
+<DialogContent className="w-[min(<largeur>,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+  <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
+    <DialogTitle ... />
+  </DialogHeader>
+  <div className="space-y-5 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    {/* contenu existant */}
+  </div>
+</DialogContent>
+```
+
+Largeur cible :
+- `max-w-2xl` → `42rem`
+- `max-w-3xl` → `48rem`
+
+## Hors scope
+
+- Aucun changement de logique métier, d'emails, de données.
+- Les 4 petits dialogs (`max-w-md` lignes 4320/4357/4398) ne sont pas affectés car courts — ne pas y toucher.
+- Aucun changement dans les fichiers déjà corrigés.
+
+## Vérification
+
+Capture Playwright en viewport 1139×779 sur `/admin?tab=propositions` :
+1. Ouvrir "Éditer la proposition" sur une proposition envoyée → header visible, contenu défilable, bouton bas atteignable.
+2. Vérifier les autres dialogs (envoi, prévisualisation) ouverts depuis Admin.tsx.
