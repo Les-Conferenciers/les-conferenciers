@@ -275,6 +275,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [speakerEmailSubject, setSpeakerEmailSubject] = useState("");
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
+  const [savingSpeakerDraft, setSavingSpeakerDraft] = useState(false);
   const [speakerEmailType, setSpeakerEmailType] = useState<"info" | "contract">("info");
   const [speakerEmailAddressing, setSpeakerEmailAddressing] = useState<"formal" | "informal">("formal");
 
