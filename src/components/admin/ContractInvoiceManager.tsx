@@ -400,7 +400,7 @@ Nelly Sabde - Les Conférenciers`;
     setSavingContractDraft(true);
     const { error } = await supabase
       .from("contracts")
-      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, email_cc: contractEmailCc.trim() || null } as any)
       .eq("id", contract.id);
     if (error) {
       toast.error("Erreur d'enregistrement");
@@ -416,16 +416,18 @@ Nelly Sabde - Les Conférenciers`;
     if (!contract) return;
     setSendingContract(true);
     try {
+      const ccList = contractEmailCc.split(",").map((e) => e.trim()).filter(Boolean);
       // Persist current draft before sending so the next open reflects last state
       await supabase
         .from("contracts")
-        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, email_cc: contractEmailCc.trim() || null } as any)
         .eq("id", contract.id);
       const { error } = await supabase.functions.invoke("send-contract-email", {
         body: {
           contract_id: contract.id,
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
+          cc_emails: ccList,
           attachments: contractEmailAttachments,
         },
       });
