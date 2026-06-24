@@ -691,6 +691,7 @@ const AdminProposalsContent = () => {
   const [editMessage, setEditMessage] = useState("");
   const [editEmailSubject, setEditEmailSubject] = useState("");
   const [editEmailBody, setEditEmailBody] = useState("");
+  const [editEmailCc, setEditEmailCc] = useState("");
   const [editSelectedSpeakers, setEditSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [proposalType, setProposalType] = useState<ProposalType>("classique");
   const [globalCommission, setGlobalCommission] = useState<number>(0);
@@ -1422,6 +1423,7 @@ const AdminProposalsContent = () => {
         client_phone: clientPhone || null,
         previous_proposal_id: linkId || null,
         internal_notes: internalNotes.trim() || null,
+        email_cc: ccEmails.trim() || null,
         next_reminder_date: defaultReminderDate,
       } as any)
       .select()
@@ -1623,6 +1625,7 @@ const AdminProposalsContent = () => {
       setEditEmailSubject(p.email_subject || getDefaultEmailSubject(p.client_name));
       setEditEmailBody(p.email_body || getDefaultEmailBody(p.recipient_name || "", p.client_name));
     }
+    setEditEmailCc(((p as any).email_cc || "") as string);
     setEditSelectedSpeakers(proposalSpeakers);
     setEditInternalNotes(((p as any).internal_notes || "") as string);
     setShowLeadsPanel(true);
@@ -1654,6 +1657,7 @@ const AdminProposalsContent = () => {
         message: pType === "classique" ? editEmailBody || null : null,
         email_subject: editEmailSubject || null,
         email_body: editEmailBody || null,
+        email_cc: editEmailCc.trim() || null,
         internal_notes: editInternalNotes.trim() || null,
       } as any)
       .eq("id", editingProposal.id);
@@ -1698,8 +1702,12 @@ const AdminProposalsContent = () => {
 
     if (andSend) {
       try {
+        const editCcList = editEmailCc
+          .split(/[,;]/)
+          .map((e) => e.trim())
+          .filter((e) => e.includes("@"));
         const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", {
-          body: { proposal_id: editingProposal.id },
+          body: { proposal_id: editingProposal.id, cc: editCcList.length > 0 ? editCcList : undefined },
         });
         if (sendErr) throw sendErr;
         const sentAt = new Date().toISOString();
@@ -3864,6 +3872,15 @@ const AdminProposalsContent = () => {
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Objet</Label>
                         <Input value={editEmailSubject} onChange={(e) => setEditEmailSubject(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">CC (séparés par , ou ;)</Label>
+                        <Input
+                          type="text"
+                          placeholder="email1@exemple.com, email2@exemple.com"
+                          value={editEmailCc}
+                          onChange={(e) => setEditEmailCc(e.target.value)}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Corps du mail</Label>

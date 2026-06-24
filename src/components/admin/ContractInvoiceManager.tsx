@@ -144,6 +144,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
   const [invoiceEmailSubject, setInvoiceEmailSubject] = useState("");
   const [invoiceEmailBody, setInvoiceEmailBody] = useState("");
+  const [invoiceEmailCc, setInvoiceEmailCc] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
 
@@ -534,6 +535,7 @@ ${inv.due_date ? `• Échéance : ${new Date(inv.due_date).toLocaleDateString("
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
+    setInvoiceEmailCc(((inv as any).email_cc || "") as string);
     setInvoiceEmailOpen(true);
   };
 
@@ -541,17 +543,22 @@ Nelly Sabde - Les Conférenciers`);
     if (!emailInvoice) return;
     setSendingInvoice(true);
     try {
+      const ccList = invoiceEmailCc
+        .split(/[,;]/)
+        .map((e) => e.trim())
+        .filter((e) => e.includes("@"));
       const { error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
+          cc: ccList.length > 0 ? ccList : undefined,
         },
       });
       if (error) throw error;
       await supabase
         .from("invoices")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .update({ status: "sent", sent_at: new Date().toISOString(), email_cc: invoiceEmailCc.trim() || null } as any)
         .eq("id", emailInvoice.id);
       toast.success(`Facture ${emailInvoice.invoice_number} envoyée !`);
       setInvoiceEmailOpen(false);
@@ -1235,6 +1242,15 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
               <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">CC (séparés par , ou ;)</Label>
+              <Input
+                type="text"
+                placeholder="email1@exemple.com, email2@exemple.com"
+                value={invoiceEmailCc}
+                onChange={(e) => setInvoiceEmailCc(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>

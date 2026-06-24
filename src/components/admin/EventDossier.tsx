@@ -2598,56 +2598,109 @@ Nelly Sabde - Les Conférenciers`);
             </div>
 
             {/* Speaker selector — allows changing the assigned speaker even after contract creation */}
-            {proposal.proposal_speakers.length > 1 && (
+            {proposal.proposal_speakers.length >= 1 && (
               <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
                 <Label className="text-xs font-semibold flex items-center gap-2">
                   <User className="h-3.5 w-3.5" /> Conférencier retenu pour ce contrat
                 </Label>
-                <div className="flex flex-wrap gap-2">
-                  {proposal.proposal_speakers.map((ps) => {
-                    const isSelected = event?.selected_speaker_id === ps.speaker_id;
-                    return (
-                      <button
-                        key={ps.speaker_id}
-                        type="button"
-                        onClick={async () => {
-                          if (!ps.speaker_id || !event) return;
-                          await supabase
-                            .from("events")
-                            .update({ selected_speaker_id: ps.speaker_id } as any)
-                            .eq("id", event.id);
-                          if (contract)
+                {proposal.proposal_speakers.length > 1 && (
+                  <div className="flex flex-wrap gap-2">
+                    {proposal.proposal_speakers.map((ps) => {
+                      const isSelected = event?.selected_speaker_id === ps.speaker_id;
+                      return (
+                        <button
+                          key={ps.speaker_id}
+                          type="button"
+                          onClick={async () => {
+                            if (!ps.speaker_id || !event) return;
                             await supabase
-                              .from("contracts")
+                              .from("events")
                               .update({ selected_speaker_id: ps.speaker_id } as any)
-                              .eq("id", contract.id);
-                          // Rebuild lines for the newly selected speaker
-
-                          const newLines = [
-                            {
-                              id: generateId(),
-                              label: ps.speakers?.name || "Conférencier",
-                              amount_ht: ps.total_price || 0,
-                              tva_rate: 20,
-                              type: "speaker" as const,
-                            },
-                          ];
-                          setContractLines(newLines);
-                          fetchData();
-                          toast.success("Conférencier mis à jour");
-                        }}
-                        className={cn(
-                          "px-3 py-1.5 rounded-md border text-xs transition-all",
-                          isSelected
-                            ? "border-primary bg-primary text-primary-foreground font-medium"
-                            : "border-border bg-background hover:border-primary/50",
-                        )}
-                      >
-                        {ps.speakers?.name || "—"}
-                        {isSelected && <CheckCircle className="h-3 w-3 inline-block ml-1" />}
-                      </button>
-                    );
-                  })}
+                              .eq("id", event.id);
+                            if (contract)
+                              await supabase
+                                .from("contracts")
+                                .update({ selected_speaker_id: ps.speaker_id } as any)
+                                .eq("id", contract.id);
+                            const newLines = [
+                              {
+                                id: generateId(),
+                                label: ps.speakers?.name || "Conférencier",
+                                amount_ht: ps.total_price || 0,
+                                tva_rate: 20,
+                                type: "speaker" as const,
+                              },
+                            ];
+                            setContractLines(newLines);
+                            fetchData();
+                            toast.success("Conférencier mis à jour");
+                          }}
+                          className={cn(
+                            "px-3 py-1.5 rounded-md border text-xs transition-all",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground font-medium"
+                              : "border-border bg-background hover:border-primary/50",
+                          )}
+                        >
+                          {ps.speakers?.name || "—"}
+                          {isSelected && <CheckCircle className="h-3 w-3 inline-block ml-1" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Label className="text-[11px] text-muted-foreground">Choisir un autre conférencier (CRM) :</Label>
+                  <select
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs flex-1 min-w-[180px]"
+                    value=""
+                    onChange={async (e) => {
+                      const spId = e.target.value;
+                      if (!spId || !event) return;
+                      const sp = allSpeakers.find((s) => s.id === spId);
+                      if (!sp) return;
+                      // Insert proposal_speakers row if absent
+                      const exists = proposal.proposal_speakers.find((ps) => ps.speaker_id === spId);
+                      if (!exists) {
+                        await supabase.from("proposal_speakers").insert({
+                          proposal_id: proposal.id,
+                          speaker_id: spId,
+                          base_price: sp.base_fee || 0,
+                          total_price: sp.base_fee || 0,
+                        } as any);
+                      }
+                      await supabase
+                        .from("events")
+                        .update({ selected_speaker_id: spId } as any)
+                        .eq("id", event.id);
+                      if (contract)
+                        await supabase
+                          .from("contracts")
+                          .update({ selected_speaker_id: spId } as any)
+                          .eq("id", contract.id);
+                      setContractLines([
+                        {
+                          id: generateId(),
+                          label: sp.name,
+                          amount_ht: sp.base_fee || 0,
+                          tva_rate: 20,
+                          type: "speaker" as const,
+                        },
+                      ]);
+                      fetchData();
+                      toast.success(`Conférencier remplacé par ${sp.name}`);
+                    }}
+                  >
+                    <option value="">— Sélectionner —</option>
+                    {allSpeakers
+                      .slice()
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((sp) => (
+                        <option key={sp.id} value={sp.id}>
+                          {sp.name}
+                        </option>
+                      ))}
+                  </select>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
                   Modifier ici si le conférencier choisi diffère de la proposition initiale.
