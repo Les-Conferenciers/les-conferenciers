@@ -59,6 +59,7 @@ type Contract = {
   custom_clauses?: any;
   email_subject?: string | null;
   email_body?: string | null;
+  email_cc?: string | null;
 };
 
 type Invoice = {
@@ -123,6 +124,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
   const [contractEmailAttachments, setContractEmailAttachments] = useState<{ filename: string; content: string }[]>([]);
+  const [contractEmailCc, setContractEmailCc] = useState("");
   const [sendingContract, setSendingContract] = useState(false);
   const [savingContractDraft, setSavingContractDraft] = useState(false);
 
@@ -368,6 +370,7 @@ Bien cordialement,
 Nelly Sabde - Les Conférenciers`;
     setContractEmailSubject(contract.email_subject || defaultSubject);
     setContractEmailBody(contract.email_body || defaultBody);
+    setContractEmailCc(contract.email_cc || "");
     setContractEmailAttachments([]);
     setContractEmailOpen(true);
   };
@@ -397,7 +400,7 @@ Nelly Sabde - Les Conférenciers`;
     setSavingContractDraft(true);
     const { error } = await supabase
       .from("contracts")
-      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, email_cc: contractEmailCc.trim() || null } as any)
       .eq("id", contract.id);
     if (error) {
       toast.error("Erreur d'enregistrement");
@@ -413,16 +416,18 @@ Nelly Sabde - Les Conférenciers`;
     if (!contract) return;
     setSendingContract(true);
     try {
+      const ccList = contractEmailCc.split(",").map((e) => e.trim()).filter(Boolean);
       // Persist current draft before sending so the next open reflects last state
       await supabase
         .from("contracts")
-        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, email_cc: contractEmailCc.trim() || null } as any)
         .eq("id", contract.id);
       const { error } = await supabase.functions.invoke("send-contract-email", {
         body: {
           contract_id: contract.id,
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
+          cc_emails: ccList,
           attachments: contractEmailAttachments,
         },
       });
@@ -943,6 +948,14 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
               <Input value={contractEmailSubject} onChange={(e) => setContractEmailSubject(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">CC (séparés par virgules)</Label>
+              <Input
+                value={contractEmailCc}
+                onChange={(e) => setContractEmailCc(e.target.value)}
+                placeholder="email1@exemple.com, email2@exemple.com"
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>
