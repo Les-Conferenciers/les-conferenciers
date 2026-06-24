@@ -220,11 +220,19 @@ const LiaisonSheetView = () => {
             </p>
             <p>
               <span className="font-medium">Lieu de l'intervention :</span>{" "}
-              <Field editing={editing} value={eventLocation} onChange={setEventLocation} placeholder="À définir" />
+              {editing ? (
+                <EditableTextArea value={eventLocation} onChange={setEventLocation} placeholder="À définir" rows={2} />
+              ) : (
+                <span className="whitespace-pre-line">{eventLocation || "À définir"}</span>
+              )}
             </p>
             <p>
               <span className="font-medium">Horaires de l'intervention :</span>{" "}
-              <Field editing={editing} value={eventTime} onChange={setEventTime} placeholder="À définir" />
+              {editing ? (
+                <EditableTextArea value={eventTime} onChange={setEventTime} placeholder="À définir" rows={2} />
+              ) : (
+                <span className="whitespace-pre-line">{eventTime || "À définir"}</span>
+              )}
             </p>
             <p>
               <span className="font-medium">Auditoire :</span>{" "}
