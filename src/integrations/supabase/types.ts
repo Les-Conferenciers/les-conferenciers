@@ -71,6 +71,7 @@ export type Database = {
           deposit_required: boolean
           discount_percent: number | null
           email_body: string | null
+          email_cc: string | null
           email_subject: string | null
           event_date: string | null
           event_description: string | null
@@ -101,6 +102,7 @@ export type Database = {
           deposit_required?: boolean
           discount_percent?: number | null
           email_body?: string | null
+          email_cc?: string | null
           email_subject?: string | null
           event_date?: string | null
           event_description?: string | null
@@ -131,6 +133,7 @@ export type Database = {
           deposit_required?: boolean
           discount_percent?: number | null
           email_body?: string | null
+          email_cc?: string | null
           email_subject?: string | null
           event_date?: string | null
           event_description?: string | null
