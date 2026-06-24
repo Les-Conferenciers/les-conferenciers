@@ -1120,6 +1120,10 @@ export type Database = {
       generate_invoice_number:
         | { Args: never; Returns: string }
         | { Args: { _proposal_id: string }; Returns: string }
+        | {
+            Args: { _invoice_type?: string; _proposal_id: string }
+            Returns: string
+          }
       get_invoice_bdc: { Args: { _invoice_id: string }; Returns: string }
     }
     Enums: {

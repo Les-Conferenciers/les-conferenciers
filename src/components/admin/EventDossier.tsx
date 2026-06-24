@@ -1905,17 +1905,49 @@ Nelly Sabde - Les Conférenciers`);
                   ? "bg-green-100 text-green-700 border border-green-300"
                   : contract.status === "en_attente_paiement"
                     ? "bg-orange-100 text-orange-700 border border-orange-300"
-                    : "bg-red-100 text-red-700 border border-red-300"
+                    : contract.status === "archived"
+                      ? "bg-gray-100 text-gray-700 border border-gray-300"
+                      : "bg-red-100 text-red-700 border border-red-300"
               }`}
             >
               {contract.status === "signed"
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
                 : contract.status === "en_attente_paiement"
                   ? "💶 En attente de paiement"
-                  : contract.status === "sent"
-                    ? "⏳ Non signé (envoyé)"
-                    : "⚠️ Non signé (brouillon)"}
+                  : contract.status === "archived"
+                    ? "📦 Archivé"
+                    : contract.status === "sent"
+                      ? "⏳ Non signé (envoyé)"
+                      : "⚠️ Non signé (brouillon)"}
             </span>
+            {/* #14 — Changement de statut manuel */}
+            <Select
+              value={contract.status}
+              onValueChange={async (newStatus) => {
+                if (newStatus === contract.status) return;
+                const { error } = await supabase
+                  .from("contracts")
+                  .update({ status: newStatus } as any)
+                  .eq("id", contract.id);
+                if (error) {
+                  toast.error("Erreur changement de statut");
+                } else {
+                  toast.success("Statut mis à jour");
+                  fetchData();
+                }
+              }}
+            >
+              <SelectTrigger className="h-7 text-xs w-auto gap-1 px-2" title="Changer le statut">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Brouillon</SelectItem>
+                <SelectItem value="sent">En cours (envoyé)</SelectItem>
+                <SelectItem value="signed">Signé</SelectItem>
+                <SelectItem value="en_attente_paiement">En attente de paiement</SelectItem>
+                <SelectItem value="archived">Archivé</SelectItem>
+              </SelectContent>
+            </Select>
             {(contract.version || 1) > 1 && (
               <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 border border-blue-300">
                 v{contract.version}
