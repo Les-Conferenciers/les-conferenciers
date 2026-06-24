@@ -275,6 +275,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [speakerEmailSubject, setSpeakerEmailSubject] = useState("");
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
+  const [savingSpeakerDraft, setSavingSpeakerDraft] = useState(false);
   const [speakerEmailType, setSpeakerEmailType] = useState<"info" | "contract">("info");
   const [speakerEmailAddressing, setSpeakerEmailAddressing] = useState<"formal" | "informal">("formal");
 
@@ -1100,6 +1101,11 @@ Nelly Sabde - Les Conférenciers`;
       : "à définir";
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const travel = ps?.travel_costs || 0;
+    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
+    const vhrStr = travel > 0
+      ? `${travel.toLocaleString("fr-FR")} € HT`
+      : "Pris en charge directement par le client";
 
     const ack = vouvoi
       ? "Pourriez-vous m'accuser réception de ce mail ?"
@@ -1125,7 +1131,8 @@ ${line("👥 Auditoire :", event?.audience_size || "à définir")}
 ${line("📋 Thématique :", event?.theme || "à définir")}
 ${contract?.event_description ? `<p>📝 Détails : <strong>${contract.event_description.replace(/\n/g, "<br>")}</strong></p>` : ""}
 ${line("🏢 Client :", proposal.client_name)}
-${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("💰 Budget :", budgetStr)}
+${line("🚗 Frais VHR :", vhrStr)}
 ${event?.contact_on_site_name ? `<p>👤 Contact sur place : <strong>${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}</strong></p>` : ""}
 ${line("🚗 Arrivée :", event?.arrival_info)}
 ${line("🅿️ Parking :", event?.parking_info)}
@@ -1149,7 +1156,8 @@ ${event?.special_requests ? `<p>📝 Remarques : ${event.special_requests}</p>` 
 ${line("📅 Date de l'évènement :", dateStr)}
 ${line("📍 Lieu :", contract?.event_location || "à définir")}
 ${line("🏢 Client :", proposal.client_name)}
-${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("💰 Budget :", budgetStr)}
+${line("🚗 Frais VHR :", vhrStr)}
 <p><strong>${ack}</strong> ${sendBack}</p>
 <p>${sign}</p>
 <p>Nelly Sabde - Les Conférenciers</p>`;
@@ -1161,7 +1169,20 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
     const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
     setSpeakerEmailAddressing(initialAddressing);
     setSpeakerEmailTo(speaker?.email || "");
-    setSpeakerEmailCc("");
+
+    // Restore saved draft if present
+    const ev = event as any;
+    const savedSubject = type === "info" ? ev?.speaker_info_email_subject : ev?.speaker_contract_email_subject;
+    const savedBody = type === "info" ? ev?.speaker_info_email_body : ev?.speaker_contract_email_body;
+    const savedCc = type === "info" ? ev?.speaker_info_email_cc : ev?.speaker_contract_email_cc;
+    setSpeakerEmailCc(savedCc || "");
+
+    if (savedSubject || savedBody) {
+      setSpeakerEmailSubject(savedSubject || buildSpeakerEmailSubject(type));
+      setSpeakerEmailBody(savedBody || buildSpeakerEmailBody(type, initialAddressing));
+      setSpeakerEmailOpen(true);
+      return;
+    }
 
     // Try DB template (speaker_event_info / contract_to_speaker), fallback to hardcoded
     await loadEmailTemplates();
@@ -1170,6 +1191,11 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const travel = ps?.travel_costs || 0;
+    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
+    const vhrStr = travel > 0
+      ? `${travel.toLocaleString("fr-FR")} € HT`
+      : "Pris en charge directement par le client";
     const tplKey = type === "info" ? "speaker_event_info" : "contract_to_speaker";
     const tpl = renderTpl(tplKey, {
       prenom_conferencier: firstName,
@@ -1182,13 +1208,44 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
       duree: event?.conference_duration || "",
       auditoire: event?.audience_size || "à définir",
       thematique: event?.theme || "à définir",
-      budget: budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir",
+      budget: budgetStr,
+      frais_vhr: vhrStr,
+      details: contract?.event_description || "",
+      format: contract?.event_format || "",
       dress_code: event?.dress_code || "",
       agent_nom: "Nelly Sabde",
     });
     setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));
     setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, initialAddressing));
     setSpeakerEmailOpen(true);
+  };
+
+  const persistSpeakerEmailDraft = async () => {
+    if (!event) return null;
+    const patch: any = {};
+    if (speakerEmailType === "info") {
+      patch.speaker_info_email_subject = speakerEmailSubject;
+      patch.speaker_info_email_body = speakerEmailBody;
+      patch.speaker_info_email_cc = speakerEmailCc;
+    } else {
+      patch.speaker_contract_email_subject = speakerEmailSubject;
+      patch.speaker_contract_email_body = speakerEmailBody;
+      patch.speaker_contract_email_cc = speakerEmailCc;
+    }
+    return await supabase.from("events").update(patch).eq("id", event.id);
+  };
+
+  const handleSaveSpeakerEmailDraft = async () => {
+    setSavingSpeakerDraft(true);
+    const res = await persistSpeakerEmailDraft();
+    if (res && (res as any).error) {
+      toast.error("Erreur d'enregistrement");
+    } else {
+      toast.success("Brouillon enregistré");
+      setSpeakerEmailOpen(false);
+      fetchData();
+    }
+    setSavingSpeakerDraft(false);
   };
 
   const handleSendSpeakerEmail = async () => {
@@ -1216,6 +1273,8 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
     }
 
     try {
+      // Persist draft before sending so reopening reflects last edits
+      await persistSpeakerEmailDraft();
       const { error } = await supabase.functions.invoke("send-contact-email", {
         body: {
           to: toList,
@@ -3244,10 +3303,15 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-xs">Corps du mail</Label>
               <RichTextEditor value={speakerEmailBody} onChange={setSpeakerEmailBody} />
             </div>
-            <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
-              <Send className="h-4 w-4 mr-2" />
-              {sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" className="flex-1" onClick={handleSaveSpeakerEmailDraft} disabled={savingSpeakerDraft || sendingSpeakerEmail}>
+                {savingSpeakerDraft ? "Enregistrement…" : "Enregistrer le brouillon"}
+              </Button>
+              <Button className="flex-1" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail || savingSpeakerDraft}>
+                <Send className="h-4 w-4 mr-2" />
+                {sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

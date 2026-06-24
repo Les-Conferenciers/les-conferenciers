@@ -246,7 +246,13 @@ export type Database = {
           speaker_contact_email: string | null
           speaker_contact_name: string | null
           speaker_contact_phone: string | null
+          speaker_contract_email_body: string | null
+          speaker_contract_email_cc: string | null
+          speaker_contract_email_subject: string | null
           speaker_deposit_paid_at: string | null
+          speaker_info_email_body: string | null
+          speaker_info_email_cc: string | null
+          speaker_info_email_subject: string | null
           speaker_paid_at: string | null
           speaker_signed_contract_at: string | null
           special_requests: string | null
@@ -295,7 +301,13 @@ export type Database = {
           speaker_contact_email?: string | null
           speaker_contact_name?: string | null
           speaker_contact_phone?: string | null
+          speaker_contract_email_body?: string | null
+          speaker_contract_email_cc?: string | null
+          speaker_contract_email_subject?: string | null
           speaker_deposit_paid_at?: string | null
+          speaker_info_email_body?: string | null
+          speaker_info_email_cc?: string | null
+          speaker_info_email_subject?: string | null
           speaker_paid_at?: string | null
           speaker_signed_contract_at?: string | null
           special_requests?: string | null
@@ -344,7 +356,13 @@ export type Database = {
           speaker_contact_email?: string | null
           speaker_contact_name?: string | null
           speaker_contact_phone?: string | null
+          speaker_contract_email_body?: string | null
+          speaker_contract_email_cc?: string | null
+          speaker_contract_email_subject?: string | null
           speaker_deposit_paid_at?: string | null
+          speaker_info_email_body?: string | null
+          speaker_info_email_cc?: string | null
+          speaker_info_email_subject?: string | null
           speaker_paid_at?: string | null
           speaker_signed_contract_at?: string | null
           special_requests?: string | null
