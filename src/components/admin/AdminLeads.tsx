@@ -134,7 +134,17 @@ const AdminLeads = () => {
       lead.additional_info?.toLowerCase().includes("test automatique quotidien");
   };
 
-  const filteredLeads = hideTest ? leads.filter(l => !isTestLead(l)) : leads;
+  const baseLeads = hideTest ? leads.filter(l => !isTestLead(l)) : leads;
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredLeads = normalizedSearch
+    ? baseLeads.filter((l) => {
+        const hay = [l.email, l.first_name, l.last_name, l.company, l.phone]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(normalizedSearch);
+      })
+    : baseLeads;
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedLeads = filteredLeads.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
