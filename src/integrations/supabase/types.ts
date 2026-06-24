@@ -440,6 +440,7 @@ export type Database = {
           contract_id: string | null
           created_at: string
           due_date: string | null
+          email_cc: string | null
           id: string
           invoice_number: string
           invoice_type: string
@@ -457,6 +458,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           due_date?: string | null
+          email_cc?: string | null
           id?: string
           invoice_number: string
           invoice_type?: string
@@ -474,6 +476,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           due_date?: string | null
+          email_cc?: string | null
           id?: string
           invoice_number?: string
           invoice_type?: string
@@ -659,6 +662,7 @@ export type Database = {
           client_phone: string | null
           created_at: string
           email_body: string | null
+          email_cc: string | null
           email_subject: string | null
           event_date_text: string | null
           event_location: string | null
@@ -691,6 +695,7 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           email_body?: string | null
+          email_cc?: string | null
           email_subject?: string | null
           event_date_text?: string | null
           event_location?: string | null
@@ -723,6 +728,7 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           email_body?: string | null
+          email_cc?: string | null
           email_subject?: string | null
           event_date_text?: string | null
           event_location?: string | null
