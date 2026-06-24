@@ -535,6 +535,7 @@ ${inv.due_date ? `• Échéance : ${new Date(inv.due_date).toLocaleDateString("
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
+    setInvoiceEmailCc(((inv as any).email_cc || "") as string);
     setInvoiceEmailOpen(true);
   };
 
