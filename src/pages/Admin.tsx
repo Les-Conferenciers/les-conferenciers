@@ -1423,6 +1423,7 @@ const AdminProposalsContent = () => {
         client_phone: clientPhone || null,
         previous_proposal_id: linkId || null,
         internal_notes: internalNotes.trim() || null,
+        email_cc: ccEmails.trim() || null,
         next_reminder_date: defaultReminderDate,
       } as any)
       .select()
