@@ -53,10 +53,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { invoice_id, email_subject, email_body, to, recipient_name } = await req.json();
+    const { invoice_id, email_subject, email_body, to, recipient_name, cc } = await req.json();
     if (!invoice_id) {
       return new Response(JSON.stringify({ error: "invoice_id required" }), { status: 400, headers: corsHeaders });
     }
+    const ccList = (Array.isArray(cc) ? cc : String(cc || "").split(/[,;]/))
+      .map((e: string) => (e || "").trim())
+      .filter((e: string) => e && e.includes("@"));
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
