@@ -176,9 +176,9 @@ const InvoiceView = () => {
 
       <div className="invoice-root max-w-[820px] mx-auto p-8 print:p-4 text-[13px] leading-relaxed text-gray-900">
         {/* Header avec logo */}
-        <div className="flex justify-between items-start mb-8 pb-6 border-b-2 border-gray-900">
+        <div className="invoice-header flex justify-between items-start mb-8 pb-6 border-b-2 border-gray-900">
           <div className="flex-1">
-            <img src="/images/les-conferenciers-banniere.png" alt="Les Conférenciers" className="h-14 w-auto mb-3" />
+            <img src="/images/les-conferenciers-banniere.png" alt="Les Conférenciers" className="invoice-logo h-14 w-auto mb-3" />
             <p className="text-xs text-gray-600 leading-snug">
               {COMPANY.legalForm} – {COMPANY.fullAddress}<br />
               SIRET : {COMPANY.siret} – TVA : {COMPANY.tvaIntra}
