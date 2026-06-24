@@ -370,6 +370,7 @@ Bien cordialement,
 Nelly Sabde - Les Conférenciers`;
     setContractEmailSubject(contract.email_subject || defaultSubject);
     setContractEmailBody(contract.email_body || defaultBody);
+    setContractEmailCc(contract.email_cc || "");
     setContractEmailAttachments([]);
     setContractEmailOpen(true);
   };
