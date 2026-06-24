@@ -1101,6 +1101,11 @@ Nelly Sabde - Les Conférenciers`;
       : "à définir";
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const travel = ps?.travel_costs || 0;
+    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
+    const vhrStr = travel > 0
+      ? `${travel.toLocaleString("fr-FR")} € HT`
+      : "Pris en charge directement par le client";
 
     const ack = vouvoi
       ? "Pourriez-vous m'accuser réception de ce mail ?"
@@ -1126,7 +1131,8 @@ ${line("👥 Auditoire :", event?.audience_size || "à définir")}
 ${line("📋 Thématique :", event?.theme || "à définir")}
 ${contract?.event_description ? `<p>📝 Détails : <strong>${contract.event_description.replace(/\n/g, "<br>")}</strong></p>` : ""}
 ${line("🏢 Client :", proposal.client_name)}
-${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("💰 Budget :", budgetStr)}
+${line("🚗 Frais VHR :", vhrStr)}
 ${event?.contact_on_site_name ? `<p>👤 Contact sur place : <strong>${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}</strong></p>` : ""}
 ${line("🚗 Arrivée :", event?.arrival_info)}
 ${line("🅿️ Parking :", event?.parking_info)}
@@ -1150,7 +1156,8 @@ ${event?.special_requests ? `<p>📝 Remarques : ${event.special_requests}</p>` 
 ${line("📅 Date de l'évènement :", dateStr)}
 ${line("📍 Lieu :", contract?.event_location || "à définir")}
 ${line("🏢 Client :", proposal.client_name)}
-${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("💰 Budget :", budgetStr)}
+${line("🚗 Frais VHR :", vhrStr)}
 <p><strong>${ack}</strong> ${sendBack}</p>
 <p>${sign}</p>
 <p>Nelly Sabde - Les Conférenciers</p>`;
