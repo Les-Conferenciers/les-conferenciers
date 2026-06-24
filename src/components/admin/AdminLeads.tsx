@@ -56,6 +56,7 @@ const AdminLeads = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hideTest, setHideTest] = useState(true);
+  const [search, setSearch] = useState("");
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [creatingProposal, setCreatingProposal] = useState(false);
 
