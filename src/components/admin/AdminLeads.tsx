@@ -181,6 +181,14 @@ const AdminLeads = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <input
+            type="search"
+            placeholder="Rechercher par email, nom, entreprise…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="h-8 w-64 max-w-full rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        <div className="flex items-center gap-2">
           {totalPages > 1 && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Button variant="ghost" size="sm" disabled={currentPage <= 1} onClick={() => setPage(p => p - 1)}>
