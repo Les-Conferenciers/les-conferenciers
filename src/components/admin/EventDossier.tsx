@@ -3303,10 +3303,15 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-xs">Corps du mail</Label>
               <RichTextEditor value={speakerEmailBody} onChange={setSpeakerEmailBody} />
             </div>
-            <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
-              <Send className="h-4 w-4 mr-2" />
-              {sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" className="flex-1" onClick={handleSaveSpeakerEmailDraft} disabled={savingSpeakerDraft || sendingSpeakerEmail}>
+                {savingSpeakerDraft ? "Enregistrement…" : "Enregistrer le brouillon"}
+              </Button>
+              <Button className="flex-1" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail || savingSpeakerDraft}>
+                <Send className="h-4 w-4 mr-2" />
+                {sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
