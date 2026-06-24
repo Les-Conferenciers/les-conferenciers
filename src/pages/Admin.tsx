@@ -3873,6 +3873,15 @@ const AdminProposalsContent = () => {
                         <Input value={editEmailSubject} onChange={(e) => setEditEmailSubject(e.target.value)} />
                       </div>
                       <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">CC (séparés par , ou ;)</Label>
+                        <Input
+                          type="text"
+                          placeholder="email1@exemple.com, email2@exemple.com"
+                          value={editEmailCc}
+                          onChange={(e) => setEditEmailCc(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Corps du mail</Label>
                         <SimpleRichTextEditor value={editEmailBody} onChange={setEditEmailBody} rows={10} />
                       </div>
