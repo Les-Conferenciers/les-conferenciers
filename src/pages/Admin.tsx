@@ -1701,8 +1701,12 @@ const AdminProposalsContent = () => {
 
     if (andSend) {
       try {
+        const editCcList = editEmailCc
+          .split(/[,;]/)
+          .map((e) => e.trim())
+          .filter((e) => e.includes("@"));
         const { error: sendErr } = await supabase.functions.invoke("send-proposal-email", {
-          body: { proposal_id: editingProposal.id },
+          body: { proposal_id: editingProposal.id, cc: editCcList.length > 0 ? editCcList : undefined },
         });
         if (sendErr) throw sendErr;
         const sentAt = new Date().toISOString();
