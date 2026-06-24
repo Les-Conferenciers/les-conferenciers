@@ -124,6 +124,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
   const [contractEmailAttachments, setContractEmailAttachments] = useState<{ filename: string; content: string }[]>([]);
+  const [contractEmailCc, setContractEmailCc] = useState("");
   const [sendingContract, setSendingContract] = useState(false);
   const [savingContractDraft, setSavingContractDraft] = useState(false);
 
