@@ -153,13 +153,28 @@ const InvoiceView = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Print: forcer A4 avec marges réduites pour tenir sur 1 page (acompte/solde) */}
+      <style>{`
+        @page { size: A4; margin: 8mm 10mm; }
+        @media print {
+          html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .invoice-root { font-size: 11px !important; line-height: 1.35 !important; }
+          .invoice-root section { margin-bottom: 10px !important; }
+          .invoice-root .invoice-header { margin-bottom: 14px !important; padding-bottom: 10px !important; }
+          .invoice-root table td, .invoice-root table th { padding: 6px 8px !important; }
+          .invoice-root .invoice-logo { height: 36px !important; }
+          .invoice-root h2 { margin-bottom: 4px !important; }
+          .invoice-root .totals-row { padding-top: 4px !important; padding-bottom: 4px !important; }
+          .invoice-root footer { margin-top: 12px !important; padding-top: 6px !important; }
+        }
+      `}</style>
       <div className="print:hidden fixed top-4 right-4 z-50">
         <Button onClick={handlePrint} className="gap-2">
           <Printer className="h-4 w-4" /> Imprimer / PDF
         </Button>
       </div>
 
-      <div className="max-w-[820px] mx-auto p-8 print:p-6 text-[13px] leading-relaxed text-gray-900">
+      <div className="invoice-root max-w-[820px] mx-auto p-8 print:p-4 text-[13px] leading-relaxed text-gray-900">
         {/* Header avec logo */}
         <div className="flex justify-between items-start mb-8 pb-6 border-b-2 border-gray-900">
           <div className="flex-1">
