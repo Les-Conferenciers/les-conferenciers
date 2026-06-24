@@ -1244,6 +1244,15 @@ Nelly Sabde - Les Conférenciers`);
               <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
             </div>
             <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">CC (séparés par , ou ;)</Label>
+              <Input
+                type="text"
+                placeholder="email1@exemple.com, email2@exemple.com"
+                value={invoiceEmailCc}
+                onChange={(e) => setInvoiceEmailCc(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>
               <Textarea
                 value={invoiceEmailBody}
