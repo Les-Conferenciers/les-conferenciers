@@ -543,17 +543,22 @@ Nelly Sabde - Les Conférenciers`);
     if (!emailInvoice) return;
     setSendingInvoice(true);
     try {
+      const ccList = invoiceEmailCc
+        .split(/[,;]/)
+        .map((e) => e.trim())
+        .filter((e) => e.includes("@"));
       const { error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
+          cc: ccList.length > 0 ? ccList : undefined,
         },
       });
       if (error) throw error;
       await supabase
         .from("invoices")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .update({ status: "sent", sent_at: new Date().toISOString(), email_cc: invoiceEmailCc.trim() || null } as any)
         .eq("id", emailInvoice.id);
       toast.success(`Facture ${emailInvoice.invoice_number} envoyée !`);
       setInvoiceEmailOpen(false);
