@@ -59,6 +59,7 @@ type Contract = {
   custom_clauses?: any;
   email_subject?: string | null;
   email_body?: string | null;
+  email_cc?: string | null;
 };
 
 type Invoice = {
