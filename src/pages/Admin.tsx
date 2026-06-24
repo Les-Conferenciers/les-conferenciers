@@ -691,6 +691,7 @@ const AdminProposalsContent = () => {
   const [editMessage, setEditMessage] = useState("");
   const [editEmailSubject, setEditEmailSubject] = useState("");
   const [editEmailBody, setEditEmailBody] = useState("");
+  const [editEmailCc, setEditEmailCc] = useState("");
   const [editSelectedSpeakers, setEditSelectedSpeakers] = useState<ProposalSpeaker[]>([]);
   const [proposalType, setProposalType] = useState<ProposalType>("classique");
   const [globalCommission, setGlobalCommission] = useState<number>(0);
