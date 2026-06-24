@@ -113,15 +113,17 @@ Deno.serve(async (req) => {
   </div>
 </body></html>`;
 
+    const invoicePayload: any = {
+      from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
+      to: recipientEmail,
+      subject,
+      html: emailHtml,
+    };
+    if (ccList.length > 0) invoicePayload.cc = ccList;
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
-        to: recipientEmail,
-        subject,
-        html: emailHtml,
-      }),
+      body: JSON.stringify(invoicePayload),
     });
 
     if (!resendRes.ok) {
