@@ -1656,6 +1656,7 @@ const AdminProposalsContent = () => {
         message: pType === "classique" ? editEmailBody || null : null,
         email_subject: editEmailSubject || null,
         email_body: editEmailBody || null,
+        email_cc: editEmailCc.trim() || null,
         internal_notes: editInternalNotes.trim() || null,
       } as any)
       .eq("id", editingProposal.id);
