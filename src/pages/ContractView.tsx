@@ -141,7 +141,12 @@ const ContractView = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAdmin(!!session);
-      if (session) setEditing(true);
+      if (session) {
+        setEditing(true);
+        supabase.from("speakers").select("id, name, gender").order("name").then(({ data }) => {
+          if (data) setAllSpeakers(data as any);
+        });
+      }
     });
     fetchAll();
   }, [id]);
