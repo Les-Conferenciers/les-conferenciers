@@ -92,46 +92,55 @@ const InvoiceView = () => {
   const eventLocation = contract?.event_location || "—";
   const eventTime = contract?.event_time || "—";
 
-  // Item 10 : lignes "Frais de déplacement" et "Autre" doivent apparaître séparément.
-  // Multiplicateur selon le type de facture (acompte/solde = 50%, total = 100%).
-  const invoiceShare = invoice.invoice_type === "total" ? 1 : 0.5;
+  // Une facture d'acompte/solde doit présenter le montant TOTAL de la prestation,
+  // puis indiquer en bas le montant de l'acompte/solde demandé.
+  const isPartial = invoice.invoice_type === "acompte" || invoice.invoice_type === "solde";
   const rawLines: any[] = Array.isArray(contract?.contract_lines) ? contract.contract_lines : [];
   const speakerLines = rawLines.filter((l: any) => l.type === "speaker");
   const extraLines = rawLines.filter((l: any) => l.type === "travel" || l.type === "custom");
   const commission = (contract as any)?.agency_commission || 0;
   const discountPct = contract?.discount_percent || 0;
 
-  // Speaker prestation fused (cachet + commission), prorated to the invoice share & discount.
   const speakerLinesHT = speakerLines.reduce((s: number, l: any) => s + (l.amount_ht || 0), 0);
   const extraLinesHT = extraLines.reduce((s: number, l: any) => s + (l.amount_ht || 0), 0);
   const allLinesSubtotal = speakerLinesHT + commission + extraLinesHT;
   const discountFactor = 1 - discountPct / 100;
-
-  // If we have detailed contract lines and total matches the invoice base, use them as breakdown.
-  // Otherwise fallback to a single fused line using invoice.amount_ht.
   const hasDetailedBreakdown = allLinesSubtotal > 0;
 
-  const speakerPrestationHT = hasDetailedBreakdown
-    ? Math.round((speakerLinesHT + commission) * discountFactor * invoiceShare * 100) / 100
-    : invoice.amount_ht;
+  // Toujours afficher 100% du montant dans le tableau (mention légale).
+  const fullSpeakerPrestationHT = hasDetailedBreakdown
+    ? Math.round((speakerLinesHT + commission) * discountFactor * 100) / 100
+    : (isPartial ? invoice.amount_ht * 2 : invoice.amount_ht);
 
-  const detailedExtraLines = hasDetailedBreakdown
+  const fullExtraLines = hasDetailedBreakdown
     ? extraLines.map((l: any) => ({
         label: l.label || (l.type === "travel" ? "Frais de déplacement" : "Autre"),
-        amount_ht: Math.round((l.amount_ht || 0) * discountFactor * invoiceShare * 100) / 100,
+        amount_ht: Math.round((l.amount_ht || 0) * discountFactor * 100) / 100,
       }))
     : [];
 
-  const detailedTotalHT =
-    speakerPrestationHT + detailedExtraLines.reduce((s, l) => s + l.amount_ht, 0);
+  const fullTotalLinesHT = fullSpeakerPrestationHT + fullExtraLines.reduce((s, l) => s + l.amount_ht, 0);
+  // Cohérence : si breakdown ne correspond pas, on retombe sur le doublement de invoice.amount_ht.
+  const useBreakdown = hasDetailedBreakdown && (
+    isPartial
+      ? Math.abs(fullTotalLinesHT - invoice.amount_ht * 2) < 1
+      : Math.abs(fullTotalLinesHT - invoice.amount_ht) < 1
+  );
 
-  // When breakdown matches invoice.amount_ht (typical case), display lines.
-  // Otherwise fallback to single line with invoice.amount_ht to avoid mismatch.
-  const useBreakdown =
-    hasDetailedBreakdown && Math.abs(detailedTotalHT - invoice.amount_ht) < 1;
-
-  const totalPrestationHT = useBreakdown ? speakerPrestationHT : invoice.amount_ht;
+  const totalPrestationHT = useBreakdown ? fullSpeakerPrestationHT : (isPartial ? invoice.amount_ht * 2 : invoice.amount_ht);
+  const detailedExtraLines = useBreakdown ? fullExtraLines : [];
   const vhr = invoice.vhr_estimate || 0;
+
+  // Montants affichés en haut (totaux 100%)
+  const fullAmountHT = totalPrestationHT + detailedExtraLines.reduce((s, l) => s + l.amount_ht, 0) + vhr;
+  const fullAmountTTC = fullAmountHT * (1 + invoice.tva_rate / 100);
+
+  // Montant réellement dû sur cette facture (50% pour acompte/solde, 100% sinon).
+  // Le VHR n'est en général pas inclus dans l'acompte — on conserve la logique existante
+  // basée sur invoice.amount_ht (stocké à 50% en base) + vhr de la facture.
+  const dueHT = invoice.amount_ht + vhr;
+  const dueTTC = dueHT * (1 + invoice.tva_rate / 100);
+  const otherHalfTTC = fullAmountTTC - dueTTC;
 
   const clientDisplayName = client?.company_name || proposal?.client_name || "";
   const bdcClean = (bdcNumber || "").replace(/^BDC[- ]*/i, "");
@@ -246,11 +255,6 @@ const InvoiceView = () => {
               <tr className="border-b border-gray-200">
                 <td className="py-3 px-3">
                   <p className="font-medium">Prestation de conférence — {speakerName}</p>
-                  {invoice.invoice_type !== "total" && (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {invoice.invoice_type === "acompte" ? "Acompte 50%" : "Solde 50%"}
-                    </p>
-                  )}
                 </td>
                 <td className="py-3 px-3 text-right font-medium">{totalPrestationHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</td>
               </tr>
@@ -258,11 +262,6 @@ const InvoiceView = () => {
                 <tr key={i} className="border-b border-gray-200">
                   <td className="py-3 px-3">
                     <p className="font-medium">{l.label}</p>
-                    {invoice.invoice_type !== "total" && (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {invoice.invoice_type === "acompte" ? "Acompte 50%" : "Solde 50%"}
-                      </p>
-                    )}
                   </td>
                   <td className="py-3 px-3 text-right font-medium">{l.amount_ht.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</td>
                 </tr>
@@ -279,30 +278,62 @@ const InvoiceView = () => {
             </tbody>
           </table>
 
-          {/* Totals */}
+          {/* Totals — affichage du montant total de la prestation (100%) */}
           <div className="mt-4 flex justify-end">
             <div className="w-72">
               <div className="flex justify-between py-1.5 border-b border-gray-200">
                 <span className="text-gray-600">Total HT</span>
-                <span className="font-medium">{(invoice.amount_ht + vhr).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span className="font-medium">{fullAmountHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-gray-200">
                 <span className="text-gray-600">TVA {invoice.tva_rate}%</span>
-                <span>{((invoice.amount_ht + vhr) * invoice.tva_rate / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span>{(fullAmountHT * invoice.tva_rate / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
               <div className="flex justify-between py-3 bg-gray-900 text-white px-3 mt-1 rounded">
                 <span className="font-bold">Total TTC</span>
-                <span className="font-bold">{((invoice.amount_ht + vhr) * (1 + invoice.tva_rate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span className="font-bold">{fullAmountTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
             </div>
           </div>
+
+          {/* Bloc acompte / solde — montant à régler sur cette facture */}
+          {isPartial && (
+            <div className="mt-4 flex justify-end">
+              <div className="w-72 border-2 border-gray-900 rounded p-3 bg-amber-50">
+                {invoice.invoice_type === "acompte" ? (
+                  <>
+                    <div className="flex justify-between py-1 text-sm">
+                      <span className="text-gray-700">Acompte demandé (50%) HT</span>
+                      <span className="font-medium">{dueHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-t border-gray-300 mt-1">
+                      <span className="font-bold">Net à payer TTC</span>
+                      <span className="font-bold">{dueTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                    </div>
+                    <p className="text-[11px] text-gray-600 mt-2 italic">Le solde ({otherHalfTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € TTC) sera facturé après l'intervention.</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between py-1 text-sm text-gray-600">
+                      <span>Acompte déjà versé (50%) TTC</span>
+                      <span>{otherHalfTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-t border-gray-300 mt-1">
+                      <span className="font-bold">Solde à régler TTC</span>
+                      <span className="font-bold">{dueTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Modalités de règlement (RIB) */}
         <section className="mb-6">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Modalités de règlement</h2>
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <p className="text-sm mb-2">Paiement par virement bancaire — référence à rappeler : <strong>{paymentRef}</strong></p>
+            <p className="text-sm mb-2">Paiement par virement bancaire — <strong>{dueTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € TTC</strong> — référence à rappeler : <strong>{paymentRef}</strong></p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
               <div><span className="text-gray-500">Titulaire :</span> {COMPANY.name}</div>
               <div><span className="text-gray-500">BIC :</span> {COMPANY.bic}</div>
