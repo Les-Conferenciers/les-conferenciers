@@ -210,8 +210,8 @@ const ContractView = () => {
         travel_costs: oldPs.travel_costs ?? null,
         agency_commission: oldPs.agency_commission ?? null,
         total_price: oldPs.total_price ?? 0,
-        base_price: oldPs.base_price ?? oldPs.total_price ?? 0,
       };
+
       const { data: existing } = await supabase
         .from("proposal_speakers")
         .select("id, total_price")
