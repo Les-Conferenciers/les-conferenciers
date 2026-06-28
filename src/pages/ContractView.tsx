@@ -76,6 +76,7 @@ const ContractView = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [allSpeakers, setAllSpeakers] = useState<{ id: string; name: string; gender: string | null }[]>([]);
 
   // Editable fields
   const [evDate, setEvDate] = useState("");
@@ -85,6 +86,7 @@ const ContractView = () => {
   const [evDescription, setEvDescription] = useState("");
   const [evAudience, setEvAudience] = useState("");
   const [evTheme, setEvTheme] = useState("");
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string>("");
 
   const fetchAll = async () => {
     const { data } = await supabase
