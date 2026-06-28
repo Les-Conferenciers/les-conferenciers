@@ -154,12 +154,15 @@ const ContractView = () => {
   const handleSave = async () => {
     if (!contract) return;
     setSaving(true);
+    const speakerChanged = selectedSpeakerId && selectedSpeakerId !== contract.selected_speaker_id;
+
     const { error: cErr } = await supabase.from("contracts").update({
       event_date: evDate || null,
       event_location: evLocation || null,
       event_time: evTime || null,
       event_format: evFormat || null,
       event_description: evDescription.trim() || null,
+      ...(selectedSpeakerId ? { selected_speaker_id: selectedSpeakerId } : {}),
     } as any).eq("id", contract.id);
 
     let evErr: any = null;
@@ -167,8 +170,27 @@ const ContractView = () => {
       const { error } = await supabase.from("events").update({
         audience_size: evAudience || null,
         theme: evTheme.trim() || null,
+        ...(selectedSpeakerId ? { selected_speaker_id: selectedSpeakerId } : {}),
       } as any).eq("id", event.id);
       evErr = error;
+    }
+
+    // Ensure a proposal_speakers row exists for the new speaker
+    if (speakerChanged && contract.proposal_id) {
+      const { data: existing } = await supabase
+        .from("proposal_speakers")
+        .select("id")
+        .eq("proposal_id", contract.proposal_id)
+        .eq("speaker_id", selectedSpeakerId)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from("proposal_speakers").insert({
+          proposal_id: contract.proposal_id,
+          speaker_id: selectedSpeakerId,
+          base_price: 0,
+          total_price: 0,
+        } as any);
+      }
     }
 
     if (cErr || evErr) {
