@@ -1536,7 +1536,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         body: {
           to: toList,
           subject,
-          body: body + buildLiaisonContent(),
+          body: body,
           from_name: "Les Conférenciers",
           cc: ccList.length > 0 ? ccList : undefined,
         },
