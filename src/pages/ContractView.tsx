@@ -308,7 +308,23 @@ const ContractView = () => {
         {/* Intervenant */}
         <section className="mb-8">
           <h2 className="text-lg font-bold mb-2">Intervenant</h2>
-          <p>{speakerGender} {firstSpeaker?.name || "—"}</p>
+          {editing ? (
+            <div className="space-y-1">
+              <select
+                value={selectedSpeakerId}
+                onChange={(e) => setSelectedSpeakerId(e.target.value)}
+                className={inputCls + " w-full max-w-[420px]"}
+              >
+                <option value="">— Sélectionner un conférencier —</option>
+                {allSpeakers.map((sp) => (
+                  <option key={sp.id} value={sp.id}>{sp.name}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-500">Modifier le conférencier retenu pour ce contrat.</p>
+            </div>
+          ) : (
+            <p>{speakerGender} {firstSpeaker?.name || "—"}</p>
+          )}
           <p className="text-sm italic text-gray-600">ci-après l'« Intervenant »</p>
         </section>
 
