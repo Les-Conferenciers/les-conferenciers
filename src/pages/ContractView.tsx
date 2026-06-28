@@ -154,7 +154,31 @@ const ContractView = () => {
   const handleSave = async () => {
     if (!contract) return;
     setSaving(true);
-    const speakerChanged = selectedSpeakerId && selectedSpeakerId !== contract.selected_speaker_id;
+    const speakerChanged = !!(selectedSpeakerId && selectedSpeakerId !== contract.selected_speaker_id);
+
+    // Compute updated contract_lines if the speaker changed (rewrite "speaker" line labels)
+    let updatedContractLines: any = undefined;
+    let newSpeakerName: string | null = null;
+    let oldSpeakerName: string | null = null;
+    if (speakerChanged) {
+      const newSp = allSpeakers.find((s) => s.id === selectedSpeakerId);
+      newSpeakerName = newSp?.name || null;
+      oldSpeakerName = contract.selected_speaker?.name
+        || (contract.proposal as any)?.proposal_speakers?.[0]?.speakers?.name
+        || null;
+      const existingLines = Array.isArray(contract.contract_lines) ? contract.contract_lines : [];
+      if (existingLines.length > 0 && newSpeakerName) {
+        const speakerLines = existingLines.filter((l: any) => l.type === "speaker");
+        updatedContractLines = existingLines.map((l: any) => {
+          if (l.type !== "speaker") return l;
+          // Single speaker line → always rename. Multiple → match old name.
+          if (speakerLines.length === 1 || (oldSpeakerName && l.label === oldSpeakerName)) {
+            return { ...l, label: newSpeakerName };
+          }
+          return l;
+        });
+      }
+    }
 
     const { error: cErr } = await supabase.from("contracts").update({
       event_date: evDate || null,
@@ -163,6 +187,7 @@ const ContractView = () => {
       event_format: evFormat || null,
       event_description: evDescription.trim() || null,
       ...(selectedSpeakerId ? { selected_speaker_id: selectedSpeakerId } : {}),
+      ...(updatedContractLines ? { contract_lines: updatedContractLines } : {}),
     } as any).eq("id", contract.id);
 
     let evErr: any = null;
@@ -175,26 +200,41 @@ const ContractView = () => {
       evErr = error;
     }
 
-    // Ensure a proposal_speakers row exists for the new speaker
+    // Ensure a proposal_speakers row exists for the new speaker, cloning fees from previous speaker row
+    let psErr: any = null;
     if (speakerChanged && contract.proposal_id) {
+      const psList: any[] = (contract.proposal as any)?.proposal_speakers || [];
+      const oldPs = psList.find((p: any) => p.speakers?.name === oldSpeakerName) || psList[0] || {};
+      const fees = {
+        speaker_fee: oldPs.speaker_fee ?? null,
+        travel_costs: oldPs.travel_costs ?? null,
+        agency_commission: oldPs.agency_commission ?? null,
+        total_price: oldPs.total_price ?? 0,
+        base_price: oldPs.base_price ?? oldPs.total_price ?? 0,
+      };
       const { data: existing } = await supabase
         .from("proposal_speakers")
-        .select("id")
+        .select("id, total_price")
         .eq("proposal_id", contract.proposal_id)
         .eq("speaker_id", selectedSpeakerId)
         .maybeSingle();
       if (!existing) {
-        await supabase.from("proposal_speakers").insert({
+        const { error } = await supabase.from("proposal_speakers").insert({
           proposal_id: contract.proposal_id,
           speaker_id: selectedSpeakerId,
-          base_price: 0,
-          total_price: 0,
+          ...fees,
         } as any);
+        psErr = error;
+      } else if (!existing.total_price || existing.total_price === 0) {
+        const { error } = await supabase.from("proposal_speakers")
+          .update(fees as any)
+          .eq("id", existing.id);
+        psErr = error;
       }
     }
 
-    if (cErr || evErr) {
-      toast.error("Erreur de sauvegarde");
+    if (cErr || evErr || psErr) {
+      toast.error("Erreur de sauvegarde" + (psErr ? " (lien conférencier)" : ""));
     } else {
       toast.success("Contrat mis à jour");
       setEditing(false);
@@ -202,6 +242,7 @@ const ContractView = () => {
     }
     setSaving(false);
   };
+
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Chargement…</div>;
   if (!contract) return <div className="flex items-center justify-center min-h-screen">Contrat introuvable</div>;
