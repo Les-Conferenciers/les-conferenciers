@@ -133,6 +133,7 @@ const ContractView = () => {
     }
     setEvAudience((ev as any)?.audience_size || c?.proposal?.audience_size || "");
     setEvTheme((ev as any)?.theme || "");
+    setSelectedSpeakerId(c?.selected_speaker_id || (ev as any)?.selected_speaker_id || "");
 
     setLoading(false);
   };
