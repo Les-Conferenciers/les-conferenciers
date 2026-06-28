@@ -255,11 +255,6 @@ const InvoiceView = () => {
               <tr className="border-b border-gray-200">
                 <td className="py-3 px-3">
                   <p className="font-medium">Prestation de conférence — {speakerName}</p>
-                  {invoice.invoice_type !== "total" && (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {invoice.invoice_type === "acompte" ? "Acompte 50%" : "Solde 50%"}
-                    </p>
-                  )}
                 </td>
                 <td className="py-3 px-3 text-right font-medium">{totalPrestationHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</td>
               </tr>
@@ -267,11 +262,6 @@ const InvoiceView = () => {
                 <tr key={i} className="border-b border-gray-200">
                   <td className="py-3 px-3">
                     <p className="font-medium">{l.label}</p>
-                    {invoice.invoice_type !== "total" && (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {invoice.invoice_type === "acompte" ? "Acompte 50%" : "Solde 50%"}
-                      </p>
-                    )}
                   </td>
                   <td className="py-3 px-3 text-right font-medium">{l.amount_ht.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</td>
                 </tr>
@@ -288,23 +278,55 @@ const InvoiceView = () => {
             </tbody>
           </table>
 
-          {/* Totals */}
+          {/* Totals — affichage du montant total de la prestation (100%) */}
           <div className="mt-4 flex justify-end">
             <div className="w-72">
               <div className="flex justify-between py-1.5 border-b border-gray-200">
                 <span className="text-gray-600">Total HT</span>
-                <span className="font-medium">{(invoice.amount_ht + vhr).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span className="font-medium">{fullAmountHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-gray-200">
                 <span className="text-gray-600">TVA {invoice.tva_rate}%</span>
-                <span>{((invoice.amount_ht + vhr) * invoice.tva_rate / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span>{(fullAmountHT * invoice.tva_rate / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
               <div className="flex justify-between py-3 bg-gray-900 text-white px-3 mt-1 rounded">
                 <span className="font-bold">Total TTC</span>
-                <span className="font-bold">{((invoice.amount_ht + vhr) * (1 + invoice.tva_rate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                <span className="font-bold">{fullAmountTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
               </div>
             </div>
           </div>
+
+          {/* Bloc acompte / solde — montant à régler sur cette facture */}
+          {isPartial && (
+            <div className="mt-4 flex justify-end">
+              <div className="w-72 border-2 border-gray-900 rounded p-3 bg-amber-50">
+                {invoice.invoice_type === "acompte" ? (
+                  <>
+                    <div className="flex justify-between py-1 text-sm">
+                      <span className="text-gray-700">Acompte demandé (50%) HT</span>
+                      <span className="font-medium">{dueHT.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-t border-gray-300 mt-1">
+                      <span className="font-bold">Net à payer TTC</span>
+                      <span className="font-bold">{dueTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                    </div>
+                    <p className="text-[11px] text-gray-600 mt-2 italic">Le solde ({otherHalfTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € TTC) sera facturé après l'intervention.</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between py-1 text-sm text-gray-600">
+                      <span>Acompte déjà versé (50%) TTC</span>
+                      <span>{otherHalfTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-t border-gray-300 mt-1">
+                      <span className="font-bold">Solde à régler TTC</span>
+                      <span className="font-bold">{dueTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Modalités de règlement (RIB) */}
