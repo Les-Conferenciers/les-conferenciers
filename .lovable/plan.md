@@ -1,39 +1,34 @@
+# Édition du conférencier sur `/admin/contrat/:id`
+
 ## Problème
-La facture d'acompte (BDC 1022) a été refusée par la comptabilité du client car elle n'affiche que 50% du montant. Une facture d'acompte conforme doit montrer le montant total de la prestation, puis indiquer l'acompte demandé en bas.
+Sur la page `ContractView` (visualisation/impression du BDC), le mode édition admin permet de modifier les détails de l'événement mais pas le conférencier retenu. Cette fonctionnalité existe déjà dans `EventDossier` (dossier admin) mais n'est pas dupliquée ici.
 
-## Modification — `src/pages/InvoiceView.tsx`
+## Modification — `src/pages/ContractView.tsx`
 
-Pour les factures de type **acompte** et **solde** :
+### 1. Charger la liste des conférenciers du CRM
+Au chargement (quand `isAdmin` est vrai), récupérer `id`, `name`, `gender` depuis la table `speakers` (triés alphabétiquement) et les stocker dans `allSpeakers`.
 
-### Tableau des lignes
-Afficher les montants **HT à 100%** (au lieu de × 0.5) pour chaque ligne :
-- Prestation de conférence — [Nom] : montant total HT
-- Frais de déplacement / Autre : montant total HT
-- Estimation frais VHR : inchangé
+### 2. Ajouter un état local `selectedSpeakerId`
+Initialisé à `contract.selected_speaker_id` (ou au speaker actuel via le fallback event/proposal).
 
-Retirer les mentions "Acompte 50%" / "Solde 50%" sous chaque ligne.
+### 3. UI en mode édition — section « Intervenant »
+Remplacer le `<p>{speakerGender} {firstSpeaker?.name}</p>` par :
+- Un `<select>` listant `allSpeakers` (option courante pré-sélectionnée).
+- Note discrète : « Modifier le conférencier retenu pour ce contrat ».
 
-### Bloc Totaux (à droite)
-- Total HT (100%)
-- TVA 20% (sur 100%)
-- **Total TTC** (100%)
+Hors édition : affichage actuel inchangé.
 
-Puis ajouter en dessous, dans un encadré distinct :
-- Pour acompte : `Acompte demandé (50%) : XXX € TTC` + mention "Le solde sera facturé après l'intervention"
-- Pour solde : `Acompte déjà versé (50%) : XXX € TTC` puis `Solde à régler (50%) : XXX € TTC`
+### 4. Logique de sauvegarde (`handleSave`)
+Étendre la mise à jour pour inclure `selected_speaker_id` :
+- `UPDATE contracts SET selected_speaker_id = ?` (en plus des champs existants).
+- Si un `event.id` est présent, également `UPDATE events SET selected_speaker_id = ?` pour rester cohérent avec EventDossier.
+- Si le nouveau speaker n'existe pas dans `proposal_speakers` pour cette proposition, insérer une ligne `proposal_speakers` (proposal_id, speaker_id, base_price=0, total_price=0) — comportement aligné sur EventDossier.
+- Rafraîchir via `fetchAll()`.
 
-### Type total
-Inchangé (déjà à 100%).
-
-### Référence/mention BDC
-Inchangée.
-
-## Détails techniques
-- Recalculer `totalPrestationHT` et `detailedExtraLines` sans le multiplicateur `invoiceShare` pour l'affichage du tableau.
-- Conserver `invoice.amount_ht` (qui reste à 50% en base) pour calculer le montant de l'acompte/solde affiché en bas.
-- Mettre à jour le bloc "Modalités de règlement" pour rappeler le montant exact à payer (acompte ou solde TTC).
-- Conserver le print CSS 1 page A4.
+### 5. Lignes du contrat
+**Hors scope** : on ne modifie pas automatiquement les `contract_lines` ici (le montant doit rester celui négocié). Le libellé de la ligne speaker n'est pas réécrit — l'admin pourra ajuster manuellement depuis le dossier si besoin.
 
 ## Hors scope
-- Aucun changement en base de données (les `invoices.amount_ht` restent stockés à 50%).
-- Pas de changement aux emails ni à la génération du numéro de facture.
+- Pas de changement à `EventDossier` ni `ContractInvoiceManager`.
+- Pas de modification des emails / clauses / numéros de BDC.
+- Pas de migration BDD (colonnes déjà existantes).

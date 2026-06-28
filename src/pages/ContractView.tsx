@@ -76,6 +76,7 @@ const ContractView = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [allSpeakers, setAllSpeakers] = useState<{ id: string; name: string; gender: string | null }[]>([]);
 
   // Editable fields
   const [evDate, setEvDate] = useState("");
@@ -85,6 +86,7 @@ const ContractView = () => {
   const [evDescription, setEvDescription] = useState("");
   const [evAudience, setEvAudience] = useState("");
   const [evTheme, setEvTheme] = useState("");
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string>("");
 
   const fetchAll = async () => {
     const { data } = await supabase
@@ -131,6 +133,7 @@ const ContractView = () => {
     }
     setEvAudience((ev as any)?.audience_size || c?.proposal?.audience_size || "");
     setEvTheme((ev as any)?.theme || "");
+    setSelectedSpeakerId(c?.selected_speaker_id || (ev as any)?.selected_speaker_id || "");
 
     setLoading(false);
   };
@@ -138,7 +141,12 @@ const ContractView = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAdmin(!!session);
-      if (session) setEditing(true);
+      if (session) {
+        setEditing(true);
+        supabase.from("speakers").select("id, name, gender").order("name").then(({ data }) => {
+          if (data) setAllSpeakers(data as any);
+        });
+      }
     });
     fetchAll();
   }, [id]);
@@ -146,12 +154,15 @@ const ContractView = () => {
   const handleSave = async () => {
     if (!contract) return;
     setSaving(true);
+    const speakerChanged = selectedSpeakerId && selectedSpeakerId !== contract.selected_speaker_id;
+
     const { error: cErr } = await supabase.from("contracts").update({
       event_date: evDate || null,
       event_location: evLocation || null,
       event_time: evTime || null,
       event_format: evFormat || null,
       event_description: evDescription.trim() || null,
+      ...(selectedSpeakerId ? { selected_speaker_id: selectedSpeakerId } : {}),
     } as any).eq("id", contract.id);
 
     let evErr: any = null;
@@ -159,8 +170,27 @@ const ContractView = () => {
       const { error } = await supabase.from("events").update({
         audience_size: evAudience || null,
         theme: evTheme.trim() || null,
+        ...(selectedSpeakerId ? { selected_speaker_id: selectedSpeakerId } : {}),
       } as any).eq("id", event.id);
       evErr = error;
+    }
+
+    // Ensure a proposal_speakers row exists for the new speaker
+    if (speakerChanged && contract.proposal_id) {
+      const { data: existing } = await supabase
+        .from("proposal_speakers")
+        .select("id")
+        .eq("proposal_id", contract.proposal_id)
+        .eq("speaker_id", selectedSpeakerId)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from("proposal_speakers").insert({
+          proposal_id: contract.proposal_id,
+          speaker_id: selectedSpeakerId,
+          base_price: 0,
+          total_price: 0,
+        } as any);
+      }
     }
 
     if (cErr || evErr) {
@@ -278,7 +308,23 @@ const ContractView = () => {
         {/* Intervenant */}
         <section className="mb-8">
           <h2 className="text-lg font-bold mb-2">Intervenant</h2>
-          <p>{speakerGender} {firstSpeaker?.name || "—"}</p>
+          {editing ? (
+            <div className="space-y-1">
+              <select
+                value={selectedSpeakerId}
+                onChange={(e) => setSelectedSpeakerId(e.target.value)}
+                className={inputCls + " w-full max-w-[420px]"}
+              >
+                <option value="">— Sélectionner un conférencier —</option>
+                {allSpeakers.map((sp) => (
+                  <option key={sp.id} value={sp.id}>{sp.name}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-500">Modifier le conférencier retenu pour ce contrat.</p>
+            </div>
+          ) : (
+            <p>{speakerGender} {firstSpeaker?.name || "—"}</p>
+          )}
           <p className="text-sm italic text-gray-600">ci-après l'« Intervenant »</p>
         </section>
 
