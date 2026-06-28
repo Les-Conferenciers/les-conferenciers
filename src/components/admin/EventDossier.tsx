@@ -2665,9 +2665,10 @@ Nelly Sabde - Les Conférenciers`);
                         await supabase.from("proposal_speakers").insert({
                           proposal_id: proposal.id,
                           speaker_id: spId,
-                          base_price: sp.base_fee || 0,
+                          speaker_fee: sp.base_fee || 0,
                           total_price: sp.base_fee || 0,
                         } as any);
+
                       }
                       await supabase
                         .from("events")
