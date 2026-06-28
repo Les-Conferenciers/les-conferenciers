@@ -1,25 +1,37 @@
-## Problème
+## Root cause
 
-Quand on change le conférencier depuis `/admin/contrat/:id`, on met bien à jour `contracts.selected_speaker_id` + `events.selected_speaker_id` et on crée éventuellement une ligne vide dans `proposal_speakers`. Mais :
+Le bug "Régis Rossi non propagé" vient d'une seule cause technique : la colonne `base_price` n'existe pas dans la table `proposal_speakers`. Les colonnes réelles sont : `speaker_fee`, `travel_costs`, `agency_commission`, `total_price`, `selected_conference_ids`, `display_order`.
 
-1. **Ligne de facturation du contrat** : `contract_lines` est un JSON figé qui contient `label: "Laurent Alexandre"`. On ne réécrit pas ce label au changement de conférencier → le contrat et la facture (qui lisent `contract_lines`) restent sur l'ancien nom.
-2. **Facture** : même cause (lit `contract_lines`).
-3. **Feuille de liaison** + **Communication conférencier** : font `proposal_speakers.find(s => s.speaker_id === selected_speaker_id)`. La nouvelle ligne `proposal_speakers` est bien créée, mais avec `base_price/total_price = 0`, et surtout — si pour une raison quelconque elle n'est pas créée (ex. `proposal_id` manquant ou erreur silencieuse), le fallback retombe sur le premier conférencier (= l'ancien).
+Du coup, à chaque fois qu'on change le conférencier :
+- `src/pages/ContractView.tsx` (ligne 213) essaie d'insérer une ligne `proposal_speakers` avec `base_price: …` → la requête est rejetée en 400 (`PGRST204 - Could not find the 'base_price' column`).
+- Idem côté `src/components/admin/EventDossier.tsx` (ligne 2668).
 
-## Correctif (frontend uniquement, sur `src/pages/ContractView.tsx`)
+Conséquence : la ligne `proposal_speakers` pour Régis Rossi n'est jamais créée. Les composants qui font `proposal_speakers.find(s => s.speaker_id === selected_speaker_id)` (feuille de liaison, communication conférencier, facture pour le nom à côté de la ligne) retombent silencieusement sur le premier conférencier = Laurent Alexandre.
 
-Dans `handleSave`, quand `speakerChanged` :
+À noter : la réécriture de `contract_lines` a bien marché (le contrat en base a déjà `label: "Régis Rossi"`), donc seule la partie facture qui s'appuie sur `proposal_speakers` est concernée.
 
-1. **Récupérer le nom + tarifs de l'ancien `proposal_speakers`** (celui qui correspond à `contract.selected_speaker_id` actuel, sinon le premier).
-2. **Cloner ses montants** (`speaker_fee`, `travel_costs`, `agency_commission`, `total_price`, `base_price`) dans la ligne `proposal_speakers` du nouveau conférencier — au lieu d'insérer des zéros. Si la ligne existe déjà, la mettre à jour avec ces montants seulement si elle est à 0.
-3. **Réécrire `contract_lines`** : pour chaque ligne `type === "speaker"` dont le `label` correspond à l'ancien nom (ou s'il n'y a qu'une seule ligne speaker), remplacer `label` par le nom du nouveau conférencier. Persister le tableau modifié dans `contracts.contract_lines`.
-4. **Garde-fou** : s'assurer que l'insertion `proposal_speakers` est `await`ée avant le `update` du contrat (déjà le cas) et logguer un `toast.error` explicite si elle échoue, pour éviter le fallback silencieux côté feuille de liaison.
+## Correctif
 
-## Vérifications post-fix (à la main par l'utilisateur)
+### 1. Code — supprimer `base_price` des inserts `proposal_speakers`
 
-- Le contrat affiche le nouveau nom dans la ligne de facturation.
-- La feuille de liaison affiche le nouveau conférencier + son téléphone.
-- Le bloc "Communication conférencier" du dossier événement cible le nouveau conférencier.
-- La facture (BDC déjà existant) affiche le nouveau nom dans la ligne "Conférencier".
+**`src/pages/ContractView.tsx`** (autour de la ligne 213) : retirer `base_price` du payload `insert`. Garder uniquement les colonnes réelles : `speaker_fee`, `travel_costs`, `agency_commission`, `total_price`. Mettre des fallbacks à `0` quand les valeurs ne sont pas connues.
 
-Aucun changement de schéma DB requis. Les anciens dossiers où le changement a déjà été fait (ex. Davido v3 → Régis Rossi) devront être réenregistrés une fois après le fix pour réécrire `contract_lines`.
+**`src/components/admin/EventDossier.tsx`** (autour de la ligne 2665) : même correction, supprimer `base_price` de l'insert.
+
+Vérifier aussi le `update` conditionnel dans ContractView.tsx (~ligne 229) — s'il référence `base_price`, le retirer.
+
+### 2. Données — réparer le dossier Davido Consulting
+
+Pour la proposition `a8773313-c96b-4c75-90a3-503ad3515522`, insérer la ligne `proposal_speakers` manquante pour Régis Rossi (`45b5b64c-16d3-418e-97fa-0bd746458d88`) en clonant les montants de la ligne Laurent Alexandre (`ded5156d-ae99-4fbe-850a-9456363f4fe8`) : `speaker_fee`, `travel_costs`, `agency_commission`, `total_price`.
+
+### 3. Garde-fou
+
+Dans `ContractView.tsx`, en cas d'erreur d'insertion `proposal_speakers`, afficher un `toast.error` explicite (au lieu de continuer silencieusement). Évite que le même type de bug passe inaperçu.
+
+## Vérification post-fix (par l'utilisateur)
+
+- Recharger `/admin/contrat/f8fdc500-…` → la feuille de liaison du dossier affiche "Régis Rossi".
+- Le bloc "Communication conférencier" du dossier événement cible Régis Rossi.
+- La facture `20260701-1034` affiche Régis Rossi comme conférencier.
+
+Aucun changement de schéma DB n'est requis.
