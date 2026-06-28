@@ -333,7 +333,7 @@ const InvoiceView = () => {
         <section className="mb-6">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Modalités de règlement</h2>
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <p className="text-sm mb-2">Paiement par virement bancaire — référence à rappeler : <strong>{paymentRef}</strong></p>
+            <p className="text-sm mb-2">Paiement par virement bancaire — <strong>{dueTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € TTC</strong> — référence à rappeler : <strong>{paymentRef}</strong></p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
               <div><span className="text-gray-500">Titulaire :</span> {COMPANY.name}</div>
               <div><span className="text-gray-500">BIC :</span> {COMPANY.bic}</div>
