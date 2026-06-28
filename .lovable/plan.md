@@ -1,28 +1,39 @@
-## Plan
+## Problème
+La facture d'acompte (BDC 1022) a été refusée par la comptabilité du client car elle n'affiche que 50% du montant. Une facture d'acompte conforme doit montrer le montant total de la prestation, puis indiquer l'acompte demandé en bas.
 
-Corriger la popup **Éditer la proposition** qui reste coupée sur desktop en mode édition.
+## Modification — `src/pages/InvoiceView.tsx`
 
-### Problème identifié
-La capture montre un **débordement horizontal** : la colonne de droite du formulaire sort de la popup. Le précédent correctif a surtout traité la hauteur et le scroll vertical, mais le formulaire interne garde encore des éléments en `grid-cols-2` et des contenus sans `min-w-0`, ce qui pousse la largeur réelle au-delà du conteneur.
+Pour les factures de type **acompte** et **solde** :
 
-### Changements prévus
-1. **Rendre le contenu réellement contraint en largeur**
-   - Ajouter `w-full max-w-full min-w-0` sur le corps scrollable, le wrapper principal et le `fieldset`.
-   - Empêcher tout enfant de forcer une largeur supérieure à celle de la popup.
+### Tableau des lignes
+Afficher les montants **HT à 100%** (au lieu de × 0.5) pour chaque ligne :
+- Prestation de conférence — [Nom] : montant total HT
+- Frais de déplacement / Autre : montant total HT
+- Estimation frais VHR : inchangé
 
-2. **Corriger les grilles de champs**
-   - Remplacer les grilles fixes `grid-cols-2` par `grid-cols-1 md:grid-cols-2` ou `grid-cols-1 sm:grid-cols-2` selon l'espace disponible.
-   - Ajouter `min-w-0` sur chaque cellule de grille et sur les champs sensibles.
+Retirer les mentions "Acompte 50%" / "Solde 50%" sous chaque ligne.
 
-3. **Neutraliser le composant qui déborde dans la section conférencier/tarifs**
-   - Ajuster la sortie de `renderSpeakerSelectionEditor` pour que les lignes conférencier + frais restent dans la popup.
-   - Passer les zones tarif/frais en grille responsive et empêcher les labels longs de pousser horizontalement.
+### Bloc Totaux (à droite)
+- Total HT (100%)
+- TVA 20% (sur 100%)
+- **Total TTC** (100%)
 
-4. **Garder le comportement desktop propre**
-   - La popup restera centrée et large comme avant sur PC.
-   - Le scroll restera vertical interne.
-   - Aucun scroll horizontal ne doit apparaître dans la popup.
+Puis ajouter en dessous, dans un encadré distinct :
+- Pour acompte : `Acompte demandé (50%) : XXX € TTC` + mention "Le solde sera facturé après l'intervention"
+- Pour solde : `Acompte déjà versé (50%) : XXX € TTC` puis `Solde à régler (50%) : XXX € TTC`
 
-5. **Vérification**
-   - Tester au viewport actuel `1139x779`.
-   - Confirmer que le champ email, la colonne frais et les boutons ne sont plus coupés en mode édition.
+### Type total
+Inchangé (déjà à 100%).
+
+### Référence/mention BDC
+Inchangée.
+
+## Détails techniques
+- Recalculer `totalPrestationHT` et `detailedExtraLines` sans le multiplicateur `invoiceShare` pour l'affichage du tableau.
+- Conserver `invoice.amount_ht` (qui reste à 50% en base) pour calculer le montant de l'acompte/solde affiché en bas.
+- Mettre à jour le bloc "Modalités de règlement" pour rappeler le montant exact à payer (acompte ou solde TTC).
+- Conserver le print CSS 1 page A4.
+
+## Hors scope
+- Aucun changement en base de données (les `invoices.amount_ht` restent stockés à 50%).
+- Pas de changement aux emails ni à la génération du numéro de facture.

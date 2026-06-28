@@ -56,6 +56,7 @@ const AdminLeads = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hideTest, setHideTest] = useState(true);
+  const [search, setSearch] = useState("");
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [creatingProposal, setCreatingProposal] = useState(false);
 
@@ -133,7 +134,17 @@ const AdminLeads = () => {
       lead.additional_info?.toLowerCase().includes("test automatique quotidien");
   };
 
-  const filteredLeads = hideTest ? leads.filter(l => !isTestLead(l)) : leads;
+  const baseLeads = hideTest ? leads.filter(l => !isTestLead(l)) : leads;
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredLeads = normalizedSearch
+    ? baseLeads.filter((l) => {
+        const hay = [l.email, l.first_name, l.last_name, l.company, l.phone]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(normalizedSearch);
+      })
+    : baseLeads;
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedLeads = filteredLeads.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -170,6 +181,13 @@ const AdminLeads = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <input
+            type="search"
+            placeholder="Rechercher par email, nom, entreprise…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="h-8 w-64 max-w-full rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+          />
           {totalPages > 1 && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Button variant="ghost" size="sm" disabled={currentPage <= 1} onClick={() => setPage(p => p - 1)}>

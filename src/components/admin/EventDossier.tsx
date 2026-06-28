@@ -275,6 +275,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [speakerEmailSubject, setSpeakerEmailSubject] = useState("");
   const [speakerEmailBody, setSpeakerEmailBody] = useState("");
   const [sendingSpeakerEmail, setSendingSpeakerEmail] = useState(false);
+  const [savingSpeakerDraft, setSavingSpeakerDraft] = useState(false);
   const [speakerEmailType, setSpeakerEmailType] = useState<"info" | "contract">("info");
   const [speakerEmailAddressing, setSpeakerEmailAddressing] = useState<"formal" | "informal">("formal");
 
@@ -1100,6 +1101,11 @@ Nelly Sabde - Les Conférenciers`;
       : "à définir";
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const travel = ps?.travel_costs || 0;
+    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
+    const vhrStr = travel > 0
+      ? `${travel.toLocaleString("fr-FR")} € HT`
+      : "Pris en charge directement par le client";
 
     const ack = vouvoi
       ? "Pourriez-vous m'accuser réception de ce mail ?"
@@ -1125,7 +1131,8 @@ ${line("👥 Auditoire :", event?.audience_size || "à définir")}
 ${line("📋 Thématique :", event?.theme || "à définir")}
 ${contract?.event_description ? `<p>📝 Détails : <strong>${contract.event_description.replace(/\n/g, "<br>")}</strong></p>` : ""}
 ${line("🏢 Client :", proposal.client_name)}
-${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("💰 Budget :", budgetStr)}
+${line("🚗 Frais VHR :", vhrStr)}
 ${event?.contact_on_site_name ? `<p>👤 Contact sur place : <strong>${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}</strong></p>` : ""}
 ${line("🚗 Arrivée :", event?.arrival_info)}
 ${line("🅿️ Parking :", event?.parking_info)}
@@ -1149,7 +1156,8 @@ ${event?.special_requests ? `<p>📝 Remarques : ${event.special_requests}</p>` 
 ${line("📅 Date de l'évènement :", dateStr)}
 ${line("📍 Lieu :", contract?.event_location || "à définir")}
 ${line("🏢 Client :", proposal.client_name)}
-${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir")}
+${line("💰 Budget :", budgetStr)}
+${line("🚗 Frais VHR :", vhrStr)}
 <p><strong>${ack}</strong> ${sendBack}</p>
 <p>${sign}</p>
 <p>Nelly Sabde - Les Conférenciers</p>`;
@@ -1161,7 +1169,20 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
     const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
     setSpeakerEmailAddressing(initialAddressing);
     setSpeakerEmailTo(speaker?.email || "");
-    setSpeakerEmailCc("");
+
+    // Restore saved draft if present
+    const ev = event as any;
+    const savedSubject = type === "info" ? ev?.speaker_info_email_subject : ev?.speaker_contract_email_subject;
+    const savedBody = type === "info" ? ev?.speaker_info_email_body : ev?.speaker_contract_email_body;
+    const savedCc = type === "info" ? ev?.speaker_info_email_cc : ev?.speaker_contract_email_cc;
+    setSpeakerEmailCc(savedCc || "");
+
+    if (savedSubject || savedBody) {
+      setSpeakerEmailSubject(savedSubject || buildSpeakerEmailSubject(type));
+      setSpeakerEmailBody(savedBody || buildSpeakerEmailBody(type, initialAddressing));
+      setSpeakerEmailOpen(true);
+      return;
+    }
 
     // Try DB template (speaker_event_info / contract_to_speaker), fallback to hardcoded
     await loadEmailTemplates();
@@ -1170,6 +1191,11 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const travel = ps?.travel_costs || 0;
+    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
+    const vhrStr = travel > 0
+      ? `${travel.toLocaleString("fr-FR")} € HT`
+      : "Pris en charge directement par le client";
     const tplKey = type === "info" ? "speaker_event_info" : "contract_to_speaker";
     const tpl = renderTpl(tplKey, {
       prenom_conferencier: firstName,
@@ -1182,13 +1208,44 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
       duree: event?.conference_duration || "",
       auditoire: event?.audience_size || "à définir",
       thematique: event?.theme || "à définir",
-      budget: budget ? budget.toLocaleString("fr-FR") + " euros HT, hors frais VHR" : "à définir",
+      budget: budgetStr,
+      frais_vhr: vhrStr,
+      details: contract?.event_description || "",
+      format: contract?.event_format || "",
       dress_code: event?.dress_code || "",
       agent_nom: "Nelly Sabde",
     });
     setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));
     setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, initialAddressing));
     setSpeakerEmailOpen(true);
+  };
+
+  const persistSpeakerEmailDraft = async () => {
+    if (!event) return null;
+    const patch: any = {};
+    if (speakerEmailType === "info") {
+      patch.speaker_info_email_subject = speakerEmailSubject;
+      patch.speaker_info_email_body = speakerEmailBody;
+      patch.speaker_info_email_cc = speakerEmailCc;
+    } else {
+      patch.speaker_contract_email_subject = speakerEmailSubject;
+      patch.speaker_contract_email_body = speakerEmailBody;
+      patch.speaker_contract_email_cc = speakerEmailCc;
+    }
+    return await supabase.from("events").update(patch).eq("id", event.id);
+  };
+
+  const handleSaveSpeakerEmailDraft = async () => {
+    setSavingSpeakerDraft(true);
+    const res = await persistSpeakerEmailDraft();
+    if (res && (res as any).error) {
+      toast.error("Erreur d'enregistrement");
+    } else {
+      toast.success("Brouillon enregistré");
+      setSpeakerEmailOpen(false);
+      fetchData();
+    }
+    setSavingSpeakerDraft(false);
   };
 
   const handleSendSpeakerEmail = async () => {
@@ -1216,6 +1273,8 @@ ${line("💰 Budget :", budget ? budget.toLocaleString("fr-FR") + " euros HT, ho
     }
 
     try {
+      // Persist draft before sending so reopening reflects last edits
+      await persistSpeakerEmailDraft();
       const { error } = await supabase.functions.invoke("send-contact-email", {
         body: {
           to: toList,
@@ -1905,17 +1964,49 @@ Nelly Sabde - Les Conférenciers`);
                   ? "bg-green-100 text-green-700 border border-green-300"
                   : contract.status === "en_attente_paiement"
                     ? "bg-orange-100 text-orange-700 border border-orange-300"
-                    : "bg-red-100 text-red-700 border border-red-300"
+                    : contract.status === "archived"
+                      ? "bg-gray-100 text-gray-700 border border-gray-300"
+                      : "bg-red-100 text-red-700 border border-red-300"
               }`}
             >
               {contract.status === "signed"
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
                 : contract.status === "en_attente_paiement"
                   ? "💶 En attente de paiement"
-                  : contract.status === "sent"
-                    ? "⏳ Non signé (envoyé)"
-                    : "⚠️ Non signé (brouillon)"}
+                  : contract.status === "archived"
+                    ? "📦 Archivé"
+                    : contract.status === "sent"
+                      ? "⏳ Non signé (envoyé)"
+                      : "⚠️ Non signé (brouillon)"}
             </span>
+            {/* #14 — Changement de statut manuel */}
+            <Select
+              value={contract.status}
+              onValueChange={async (newStatus) => {
+                if (newStatus === contract.status) return;
+                const { error } = await supabase
+                  .from("contracts")
+                  .update({ status: newStatus } as any)
+                  .eq("id", contract.id);
+                if (error) {
+                  toast.error("Erreur changement de statut");
+                } else {
+                  toast.success("Statut mis à jour");
+                  fetchData();
+                }
+              }}
+            >
+              <SelectTrigger className="h-7 text-xs w-auto gap-1 px-2" title="Changer le statut">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Brouillon</SelectItem>
+                <SelectItem value="sent">En cours (envoyé)</SelectItem>
+                <SelectItem value="signed">Signé</SelectItem>
+                <SelectItem value="en_attente_paiement">En attente de paiement</SelectItem>
+                <SelectItem value="archived">Archivé</SelectItem>
+              </SelectContent>
+            </Select>
             {(contract.version || 1) > 1 && (
               <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 border border-blue-300">
                 v{contract.version}
@@ -2507,56 +2598,109 @@ Nelly Sabde - Les Conférenciers`);
             </div>
 
             {/* Speaker selector — allows changing the assigned speaker even after contract creation */}
-            {proposal.proposal_speakers.length > 1 && (
+            {proposal.proposal_speakers.length >= 1 && (
               <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/50">
                 <Label className="text-xs font-semibold flex items-center gap-2">
                   <User className="h-3.5 w-3.5" /> Conférencier retenu pour ce contrat
                 </Label>
-                <div className="flex flex-wrap gap-2">
-                  {proposal.proposal_speakers.map((ps) => {
-                    const isSelected = event?.selected_speaker_id === ps.speaker_id;
-                    return (
-                      <button
-                        key={ps.speaker_id}
-                        type="button"
-                        onClick={async () => {
-                          if (!ps.speaker_id || !event) return;
-                          await supabase
-                            .from("events")
-                            .update({ selected_speaker_id: ps.speaker_id } as any)
-                            .eq("id", event.id);
-                          if (contract)
+                {proposal.proposal_speakers.length > 1 && (
+                  <div className="flex flex-wrap gap-2">
+                    {proposal.proposal_speakers.map((ps) => {
+                      const isSelected = event?.selected_speaker_id === ps.speaker_id;
+                      return (
+                        <button
+                          key={ps.speaker_id}
+                          type="button"
+                          onClick={async () => {
+                            if (!ps.speaker_id || !event) return;
                             await supabase
-                              .from("contracts")
+                              .from("events")
                               .update({ selected_speaker_id: ps.speaker_id } as any)
-                              .eq("id", contract.id);
-                          // Rebuild lines for the newly selected speaker
-
-                          const newLines = [
-                            {
-                              id: generateId(),
-                              label: ps.speakers?.name || "Conférencier",
-                              amount_ht: ps.total_price || 0,
-                              tva_rate: 20,
-                              type: "speaker" as const,
-                            },
-                          ];
-                          setContractLines(newLines);
-                          fetchData();
-                          toast.success("Conférencier mis à jour");
-                        }}
-                        className={cn(
-                          "px-3 py-1.5 rounded-md border text-xs transition-all",
-                          isSelected
-                            ? "border-primary bg-primary text-primary-foreground font-medium"
-                            : "border-border bg-background hover:border-primary/50",
-                        )}
-                      >
-                        {ps.speakers?.name || "—"}
-                        {isSelected && <CheckCircle className="h-3 w-3 inline-block ml-1" />}
-                      </button>
-                    );
-                  })}
+                              .eq("id", event.id);
+                            if (contract)
+                              await supabase
+                                .from("contracts")
+                                .update({ selected_speaker_id: ps.speaker_id } as any)
+                                .eq("id", contract.id);
+                            const newLines = [
+                              {
+                                id: generateId(),
+                                label: ps.speakers?.name || "Conférencier",
+                                amount_ht: ps.total_price || 0,
+                                tva_rate: 20,
+                                type: "speaker" as const,
+                              },
+                            ];
+                            setContractLines(newLines);
+                            fetchData();
+                            toast.success("Conférencier mis à jour");
+                          }}
+                          className={cn(
+                            "px-3 py-1.5 rounded-md border text-xs transition-all",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground font-medium"
+                              : "border-border bg-background hover:border-primary/50",
+                          )}
+                        >
+                          {ps.speakers?.name || "—"}
+                          {isSelected && <CheckCircle className="h-3 w-3 inline-block ml-1" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Label className="text-[11px] text-muted-foreground">Choisir un autre conférencier (CRM) :</Label>
+                  <select
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs flex-1 min-w-[180px]"
+                    value=""
+                    onChange={async (e) => {
+                      const spId = e.target.value;
+                      if (!spId || !event) return;
+                      const sp = allSpeakers.find((s) => s.id === spId);
+                      if (!sp) return;
+                      // Insert proposal_speakers row if absent
+                      const exists = proposal.proposal_speakers.find((ps) => ps.speaker_id === spId);
+                      if (!exists) {
+                        await supabase.from("proposal_speakers").insert({
+                          proposal_id: proposal.id,
+                          speaker_id: spId,
+                          base_price: sp.base_fee || 0,
+                          total_price: sp.base_fee || 0,
+                        } as any);
+                      }
+                      await supabase
+                        .from("events")
+                        .update({ selected_speaker_id: spId } as any)
+                        .eq("id", event.id);
+                      if (contract)
+                        await supabase
+                          .from("contracts")
+                          .update({ selected_speaker_id: spId } as any)
+                          .eq("id", contract.id);
+                      setContractLines([
+                        {
+                          id: generateId(),
+                          label: sp.name,
+                          amount_ht: sp.base_fee || 0,
+                          tva_rate: 20,
+                          type: "speaker" as const,
+                        },
+                      ]);
+                      fetchData();
+                      toast.success(`Conférencier remplacé par ${sp.name}`);
+                    }}
+                  >
+                    <option value="">— Sélectionner —</option>
+                    {allSpeakers
+                      .slice()
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((sp) => (
+                        <option key={sp.id} value={sp.id}>
+                          {sp.name}
+                        </option>
+                      ))}
+                  </select>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
                   Modifier ici si le conférencier choisi diffère de la proposition initiale.
@@ -3212,10 +3356,15 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-xs">Corps du mail</Label>
               <RichTextEditor value={speakerEmailBody} onChange={setSpeakerEmailBody} />
             </div>
-            <Button className="w-full" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail}>
-              <Send className="h-4 w-4 mr-2" />
-              {sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" className="flex-1" onClick={handleSaveSpeakerEmailDraft} disabled={savingSpeakerDraft || sendingSpeakerEmail}>
+                {savingSpeakerDraft ? "Enregistrement…" : "Enregistrer le brouillon"}
+              </Button>
+              <Button className="flex-1" onClick={handleSendSpeakerEmail} disabled={sendingSpeakerEmail || savingSpeakerDraft}>
+                <Send className="h-4 w-4 mr-2" />
+                {sendingSpeakerEmail ? "Envoi…" : "Envoyer au conférencier"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

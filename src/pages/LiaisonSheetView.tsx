@@ -220,11 +220,19 @@ const LiaisonSheetView = () => {
             </p>
             <p>
               <span className="font-medium">Lieu de l'intervention :</span>{" "}
-              <Field editing={editing} value={eventLocation} onChange={setEventLocation} placeholder="À définir" />
+              {editing ? (
+                <EditableTextArea value={eventLocation} onChange={setEventLocation} placeholder="À définir" rows={2} />
+              ) : (
+                <span className="whitespace-pre-line">{eventLocation || "À définir"}</span>
+              )}
             </p>
             <p>
               <span className="font-medium">Horaires de l'intervention :</span>{" "}
-              <Field editing={editing} value={eventTime} onChange={setEventTime} placeholder="À définir" />
+              {editing ? (
+                <EditableTextArea value={eventTime} onChange={setEventTime} placeholder="À définir" rows={2} />
+              ) : (
+                <span className="whitespace-pre-line">{eventTime || "À définir"}</span>
+              )}
             </p>
             <p>
               <span className="font-medium">Auditoire :</span>{" "}
@@ -245,22 +253,17 @@ const LiaisonSheetView = () => {
         <section className="mb-8">
           <h3 className="font-bold text-lg mb-3">Besoins logistiques :</h3>
           {editing ? (
-            <div className="space-y-2">
-              <div>
-                <label className="text-xs text-gray-500">Besoins logistiques</label>
-                <TextArea editing={editing} value={eventTechNeeds} onChange={setEventTechNeeds} placeholder="Vidéoprojecteur, micro…" rows={2} />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Configuration de salle</label>
-                <TextArea editing={editing} value={eventRoomSetup} onChange={setEventRoomSetup} placeholder="Salle installée en largeur…" rows={2} />
-              </div>
-            </div>
-          ) : eventTechNeeds || eventRoomSetup ? (
+            <TextArea
+              editing={editing}
+              value={eventTechNeeds}
+              onChange={setEventTechNeeds}
+              placeholder="Vidéoprojecteur, micro HF, pupitre, eau, configuration de salle…"
+              rows={6}
+            />
+          ) : eventTechNeeds ? (
             <ul className="list-disc pl-5 space-y-1">
-              {[
-                ...(eventTechNeeds ? eventTechNeeds.split(/[,\n]+/) : []),
-                ...(eventRoomSetup ? eventRoomSetup.split(/[,\n]+/) : []),
-              ]
+              {eventTechNeeds
+                .split(/[,\n]+/)
                 .map((s) => s.trim())
                 .filter(Boolean)
                 .map((item, i) => (
@@ -270,10 +273,11 @@ const LiaisonSheetView = () => {
           ) : (
             <ul className="list-disc pl-5 space-y-1">
               <li>Vidéoprojecteur</li>
-              <li>Salle installée en largeur avec une allée centrale si possible</li>
+              <li>Micro HF</li>
             </ul>
           )}
         </section>
+
 
 
         {/* Contact */}

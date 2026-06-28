@@ -71,6 +71,7 @@ export type Database = {
           deposit_required: boolean
           discount_percent: number | null
           email_body: string | null
+          email_cc: string | null
           email_subject: string | null
           event_date: string | null
           event_description: string | null
@@ -101,6 +102,7 @@ export type Database = {
           deposit_required?: boolean
           discount_percent?: number | null
           email_body?: string | null
+          email_cc?: string | null
           email_subject?: string | null
           event_date?: string | null
           event_description?: string | null
@@ -131,6 +133,7 @@ export type Database = {
           deposit_required?: boolean
           discount_percent?: number | null
           email_body?: string | null
+          email_cc?: string | null
           email_subject?: string | null
           event_date?: string | null
           event_description?: string | null
@@ -246,7 +249,13 @@ export type Database = {
           speaker_contact_email: string | null
           speaker_contact_name: string | null
           speaker_contact_phone: string | null
+          speaker_contract_email_body: string | null
+          speaker_contract_email_cc: string | null
+          speaker_contract_email_subject: string | null
           speaker_deposit_paid_at: string | null
+          speaker_info_email_body: string | null
+          speaker_info_email_cc: string | null
+          speaker_info_email_subject: string | null
           speaker_paid_at: string | null
           speaker_signed_contract_at: string | null
           special_requests: string | null
@@ -295,7 +304,13 @@ export type Database = {
           speaker_contact_email?: string | null
           speaker_contact_name?: string | null
           speaker_contact_phone?: string | null
+          speaker_contract_email_body?: string | null
+          speaker_contract_email_cc?: string | null
+          speaker_contract_email_subject?: string | null
           speaker_deposit_paid_at?: string | null
+          speaker_info_email_body?: string | null
+          speaker_info_email_cc?: string | null
+          speaker_info_email_subject?: string | null
           speaker_paid_at?: string | null
           speaker_signed_contract_at?: string | null
           special_requests?: string | null
@@ -344,7 +359,13 @@ export type Database = {
           speaker_contact_email?: string | null
           speaker_contact_name?: string | null
           speaker_contact_phone?: string | null
+          speaker_contract_email_body?: string | null
+          speaker_contract_email_cc?: string | null
+          speaker_contract_email_subject?: string | null
           speaker_deposit_paid_at?: string | null
+          speaker_info_email_body?: string | null
+          speaker_info_email_cc?: string | null
+          speaker_info_email_subject?: string | null
           speaker_paid_at?: string | null
           speaker_signed_contract_at?: string | null
           special_requests?: string | null
@@ -422,6 +443,7 @@ export type Database = {
           contract_id: string | null
           created_at: string
           due_date: string | null
+          email_cc: string | null
           id: string
           invoice_number: string
           invoice_type: string
@@ -439,6 +461,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           due_date?: string | null
+          email_cc?: string | null
           id?: string
           invoice_number: string
           invoice_type?: string
@@ -456,6 +479,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           due_date?: string | null
+          email_cc?: string | null
           id?: string
           invoice_number?: string
           invoice_type?: string
@@ -641,6 +665,7 @@ export type Database = {
           client_phone: string | null
           created_at: string
           email_body: string | null
+          email_cc: string | null
           email_subject: string | null
           event_date_text: string | null
           event_location: string | null
@@ -673,6 +698,7 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           email_body?: string | null
+          email_cc?: string | null
           email_subject?: string | null
           event_date_text?: string | null
           event_location?: string | null
@@ -705,6 +731,7 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           email_body?: string | null
+          email_cc?: string | null
           email_subject?: string | null
           event_date_text?: string | null
           event_location?: string | null
@@ -1120,6 +1147,10 @@ export type Database = {
       generate_invoice_number:
         | { Args: never; Returns: string }
         | { Args: { _proposal_id: string }; Returns: string }
+        | {
+            Args: { _invoice_type?: string; _proposal_id: string }
+            Returns: string
+          }
       get_invoice_bdc: { Args: { _invoice_id: string }; Returns: string }
     }
     Enums: {

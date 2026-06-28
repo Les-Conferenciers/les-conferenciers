@@ -59,6 +59,7 @@ type Contract = {
   custom_clauses?: any;
   email_subject?: string | null;
   email_body?: string | null;
+  email_cc?: string | null;
 };
 
 type Invoice = {
@@ -123,6 +124,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [contractEmailSubject, setContractEmailSubject] = useState("");
   const [contractEmailBody, setContractEmailBody] = useState("");
   const [contractEmailAttachments, setContractEmailAttachments] = useState<{ filename: string; content: string }[]>([]);
+  const [contractEmailCc, setContractEmailCc] = useState("");
   const [sendingContract, setSendingContract] = useState(false);
   const [savingContractDraft, setSavingContractDraft] = useState(false);
 
@@ -144,6 +146,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
   const [invoiceEmailSubject, setInvoiceEmailSubject] = useState("");
   const [invoiceEmailBody, setInvoiceEmailBody] = useState("");
+  const [invoiceEmailCc, setInvoiceEmailCc] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
 
@@ -367,6 +370,7 @@ Bien cordialement,
 Nelly Sabde - Les Conférenciers`;
     setContractEmailSubject(contract.email_subject || defaultSubject);
     setContractEmailBody(contract.email_body || defaultBody);
+    setContractEmailCc(contract.email_cc || "");
     setContractEmailAttachments([]);
     setContractEmailOpen(true);
   };
@@ -396,7 +400,7 @@ Nelly Sabde - Les Conférenciers`;
     setSavingContractDraft(true);
     const { error } = await supabase
       .from("contracts")
-      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+      .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, email_cc: contractEmailCc.trim() || null } as any)
       .eq("id", contract.id);
     if (error) {
       toast.error("Erreur d'enregistrement");
@@ -412,16 +416,18 @@ Nelly Sabde - Les Conférenciers`;
     if (!contract) return;
     setSendingContract(true);
     try {
+      const ccList = contractEmailCc.split(",").map((e) => e.trim()).filter(Boolean);
       // Persist current draft before sending so the next open reflects last state
       await supabase
         .from("contracts")
-        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody } as any)
+        .update({ email_subject: contractEmailSubject, email_body: contractEmailBody, email_cc: contractEmailCc.trim() || null } as any)
         .eq("id", contract.id);
       const { error } = await supabase.functions.invoke("send-contract-email", {
         body: {
           contract_id: contract.id,
           email_subject: contractEmailSubject,
           email_body: contractEmailBody,
+          cc_emails: ccList,
           attachments: contractEmailAttachments,
         },
       });
@@ -534,6 +540,7 @@ ${inv.due_date ? `• Échéance : ${new Date(inv.due_date).toLocaleDateString("
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
+    setInvoiceEmailCc(((inv as any).email_cc || "") as string);
     setInvoiceEmailOpen(true);
   };
 
@@ -541,17 +548,22 @@ Nelly Sabde - Les Conférenciers`);
     if (!emailInvoice) return;
     setSendingInvoice(true);
     try {
+      const ccList = invoiceEmailCc
+        .split(/[,;]/)
+        .map((e) => e.trim())
+        .filter((e) => e.includes("@"));
       const { error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
+          cc: ccList.length > 0 ? ccList : undefined,
         },
       });
       if (error) throw error;
       await supabase
         .from("invoices")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .update({ status: "sent", sent_at: new Date().toISOString(), email_cc: invoiceEmailCc.trim() || null } as any)
         .eq("id", emailInvoice.id);
       toast.success(`Facture ${emailInvoice.invoice_number} envoyée !`);
       setInvoiceEmailOpen(false);
@@ -938,6 +950,14 @@ Nelly Sabde - Les Conférenciers`);
               <Input value={contractEmailSubject} onChange={(e) => setContractEmailSubject(e.target.value)} />
             </div>
             <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">CC (séparés par virgules)</Label>
+              <Input
+                value={contractEmailCc}
+                onChange={(e) => setContractEmailCc(e.target.value)}
+                placeholder="email1@exemple.com, email2@exemple.com"
+              />
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>
               <Textarea
                 value={contractEmailBody}
@@ -1235,6 +1255,15 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
               <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">CC (séparés par , ou ;)</Label>
+              <Input
+                type="text"
+                placeholder="email1@exemple.com, email2@exemple.com"
+                value={invoiceEmailCc}
+                onChange={(e) => setInvoiceEmailCc(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>
