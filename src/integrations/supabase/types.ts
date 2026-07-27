@@ -440,6 +440,11 @@ export type Database = {
         Row: {
           amount_ht: number
           amount_ttc: number
+          billing_entity_address: string | null
+          billing_entity_email: string | null
+          billing_entity_name: string | null
+          billing_entity_siret: string | null
+          billing_entity_vat: string | null
           contract_id: string | null
           created_at: string
           due_date: string | null
@@ -458,6 +463,11 @@ export type Database = {
         Insert: {
           amount_ht: number
           amount_ttc: number
+          billing_entity_address?: string | null
+          billing_entity_email?: string | null
+          billing_entity_name?: string | null
+          billing_entity_siret?: string | null
+          billing_entity_vat?: string | null
           contract_id?: string | null
           created_at?: string
           due_date?: string | null
@@ -476,6 +486,11 @@ export type Database = {
         Update: {
           amount_ht?: number
           amount_ttc?: number
+          billing_entity_address?: string | null
+          billing_entity_email?: string | null
+          billing_entity_name?: string | null
+          billing_entity_siret?: string | null
+          billing_entity_vat?: string | null
           contract_id?: string | null
           created_at?: string
           due_date?: string | null
