@@ -1494,6 +1494,18 @@ Nelly Sabde - Les Conférenciers`);
           </DialogHeader>
           <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
             <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Destinataires (séparés par , ou ;)</Label>
+              <Input
+                type="text"
+                placeholder="destinataire1@exemple.com, destinataire2@exemple.com"
+                value={invoiceEmailTo}
+                onChange={(e) => setInvoiceEmailTo(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Ajoute plusieurs adresses pour envoyer la facture à plusieurs personnes.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
               <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
             </div>
