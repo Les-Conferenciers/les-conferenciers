@@ -1101,7 +1101,10 @@ Nelly Sabde - Les Conférenciers`;
       : "à définir";
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
-    const travel = ps?.travel_costs || 0;
+    const cLines = Array.isArray(contract?.contract_lines) ? (contract!.contract_lines as any[]) : [];
+    const travel = cLines
+      .filter((l: any) => l?.type === "travel" || l?.type === "custom")
+      .reduce((sum: number, l: any) => sum + (Number(l?.amount_ht) || 0), 0);
     const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
     const vhrStr = travel > 0
       ? `${travel.toLocaleString("fr-FR")} € HT`
@@ -1175,7 +1178,10 @@ ${line("🚗 Frais VHR :", vhrStr)}
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
     const ps = getSelectedSpeaker();
     const budget = event?.speaker_budget || ps?.speaker_fee || 0;
-    const travel = ps?.travel_costs || 0;
+    const cLines = Array.isArray(contract?.contract_lines) ? (contract!.contract_lines as any[]) : [];
+    const travel = cLines
+      .filter((l: any) => l?.type === "travel" || l?.type === "custom")
+      .reduce((sum: number, l: any) => sum + (Number(l?.amount_ht) || 0), 0);
     const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
     const vhrStr = travel > 0
       ? `${travel.toLocaleString("fr-FR")} € HT`
