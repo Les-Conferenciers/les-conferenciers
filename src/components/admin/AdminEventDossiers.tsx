@@ -719,7 +719,7 @@ const AdminEventDossiers = () => {
       {filtered.length > 10 && (
         <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
           <span>Afficher</span>
-          {([10, 50, 100] as const).map(n => (
+          {([10, 50, 100, 150] as const).map(n => (
             <button
               key={n}
               type="button"
