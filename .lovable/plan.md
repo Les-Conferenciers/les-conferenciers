@@ -1,33 +1,37 @@
-## Objectif
+## Réponse à la question « pourquoi le template speaker_event_info ne s'applique pas »
 
-Faire apparaître le champ **Détails** du contrat (`event_description`) dans le mail « Communication conférencier », juste après la ligne Budget, sous forme de bullet point aligné sur le même style que les autres lignes.
+Le générateur de mail conférencier (`openSpeakerEmail` dans `EventDossier.tsx`, lignes 1173-1186) applique **le brouillon sauvegardé sur le dossier avant le template** :
 
-## Constat
+```
+if (savedSubject || savedBody) {  // events.speaker_info_email_body
+   setSpeakerEmailBody(savedBody)  // ← court-circuite le template DB
+   return
+}
+```
 
-Dans `src/components/admin/EventDossier.tsx`, le générateur du corps d'email (`buildSpeakerEmailBody`) inclut déjà `contract.event_description`, mais :
-- il est placé entre « Thématique » et « Client » (pas après Budget comme demandé) ;
-- il n'existe pas dans le mail « contrat/BDC » envoyé au conférencier ;
-- s'il n'apparaît pas dans le dossier Davido Consulting, c'est parce qu'un **brouillon d'email** a été sauvegardé précédemment (`events.speaker_info_email_body`) : à l'ouverture du dialog, le brouillon écrase le contenu régénéré.
+Donc, dès qu'un dossier a été édité/enregistré une fois via « Enregistrer le brouillon » (ou envoyé), le contenu figé dans `events.speaker_info_email_body` remplace toujours le template. Les modifs faites dans Admin > Emails ne s'appliquent qu'aux **nouveaux dossiers** sans brouillon.
 
-## Modifications
+## Correctifs
 
-### 1. Mail « Infos conférencier » (type `info`)
+### 1. Supprimer la ligne « 🚗 Frais VHR : Pris en charge directement par le client »
 
-- Déplacer la ligne 📝 Détails juste **après** 💰 Budget (avant 🚗 Frais VHR), pour respecter l'ordre demandé :
-  - 🏢 Client
-  - 💰 Budget
-  - 📝 Détails
-  - 🚗 Frais VHR
-- Utiliser le même helper `line(...)` que les autres champs pour un rendu homogène (paragraphe unique, label + valeur en gras). Le retour à la ligne éventuel dans `event_description` sera préservé via `.replace(/\n/g, "<br>")`.
+Puisque le budget intègre désormais la mention « hors frais VHR », la ligne VHR n'a plus lieu d'être quand aucun frais explicite n'est facturé.
 
-### 2. Mail « Bon de commande conférencier » (type `contract`)
+Dans `src/components/admin/EventDossier.tsx`, fonction `buildSpeakerEmailBody` :
+- `vhrStr` : ne renvoyer une valeur **que** si `travel > 0`, sinon `""` — ainsi le helper `line()` masque la ligne (les deux templates hardcodés info + contract).
+- Idem dans `openSpeakerEmail` (variable `vhrStr` ligne 1197-1199) pour la variable `{{frais_vhr}}` transmise au template DB.
 
-- Ajouter la même ligne 📝 Détails après 💰 Budget dans ce template (aujourd'hui absente).
+Aucune modification du template DB : l'utilisateur gère lui-même son contenu depuis l'admin. Si `frais_vhr` est vide, le template affichera une ligne VHR vide → on ajoute donc côté template DB une mise à jour ciblée pour retirer la ligne `<li>🚗 Frais VHR ...</li>` de `speaker_event_info` et `contract_to_speaker` (uniquement sur `body_html` actuel + `default_body_html`), en conservant l'édition « hors frais VHR » dans la ligne Budget que l'utilisateur a déjà faite.
 
-### 3. Brouillons existants
+### 2. Bouton « Réinitialiser depuis le template »
 
-Aucun écrasement automatique : les dossiers avec un brouillon déjà sauvegardé (ex. Davido Consulting) continueront d'afficher l'ancien texte. Pour bénéficier du nouveau format sur ces dossiers, il suffit de vider le champ email dans le dialog (bouton « Réinitialiser » si présent, ou effacer manuellement puis rouvrir) — les nouveaux dossiers auront directement le bon format.
+Ajouter dans le dialog d'email conférencier un bouton « Réinitialiser depuis le template » qui :
+- vide le brouillon sauvegardé (`speaker_info_email_body/subject/cc` ou variantes contract) ;
+- recharge le corps depuis le template DB `speaker_event_info` / `contract_to_speaker` (fallback hardcodé si absent).
+
+Ainsi, sur les dossiers déjà édités (comme Davido Consulting), un clic suffit pour appliquer les modifs faites dans Admin > Emails.
 
 ## Fichiers touchés
 
-- `src/components/admin/EventDossier.tsx` — fonction `buildSpeakerEmailBody` uniquement (2 templates, ~10 lignes réordonnées/ajoutées). Aucun changement de schéma, aucune donnée à migrer.
+- `src/components/admin/EventDossier.tsx` : `buildSpeakerEmailBody` (2 lignes VHR conditionnelles), `openSpeakerEmail` (vhrStr conditionnel), bouton reset dans le dialog speaker email.
+- Migration SQL ciblée sur `email_templates` (keys `speaker_event_info`, `contract_to_speaker`) : suppression de la ligne `<li>🚗 Frais VHR ...</li>` dans `body_html` et `default_body_html` uniquement.

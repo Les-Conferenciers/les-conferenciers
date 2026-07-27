@@ -1105,7 +1105,7 @@ Nelly Sabde - Les Conférenciers`;
     const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
     const vhrStr = travel > 0
       ? `${travel.toLocaleString("fr-FR")} € HT`
-      : "Pris en charge directement par le client";
+      : "";
 
     const ack = vouvoi
       ? "Pourriez-vous m'accuser réception de ce mail ?"
@@ -1164,6 +1164,70 @@ ${line("🚗 Frais VHR :", vhrStr)}
 <p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
+  const loadSpeakerEmailFromTemplate = async (
+    type: "info" | "contract",
+    addressing: "formal" | "informal"
+  ) => {
+    await loadEmailTemplates();
+    const speaker = getSelectedSpeakerInfo();
+    const speakerName = speaker?.name || "";
+    const firstName = speakerName.split(" ")[0] || "";
+    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
+    const ps = getSelectedSpeaker();
+    const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const travel = ps?.travel_costs || 0;
+    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
+    const vhrStr = travel > 0
+      ? `${travel.toLocaleString("fr-FR")} € HT`
+      : "";
+    const tplKey = type === "info" ? "speaker_event_info" : "contract_to_speaker";
+    const tpl = renderTpl(tplKey, {
+      prenom_conferencier: firstName,
+      conferencier: speakerName,
+      client: proposal.client_name,
+      date_evenement: eventDateLong || "à définir",
+      lieu_evenement: contract?.event_location || "à définir",
+      horaires: contract?.event_time || "à définir",
+      conference: event?.conference_title || "",
+      duree: event?.conference_duration || "",
+      auditoire: event?.audience_size || "à définir",
+      thematique: event?.theme || "à définir",
+      budget: budgetStr,
+      frais_vhr: vhrStr,
+      details: contract?.event_description || "",
+      format: contract?.event_format || "",
+      dress_code: event?.dress_code || "",
+      agent_nom: "Nelly Sabde",
+    });
+    setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));
+    setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, addressing));
+  };
+
+  const handleResetSpeakerEmailFromTemplate = async () => {
+    if (!event) return;
+    const patch: any =
+      speakerEmailType === "info"
+        ? {
+            speaker_info_email_subject: null,
+            speaker_info_email_body: null,
+            speaker_info_email_cc: null,
+          }
+        : {
+            speaker_contract_email_subject: null,
+            speaker_contract_email_body: null,
+            speaker_contract_email_cc: null,
+          };
+    const { error } = await supabase.from("events").update(patch).eq("id", event.id);
+    if (error) {
+      toast.error("Impossible de réinitialiser le brouillon");
+      return;
+    }
+    setSpeakerEmailCc("");
+    await loadSpeakerEmailFromTemplate(speakerEmailType, speakerEmailAddressing);
+    toast.success("Brouillon réinitialisé depuis le template");
+    fetchData();
+  };
+
   const openSpeakerEmail = async (type: "info" | "contract") => {
     setSpeakerEmailType(type);
     const speaker = getSelectedSpeakerInfo();
@@ -1185,39 +1249,7 @@ ${line("🚗 Frais VHR :", vhrStr)}
       return;
     }
 
-    // Try DB template (speaker_event_info / contract_to_speaker), fallback to hardcoded
-    await loadEmailTemplates();
-    const speakerName = speaker?.name || "";
-    const firstName = speakerName.split(" ")[0] || "";
-    const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
-    const ps = getSelectedSpeaker();
-    const budget = event?.speaker_budget || ps?.speaker_fee || 0;
-    const travel = ps?.travel_costs || 0;
-    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
-    const vhrStr = travel > 0
-      ? `${travel.toLocaleString("fr-FR")} € HT`
-      : "Pris en charge directement par le client";
-    const tplKey = type === "info" ? "speaker_event_info" : "contract_to_speaker";
-    const tpl = renderTpl(tplKey, {
-      prenom_conferencier: firstName,
-      conferencier: speakerName,
-      client: proposal.client_name,
-      date_evenement: eventDateLong || "à définir",
-      lieu_evenement: contract?.event_location || "à définir",
-      horaires: contract?.event_time || "à définir",
-      conference: event?.conference_title || "",
-      duree: event?.conference_duration || "",
-      auditoire: event?.audience_size || "à définir",
-      thematique: event?.theme || "à définir",
-      budget: budgetStr,
-      frais_vhr: vhrStr,
-      details: contract?.event_description || "",
-      format: contract?.event_format || "",
-      dress_code: event?.dress_code || "",
-      agent_nom: "Nelly Sabde",
-    });
-    setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));
-    setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, initialAddressing));
+    await loadSpeakerEmailFromTemplate(type, initialAddressing);
     setSpeakerEmailOpen(true);
   };
 
@@ -3359,6 +3391,16 @@ Nelly Sabde - Les Conférenciers`);
               <RichTextEditor value={speakerEmailBody} onChange={setSpeakerEmailBody} />
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="ghost"
+                type="button"
+                className="sm:w-auto text-xs"
+                onClick={handleResetSpeakerEmailFromTemplate}
+                disabled={savingSpeakerDraft || sendingSpeakerEmail}
+                title="Efface le brouillon et recharge le contenu depuis le template configuré dans Admin > Emails"
+              >
+                Réinitialiser depuis le template
+              </Button>
               <Button variant="outline" className="flex-1" onClick={handleSaveSpeakerEmailDraft} disabled={savingSpeakerDraft || sendingSpeakerEmail}>
                 {savingSpeakerDraft ? "Enregistrement…" : "Enregistrer le brouillon"}
               </Button>
