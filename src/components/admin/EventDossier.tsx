@@ -1105,7 +1105,7 @@ Nelly Sabde - Les Conférenciers`;
     const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
     const vhrStr = travel > 0
       ? `${travel.toLocaleString("fr-FR")} € HT`
-      : "Pris en charge directement par le client";
+      : "";
 
     const ack = vouvoi
       ? "Pourriez-vous m'accuser réception de ce mail ?"
