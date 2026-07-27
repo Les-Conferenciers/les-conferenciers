@@ -1196,7 +1196,7 @@ ${line("🚗 Frais VHR :", vhrStr)}
     const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
     const vhrStr = travel > 0
       ? `${travel.toLocaleString("fr-FR")} € HT`
-      : "Pris en charge directement par le client";
+      : "";
     const tplKey = type === "info" ? "speaker_event_info" : "contract_to_speaker";
     const tpl = renderTpl(tplKey, {
       prenom_conferencier: firstName,
