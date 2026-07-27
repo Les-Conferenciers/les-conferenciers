@@ -149,6 +149,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoiceType, setInvoiceType] = useState<"acompte" | "solde" | "total">("total");
   const [dueDate, setDueDate] = useState("");
+  const [createNotes, setCreateNotes] = useState("");
+  const [createBilling, setCreateBilling] = useState<BillingEntity>(EMPTY_BILLING);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Invoice edit
@@ -158,11 +160,17 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
   const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
+  const [editNotes, setEditNotes] = useState("");
+  const [editBilling, setEditBilling] = useState<BillingEntity>(EMPTY_BILLING);
+
+  // Invoice delete confirmation
+  const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
   const [invoiceEmailSubject, setInvoiceEmailSubject] = useState("");
   const [invoiceEmailBody, setInvoiceEmailBody] = useState("");
+  const [invoiceEmailTo, setInvoiceEmailTo] = useState("");
   const [invoiceEmailCc, setInvoiceEmailCc] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
