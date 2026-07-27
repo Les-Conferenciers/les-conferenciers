@@ -1164,29 +1164,12 @@ ${line("🚗 Frais VHR :", vhrStr)}
 <p>Nelly Sabde - Les Conférenciers</p>`;
   };
 
-  const openSpeakerEmail = async (type: "info" | "contract") => {
-    setSpeakerEmailType(type);
-    const speaker = getSelectedSpeakerInfo();
-    const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
-    setSpeakerEmailAddressing(initialAddressing);
-    setSpeakerEmailTo(speaker?.email || "");
-
-    // Restore saved draft if present
-    const ev = event as any;
-    const savedSubject = type === "info" ? ev?.speaker_info_email_subject : ev?.speaker_contract_email_subject;
-    const savedBody = type === "info" ? ev?.speaker_info_email_body : ev?.speaker_contract_email_body;
-    const savedCc = type === "info" ? ev?.speaker_info_email_cc : ev?.speaker_contract_email_cc;
-    setSpeakerEmailCc(savedCc || "");
-
-    if (savedSubject || savedBody) {
-      setSpeakerEmailSubject(savedSubject || buildSpeakerEmailSubject(type));
-      setSpeakerEmailBody(savedBody || buildSpeakerEmailBody(type, initialAddressing));
-      setSpeakerEmailOpen(true);
-      return;
-    }
-
-    // Try DB template (speaker_event_info / contract_to_speaker), fallback to hardcoded
+  const loadSpeakerEmailFromTemplate = async (
+    type: "info" | "contract",
+    addressing: "formal" | "informal"
+  ) => {
     await loadEmailTemplates();
+    const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "";
     const firstName = speakerName.split(" ")[0] || "";
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
@@ -1217,7 +1200,56 @@ ${line("🚗 Frais VHR :", vhrStr)}
       agent_nom: "Nelly Sabde",
     });
     setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));
-    setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, initialAddressing));
+    setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, addressing));
+  };
+
+  const handleResetSpeakerEmailFromTemplate = async () => {
+    if (!event) return;
+    const patch: any =
+      speakerEmailType === "info"
+        ? {
+            speaker_info_email_subject: null,
+            speaker_info_email_body: null,
+            speaker_info_email_cc: null,
+          }
+        : {
+            speaker_contract_email_subject: null,
+            speaker_contract_email_body: null,
+            speaker_contract_email_cc: null,
+          };
+    const { error } = await supabase.from("events").update(patch).eq("id", event.id);
+    if (error) {
+      toast.error("Impossible de réinitialiser le brouillon");
+      return;
+    }
+    setSpeakerEmailCc("");
+    await loadSpeakerEmailFromTemplate(speakerEmailType, speakerEmailAddressing);
+    toast.success("Brouillon réinitialisé depuis le template");
+    fetchData();
+  };
+
+  const openSpeakerEmail = async (type: "info" | "contract") => {
+    setSpeakerEmailType(type);
+    const speaker = getSelectedSpeakerInfo();
+    const initialAddressing: "formal" | "informal" = speaker?.formal_address === false ? "informal" : "formal";
+    setSpeakerEmailAddressing(initialAddressing);
+    setSpeakerEmailTo(speaker?.email || "");
+
+    // Restore saved draft if present
+    const ev = event as any;
+    const savedSubject = type === "info" ? ev?.speaker_info_email_subject : ev?.speaker_contract_email_subject;
+    const savedBody = type === "info" ? ev?.speaker_info_email_body : ev?.speaker_contract_email_body;
+    const savedCc = type === "info" ? ev?.speaker_info_email_cc : ev?.speaker_contract_email_cc;
+    setSpeakerEmailCc(savedCc || "");
+
+    if (savedSubject || savedBody) {
+      setSpeakerEmailSubject(savedSubject || buildSpeakerEmailSubject(type));
+      setSpeakerEmailBody(savedBody || buildSpeakerEmailBody(type, initialAddressing));
+      setSpeakerEmailOpen(true);
+      return;
+    }
+
+    await loadSpeakerEmailFromTemplate(type, initialAddressing);
     setSpeakerEmailOpen(true);
   };
 
