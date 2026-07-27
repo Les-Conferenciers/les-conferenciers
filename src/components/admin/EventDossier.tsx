@@ -1129,9 +1129,9 @@ ${line("🎤 Conférence :", event?.conference_title)}
 ${line("⏱ Durée :", event?.conference_duration)}
 ${line("👥 Auditoire :", event?.audience_size || "à définir")}
 ${line("📋 Thématique :", event?.theme || "à définir")}
-${contract?.event_description ? `<p>📝 Détails : <strong>${contract.event_description.replace(/\n/g, "<br>")}</strong></p>` : ""}
 ${line("🏢 Client :", proposal.client_name)}
 ${line("💰 Budget :", budgetStr)}
+${contract?.event_description ? `<p>📝 Détails : <strong>${contract.event_description.replace(/\n/g, "<br>")}</strong></p>` : ""}
 ${line("🚗 Frais VHR :", vhrStr)}
 ${event?.contact_on_site_name ? `<p>👤 Contact sur place : <strong>${event.contact_on_site_name}${event?.contact_on_site_phone ? ` - ${event.contact_on_site_phone}` : ""}${event?.contact_on_site_email ? ` - ${event.contact_on_site_email}` : ""}</strong></p>` : ""}
 ${line("🚗 Arrivée :", event?.arrival_info)}
@@ -1157,6 +1157,7 @@ ${line("📅 Date de l'évènement :", dateStr)}
 ${line("📍 Lieu :", contract?.event_location || "à définir")}
 ${line("🏢 Client :", proposal.client_name)}
 ${line("💰 Budget :", budgetStr)}
+${contract?.event_description ? `<p>📝 Détails : <strong>${contract.event_description.replace(/\n/g, "<br>")}</strong></p>` : ""}
 ${line("🚗 Frais VHR :", vhrStr)}
 <p><strong>${ack}</strong> ${sendBack}</p>
 <p>${sign}</p>
