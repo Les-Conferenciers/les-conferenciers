@@ -462,7 +462,7 @@ const AdminEventDossiers = () => {
   }, [enriched, tab, archiveFilter, search]);
 
   const counts = useMemo(() => ({
-    enCours: enriched.filter((r) => !r.isArchived).length,
+    enCours: enriched.filter((r) => !r.isArchived && !(r.invoiceSentClient && !r.invoicePaidClient)).length,
     attentePaiement: enriched.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient).length,
     archives: enriched.filter((r) => r.isArchived).length,
     gagnes: enriched.filter((r) => r.archiveStatus === "gagne").length,
