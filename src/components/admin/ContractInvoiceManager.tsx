@@ -1193,19 +1193,45 @@ Nelly Sabde - Les Conférenciers`);
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </Button>
+                  {inv.status !== "paid" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDuplicateInvoice(inv)}
+                      title="Dupliquer (refaire la facture)"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {inv.status !== "paid" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeletingInvoice(inv)}
+                      title="Supprimer la facture"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                   {inv.status === "draft" && (
                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => openInvoiceEmail(inv)}>
                       <Send className="h-3 w-3" /> Envoyer
                     </Button>
                   )}
                   {inv.status === "sent" && (
-                    <Button
-                      size="sm"
-                      className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => handleMarkPaid(inv)}
-                    >
-                      <CheckCircle className="h-3 w-3" /> Marquer payée
-                    </Button>
+                    <>
+                      <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => openInvoiceEmail(inv)} title="Renvoyer par email">
+                        <Send className="h-3 w-3" /> Renvoyer
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => handleMarkPaid(inv)}
+                      >
+                        <CheckCircle className="h-3 w-3" /> Marquer payée
+                      </Button>
+                    </>
                   )}
                   {inv.status === "paid" && (
                     <Button
