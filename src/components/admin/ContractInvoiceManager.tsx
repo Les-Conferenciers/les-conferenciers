@@ -76,7 +76,24 @@ type Invoice = {
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
+  notes?: string | null;
+  email_cc?: string | null;
+  billing_entity_name?: string | null;
+  billing_entity_address?: string | null;
+  billing_entity_siret?: string | null;
+  billing_entity_vat?: string | null;
+  billing_entity_email?: string | null;
 };
+
+type BillingEntity = {
+  name: string;
+  address: string;
+  siret: string;
+  vat: string;
+  email: string;
+};
+
+const EMPTY_BILLING: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "" };
 
 type ContractLine = {
   id: string;
