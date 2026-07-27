@@ -3391,6 +3391,16 @@ Nelly Sabde - Les Conférenciers`);
               <RichTextEditor value={speakerEmailBody} onChange={setSpeakerEmailBody} />
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="ghost"
+                type="button"
+                className="sm:w-auto text-xs"
+                onClick={handleResetSpeakerEmailFromTemplate}
+                disabled={savingSpeakerDraft || sendingSpeakerEmail}
+                title="Efface le brouillon et recharge le contenu depuis le template configuré dans Admin > Emails"
+              >
+                Réinitialiser depuis le template
+              </Button>
               <Button variant="outline" className="flex-1" onClick={handleSaveSpeakerEmailDraft} disabled={savingSpeakerDraft || sendingSpeakerEmail}>
                 {savingSpeakerDraft ? "Enregistrement…" : "Enregistrer le brouillon"}
               </Button>
