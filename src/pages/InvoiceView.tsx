@@ -19,6 +19,11 @@ type InvoiceData = {
   contract_id: string | null;
   proposal_id: string;
   notes: string | null;
+  billing_entity_name?: string | null;
+  billing_entity_address?: string | null;
+  billing_entity_siret?: string | null;
+  billing_entity_vat?: string | null;
+  billing_entity_email?: string | null;
 };
 
 const InvoiceView = () => {
