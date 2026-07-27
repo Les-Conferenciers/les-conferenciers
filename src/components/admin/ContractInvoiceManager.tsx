@@ -1280,6 +1280,63 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Mentions sur la facture (BDC client, destinataire interne, n° d'engagement…)</Label>
+              <Textarea
+                rows={3}
+                value={createNotes}
+                onChange={(e) => setCreateNotes(e.target.value)}
+                placeholder="Ex : BDC n°12345 — À l'attention de M. Dupont — N° d'engagement 6789"
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">Ce texte apparaîtra sur la facture PDF envoyée au client.</p>
+            </div>
+
+            <details className="border border-border rounded-lg p-3 group">
+              <summary className="text-xs font-medium cursor-pointer select-none">
+                Facturer à une autre entité (optionnel)
+              </summary>
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => setCreateBilling({ ...EMPTY_BILLING, name: proposal.client_name, email: proposal.client_email || "" })}
+                  >
+                    Copier depuis le client
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => setCreateBilling(EMPTY_BILLING)}>
+                    Effacer
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Raison sociale</Label>
+                  <Input value={createBilling.name} onChange={(e) => setCreateBilling({ ...createBilling, name: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Adresse complète</Label>
+                  <Textarea rows={2} value={createBilling.address} onChange={(e) => setCreateBilling({ ...createBilling, address: e.target.value })} className="text-sm" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">SIRET</Label>
+                    <Input value={createBilling.siret} onChange={(e) => setCreateBilling({ ...createBilling, siret: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">N° TVA intra</Label>
+                    <Input value={createBilling.vat} onChange={(e) => setCreateBilling({ ...createBilling, vat: e.target.value })} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email de facturation (destinataire par défaut)</Label>
+                  <Input type="email" value={createBilling.email} onChange={(e) => setCreateBilling({ ...createBilling, email: e.target.value })} />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Si renseignée, la facture sera adressée à cette entité (avec la mention « Pour le compte de {proposal.client_name} »).</p>
+              </div>
+            </details>
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Montant HT</span>
