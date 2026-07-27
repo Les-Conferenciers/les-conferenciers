@@ -489,7 +489,13 @@ Nelly Sabde - Les Conférenciers`;
       tva_rate: tvaRate,
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
-    });
+      notes: createNotes.trim() || null,
+      billing_entity_name: createBilling.name.trim() || null,
+      billing_entity_address: createBilling.address.trim() || null,
+      billing_entity_siret: createBilling.siret.trim() || null,
+      billing_entity_vat: createBilling.vat.trim() || null,
+      billing_entity_email: createBilling.email.trim() || null,
+    } as any);
     if (error) {
       toast.error("Erreur création facture");
       console.error(error);
@@ -497,6 +503,8 @@ Nelly Sabde - Les Conférenciers`;
       toast.success("Facture créée !");
       setInvoiceDialogOpen(false);
       setDueDate("");
+      setCreateNotes("");
+      setCreateBilling(EMPTY_BILLING);
       fetchData();
     }
     setCreatingInvoice(false);
@@ -508,6 +516,14 @@ Nelly Sabde - Les Conférenciers`;
     setEditTvaRate(inv.tva_rate);
     setEditDueDate(inv.due_date || "");
     setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
+    setEditNotes((inv as any).notes || "");
+    setEditBilling({
+      name: (inv as any).billing_entity_name || "",
+      address: (inv as any).billing_entity_address || "",
+      siret: (inv as any).billing_entity_siret || "",
+      vat: (inv as any).billing_entity_vat || "",
+      email: (inv as any).billing_entity_email || "",
+    });
     setEditInvoiceOpen(true);
   };
 
@@ -522,7 +538,13 @@ Nelly Sabde - Les Conférenciers`;
         amount_ttc: Math.round(amountTTC * 100) / 100,
         due_date: editDueDate || null,
         invoice_type: editInvoiceType,
-      })
+        notes: editNotes.trim() || null,
+        billing_entity_name: editBilling.name.trim() || null,
+        billing_entity_address: editBilling.address.trim() || null,
+        billing_entity_siret: editBilling.siret.trim() || null,
+        billing_entity_vat: editBilling.vat.trim() || null,
+        billing_entity_email: editBilling.email.trim() || null,
+      } as any)
       .eq("id", editingInvoice.id);
     if (error) {
       toast.error("Erreur");
@@ -531,6 +553,46 @@ Nelly Sabde - Les Conférenciers`;
     }
     setEditInvoiceOpen(false);
     fetchData();
+  };
+
+  const handleDuplicateInvoice = async (inv: Invoice) => {
+    const { error } = await supabase.from("invoices").insert({
+      proposal_id: inv.proposal_id,
+      contract_id: inv.contract_id,
+      invoice_number: "",
+      invoice_type: inv.invoice_type,
+      amount_ht: inv.amount_ht,
+      tva_rate: inv.tva_rate,
+      amount_ttc: inv.amount_ttc,
+      due_date: inv.due_date,
+      notes: (inv as any).notes || null,
+      billing_entity_name: (inv as any).billing_entity_name || null,
+      billing_entity_address: (inv as any).billing_entity_address || null,
+      billing_entity_siret: (inv as any).billing_entity_siret || null,
+      billing_entity_vat: (inv as any).billing_entity_vat || null,
+      billing_entity_email: (inv as any).billing_entity_email || null,
+    } as any);
+    if (error) {
+      toast.error("Erreur duplication");
+      console.error(error);
+    } else {
+      toast.success("Facture dupliquée — n° régénéré");
+      fetchData();
+    }
+  };
+
+  const handleDeleteInvoice = async () => {
+    if (!deletingInvoice) return;
+    const { error } = await supabase.from("invoices").delete().eq("id", deletingInvoice.id);
+    if (error) {
+      toast.error("Erreur suppression");
+      console.error(error);
+    } else {
+      toast.success(`Facture ${deletingInvoice.invoice_number} supprimée`);
+    }
+    setDeletingInvoice(null);
+    fetchData();
+    onUpdate();
   };
 
   const openInvoiceEmail = async (inv: Invoice) => {
@@ -565,36 +627,50 @@ ${inv.due_date ? `• Échéance : ${new Date(inv.due_date).toLocaleDateString("
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
+    // Destinataires par défaut : email entité de facturation si présent, sinon email client
+    const defaultTo = (inv as any).billing_entity_email || proposal.client_email || "";
+    setInvoiceEmailTo(defaultTo);
     setInvoiceEmailCc(((inv as any).email_cc || "") as string);
     setInvoiceEmailOpen(true);
   };
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
+    const toList = invoiceEmailTo
+      .split(/[,;]/)
+      .map((e) => e.trim())
+      .filter((e) => e.includes("@"));
+    if (toList.length === 0) {
+      toast.error("Ajoute au moins un destinataire valide");
+      return;
+    }
     setSendingInvoice(true);
     try {
       const ccList = invoiceEmailCc
         .split(/[,;]/)
         .map((e) => e.trim())
         .filter((e) => e.includes("@"));
-      const { error } = await supabase.functions.invoke("send-invoice-email", {
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
+          to: toList,
           cc: ccList.length > 0 ? ccList : undefined,
         },
       });
       if (error) throw error;
+      if (data && (data as any).error) throw new Error((data as any).error);
       await supabase
         .from("invoices")
         .update({ status: "sent", sent_at: new Date().toISOString(), email_cc: invoiceEmailCc.trim() || null } as any)
         .eq("id", emailInvoice.id);
-      toast.success(`Facture ${emailInvoice.invoice_number} envoyée !`);
+      toast.success(`Facture ${emailInvoice.invoice_number} envoyée à ${toList.length} destinataire${toList.length > 1 ? "s" : ""}`);
       setInvoiceEmailOpen(false);
       fetchData();
-    } catch {
-      toast.error("Erreur d'envoi");
+    } catch (err: any) {
+      console.error("Send invoice error:", err);
+      toast.error(`Erreur d'envoi : ${err?.message || "inconnue"}`);
     }
     setSendingInvoice(false);
   };
