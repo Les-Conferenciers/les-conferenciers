@@ -5,6 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   FileText,
@@ -76,7 +86,24 @@ type Invoice = {
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
+  notes?: string | null;
+  email_cc?: string | null;
+  billing_entity_name?: string | null;
+  billing_entity_address?: string | null;
+  billing_entity_siret?: string | null;
+  billing_entity_vat?: string | null;
+  billing_entity_email?: string | null;
 };
+
+type BillingEntity = {
+  name: string;
+  address: string;
+  siret: string;
+  vat: string;
+  email: string;
+};
+
+const EMPTY_BILLING: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "" };
 
 type ContractLine = {
   id: string;
@@ -132,6 +159,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoiceType, setInvoiceType] = useState<"acompte" | "solde" | "total">("total");
   const [dueDate, setDueDate] = useState("");
+  const [createNotes, setCreateNotes] = useState("");
+  const [createBilling, setCreateBilling] = useState<BillingEntity>(EMPTY_BILLING);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Invoice edit
@@ -141,11 +170,17 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [editTvaRate, setEditTvaRate] = useState(20);
   const [editDueDate, setEditDueDate] = useState("");
   const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
+  const [editNotes, setEditNotes] = useState("");
+  const [editBilling, setEditBilling] = useState<BillingEntity>(EMPTY_BILLING);
+
+  // Invoice delete confirmation
+  const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
   const [invoiceEmailSubject, setInvoiceEmailSubject] = useState("");
   const [invoiceEmailBody, setInvoiceEmailBody] = useState("");
+  const [invoiceEmailTo, setInvoiceEmailTo] = useState("");
   const [invoiceEmailCc, setInvoiceEmailCc] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
@@ -464,7 +499,13 @@ Nelly Sabde - Les Conférenciers`;
       tva_rate: tvaRate,
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
-    });
+      notes: createNotes.trim() || null,
+      billing_entity_name: createBilling.name.trim() || null,
+      billing_entity_address: createBilling.address.trim() || null,
+      billing_entity_siret: createBilling.siret.trim() || null,
+      billing_entity_vat: createBilling.vat.trim() || null,
+      billing_entity_email: createBilling.email.trim() || null,
+    } as any);
     if (error) {
       toast.error("Erreur création facture");
       console.error(error);
@@ -472,6 +513,8 @@ Nelly Sabde - Les Conférenciers`;
       toast.success("Facture créée !");
       setInvoiceDialogOpen(false);
       setDueDate("");
+      setCreateNotes("");
+      setCreateBilling(EMPTY_BILLING);
       fetchData();
     }
     setCreatingInvoice(false);
@@ -483,6 +526,14 @@ Nelly Sabde - Les Conférenciers`;
     setEditTvaRate(inv.tva_rate);
     setEditDueDate(inv.due_date || "");
     setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
+    setEditNotes((inv as any).notes || "");
+    setEditBilling({
+      name: (inv as any).billing_entity_name || "",
+      address: (inv as any).billing_entity_address || "",
+      siret: (inv as any).billing_entity_siret || "",
+      vat: (inv as any).billing_entity_vat || "",
+      email: (inv as any).billing_entity_email || "",
+    });
     setEditInvoiceOpen(true);
   };
 
@@ -497,7 +548,13 @@ Nelly Sabde - Les Conférenciers`;
         amount_ttc: Math.round(amountTTC * 100) / 100,
         due_date: editDueDate || null,
         invoice_type: editInvoiceType,
-      })
+        notes: editNotes.trim() || null,
+        billing_entity_name: editBilling.name.trim() || null,
+        billing_entity_address: editBilling.address.trim() || null,
+        billing_entity_siret: editBilling.siret.trim() || null,
+        billing_entity_vat: editBilling.vat.trim() || null,
+        billing_entity_email: editBilling.email.trim() || null,
+      } as any)
       .eq("id", editingInvoice.id);
     if (error) {
       toast.error("Erreur");
@@ -506,6 +563,46 @@ Nelly Sabde - Les Conférenciers`;
     }
     setEditInvoiceOpen(false);
     fetchData();
+  };
+
+  const handleDuplicateInvoice = async (inv: Invoice) => {
+    const { error } = await supabase.from("invoices").insert({
+      proposal_id: inv.proposal_id,
+      contract_id: inv.contract_id,
+      invoice_number: "",
+      invoice_type: inv.invoice_type,
+      amount_ht: inv.amount_ht,
+      tva_rate: inv.tva_rate,
+      amount_ttc: inv.amount_ttc,
+      due_date: inv.due_date,
+      notes: (inv as any).notes || null,
+      billing_entity_name: (inv as any).billing_entity_name || null,
+      billing_entity_address: (inv as any).billing_entity_address || null,
+      billing_entity_siret: (inv as any).billing_entity_siret || null,
+      billing_entity_vat: (inv as any).billing_entity_vat || null,
+      billing_entity_email: (inv as any).billing_entity_email || null,
+    } as any);
+    if (error) {
+      toast.error("Erreur duplication");
+      console.error(error);
+    } else {
+      toast.success("Facture dupliquée — n° régénéré");
+      fetchData();
+    }
+  };
+
+  const handleDeleteInvoice = async () => {
+    if (!deletingInvoice) return;
+    const { error } = await supabase.from("invoices").delete().eq("id", deletingInvoice.id);
+    if (error) {
+      toast.error("Erreur suppression");
+      console.error(error);
+    } else {
+      toast.success(`Facture ${deletingInvoice.invoice_number} supprimée`);
+    }
+    setDeletingInvoice(null);
+    fetchData();
+    onUpdate();
   };
 
   const openInvoiceEmail = async (inv: Invoice) => {
@@ -540,36 +637,50 @@ ${inv.due_date ? `• Échéance : ${new Date(inv.due_date).toLocaleDateString("
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
+    // Destinataires par défaut : email entité de facturation si présent, sinon email client
+    const defaultTo = (inv as any).billing_entity_email || proposal.client_email || "";
+    setInvoiceEmailTo(defaultTo);
     setInvoiceEmailCc(((inv as any).email_cc || "") as string);
     setInvoiceEmailOpen(true);
   };
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
+    const toList = invoiceEmailTo
+      .split(/[,;]/)
+      .map((e) => e.trim())
+      .filter((e) => e.includes("@"));
+    if (toList.length === 0) {
+      toast.error("Ajoute au moins un destinataire valide");
+      return;
+    }
     setSendingInvoice(true);
     try {
       const ccList = invoiceEmailCc
         .split(/[,;]/)
         .map((e) => e.trim())
         .filter((e) => e.includes("@"));
-      const { error } = await supabase.functions.invoke("send-invoice-email", {
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
+          to: toList,
           cc: ccList.length > 0 ? ccList : undefined,
         },
       });
       if (error) throw error;
+      if (data && (data as any).error) throw new Error((data as any).error);
       await supabase
         .from("invoices")
         .update({ status: "sent", sent_at: new Date().toISOString(), email_cc: invoiceEmailCc.trim() || null } as any)
         .eq("id", emailInvoice.id);
-      toast.success(`Facture ${emailInvoice.invoice_number} envoyée !`);
+      toast.success(`Facture ${emailInvoice.invoice_number} envoyée à ${toList.length} destinataire${toList.length > 1 ? "s" : ""}`);
       setInvoiceEmailOpen(false);
       fetchData();
-    } catch {
-      toast.error("Erreur d'envoi");
+    } catch (err: any) {
+      console.error("Send invoice error:", err);
+      toast.error(`Erreur d'envoi : ${err?.message || "inconnue"}`);
     }
     setSendingInvoice(false);
   };
@@ -1092,19 +1203,45 @@ Nelly Sabde - Les Conférenciers`);
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </Button>
+                  {inv.status !== "paid" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDuplicateInvoice(inv)}
+                      title="Dupliquer (refaire la facture)"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {inv.status !== "paid" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeletingInvoice(inv)}
+                      title="Supprimer la facture"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                   {inv.status === "draft" && (
                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => openInvoiceEmail(inv)}>
                       <Send className="h-3 w-3" /> Envoyer
                     </Button>
                   )}
                   {inv.status === "sent" && (
-                    <Button
-                      size="sm"
-                      className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => handleMarkPaid(inv)}
-                    >
-                      <CheckCircle className="h-3 w-3" /> Marquer payée
-                    </Button>
+                    <>
+                      <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => openInvoiceEmail(inv)} title="Renvoyer par email">
+                        <Send className="h-3 w-3" /> Renvoyer
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => handleMarkPaid(inv)}
+                      >
+                        <CheckCircle className="h-3 w-3" /> Marquer payée
+                      </Button>
+                    </>
                   )}
                   {inv.status === "paid" && (
                     <Button
@@ -1153,6 +1290,63 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Mentions sur la facture (BDC client, destinataire interne, n° d'engagement…)</Label>
+              <Textarea
+                rows={3}
+                value={createNotes}
+                onChange={(e) => setCreateNotes(e.target.value)}
+                placeholder="Ex : BDC n°12345 — À l'attention de M. Dupont — N° d'engagement 6789"
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">Ce texte apparaîtra sur la facture PDF envoyée au client.</p>
+            </div>
+
+            <details className="border border-border rounded-lg p-3 group">
+              <summary className="text-xs font-medium cursor-pointer select-none">
+                Facturer à une autre entité (optionnel)
+              </summary>
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => setCreateBilling({ ...EMPTY_BILLING, name: proposal.client_name, email: proposal.client_email || "" })}
+                  >
+                    Copier depuis le client
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => setCreateBilling(EMPTY_BILLING)}>
+                    Effacer
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Raison sociale</Label>
+                  <Input value={createBilling.name} onChange={(e) => setCreateBilling({ ...createBilling, name: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Adresse complète</Label>
+                  <Textarea rows={2} value={createBilling.address} onChange={(e) => setCreateBilling({ ...createBilling, address: e.target.value })} className="text-sm" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">SIRET</Label>
+                    <Input value={createBilling.siret} onChange={(e) => setCreateBilling({ ...createBilling, siret: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">N° TVA intra</Label>
+                    <Input value={createBilling.vat} onChange={(e) => setCreateBilling({ ...createBilling, vat: e.target.value })} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email de facturation (destinataire par défaut)</Label>
+                  <Input type="email" value={createBilling.email} onChange={(e) => setCreateBilling({ ...createBilling, email: e.target.value })} />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Si renseignée, la facture sera adressée à cette entité (avec la mention « Pour le compte de {proposal.client_name} »).</p>
+              </div>
+            </details>
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Montant HT</span>
@@ -1232,6 +1426,63 @@ Nelly Sabde - Les Conférenciers`);
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} />
             </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Mentions sur la facture (BDC client, destinataire interne, n° d'engagement…)</Label>
+              <Textarea
+                rows={3}
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Ex : BDC n°12345 — À l'attention de M. Dupont — N° d'engagement 6789"
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">Ce texte apparaîtra sur la facture PDF envoyée au client.</p>
+            </div>
+
+            <details className="border border-border rounded-lg p-3">
+              <summary className="text-xs font-medium cursor-pointer select-none">
+                Facturer à une autre entité (optionnel)
+                {editBilling.name && <span className="ml-2 text-primary">• {editBilling.name}</span>}
+              </summary>
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => setEditBilling({ ...EMPTY_BILLING, name: proposal.client_name, email: proposal.client_email || "" })}
+                  >
+                    Copier depuis le client
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => setEditBilling(EMPTY_BILLING)}>
+                    Effacer
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Raison sociale</Label>
+                  <Input value={editBilling.name} onChange={(e) => setEditBilling({ ...editBilling, name: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Adresse complète</Label>
+                  <Textarea rows={2} value={editBilling.address} onChange={(e) => setEditBilling({ ...editBilling, address: e.target.value })} className="text-sm" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">SIRET</Label>
+                    <Input value={editBilling.siret} onChange={(e) => setEditBilling({ ...editBilling, siret: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">N° TVA intra</Label>
+                    <Input value={editBilling.vat} onChange={(e) => setEditBilling({ ...editBilling, vat: e.target.value })} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email de facturation (destinataire par défaut)</Label>
+                  <Input type="email" value={editBilling.email} onChange={(e) => setEditBilling({ ...editBilling, email: e.target.value })} />
+                </div>
+              </div>
+            </details>
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
               <span>Total TTC</span>
               <span>
@@ -1252,6 +1503,18 @@ Nelly Sabde - Les Conférenciers`);
             <DialogTitle className="font-serif">Envoyer la facture {emailInvoice?.invoice_number}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Destinataires (séparés par , ou ;)</Label>
+              <Input
+                type="text"
+                placeholder="destinataire1@exemple.com, destinataire2@exemple.com"
+                value={invoiceEmailTo}
+                onChange={(e) => setInvoiceEmailTo(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Ajoute plusieurs adresses pour envoyer la facture à plusieurs personnes.
+              </p>
+            </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
               <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
@@ -1294,6 +1557,24 @@ Nelly Sabde - Les Conférenciers`);
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Invoice delete confirmation */}
+      <AlertDialog open={!!deletingInvoice} onOpenChange={(open) => !open && setDeletingInvoice(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer la facture {deletingInvoice?.invoice_number} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. La facture sera définitivement supprimée. Le numéro pourra être réattribué à une nouvelle facture.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDeleteInvoice}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
