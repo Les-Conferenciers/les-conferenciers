@@ -431,7 +431,8 @@ const AdminEventDossiers = () => {
   const filtered = useMemo(() => {
     let list = enriched;
     if (tab === "en_cours") {
-      list = list.filter((r) => !r.isArchived);
+      // Exclure les dossiers en attente de paiement (facture envoyée non payée)
+      list = list.filter((r) => !r.isArchived && !(r.invoiceSentClient && !r.invoicePaidClient));
     } else if (tab === "attente_paiement") {
       // Facture envoyée mais pas encore payée (côté client) — non archivés
       list = list.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient);
