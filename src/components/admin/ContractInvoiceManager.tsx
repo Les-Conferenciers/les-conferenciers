@@ -1547,6 +1547,24 @@ Nelly Sabde - Les Conférenciers`);
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Invoice delete confirmation */}
+      <AlertDialog open={!!deletingInvoice} onOpenChange={(open) => !open && setDeletingInvoice(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer la facture {deletingInvoice?.invoice_number} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. La facture sera définitivement supprimée. Le numéro pourra être réattribué à une nouvelle facture.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDeleteInvoice}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
