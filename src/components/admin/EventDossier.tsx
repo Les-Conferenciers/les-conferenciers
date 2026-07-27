@@ -1181,22 +1181,36 @@ ${line("🚗 Frais VHR :", vhrStr)}
       ? `${travel.toLocaleString("fr-FR")} € HT`
       : "";
     const tplKey = type === "info" ? "speaker_event_info" : "contract_to_speaker";
+    const contactOnSite = [
+      event?.contact_on_site_name,
+      event?.contact_on_site_phone,
+      event?.contact_on_site_email,
+    ]
+      .filter((v) => v && String(v).trim() !== "")
+      .join(" - ");
     const tpl = renderTpl(tplKey, {
       prenom_conferencier: firstName,
       conferencier: speakerName,
       client: proposal.client_name,
-      date_evenement: eventDateLong || "à définir",
-      lieu_evenement: contract?.event_location || "à définir",
-      horaires: contract?.event_time || "à définir",
+      date_evenement: eventDateLong || "",
+      lieu_evenement: contract?.event_location || "",
+      horaires: contract?.event_time || "",
       conference: event?.conference_title || "",
       duree: event?.conference_duration || "",
-      auditoire: event?.audience_size || "à définir",
-      thematique: event?.theme || "à définir",
-      budget: budgetStr,
+      auditoire: event?.audience_size || "",
+      thematique: event?.theme || "",
+      budget: budgetStr === "à définir" ? "" : budgetStr,
       frais_vhr: vhrStr,
       details: contract?.event_description || "",
       format: contract?.event_format || "",
       dress_code: event?.dress_code || "",
+      contact_sur_place: contactOnSite,
+      arrivee: event?.arrival_info || "",
+      parking: event?.parking_info || "",
+      hotel: event?.hotel_info || "",
+      technique: event?.tech_needs || "",
+      config_salle: event?.room_setup || "",
+      remarques: event?.special_requests || "",
       agent_nom: "Nelly Sabde",
     });
     setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));

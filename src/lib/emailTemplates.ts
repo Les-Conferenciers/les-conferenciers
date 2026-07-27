@@ -32,8 +32,51 @@ export async function loadEmailTemplates(force = false): Promise<void> {
   return loadingPromise;
 }
 
-const substitute = (s: string, vars: Record<string, string>) =>
-  s.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, k) => (vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : `{{${k}}}`));
+// Resolve mustache-style sections {{#var}}…{{/var}} before variable substitution.
+// If vars[var] is empty/undefined/null the whole block (typically wrapping a <li>) is stripped.
+const resolveSections = (s: string, vars: Record<string, string>): string => {
+  const re = /\{\{#\s*([a-zA-Z0-9_]+)\s*\}\}([\s\S]*?)\{\{\/\s*\1\s*\}\}/g;
+  let prev: string;
+  let out = s;
+  do {
+    prev = out;
+    out = out.replace(re, (_m, key: string, inner: string) => {
+      const v = vars[key];
+      return v !== undefined && v !== null && String(v).trim() !== "" ? inner : "";
+    });
+  } while (out !== prev);
+  return out;
+};
+
+// Safety net: remove <li>/<p> that ended up empty after substitution
+// (e.g. legacy templates without section syntax where a variable was empty).
+const cleanupEmptyBlocks = (s: string): string => {
+  let out = s;
+  // <strong></strong> or <strong> </strong>
+  out = out.replace(/<strong>\s*<\/strong>/gi, "");
+  // <li>...</li> whose text content is empty or only whitespace/punctuation
+  out = out.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (m, inner) => {
+    const text = inner.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+    // Strip if empty, or only label punctuation like "Label :" with no value
+    if (!text) return "";
+    if (/^[^\wÀ-ÿ]*$/.test(text)) return "";
+    if (/:\s*$/.test(text)) return "";
+    return m;
+  });
+  // <p>...</p> emptied out
+  out = out.replace(/<p[^>]*>\s*(?:<br\s*\/?>)?\s*<\/p>/gi, "");
+  // Collapse leftover empty <ul></ul>
+  out = out.replace(/<ul[^>]*>\s*<\/ul>/gi, "");
+  return out;
+};
+
+const substitute = (s: string, vars: Record<string, string>) => {
+  const sectioned = resolveSections(s, vars);
+  const replaced = sectioned.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, k) =>
+    vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : `{{${k}}}`
+  );
+  return cleanupEmptyBlocks(replaced);
+};
 
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
