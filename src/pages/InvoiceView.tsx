@@ -19,6 +19,11 @@ type InvoiceData = {
   contract_id: string | null;
   proposal_id: string;
   notes: string | null;
+  billing_entity_name?: string | null;
+  billing_entity_address?: string | null;
+  billing_entity_siret?: string | null;
+  billing_entity_vat?: string | null;
+  billing_entity_email?: string | null;
 };
 
 const InvoiceView = () => {
@@ -208,18 +213,44 @@ const InvoiceView = () => {
           </div>
         </div>
 
-        {/* Client (sans label "Facturé à") */}
+        {/* Client / entité facturée */}
         <section className="mb-6">
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 max-w-md">
-            <p className="font-semibold text-base text-gray-900">{client?.company_name || proposal?.client_name}</p>
-            {client?.contact_name && <p className="text-gray-700">{client.contact_name}</p>}
-            {(client?.address || client?.city) && (
-              <p className="text-gray-700 mt-1">
-                {client?.address}{client?.address && client?.city ? ", " : ""}{client?.city}
-              </p>
+            {invoice.billing_entity_name ? (
+              <>
+                <p className="font-semibold text-base text-gray-900">{invoice.billing_entity_name}</p>
+                {invoice.billing_entity_address && (
+                  <p className="text-gray-700 mt-1 whitespace-pre-line">{invoice.billing_entity_address}</p>
+                )}
+                {invoice.billing_entity_siret && (
+                  <p className="text-gray-600 text-xs mt-1">SIRET : {invoice.billing_entity_siret}</p>
+                )}
+                {invoice.billing_entity_vat && (
+                  <p className="text-gray-600 text-xs">TVA : {invoice.billing_entity_vat}</p>
+                )}
+                <p className="text-gray-500 text-xs mt-2 italic">
+                  Pour le compte de : {client?.company_name || proposal?.client_name}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-base text-gray-900">{client?.company_name || proposal?.client_name}</p>
+                {client?.contact_name && <p className="text-gray-700">{client.contact_name}</p>}
+                {(client?.address || client?.city) && (
+                  <p className="text-gray-700 mt-1">
+                    {client?.address}{client?.address && client?.city ? ", " : ""}{client?.city}
+                  </p>
+                )}
+                {client?.siret && <p className="text-gray-600 text-xs mt-1">RCS / SIRET : {client.siret}</p>}
+              </>
             )}
-            {client?.siret && <p className="text-gray-600 text-xs mt-1">RCS / SIRET : {client.siret}</p>}
           </div>
+          {invoice.notes && (
+            <div className="mt-3 border border-gray-300 rounded-lg p-3 max-w-md bg-white">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Références client</p>
+              <p className="text-sm text-gray-800 whitespace-pre-line">{invoice.notes}</p>
+            </div>
+          )}
         </section>
 
         {/* Mention BDC à rappeler */}

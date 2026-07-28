@@ -63,7 +63,7 @@ const AdminEventDossiers = () => {
   const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu">("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [pageSize, setPageSize] = useState<10 | 50 | 100>(10);
+  const [pageSize, setPageSize] = useState<10 | 50 | 100 | 150>(150);
   const [lostDialogId, setLostDialogId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
@@ -431,7 +431,8 @@ const AdminEventDossiers = () => {
   const filtered = useMemo(() => {
     let list = enriched;
     if (tab === "en_cours") {
-      list = list.filter((r) => !r.isArchived);
+      // Exclure les dossiers en attente de paiement (facture envoyée non payée)
+      list = list.filter((r) => !r.isArchived && !(r.invoiceSentClient && !r.invoicePaidClient));
     } else if (tab === "attente_paiement") {
       // Facture envoyée mais pas encore payée (côté client) — non archivés
       list = list.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient);
@@ -461,7 +462,7 @@ const AdminEventDossiers = () => {
   }, [enriched, tab, archiveFilter, search]);
 
   const counts = useMemo(() => ({
-    enCours: enriched.filter((r) => !r.isArchived).length,
+    enCours: enriched.filter((r) => !r.isArchived && !(r.invoiceSentClient && !r.invoicePaidClient)).length,
     attentePaiement: enriched.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient).length,
     archives: enriched.filter((r) => r.isArchived).length,
     gagnes: enriched.filter((r) => r.archiveStatus === "gagne").length,
@@ -718,7 +719,7 @@ const AdminEventDossiers = () => {
       {filtered.length > 10 && (
         <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
           <span>Afficher</span>
-          {([10, 50, 100] as const).map(n => (
+          {([10, 50, 100, 150] as const).map(n => (
             <button
               key={n}
               type="button"
