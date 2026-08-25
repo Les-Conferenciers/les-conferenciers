@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User } from "lucide-react";
+import { User, Plus, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-type Profile = { id: string; slug: string; name: string };
+type Profile = { id: string; slug: string; name: string; landing_label?: string | null };
 type Row = {
   id: string;
   name: string;
@@ -32,13 +33,18 @@ const AdminSpeakerProfiles = () => {
   const [bulkProfile, setBulkProfile] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   const load = async () => {
     setLoading(true);
     let query = supabase.from("speakers").select("id, name, role, themes, image_url, profile_id, archived").order("name");
     if (!includeArchived) query = query.eq("archived", false);
     const [p, s] = await Promise.all([
-      supabase.from("speaker_profiles").select("id, slug, name").order("display_order"),
+      supabase.from("speaker_profiles").select("id, slug, name, landing_label").order("display_order"),
       query,
     ]);
     if (p.data) setProfiles(p.data as Profile[]);
@@ -89,6 +95,74 @@ const AdminSpeakerProfiles = () => {
     else setSelected(new Set(filtered.map(r => r.id)));
   };
 
+  const slugify = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/['’]/g, " ")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+  const reloadProfiles = async () => {
+    const { data } = await supabase
+      .from("speaker_profiles")
+      .select("id, slug, name, landing_label")
+      .order("display_order");
+    if (data) setProfiles(data as Profile[]);
+  };
+
+  const createProfile = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    const slug = slugify(name);
+    if (!slug) { toast.error("Nom invalide"); return; }
+    if (profiles.some(p => p.slug === slug)) { toast.error("Ce profil existe déjà"); return; }
+    setSaving(true);
+    const { data: maxRow } = await supabase
+      .from("speaker_profiles").select("display_order").order("display_order", { ascending: false }).limit(1).maybeSingle();
+    const { error } = await supabase.from("speaker_profiles").insert({
+      slug,
+      name,
+      landing_label: `Conférenciers ${name.toLowerCase()}`,
+      landing_enabled: false,
+      display_order: ((maxRow?.display_order as number) ?? 0) + 10,
+    });
+    setSaving(false);
+    if (error) { toast.error(`Échec de la création : ${error.message}`); return; }
+    setNewName("");
+    await reloadProfiles();
+    toast.success(`Profil « ${name} » créé`);
+  };
+
+  const renameProfile = async (p: Profile) => {
+    const name = editingName.trim();
+    if (!name) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("speaker_profiles")
+      .update({ name, landing_label: `Conférenciers ${name.toLowerCase()}` })
+      .eq("id", p.id);
+    setSaving(false);
+    if (error) { toast.error("Échec du renommage"); return; }
+    setEditingId(null);
+    await reloadProfiles();
+    toast.success("Profil renommé");
+  };
+
+  const deleteProfile = async (p: Profile) => {
+    const { count } = await supabase
+      .from("speakers")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", p.id);
+    if ((count ?? 0) > 0) {
+      toast.error(`${count} conférencier(s) sont rattachés à « ${p.name} ». Réaffecte-les avant de supprimer.`);
+      return;
+    }
+    if (!window.confirm(`Supprimer le profil « ${p.name} » ?`)) return;
+    const { error } = await supabase.from("speaker_profiles").delete().eq("id", p.id);
+    if (error) { toast.error("Échec de la suppression"); return; }
+    await reloadProfiles();
+    toast.success("Profil supprimé");
+  };
+
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 items-center">
@@ -96,6 +170,9 @@ const AdminSpeakerProfiles = () => {
         {profiles.map(p => (
           <Badge key={p.id} variant="outline">{p.name} : {counts.get(p.id) || 0}</Badge>
         ))}
+        <Button size="sm" variant="outline" className="gap-1.5 ml-auto" onClick={() => setManageOpen(true)}>
+          <Plus className="h-3.5 w-3.5" /> Gérer les profils
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
@@ -196,6 +273,78 @@ const AdminSpeakerProfiles = () => {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Gérer les profils</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs text-muted-foreground">Nom du nouveau profil</Label>
+              <Input
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); createProfile(); } }}
+              />
+            </div>
+            <Button onClick={createProfile} disabled={saving || !newName.trim()} className="gap-1.5">
+              <Plus className="h-4 w-4" /> Créer
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground -mt-2">
+            L'URL et le libellé de la page sont générés automatiquement. La page publique reste désactivée tant que tu ne l'actives pas dans « Pages profils ».
+          </p>
+
+          <div className="max-h-[50vh] overflow-y-auto divide-y border rounded-md">
+            {profiles.map(p => (
+              <div key={p.id} className="flex items-center gap-2 p-2">
+                {editingId === p.id ? (
+                  <>
+                    <Input
+                      value={editingName}
+                      onChange={e => setEditingName(e.target.value)}
+                      className="flex-1 h-8"
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); renameProfile(p); } }}
+                    />
+                    <Button size="sm" onClick={() => renameProfile(p)} disabled={saving}>OK</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Annuler</Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{p.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">/{p.slug} — {counts.get(p.id) || 0} conférencier(s)</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setEditingId(p.id); setEditingName(p.name); }}
+                      title="Renommer"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => deleteProfile(p)}
+                      title="Supprimer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManageOpen(false)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
