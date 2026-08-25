@@ -1562,6 +1562,23 @@ ${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any)
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
   };
 
+  const liaisonSentLabel = (target: "client" | "speaker") => {
+    const first = target === "client" ? event?.liaison_email_client_sent_at : event?.liaison_email_speaker_sent_at;
+    const last = target === "client"
+      ? (event as any)?.liaison_email_client_last_sent_at
+      : (event as any)?.liaison_email_speaker_last_sent_at;
+    const count = (target === "client"
+      ? (event as any)?.liaison_email_client_send_count
+      : (event as any)?.liaison_email_speaker_send_count) ?? (first ? 1 : 0);
+    const who = target === "client" ? "client" : "conférencier";
+    let label = `Email ${who} envoyé le ${formatDate(first as string)}`;
+    if (last && first && new Date(last).getTime() - new Date(first as string).getTime() > 60000) {
+      label += ` · Renvoyé le ${formatDate(last)}`;
+    }
+    if (count > 1) label += ` (${count} envois)`;
+    return label;
+  };
+
   const handleSendLiaisonEmail = async (target: "client" | "speaker") => {
     setSendingLiaison(true);
     await persistLiaisonFields();
@@ -3594,10 +3611,15 @@ Nelly Sabde - Les Conférenciers`);
             </div>
 
             {liaisonTab === "client" ? (
-              event?.liaison_email_client_sent_at ? (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  Email client envoyé le {formatDate(event.liaison_email_client_sent_at)}
+              event?.liaison_email_client_sent_at && !liaisonResend.client ? (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    {liaisonSentLabel("client")}
+                  </span>
+                  <Button size="sm" variant="outline" onClick={() => setLiaisonResend((p) => ({ ...p, client: true }))}>
+                    Modifier et renvoyer
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -3628,16 +3650,28 @@ Nelly Sabde - Les Conférenciers`);
                     <Label className="text-xs">Corps du mail</Label>
                     <RichTextEditor value={liaisonClientBody} onChange={setLiaisonClientBody} />
                   </div>
-                  <Button className="w-full" onClick={() => handleSendLiaisonEmail("client")} disabled={sendingLiaison}>
-                    <Send className="h-4 w-4 mr-2" />
-                    {sendingLiaison ? "Envoi…" : "Envoyer au client"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button className="flex-1" onClick={() => handleSendLiaisonEmail("client")} disabled={sendingLiaison}>
+                      <Send className="h-4 w-4 mr-2" />
+                      {sendingLiaison ? "Envoi…" : liaisonResend.client ? "Renvoyer au client" : "Envoyer au client"}
+                    </Button>
+                    {liaisonResend.client && (
+                      <Button variant="outline" onClick={() => setLiaisonResend((p) => ({ ...p, client: false }))} disabled={sendingLiaison}>
+                        Annuler
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )
-            ) : event?.liaison_email_speaker_sent_at ? (
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Email conférencier envoyé le {formatDate(event.liaison_email_speaker_sent_at)}
+            ) : event?.liaison_email_speaker_sent_at && !liaisonResend.speaker ? (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center justify-between gap-2 flex-wrap">
+                <span className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  {liaisonSentLabel("speaker")}
+                </span>
+                <Button size="sm" variant="outline" onClick={() => setLiaisonResend((p) => ({ ...p, speaker: true }))}>
+                  Modifier et renvoyer
+                </Button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -3700,10 +3734,17 @@ Nelly Sabde - Les Conférenciers`);
                   <Label className="text-xs">Corps du mail</Label>
                   <RichTextEditor value={liaisonSpeakerBody} onChange={setLiaisonSpeakerBody} />
                 </div>
-                <Button className="w-full" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
-                  <Send className="h-4 w-4 mr-2" />
-                  {sendingLiaison ? "Envoi…" : "Envoyer au conférencier"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
+                    <Send className="h-4 w-4 mr-2" />
+                    {sendingLiaison ? "Envoi…" : liaisonResend.speaker ? "Renvoyer au conférencier" : "Envoyer au conférencier"}
+                  </Button>
+                  {liaisonResend.speaker && (
+                    <Button variant="outline" onClick={() => setLiaisonResend((p) => ({ ...p, speaker: false }))} disabled={sendingLiaison}>
+                      Annuler
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
