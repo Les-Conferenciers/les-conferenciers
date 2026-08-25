@@ -273,6 +273,78 @@ const AdminSpeakerProfiles = () => {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Gérer les profils</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs text-muted-foreground">Nom du nouveau profil</Label>
+              <Input
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); createProfile(); } }}
+              />
+            </div>
+            <Button onClick={createProfile} disabled={saving || !newName.trim()} className="gap-1.5">
+              <Plus className="h-4 w-4" /> Créer
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground -mt-2">
+            L'URL et le libellé de la page sont générés automatiquement. La page publique reste désactivée tant que tu ne l'actives pas dans « Pages profils ».
+          </p>
+
+          <div className="max-h-[50vh] overflow-y-auto divide-y border rounded-md">
+            {profiles.map(p => (
+              <div key={p.id} className="flex items-center gap-2 p-2">
+                {editingId === p.id ? (
+                  <>
+                    <Input
+                      value={editingName}
+                      onChange={e => setEditingName(e.target.value)}
+                      className="flex-1 h-8"
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); renameProfile(p); } }}
+                    />
+                    <Button size="sm" onClick={() => renameProfile(p)} disabled={saving}>OK</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Annuler</Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{p.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">/{p.slug} — {counts.get(p.id) || 0} conférencier(s)</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setEditingId(p.id); setEditingName(p.name); }}
+                      title="Renommer"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => deleteProfile(p)}
+                      title="Supprimer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManageOpen(false)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
