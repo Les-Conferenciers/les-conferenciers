@@ -4258,6 +4258,18 @@ const AdminProposalsContent = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Copie (CC)</Label>
+                  <Input
+                    value={reminderCc}
+                    onChange={(e) => setReminderCc(e.target.value)}
+                    inputMode="email"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Plusieurs adresses possibles, séparées par des virgules.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Corps du mail</Label>
                   <SimpleRichTextEditor value={reminderBody} onChange={setReminderBody} />
                 </div>
@@ -4269,7 +4281,7 @@ const AdminProposalsContent = () => {
                     sending === reminderProposal.id
                   }
                   onClick={async () => {
-                    await handleReminder(reminderProposal, activeReminderNum, reminderSubject, reminderBody);
+                    await handleReminder(reminderProposal, activeReminderNum, reminderSubject, reminderBody, reminderCc);
                     const taskType = activeReminderNum === 1 ? "relance_1" : "relance_2";
                     const task = editingTasks.find((t: any) => t.task_type === taskType);
                     if (task) {
