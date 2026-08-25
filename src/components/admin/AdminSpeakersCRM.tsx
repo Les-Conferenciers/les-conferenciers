@@ -153,7 +153,7 @@ const AdminSpeakersCRM = () => {
     setLoading(true);
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category, display_order")
+      .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category, profile_id, display_order")
       .order("display_order");
     setSpeakers((data as any) || []);
     setLoading(false);
@@ -282,9 +282,13 @@ const AdminSpeakersCRM = () => {
   // Edit handlers
   const openEdit = (speaker: Speaker) => {
     const parsedImage = parseImagePosition((speaker as any).image_position);
+    supabase.from("speaker_profiles").select("id, name").order("display_order").then(({ data }) => {
+      if (data) setProfiles(data as { id: string; name: string }[]);
+    });
     setEditSpeaker(speaker);
     setEditForm({
       name: speaker.name,
+      profile_id: (speaker as any).profile_id || "",
       specialty: speaker.specialty || speaker.role,
       city: speaker.city,
       base_fee: speaker.base_fee,
@@ -384,6 +388,7 @@ const AdminSpeakersCRM = () => {
         agent_phone: (editForm as any).agent_phone || null,
         agent_email: (editForm as any).agent_email || null,
         internal_category: (editForm as any).internal_category || null,
+        profile_id: (editForm as any).profile_id || null,
       } as any)
       .eq("id", editSpeaker.id);
     if (error) { setSaving(false); toast.error("Erreur de sauvegarde"); return; }
@@ -917,7 +922,7 @@ const AdminSpeakersCRM = () => {
       toast.success(`Fiche enrichie ! ${updatedFields.length > 0 ? "Champs : " + updatedFields.join(", ") : "Aucun nouveau champ"}`);
       await fetchSpeakers();
       const { data: refreshed } = await supabase.from("speakers")
-        .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category")
+        .select("id, name, slug, role, themes, image_url, image_position, biography, specialty, base_fee, fee_details, city, languages, video_url, featured, gender, archived, created_at, why_expertise, why_impact, phone, email, key_points, interview_only, agent_name, agent_phone, agent_email, internal_category, profile_id")
         .eq("id", editSpeaker.id).single();
       if (refreshed) openEdit(refreshed as Speaker);
       fetchConferences(editSpeaker.id);
