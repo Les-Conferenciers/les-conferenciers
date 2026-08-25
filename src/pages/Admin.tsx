@@ -1763,22 +1763,25 @@ const AdminProposalsContent = () => {
     reminderNum: 1 | 2,
     customSubject?: string,
     customBody?: string,
+    cc?: string,
   ) => {
     setSending(proposal.id);
     try {
+      const ccClean = (cc || "").trim();
       const { error } = await supabase.functions.invoke("send-proposal-reminder", {
         body: {
           proposal_id: proposal.id,
           reminder_number: reminderNum,
           custom_subject: customSubject || undefined,
           custom_html_body: customBody || undefined,
+          cc: ccClean || undefined,
         },
       });
       if (error) throw error;
       const field = reminderNum === 1 ? "reminder1_sent_at" : "reminder2_sent_at";
       await supabase
         .from("proposals")
-        .update({ [field]: new Date().toISOString() } as any)
+        .update({ [field]: new Date().toISOString(), email_cc: ccClean || null } as any)
         .eq("id", proposal.id);
       await cancelSiblingPendingTasks(proposal.id, proposal.client_email);
       toast.success(`Relance ${reminderNum} envoyée !`);
