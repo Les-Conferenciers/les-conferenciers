@@ -235,7 +235,11 @@ export type Database = {
           hotel_info: string | null
           id: string
           info_sent_speaker_at: string | null
+          liaison_email_client_last_sent_at: string | null
+          liaison_email_client_send_count: number
           liaison_email_client_sent_at: string | null
+          liaison_email_speaker_last_sent_at: string | null
+          liaison_email_speaker_send_count: number
           liaison_email_speaker_sent_at: string | null
           liaison_sheet_sent_at: string | null
           logistics_info: string | null
@@ -290,7 +294,11 @@ export type Database = {
           hotel_info?: string | null
           id?: string
           info_sent_speaker_at?: string | null
+          liaison_email_client_last_sent_at?: string | null
+          liaison_email_client_send_count?: number
           liaison_email_client_sent_at?: string | null
+          liaison_email_speaker_last_sent_at?: string | null
+          liaison_email_speaker_send_count?: number
           liaison_email_speaker_sent_at?: string | null
           liaison_sheet_sent_at?: string | null
           logistics_info?: string | null
@@ -345,7 +353,11 @@ export type Database = {
           hotel_info?: string | null
           id?: string
           info_sent_speaker_at?: string | null
+          liaison_email_client_last_sent_at?: string | null
+          liaison_email_client_send_count?: number
           liaison_email_client_sent_at?: string | null
+          liaison_email_speaker_last_sent_at?: string | null
+          liaison_email_speaker_send_count?: number
           liaison_email_speaker_sent_at?: string | null
           liaison_sheet_sent_at?: string | null
           logistics_info?: string | null
@@ -689,6 +701,7 @@ export type Database = {
           followup_reminder_note: string | null
           id: string
           internal_notes: string | null
+          lead_id: string | null
           lost_at: string | null
           lost_reason: string | null
           message: string | null
@@ -722,6 +735,7 @@ export type Database = {
           followup_reminder_note?: string | null
           id?: string
           internal_notes?: string | null
+          lead_id?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           message?: string | null
@@ -755,6 +769,7 @@ export type Database = {
           followup_reminder_note?: string | null
           id?: string
           internal_notes?: string | null
+          lead_id?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           message?: string | null
@@ -775,6 +790,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "simulator_leads"
             referencedColumns: ["id"]
           },
           {
