@@ -194,15 +194,24 @@ Deno.serve(async (req) => {
   </div>
 </body></html>`;
 
+    const ccRaw = (typeof cc === "string" && cc.trim()) ? cc : (proposal.email_cc || "");
+    const ccList = String(ccRaw)
+      .split(/[,;]/)
+      .map((s: string) => s.trim())
+      .filter((s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s));
+
+    const resendPayload: Record<string, unknown> = {
+      from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
+      to: [proposal.client_email],
+      subject: emailSubject,
+      html: emailHtml,
+    };
+    if (ccList.length > 0) resendPayload.cc = ccList;
+
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
-        to: [proposal.client_email],
-        subject: emailSubject,
-        html: emailHtml,
-      }),
+      body: JSON.stringify(resendPayload),
     });
 
     if (!resendRes.ok) {
