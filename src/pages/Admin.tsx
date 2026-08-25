@@ -1522,6 +1522,7 @@ const AdminProposalsContent = () => {
 
 
   const resetForm = () => {
+    setDraftLeadId(null);
     setClientName("");
     setClientEmail("");
     setRecipientName("");

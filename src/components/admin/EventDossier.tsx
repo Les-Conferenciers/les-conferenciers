@@ -306,6 +306,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
   const [liaisonResend, setLiaisonResend] = useState<{ client: boolean; speaker: boolean }>({ client: false, speaker: false });
+  const [initialLead, setInitialLead] = useState<any | null>(null);
+  const [proposalMessage, setProposalMessage] = useState<string | null>(null);
+  const [initialRequestOpen, setInitialRequestOpen] = useState(false);
   const [liaisonAddressing, setLiaisonAddressing] = useState<"formal" | "informal">("formal");
 
   // Visio quick picker
@@ -379,6 +382,34 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     fetchClients();
   }, [proposal.id]);
 
+  const loadInitialRequest = async () => {
+    const { data: prop } = await supabase
+      .from("proposals")
+      .select("lead_id, message, created_at, internal_notes")
+      .eq("id", proposal.id)
+      .maybeSingle();
+    setProposalMessage(((prop as any)?.message as string) || null);
+    const leadId = (prop as any)?.lead_id as string | null;
+    if (leadId) {
+      const { data } = await supabase.from("simulator_leads").select("*").eq("id", leadId).maybeSingle();
+      if (data) {
+        setInitialLead(data as any);
+        return;
+      }
+    }
+    if (proposal.client_email) {
+      const { data } = await supabase
+        .from("simulator_leads")
+        .select("*")
+        .ilike("email", proposal.client_email)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      setInitialLead(((data as any) || [])[0] || null);
+      return;
+    }
+    setInitialLead(null);
+  };
+
   const fetchData = async () => {
     setLoading(true);
     const [contractRes, invoicesRes, eventRes] = await Promise.all([
@@ -397,6 +428,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setPreviousContracts(allContracts.filter((c) => active && c.id !== active.id));
     setInvoices((invoicesRes.data as any) || []);
     setEvent(eventRes.data as any);
+    loadInitialRequest();
     setLoading(false);
   };
 
