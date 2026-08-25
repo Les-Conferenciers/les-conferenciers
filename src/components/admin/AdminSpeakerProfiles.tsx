@@ -170,6 +170,9 @@ const AdminSpeakerProfiles = () => {
         {profiles.map(p => (
           <Badge key={p.id} variant="outline">{p.name} : {counts.get(p.id) || 0}</Badge>
         ))}
+        <Button size="sm" variant="outline" className="gap-1.5 ml-auto" onClick={() => setManageOpen(true)}>
+          <Plus className="h-3.5 w-3.5" /> Gérer les profils
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
