@@ -1055,6 +1055,7 @@ const AdminProposalsContent = () => {
     setSimpleFollowupDate(((p as any).followup_reminder_date as string) || "");
     setSimpleFollowupNote(((p as any).followup_reminder_note as string) || "");
     setActiveReminderNum(1);
+    setReminderCc((((p as any).email_cc as string) || "").trim());
     setReminderSubject(getReminderDefaultSubject(p, 1));
     setReminderBody(getReminderDefaultBody(p, 1));
     setReminderDialogOpen(true);
