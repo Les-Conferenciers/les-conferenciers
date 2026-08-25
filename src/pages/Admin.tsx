@@ -726,6 +726,7 @@ const AdminProposalsContent = () => {
 
   const [reminderSubject, setReminderSubject] = useState("");
   const [reminderBody, setReminderBody] = useState("");
+  const [reminderCc, setReminderCc] = useState("");
   const [activeReminderNum, setActiveReminderNum] = useState<1 | 2>(1);
   const [infoAcceptDialogOpen, setInfoAcceptDialogOpen] = useState(false);
   const [infoAcceptProposalId, setInfoAcceptProposalId] = useState<string | null>(null);
@@ -1055,6 +1056,7 @@ const AdminProposalsContent = () => {
     setSimpleFollowupDate(((p as any).followup_reminder_date as string) || "");
     setSimpleFollowupNote(((p as any).followup_reminder_note as string) || "");
     setActiveReminderNum(1);
+    setReminderCc((((p as any).email_cc as string) || "").trim());
     setReminderSubject(getReminderDefaultSubject(p, 1));
     setReminderBody(getReminderDefaultBody(p, 1));
     setReminderDialogOpen(true);
@@ -1761,22 +1763,25 @@ const AdminProposalsContent = () => {
     reminderNum: 1 | 2,
     customSubject?: string,
     customBody?: string,
+    cc?: string,
   ) => {
     setSending(proposal.id);
     try {
+      const ccClean = (cc || "").trim();
       const { error } = await supabase.functions.invoke("send-proposal-reminder", {
         body: {
           proposal_id: proposal.id,
           reminder_number: reminderNum,
           custom_subject: customSubject || undefined,
           custom_html_body: customBody || undefined,
+          cc: ccClean || undefined,
         },
       });
       if (error) throw error;
       const field = reminderNum === 1 ? "reminder1_sent_at" : "reminder2_sent_at";
       await supabase
         .from("proposals")
-        .update({ [field]: new Date().toISOString() } as any)
+        .update({ [field]: new Date().toISOString(), email_cc: ccClean || null } as any)
         .eq("id", proposal.id);
       await cancelSiblingPendingTasks(proposal.id, proposal.client_email);
       toast.success(`Relance ${reminderNum} envoyée !`);
@@ -4253,6 +4258,18 @@ const AdminProposalsContent = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Copie (CC)</Label>
+                  <Input
+                    value={reminderCc}
+                    onChange={(e) => setReminderCc(e.target.value)}
+                    inputMode="email"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Plusieurs adresses possibles, séparées par des virgules.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Corps du mail</Label>
                   <SimpleRichTextEditor value={reminderBody} onChange={setReminderBody} />
                 </div>
@@ -4264,7 +4281,7 @@ const AdminProposalsContent = () => {
                     sending === reminderProposal.id
                   }
                   onClick={async () => {
-                    await handleReminder(reminderProposal, activeReminderNum, reminderSubject, reminderBody);
+                    await handleReminder(reminderProposal, activeReminderNum, reminderSubject, reminderBody, reminderCc);
                     const taskType = activeReminderNum === 1 ? "relance_1" : "relance_2";
                     const task = editingTasks.find((t: any) => t.task_type === taskType);
                     if (task) {
