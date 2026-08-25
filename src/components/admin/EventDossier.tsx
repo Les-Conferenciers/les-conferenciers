@@ -133,6 +133,10 @@ type EventData = {
   liaison_sheet_sent_at: string | null;
   liaison_email_client_sent_at: string | null;
   liaison_email_speaker_sent_at: string | null;
+  liaison_email_client_last_sent_at?: string | null;
+  liaison_email_speaker_last_sent_at?: string | null;
+  liaison_email_client_send_count?: number | null;
+  liaison_email_speaker_send_count?: number | null;
   speaker_paid_at: string | null;
   notes: string | null;
   selected_speaker_id: string | null;
@@ -301,6 +305,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonClientCc, setLiaisonClientCc] = useState("");
   const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
+  const [liaisonResend, setLiaisonResend] = useState<{ client: boolean; speaker: boolean }>({ client: false, speaker: false });
   const [liaisonAddressing, setLiaisonAddressing] = useState<"formal" | "informal">("formal");
 
   // Visio quick picker
@@ -1597,12 +1602,28 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
       if (event) {
         const nowIso = new Date().toISOString();
-        const patch: any =
-          target === "client" ? { liaison_email_client_sent_at: nowIso } : { liaison_email_speaker_sent_at: nowIso };
+        const prevCount =
+          (target === "client"
+            ? (event as any).liaison_email_client_send_count
+            : (event as any).liaison_email_speaker_send_count) ?? 0;
+        const firstSentAt =
+          target === "client" ? event.liaison_email_client_sent_at : event.liaison_email_speaker_sent_at;
+        const patch: any = target === "client"
+          ? {
+              liaison_email_client_sent_at: firstSentAt || nowIso,
+              liaison_email_client_last_sent_at: nowIso,
+              liaison_email_client_send_count: prevCount + 1,
+            }
+          : {
+              liaison_email_speaker_sent_at: firstSentAt || nowIso,
+              liaison_email_speaker_last_sent_at: nowIso,
+              liaison_email_speaker_send_count: prevCount + 1,
+            };
         if (!event.liaison_sheet_sent_at) patch.liaison_sheet_sent_at = nowIso;
         await supabase.from("events").update(patch).eq("id", event.id);
       }
       toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé !`);
+      setLiaisonResend((p) => ({ ...p, [target]: false }));
       await fetchData();
     } catch {
       toast.error("Erreur d'envoi");
