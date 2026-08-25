@@ -753,6 +753,7 @@ const AdminProposalsContent = () => {
 
   // Pre-fill proposal dialog from a lead draft (handed off via sessionStorage by AdminLeads)
   const [draftConsumed, setDraftConsumed] = useState(false);
+  const [draftLeadId, setDraftLeadId] = useState<string | null>(null);
   useEffect(() => {
     if (draftConsumed) return;
     const raw = sessionStorage.getItem("pendingProposalDraft");
@@ -760,6 +761,7 @@ const AdminProposalsContent = () => {
     try {
       const draft = JSON.parse(raw);
       resetForm();
+      setDraftLeadId(draft.leadId || null);
       setProposalType("classique");
       setClientName(draft.clientName || "");
       setClientEmail(draft.clientEmail || "");
@@ -1422,6 +1424,7 @@ const AdminProposalsContent = () => {
         audience_size: audienceSize || null,
         client_phone: clientPhone || null,
         previous_proposal_id: linkId || null,
+        lead_id: draftLeadId,
         internal_notes: internalNotes.trim() || null,
         email_cc: ccEmails.trim() || null,
         next_reminder_date: defaultReminderDate,
@@ -1519,6 +1522,7 @@ const AdminProposalsContent = () => {
 
 
   const resetForm = () => {
+    setDraftLeadId(null);
     setClientName("");
     setClientEmail("");
     setRecipientName("");

@@ -30,6 +30,8 @@ import {
   UserPlus,
   Eye,
   Save,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
@@ -133,6 +135,10 @@ type EventData = {
   liaison_sheet_sent_at: string | null;
   liaison_email_client_sent_at: string | null;
   liaison_email_speaker_sent_at: string | null;
+  liaison_email_client_last_sent_at?: string | null;
+  liaison_email_speaker_last_sent_at?: string | null;
+  liaison_email_client_send_count?: number | null;
+  liaison_email_speaker_send_count?: number | null;
   speaker_paid_at: string | null;
   notes: string | null;
   selected_speaker_id: string | null;
@@ -301,6 +307,10 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [liaisonClientCc, setLiaisonClientCc] = useState("");
   const [liaisonSpeakerCc, setLiaisonSpeakerCc] = useState("");
   const [liaisonTab, setLiaisonTab] = useState<"client" | "speaker">("client");
+  const [liaisonResend, setLiaisonResend] = useState<{ client: boolean; speaker: boolean }>({ client: false, speaker: false });
+  const [initialLead, setInitialLead] = useState<any | null>(null);
+  const [proposalMessage, setProposalMessage] = useState<string | null>(null);
+  const [initialRequestOpen, setInitialRequestOpen] = useState(false);
   const [liaisonAddressing, setLiaisonAddressing] = useState<"formal" | "informal">("formal");
 
   // Visio quick picker
@@ -374,6 +384,34 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     fetchClients();
   }, [proposal.id]);
 
+  const loadInitialRequest = async () => {
+    const { data: prop } = await supabase
+      .from("proposals")
+      .select("lead_id, message, created_at, internal_notes")
+      .eq("id", proposal.id)
+      .maybeSingle();
+    setProposalMessage(((prop as any)?.message as string) || null);
+    const leadId = (prop as any)?.lead_id as string | null;
+    if (leadId) {
+      const { data } = await supabase.from("simulator_leads").select("*").eq("id", leadId).maybeSingle();
+      if (data) {
+        setInitialLead(data as any);
+        return;
+      }
+    }
+    if (proposal.client_email) {
+      const { data } = await supabase
+        .from("simulator_leads")
+        .select("*")
+        .ilike("email", proposal.client_email)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      setInitialLead(((data as any) || [])[0] || null);
+      return;
+    }
+    setInitialLead(null);
+  };
+
   const fetchData = async () => {
     setLoading(true);
     const [contractRes, invoicesRes, eventRes] = await Promise.all([
@@ -392,6 +430,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setPreviousContracts(allContracts.filter((c) => active && c.id !== active.id));
     setInvoices((invoicesRes.data as any) || []);
     setEvent(eventRes.data as any);
+    loadInitialRequest();
     setLoading(false);
   };
 
@@ -1557,6 +1596,23 @@ ${(event as any)?.logistics_info ? `\n🧳 Infos logistiques :\n${(event as any)
 ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
   };
 
+  const liaisonSentLabel = (target: "client" | "speaker") => {
+    const first = target === "client" ? event?.liaison_email_client_sent_at : event?.liaison_email_speaker_sent_at;
+    const last = target === "client"
+      ? (event as any)?.liaison_email_client_last_sent_at
+      : (event as any)?.liaison_email_speaker_last_sent_at;
+    const count = (target === "client"
+      ? (event as any)?.liaison_email_client_send_count
+      : (event as any)?.liaison_email_speaker_send_count) ?? (first ? 1 : 0);
+    const who = target === "client" ? "client" : "conférencier";
+    let label = `Email ${who} envoyé le ${formatDate(first as string)}`;
+    if (last && first && new Date(last).getTime() - new Date(first as string).getTime() > 60000) {
+      label += ` · Renvoyé le ${formatDate(last)}`;
+    }
+    if (count > 1) label += ` (${count} envois)`;
+    return label;
+  };
+
   const handleSendLiaisonEmail = async (target: "client" | "speaker") => {
     setSendingLiaison(true);
     await persistLiaisonFields();
@@ -1597,12 +1653,28 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
       if (event) {
         const nowIso = new Date().toISOString();
-        const patch: any =
-          target === "client" ? { liaison_email_client_sent_at: nowIso } : { liaison_email_speaker_sent_at: nowIso };
+        const prevCount =
+          (target === "client"
+            ? (event as any).liaison_email_client_send_count
+            : (event as any).liaison_email_speaker_send_count) ?? 0;
+        const firstSentAt =
+          target === "client" ? event.liaison_email_client_sent_at : event.liaison_email_speaker_sent_at;
+        const patch: any = target === "client"
+          ? {
+              liaison_email_client_sent_at: firstSentAt || nowIso,
+              liaison_email_client_last_sent_at: nowIso,
+              liaison_email_client_send_count: prevCount + 1,
+            }
+          : {
+              liaison_email_speaker_sent_at: firstSentAt || nowIso,
+              liaison_email_speaker_last_sent_at: nowIso,
+              liaison_email_speaker_send_count: prevCount + 1,
+            };
         if (!event.liaison_sheet_sent_at) patch.liaison_sheet_sent_at = nowIso;
         await supabase.from("events").update(patch).eq("id", event.id);
       }
       toast.success(`Email ${target === "client" ? "client" : "conférencier"} envoyé !`);
+      setLiaisonResend((p) => ({ ...p, [target]: false }));
       await fetchData();
     } catch {
       toast.error("Erreur d'envoi");
@@ -1961,6 +2033,75 @@ Nelly Sabde - Les Conférenciers`);
 
   return (
     <div className="space-y-6 mt-4 border-t border-border pt-4">
+      {/* ─── Demande initiale du client ─── */}
+      {(initialLead || proposalMessage) && (
+        <div className="border border-border rounded-lg bg-muted/20">
+          <button
+            type="button"
+            onClick={() => setInitialRequestOpen((o) => !o)}
+            className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left"
+          >
+            <span className="text-sm font-semibold flex items-center gap-2">
+              📩 Demande initiale du client
+              {initialLead?.created_at && (
+                <span className="text-[11px] font-normal text-muted-foreground">
+                  reçue le{" "}
+                  {new Date(initialLead.created_at).toLocaleDateString("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              )}
+            </span>
+            {initialRequestOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+          {initialRequestOpen && (
+            <div className="px-4 pb-4 space-y-2">
+              {initialLead ? (
+                <>
+                  <div className="text-sm font-medium">
+                    {[initialLead.first_name, initialLead.last_name].filter(Boolean).join(" ")}
+                    {initialLead.company ? ` · ${initialLead.company}` : ""}
+                    {initialLead.lead_type ? (
+                      <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-background border border-border font-normal">
+                        {initialLead.lead_type}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    {initialLead.email && <div>✉️ {initialLead.email}</div>}
+                    {initialLead.phone && <div>📞 {initialLead.phone}</div>}
+                    {initialLead.event_date && <div>📅 {initialLead.event_date}</div>}
+                    {initialLead.event_type && <div>🎯 {initialLead.event_type}</div>}
+                    {initialLead.audience_size && <div>👥 {initialLead.audience_size}</div>}
+                    {initialLead.location && <div>📍 {initialLead.location}</div>}
+                    {initialLead.budget && <div>💰 {initialLead.budget}</div>}
+                    {initialLead.themes?.length > 0 && <div>🏷️ {initialLead.themes.join(", ")}</div>}
+                  </div>
+                  {initialLead.objective && (
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Objectif :</span> {initialLead.objective}
+                    </div>
+                  )}
+                  {initialLead.additional_info && (
+                    <div className="text-sm whitespace-pre-wrap bg-background border border-border rounded p-2 leading-relaxed">
+                      {initialLead.additional_info}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-sm whitespace-pre-wrap bg-background border border-border rounded p-2 leading-relaxed">
+                  {proposalMessage}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ─── Speaker Selector ─── */}
       {proposal.proposal_speakers.length > 1 && (
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
@@ -3573,10 +3714,15 @@ Nelly Sabde - Les Conférenciers`);
             </div>
 
             {liaisonTab === "client" ? (
-              event?.liaison_email_client_sent_at ? (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  Email client envoyé le {formatDate(event.liaison_email_client_sent_at)}
+              event?.liaison_email_client_sent_at && !liaisonResend.client ? (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    {liaisonSentLabel("client")}
+                  </span>
+                  <Button size="sm" variant="outline" onClick={() => setLiaisonResend((p) => ({ ...p, client: true }))}>
+                    Modifier et renvoyer
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -3607,16 +3753,28 @@ Nelly Sabde - Les Conférenciers`);
                     <Label className="text-xs">Corps du mail</Label>
                     <RichTextEditor value={liaisonClientBody} onChange={setLiaisonClientBody} />
                   </div>
-                  <Button className="w-full" onClick={() => handleSendLiaisonEmail("client")} disabled={sendingLiaison}>
-                    <Send className="h-4 w-4 mr-2" />
-                    {sendingLiaison ? "Envoi…" : "Envoyer au client"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button className="flex-1" onClick={() => handleSendLiaisonEmail("client")} disabled={sendingLiaison}>
+                      <Send className="h-4 w-4 mr-2" />
+                      {sendingLiaison ? "Envoi…" : liaisonResend.client ? "Renvoyer au client" : "Envoyer au client"}
+                    </Button>
+                    {liaisonResend.client && (
+                      <Button variant="outline" onClick={() => setLiaisonResend((p) => ({ ...p, client: false }))} disabled={sendingLiaison}>
+                        Annuler
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )
-            ) : event?.liaison_email_speaker_sent_at ? (
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Email conférencier envoyé le {formatDate(event.liaison_email_speaker_sent_at)}
+            ) : event?.liaison_email_speaker_sent_at && !liaisonResend.speaker ? (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 flex items-center justify-between gap-2 flex-wrap">
+                <span className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  {liaisonSentLabel("speaker")}
+                </span>
+                <Button size="sm" variant="outline" onClick={() => setLiaisonResend((p) => ({ ...p, speaker: true }))}>
+                  Modifier et renvoyer
+                </Button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -3679,10 +3837,17 @@ Nelly Sabde - Les Conférenciers`);
                   <Label className="text-xs">Corps du mail</Label>
                   <RichTextEditor value={liaisonSpeakerBody} onChange={setLiaisonSpeakerBody} />
                 </div>
-                <Button className="w-full" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
-                  <Send className="h-4 w-4 mr-2" />
-                  {sendingLiaison ? "Envoi…" : "Envoyer au conférencier"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={() => handleSendLiaisonEmail("speaker")} disabled={sendingLiaison}>
+                    <Send className="h-4 w-4 mr-2" />
+                    {sendingLiaison ? "Envoi…" : liaisonResend.speaker ? "Renvoyer au conférencier" : "Envoyer au conférencier"}
+                  </Button>
+                  {liaisonResend.speaker && (
+                    <Button variant="outline" onClick={() => setLiaisonResend((p) => ({ ...p, speaker: false }))} disabled={sendingLiaison}>
+                      Annuler
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
