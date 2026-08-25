@@ -95,6 +95,74 @@ const AdminSpeakerProfiles = () => {
     else setSelected(new Set(filtered.map(r => r.id)));
   };
 
+  const slugify = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/['’]/g, " ")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+  const reloadProfiles = async () => {
+    const { data } = await supabase
+      .from("speaker_profiles")
+      .select("id, slug, name, landing_label")
+      .order("display_order");
+    if (data) setProfiles(data as Profile[]);
+  };
+
+  const createProfile = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    const slug = slugify(name);
+    if (!slug) { toast.error("Nom invalide"); return; }
+    if (profiles.some(p => p.slug === slug)) { toast.error("Ce profil existe déjà"); return; }
+    setSaving(true);
+    const { data: maxRow } = await supabase
+      .from("speaker_profiles").select("display_order").order("display_order", { ascending: false }).limit(1).maybeSingle();
+    const { error } = await supabase.from("speaker_profiles").insert({
+      slug,
+      name,
+      landing_label: `Conférenciers ${name.toLowerCase()}`,
+      landing_enabled: false,
+      display_order: ((maxRow?.display_order as number) ?? 0) + 10,
+    });
+    setSaving(false);
+    if (error) { toast.error(`Échec de la création : ${error.message}`); return; }
+    setNewName("");
+    await reloadProfiles();
+    toast.success(`Profil « ${name} » créé`);
+  };
+
+  const renameProfile = async (p: Profile) => {
+    const name = editingName.trim();
+    if (!name) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("speaker_profiles")
+      .update({ name, landing_label: `Conférenciers ${name.toLowerCase()}` })
+      .eq("id", p.id);
+    setSaving(false);
+    if (error) { toast.error("Échec du renommage"); return; }
+    setEditingId(null);
+    await reloadProfiles();
+    toast.success("Profil renommé");
+  };
+
+  const deleteProfile = async (p: Profile) => {
+    const { count } = await supabase
+      .from("speakers")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", p.id);
+    if ((count ?? 0) > 0) {
+      toast.error(`${count} conférencier(s) sont rattachés à « ${p.name} ». Réaffecte-les avant de supprimer.`);
+      return;
+    }
+    if (!window.confirm(`Supprimer le profil « ${p.name} » ?`)) return;
+    const { error } = await supabase.from("speaker_profiles").delete().eq("id", p.id);
+    if (error) { toast.error("Échec de la suppression"); return; }
+    await reloadProfiles();
+    toast.success("Profil supprimé");
+  };
+
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 items-center">
