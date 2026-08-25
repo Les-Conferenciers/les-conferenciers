@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User } from "lucide-react";
+import { User, Plus, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-type Profile = { id: string; slug: string; name: string };
+type Profile = { id: string; slug: string; name: string; landing_label?: string | null };
 type Row = {
   id: string;
   name: string;
