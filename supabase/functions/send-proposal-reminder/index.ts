@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { proposal_id, reminder_number, custom_subject, custom_html_body } = await req.json();
+    const { proposal_id, reminder_number, custom_subject, custom_html_body, cc } = await req.json();
     if (!proposal_id) {
       return new Response(JSON.stringify({ error: "proposal_id required" }), { status: 400, headers: corsHeaders });
     }
