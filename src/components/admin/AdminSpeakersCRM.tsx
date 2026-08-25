@@ -1448,6 +1448,21 @@ const AdminSpeakersCRM = () => {
                 <Input value={(editForm as any).fee_details || ""} onChange={e => setEditForm(p => ({ ...p, fee_details: e.target.value }))} />
               </div>
 
+              {/* Profil */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">👥 Profil</Label>
+                <select
+                  className="w-full rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm"
+                  value={(editForm as any).profile_id || ""}
+                  onChange={e => setEditForm(p => ({ ...p, profile_id: e.target.value }))}
+                >
+                  <option value="">— Aucun —</option>
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Catégorie interne CRM */}
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">🏷️ Catégorie interne (CRM uniquement, non visible publiquement)</Label>
