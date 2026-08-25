@@ -33,13 +33,18 @@ const AdminSpeakerProfiles = () => {
   const [bulkProfile, setBulkProfile] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   const load = async () => {
     setLoading(true);
     let query = supabase.from("speakers").select("id, name, role, themes, image_url, profile_id, archived").order("name");
     if (!includeArchived) query = query.eq("archived", false);
     const [p, s] = await Promise.all([
-      supabase.from("speaker_profiles").select("id, slug, name").order("display_order"),
+      supabase.from("speaker_profiles").select("id, slug, name, landing_label").order("display_order"),
       query,
     ]);
     if (p.data) setProfiles(p.data as Profile[]);
