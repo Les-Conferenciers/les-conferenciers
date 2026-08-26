@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { proposal_id, reminder_number, custom_subject, custom_html_body } = await req.json();
+    const { proposal_id, reminder_number, custom_subject, custom_html_body, cc } = await req.json();
     if (!proposal_id) {
       return new Response(JSON.stringify({ error: "proposal_id required" }), { status: 400, headers: corsHeaders });
     }
@@ -194,15 +194,24 @@ Deno.serve(async (req) => {
   </div>
 </body></html>`;
 
+    const ccRaw = (typeof cc === "string" && cc.trim()) ? cc : (proposal.email_cc || "");
+    const ccList = String(ccRaw)
+      .split(/[,;]/)
+      .map((s: string) => s.trim())
+      .filter((s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s));
+
+    const resendPayload: Record<string, unknown> = {
+      from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
+      to: [proposal.client_email],
+      subject: emailSubject,
+      html: emailHtml,
+    };
+    if (ccList.length > 0) resendPayload.cc = ccList;
+
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({
-        from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
-        to: [proposal.client_email],
-        subject: emailSubject,
-        html: emailHtml,
-      }),
+      body: JSON.stringify(resendPayload),
     });
 
     if (!resendRes.ok) {

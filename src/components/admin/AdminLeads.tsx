@@ -93,6 +93,7 @@ const AdminLeads = () => {
       const message = parts.join("\n\n");
 
       const draft = {
+        leadId: lead.id,
         clientId,
         clientName: clientCompany || recipient || "",
         clientEmail: lead.email || "",
