@@ -271,7 +271,7 @@ const AdminLandingPages = () => {
                         <Sparkles className="h-4 w-4 text-accent-foreground" /> Contenu éditorial SEO
                       </Label>
                       <p className="text-[11px] text-muted-foreground">
-                        Bloc affiché sous la liste des conférenciers. Généré par IA, éditable manuellement.
+                        Bloc affiché sous la liste des conférenciers. Généré par IA, éditable manuellement. Chaque bloc et chaque section peut être régénéré seul (enregistre tes modifications avant, la régénération repart de la version sauvegardée).
                         {p.rich_content_updated_at && (
                           <> — Dernière génération : {new Date(p.rich_content_updated_at).toLocaleString("fr-FR")}</>
                         )}
