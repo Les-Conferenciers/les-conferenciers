@@ -144,7 +144,7 @@ const ProfileLanding = () => {
       mainEntity: profile.faq.map(f => ({
         "@type": "Question",
         name: f.question,
-        acceptedAnswer: { "@type": "Answer", text: f.answer },
+        acceptedAnswer: { "@type": "Answer", text: f.answer.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() },
       })),
     });
     script.dataset.faqLd = "1";
