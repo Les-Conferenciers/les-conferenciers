@@ -438,11 +438,11 @@ const AdminEventDossiers = () => {
   const filtered = useMemo(() => {
     let list = enriched;
     if (tab === "en_cours") {
-      // Exclure les dossiers en attente de paiement (facture envoyée non payée)
-      list = list.filter((r) => !r.isArchived && !(r.invoiceSentClient && !r.invoicePaidClient));
+      list = list.filter((r) => !r.isArchived && r.contractStatus === "en_cours");
     } else if (tab === "attente_paiement") {
-      // Facture envoyée mais pas encore payée (côté client) — non archivés
-      list = list.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient);
+      list = list.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement");
+    } else if (tab === "signes") {
+      list = list.filter((r) => !r.isArchived && r.contractStatus === "signed");
     } else {
       list = list.filter((r) => r.isArchived);
       if (archiveFilter !== "all") {
