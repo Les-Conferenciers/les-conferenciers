@@ -60,7 +60,6 @@ const AdminEventDossiers = () => {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"en_cours" | "attente_paiement" | "archives">("en_cours");
-  const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu" | "signe">("all");
   const [yearFilter, setYearFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -367,7 +366,6 @@ const AdminEventDossiers = () => {
       const allInvoicesPaid = pInvoices.length > 0 && pInvoices.every((i) => i.status === "paid");
       const isLost = !!p.lost_at;
       const isWon = allInvoicesPaid && !!speakerPaid && !isLost;
-      const archiveStatus: "gagne" | "perdu" | null = isLost ? "perdu" : (isWon ? "gagne" : null);
 
       // Build pipeline (10 stages)
       const hasAcompteInvoice = pInvoices.some((i) => i.invoice_type === "acompte");
@@ -419,8 +417,9 @@ const AdminEventDossiers = () => {
         speakerPaid,
         speakerAck,
         contractSentSpeaker,
-        archiveStatus,
-        isArchived: !!archiveStatus,
+        isLost,
+        isWon,
+        isArchived: isLost || isWon,
         // Statut contrat normalisé sur 3 états, piloté manuellement
         contractStatus:
           pContract?.status === "signed"
@@ -445,11 +444,6 @@ const AdminEventDossiers = () => {
     } else {
       // Archivés : signés + dossiers gagnés/perdus
       list = list.filter((r) => r.isArchived || r.contractStatus === "signed");
-      if (archiveFilter === "signe") {
-        list = list.filter((r) => !r.isArchived && r.contractStatus === "signed");
-      } else if (archiveFilter !== "all") {
-        list = list.filter((r) => r.archiveStatus === archiveFilter);
-      }
     }
     if (yearFilter !== "all") {
       list = list.filter((r) => r.eventDateRaw && r.eventDateRaw.slice(0, 4) === yearFilter);
@@ -471,7 +465,7 @@ const AdminEventDossiers = () => {
       return a.eventDate.getTime() - b.eventDate.getTime();
     });
     return list;
-  }, [enriched, tab, archiveFilter, search, yearFilter]);
+  }, [enriched, tab, search, yearFilter]);
 
   const availableYears = useMemo(() => {
     const years = new Set<string>();
@@ -484,10 +478,7 @@ const AdminEventDossiers = () => {
   const counts = useMemo(() => ({
     enCours: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_cours").length,
     attentePaiement: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement").length,
-    signes: enriched.filter((r) => !r.isArchived && r.contractStatus === "signed").length,
     archives: enriched.filter((r) => r.isArchived || r.contractStatus === "signed").length,
-    gagnes: enriched.filter((r) => r.archiveStatus === "gagne").length,
-    perdus: enriched.filter((r) => r.archiveStatus === "perdu").length,
   }), [enriched]);
 
   // KPI: nombre de dossiers en cours bloqués sur chaque étape
@@ -635,19 +626,6 @@ const AdminEventDossiers = () => {
             </SelectContent>
           </Select>
         )}
-        {tab === "archives" && (
-          <Select value={archiveFilter} onValueChange={(v) => setArchiveFilter(v as any)}>
-            <SelectTrigger className="w-[180px] h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous ({counts.archives})</SelectItem>
-              <SelectItem value="signe">✓ Signés ({counts.signes})</SelectItem>
-              <SelectItem value="gagne">🏆 Gagnés ({counts.gagnes})</SelectItem>
-              <SelectItem value="perdu">❌ Perdus ({counts.perdus})</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -676,8 +654,8 @@ const AdminEventDossiers = () => {
                       <TableCell className="py-3">
                         <div className="font-medium text-sm">{p.client_name}</div>
                         {r.bdc && <div className="text-[10px] text-muted-foreground">{r.bdc}</div>}
-                        {r.archiveStatus === "perdu" && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
-                        {r.archiveStatus === "gagne" && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
+                        {r.isLost && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
+                        {r.isWon && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
                       </TableCell>
                       <TableCell className="whitespace-nowrap py-3">
                         {r.eventDate ? (
@@ -708,7 +686,7 @@ const AdminEventDossiers = () => {
                               </Button>
                             </>
                           )}
-                          {r.archiveStatus === "perdu" && (
+                          {r.isLost && (
                             <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Restaurer" onClick={() => handleRestoreFromLost(p.id)}>
                               ↩️ Restaurer
                             </Button>
