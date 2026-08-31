@@ -129,6 +129,30 @@ const AdminLandingPages = () => {
     }
   };
 
+  const [generatingPart, setGeneratingPart] = useState<string | null>(null);
+  const generatePart = async (
+    p: Profile,
+    part: "key_points" | "why_agency" | "section",
+    sectionIndex?: number,
+  ) => {
+    const key = `${p.id}:${part}:${sectionIndex ?? ""}`;
+    setGeneratingPart(key);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-landing-content", {
+        body: { profile_id: p.id, part, section_index: sectionIndex },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const rc = (data as any).rich_content as RichContent;
+      updateLocal(p.id, { rich_content: rc, rich_content_updated_at: new Date().toISOString() });
+      toast.success("Section régénérée");
+    } catch (e: any) {
+      toast.error(`Régénération échouée : ${e.message || e}`);
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
   const updateRich = (p: Profile, patch: Partial<RichContent>) => {
     const base: RichContent = p.rich_content || { intro: "", key_points_title: "", key_points_intro: "", sections: [], why_agency: "", key_points: [] };
     updateLocal(p.id, { rich_content: { ...base, ...patch } });
@@ -247,7 +271,7 @@ const AdminLandingPages = () => {
                         <Sparkles className="h-4 w-4 text-accent-foreground" /> Contenu éditorial SEO
                       </Label>
                       <p className="text-[11px] text-muted-foreground">
-                        Bloc affiché sous la liste des conférenciers. Généré par IA, éditable manuellement.
+                        Bloc affiché sous la liste des conférenciers. Généré par IA, éditable manuellement. Chaque bloc et chaque section peut être régénéré seul (enregistre tes modifications avant, la régénération repart de la version sauvegardée).
                         {p.rich_content_updated_at && (
                           <> — Dernière génération : {new Date(p.rich_content_updated_at).toLocaleString("fr-FR")}</>
                         )}
@@ -270,7 +294,18 @@ const AdminLandingPages = () => {
                     <div className="space-y-5">
 
                       <div className="border rounded-md p-3 bg-background space-y-3">
-                        <Label className="text-xs font-semibold">Points clés du profil</Label>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold">Points clés du profil</Label>
+                          <Button
+                            type="button" size="sm" variant="ghost"
+                            disabled={generatingPart === `${p.id}:key_points:`}
+                            onClick={() => generatePart(p, "key_points")}
+                          >
+                            {generatingPart === `${p.id}:key_points:`
+                              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Régénération…</>
+                              : <><Sparkles className="h-3 w-3 mr-1" /> Régénérer</>}
+                          </Button>
+                        </div>
                         <div className="grid md:grid-cols-2 gap-2">
                           <div>
                             <Label className="text-[11px]">Titre du bloc</Label>
@@ -362,6 +397,16 @@ const AdminLandingPages = () => {
                                     [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
                                     updateRich(p, { sections: next });
                                   }}><ChevronDown className="h-4 w-4" /></Button>
+                                <Button
+                                  type="button" size="icon" variant="ghost"
+                                  title="Régénérer cette section avec l'IA"
+                                  disabled={generatingPart === `${p.id}:section:${idx}`}
+                                  onClick={() => generatePart(p, "section", idx)}
+                                >
+                                  {generatingPart === `${p.id}:section:${idx}`
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : <Sparkles className="h-4 w-4 text-accent-foreground" />}
+                                </Button>
                                 <Button type="button" size="icon" variant="ghost"
                                   onClick={() => updateRich(p, { sections: (p.rich_content?.sections || []).filter((_, i) => i !== idx) })}>
                                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -386,7 +431,18 @@ const AdminLandingPages = () => {
                       </div>
 
                       <div>
-                        <Label className="text-xs font-semibold">Encart « Pourquoi faire appel à notre agence »</Label>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold">Encart « Pourquoi faire appel à notre agence »</Label>
+                          <Button
+                            type="button" size="sm" variant="ghost"
+                            disabled={generatingPart === `${p.id}:why_agency:`}
+                            onClick={() => generatePart(p, "why_agency")}
+                          >
+                            {generatingPart === `${p.id}:why_agency:`
+                              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Régénération…</>
+                              : <><Sparkles className="h-3 w-3 mr-1" /> Régénérer</>}
+                          </Button>
+                        </div>
                         <p className="text-[11px] text-muted-foreground mb-1">Insiste sur la connaissance des profils, du contenu des conférences et l'expertise de matching.</p>
                         <SimpleRichTextEditor
                           value={p.rich_content.why_agency || ""}
