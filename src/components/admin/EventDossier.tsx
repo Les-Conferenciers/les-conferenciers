@@ -2187,11 +2187,9 @@ Nelly Sabde - Les Conférenciers`);
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">Brouillon</SelectItem>
-                <SelectItem value="sent">En cours (envoyé)</SelectItem>
-                <SelectItem value="signed">Signé</SelectItem>
+                <SelectItem value="en_cours">En cours</SelectItem>
                 <SelectItem value="en_attente_paiement">En attente de paiement</SelectItem>
-                <SelectItem value="archived">Archivé</SelectItem>
+                <SelectItem value="signed">Signé</SelectItem>
               </SelectContent>
             </Select>
             {(contract.version || 1) > 1 && (
