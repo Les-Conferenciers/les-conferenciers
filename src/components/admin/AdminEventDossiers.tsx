@@ -59,8 +59,9 @@ const AdminEventDossiers = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"en_cours" | "attente_paiement" | "signes" | "archives">("en_cours");
-  const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu">("all");
+  const [tab, setTab] = useState<"en_cours" | "attente_paiement" | "archives">("en_cours");
+  const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu" | "signe">("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState<10 | 50 | 100 | 150>(150);
@@ -441,13 +442,17 @@ const AdminEventDossiers = () => {
       list = list.filter((r) => !r.isArchived && r.contractStatus === "en_cours");
     } else if (tab === "attente_paiement") {
       list = list.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement");
-    } else if (tab === "signes") {
-      list = list.filter((r) => !r.isArchived && r.contractStatus === "signed");
     } else {
-      list = list.filter((r) => r.isArchived);
-      if (archiveFilter !== "all") {
+      // Archivés : signés + dossiers gagnés/perdus
+      list = list.filter((r) => r.isArchived || r.contractStatus === "signed");
+      if (archiveFilter === "signe") {
+        list = list.filter((r) => !r.isArchived && r.contractStatus === "signed");
+      } else if (archiveFilter !== "all") {
         list = list.filter((r) => r.archiveStatus === archiveFilter);
       }
+    }
+    if (yearFilter !== "all") {
+      list = list.filter((r) => r.eventDateRaw && r.eventDateRaw.slice(0, 4) === yearFilter);
     }
     const q = search.trim().toLowerCase();
     if (q) {
@@ -466,13 +471,21 @@ const AdminEventDossiers = () => {
       return a.eventDate.getTime() - b.eventDate.getTime();
     });
     return list;
-  }, [enriched, tab, archiveFilter, search]);
+  }, [enriched, tab, archiveFilter, search, yearFilter]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    enriched.forEach((r) => {
+      if (r.eventDateRaw) years.add(r.eventDateRaw.slice(0, 4));
+    });
+    return [...years].sort((a, b) => b.localeCompare(a));
+  }, [enriched]);
 
   const counts = useMemo(() => ({
     enCours: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_cours").length,
     attentePaiement: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement").length,
     signes: enriched.filter((r) => !r.isArchived && r.contractStatus === "signed").length,
-    archives: enriched.filter((r) => r.isArchived).length,
+    archives: enriched.filter((r) => r.isArchived || r.contractStatus === "signed").length,
     gagnes: enriched.filter((r) => r.archiveStatus === "gagne").length,
     perdus: enriched.filter((r) => r.archiveStatus === "perdu").length,
   }), [enriched]);
@@ -593,9 +606,6 @@ const AdminEventDossiers = () => {
           <TabsTrigger value="attente_paiement" className="gap-1.5 text-xs">
             💰 En attente de paiement <span className="ml-1 bg-amber-100 text-amber-700 rounded-full px-1.5 text-[10px]">{counts.attentePaiement}</span>
           </TabsTrigger>
-          <TabsTrigger value="signes" className="gap-1.5 text-xs">
-            ✓ Signés <span className="ml-1 bg-emerald-100 text-emerald-700 rounded-full px-1.5 text-[10px]">{counts.signes}</span>
-          </TabsTrigger>
           <TabsTrigger value="archives" className="gap-1.5 text-xs">
             📦 Archivés <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.archives}</span>
           </TabsTrigger>
@@ -612,6 +622,19 @@ const AdminEventDossiers = () => {
             className="pl-9 h-9 text-sm"
           />
         </div>
+        {availableYears.length > 0 && (
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes années</SelectItem>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {tab === "archives" && (
           <Select value={archiveFilter} onValueChange={(v) => setArchiveFilter(v as any)}>
             <SelectTrigger className="w-[180px] h-9 text-xs">
@@ -619,6 +642,7 @@ const AdminEventDossiers = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous ({counts.archives})</SelectItem>
+              <SelectItem value="signe">✓ Signés ({counts.signes})</SelectItem>
               <SelectItem value="gagne">🏆 Gagnés ({counts.gagnes})</SelectItem>
               <SelectItem value="perdu">❌ Perdus ({counts.perdus})</SelectItem>
             </SelectContent>
