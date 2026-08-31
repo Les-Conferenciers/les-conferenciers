@@ -343,7 +343,10 @@ const ProfileLanding = () => {
               {profile.faq.map((item, i) => (
                 <AccordionItem key={i} value={`q-${i}`} className="border rounded-md px-4 bg-card">
                   <AccordionTrigger className="text-left font-semibold">{item.question}</AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground whitespace-pre-line">{item.answer}</AccordionContent>
+                  <AccordionContent
+                    className="text-muted-foreground whitespace-pre-line [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5 [&_strong]:text-foreground [&_strong]:font-semibold [&_a]:underline"
+                    dangerouslySetInnerHTML={{ __html: item.answer }}
+                  />
                 </AccordionItem>
               ))}
             </Accordion>
