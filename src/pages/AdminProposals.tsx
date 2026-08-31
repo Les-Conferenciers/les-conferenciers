@@ -745,20 +745,6 @@ Belle journée,`;
                   </div>
                 )}
               </div>
-              {/* Save as template */}
-              {selectedSpeakers.length > 0 && (
-                <div className="flex items-center gap-2 border border-dashed border-border rounded-lg p-3">
-                  <Input
-                    placeholder="Nom du modèle…"
-                    value={saveTemplateName}
-                    onChange={e => setSaveTemplateName(e.target.value)}
-                    className="flex-1 h-8 text-sm"
-                  />
-                  <Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap" onClick={saveAsTemplate}>
-                    {TEMPLATE_ICON} Sauvegarder comme modèle
-                  </Button>
-                </div>
-              )}
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 gap-2" onClick={() => setPreviewOpen(true)} disabled={selectedSpeakers.length === 0}>
                   <Eye className="h-4 w-4" /> Prévisualiser
