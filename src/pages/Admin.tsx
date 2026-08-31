@@ -2851,6 +2851,7 @@ const AdminProposalsContent = () => {
         speakers={speakers}
         selectedSpeakers={items}
         onSelect={(speaker) => setItems((prev) => addSpeakerToList(prev, speaker))}
+        profiles={profiles}
       />
     </div>
   );
