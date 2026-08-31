@@ -2088,29 +2088,6 @@ const AdminProposalsContent = () => {
           ))}
         </div>
 
-        {/* Template selector for classique */}
-        {proposalType === "classique" && templates.length > 0 && (
-          <div className="mt-3">
-            <Label className="text-xs text-muted-foreground mb-1 block">📁 Appliquer un template</Label>
-            <select
-              className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={selectedTemplateId || ""}
-              onChange={(e) => {
-                if (e.target.value) applyTemplate(e.target.value);
-                else {
-                  setSelectedTemplateId(null);
-                }
-              }}
-            >
-              <option value="">— Sélection libre —</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.speaker_ids.length} conférenciers)
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       {/* Client search/create section */}
