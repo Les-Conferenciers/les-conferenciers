@@ -403,6 +403,7 @@ type Speaker = {
   email?: string | null;
   phone?: string | null;
   slug?: string;
+  profile_id?: string | null;
 };
 type ProposalSpeaker = {
   speaker_id: string;
