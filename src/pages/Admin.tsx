@@ -456,26 +456,52 @@ const SpeakerSelector = ({
   speakers,
   selectedSpeakers,
   onSelect,
+  profiles = [],
 }: {
   speakers: Speaker[];
   selectedSpeakers: ProposalSpeaker[];
   onSelect: (s: Speaker) => void;
+  profiles?: { id: string; name: string }[];
 }) => {
   const [search, setSearch] = useState("");
+  const [profileFilter, setProfileFilter] = useState("");
 
   const getLastName = (name: string) => {
     const parts = name.trim().split(/\s+/);
     return parts[parts.length - 1].toLowerCase();
   };
 
+  const profileCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    speakers.forEach((s) => {
+      if (s.profile_id) map.set(s.profile_id, (map.get(s.profile_id) || 0) + 1);
+    });
+    return map;
+  }, [speakers]);
+
   const available = speakers
     .filter((s) => !selectedSpeakers.find((ps) => ps.speaker_id === s.id))
+    .filter((s) => !profileFilter || s.profile_id === profileFilter)
     .filter((s) => !search || s.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => getLastName(a.name).localeCompare(getLastName(b.name), "fr"));
 
   return (
     <div className="border border-dashed border-border rounded-lg p-3 space-y-2">
       <Label className="text-xs text-muted-foreground block">Ajouter un conférencier</Label>
+      {profiles.length > 0 && (
+        <select
+          className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          value={profileFilter}
+          onChange={(e) => setProfileFilter(e.target.value)}
+        >
+          <option value="">🗂️ Tous les profils</option>
+          {profiles.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} ({profileCounts.get(p.id) || 0})
+            </option>
+          ))}
+        </select>
+      )}
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
