@@ -847,8 +847,7 @@ const AdminProposalsContent = () => {
       );
     } else if (proposalType === "classique") {
       const evtCtx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
-      const tpl = selectedTemplateId ? templates.find((t) => t.id === selectedTemplateId) : null;
-      setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx, tpl?.name));
+      setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventDateText, eventLocation, audienceSize]);
