@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -403,6 +403,7 @@ type Speaker = {
   email?: string | null;
   phone?: string | null;
   slug?: string;
+  profile_id?: string | null;
 };
 type ProposalSpeaker = {
   speaker_id: string;
@@ -455,26 +456,52 @@ const SpeakerSelector = ({
   speakers,
   selectedSpeakers,
   onSelect,
+  profiles = [],
 }: {
   speakers: Speaker[];
   selectedSpeakers: ProposalSpeaker[];
   onSelect: (s: Speaker) => void;
+  profiles?: { id: string; name: string }[];
 }) => {
   const [search, setSearch] = useState("");
+  const [profileFilter, setProfileFilter] = useState("");
 
   const getLastName = (name: string) => {
     const parts = name.trim().split(/\s+/);
     return parts[parts.length - 1].toLowerCase();
   };
 
+  const profileCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    speakers.forEach((s) => {
+      if (s.profile_id) map.set(s.profile_id, (map.get(s.profile_id) || 0) + 1);
+    });
+    return map;
+  }, [speakers]);
+
   const available = speakers
     .filter((s) => !selectedSpeakers.find((ps) => ps.speaker_id === s.id))
+    .filter((s) => !profileFilter || s.profile_id === profileFilter)
     .filter((s) => !search || s.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => getLastName(a.name).localeCompare(getLastName(b.name), "fr"));
 
   return (
     <div className="border border-dashed border-border rounded-lg p-3 space-y-2">
       <Label className="text-xs text-muted-foreground block">Ajouter un conférencier</Label>
+      {profiles.length > 0 && (
+        <select
+          className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          value={profileFilter}
+          onChange={(e) => setProfileFilter(e.target.value)}
+        >
+          <option value="">🗂️ Tous les profils</option>
+          {profiles.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} ({profileCounts.get(p.id) || 0})
+            </option>
+          ))}
+        </select>
+      )}
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
@@ -704,10 +731,7 @@ const AdminProposalsContent = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [clientMode, setClientMode] = useState<"search" | "new">("new");
   const [allClients, setAllClients] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<{ id: string; name: string; speaker_ids: string[]; is_preset: boolean }[]>(
-    [],
-  );
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<{ id: string; name: string }[]>([]);
   const [emailExistsWarning, setEmailExistsWarning] = useState<string | null>(null);
   const [matchingLeads, setMatchingLeads] = useState<any[]>([]);
   const [showLeadsPanel, setShowLeadsPanel] = useState(false);
@@ -746,7 +770,7 @@ const AdminProposalsContent = () => {
       fetchSpeakers(),
       fetchConferences(),
       fetchClients(),
-      fetchTemplates(),
+      fetchProfiles(),
       fetchTasks(),
       fetchLeads(),
     ]);
@@ -820,8 +844,7 @@ const AdminProposalsContent = () => {
       );
     } else if (proposalType === "classique") {
       const evtCtx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
-      const tpl = selectedTemplateId ? templates.find((t) => t.id === selectedTemplateId) : null;
-      setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx, tpl?.name));
+      setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventDateText, eventLocation, audienceSize]);
@@ -910,7 +933,7 @@ const AdminProposalsContent = () => {
   const fetchSpeakers = async () => {
     const { data } = await supabase
       .from("speakers")
-      .select("id, name, image_url, role, themes, base_fee, fee_details, city, formal_address, email, phone, slug")
+      .select("id, name, image_url, role, themes, base_fee, fee_details, city, formal_address, email, phone, slug, profile_id")
       .order("name");
     setSpeakers(data || []);
   };
@@ -928,9 +951,9 @@ const AdminProposalsContent = () => {
     setAllClients(data || []);
   };
 
-  const fetchTemplates = async () => {
-    const { data } = await supabase.from("proposal_templates").select("id, name, speaker_ids, is_preset").order("name");
-    setTemplates((data as any) || []);
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from("speaker_profiles").select("id, name").order("display_order");
+    setProfiles((data as any) || []);
   };
 
   const fetchTasks = async () => {
@@ -1084,25 +1107,6 @@ const AdminProposalsContent = () => {
     fetchProposals();
   };
 
-
-
-  const applyTemplate = (templateId: string) => {
-    setSelectedTemplateId(templateId);
-    const tpl = templates.find((t) => t.id === templateId);
-    if (!tpl) return;
-    const newSpeakers: ProposalSpeaker[] = tpl.speaker_ids
-      .map((sid, idx) => {
-        const sp = speakers.find((s) => s.id === sid);
-        if (!sp) return null;
-        return createProposalSpeaker(sp, idx);
-      })
-      .filter(Boolean) as ProposalSpeaker[];
-    setSelectedSpeakers(newSpeakers);
-    // Update email body with template-specific phrase
-    const evtCtx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
-    setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx, tpl.name));
-    toast.success(`Template "${tpl.name}" appliqué (${newSpeakers.length} conférenciers)`);
-  };
 
   const getPipelineStatus = (p: Proposal) => {
     const pInvoices = allInvoices.filter((i) => i.proposal_id === p.id);
@@ -1944,7 +1948,7 @@ const AdminProposalsContent = () => {
   const handleProposalTypeChange = (type: ProposalType) => {
     setProposalType(type);
     setSelectedSpeakers([]);
-    setSelectedTemplateId(null);
+    
     if (type === "info") {
       setEmailBody(getInfoEmailBody(recipientName));
       setMessage("");
@@ -2061,29 +2065,6 @@ const AdminProposalsContent = () => {
           ))}
         </div>
 
-        {/* Template selector for classique */}
-        {proposalType === "classique" && templates.length > 0 && (
-          <div className="mt-3">
-            <Label className="text-xs text-muted-foreground mb-1 block">📁 Appliquer un template</Label>
-            <select
-              className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={selectedTemplateId || ""}
-              onChange={(e) => {
-                if (e.target.value) applyTemplate(e.target.value);
-                else {
-                  setSelectedTemplateId(null);
-                }
-              }}
-            >
-              <option value="">— Sélection libre —</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.speaker_ids.length} conférenciers)
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       {/* Client search/create section */}
@@ -2490,7 +2471,7 @@ const AdminProposalsContent = () => {
               );
             })}
             {(proposalType === "classique" || (proposalType === "unique" && selectedSpeakers.length === 0)) && (
-              <SpeakerSelector speakers={speakers} selectedSpeakers={selectedSpeakers} onSelect={addSpeaker} />
+              <SpeakerSelector speakers={speakers} selectedSpeakers={selectedSpeakers} onSelect={addSpeaker} profiles={profiles} />
             )}
           </div>
         </>
@@ -2870,6 +2851,7 @@ const AdminProposalsContent = () => {
         speakers={speakers}
         selectedSpeakers={items}
         onSelect={(speaker) => setItems((prev) => addSpeakerToList(prev, speaker))}
+        profiles={profiles}
       />
     </div>
   );
