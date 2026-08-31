@@ -24,7 +24,6 @@ import { cn } from "@/lib/utils";
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
-type ProposalTemplate = { id: string; name: string; speaker_ids: string[]; is_preset: boolean };
 type ProposalSpeaker = {
   speaker_id: string;
   speaker_fee: number | null;
@@ -86,7 +85,6 @@ type InvoiceData = {
 };
 
 const COMMISSION = 1000;
-const TEMPLATE_ICON = "📋";
 // Step definitions for the pipeline
 const PIPELINE_STEPS = [
   { key: "proposal_sent", label: "Proposition envoyée" },
@@ -109,7 +107,6 @@ const AdminProposals = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [contracts, setContracts] = useState<ContractData[]>([]);
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
-  const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
@@ -117,7 +114,6 @@ const AdminProposals = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("drafts");
   const [stepFilter, setStepFilter] = useState<string | null>(null);
-  const [saveTemplateName, setSaveTemplateName] = useState("");
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewTab, setPreviewTab] = useState<"email" | "proposal">("email");
@@ -153,14 +149,13 @@ Belle journée,`;
 
   const fetchAll = async () => {
     setLoading(true);
-    const [propRes, spkRes, confRes, evtRes, ctrRes, invRes, tplRes] = await Promise.all([
+    const [propRes, spkRes, confRes, evtRes, ctrRes, invRes] = await Promise.all([
       supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, phone, email))").order("created_at", { ascending: false }),
       supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, city").order("name"),
       supabase.from("speaker_conferences").select("id, title, speaker_id").order("display_order"),
       supabase.from("events").select("id, proposal_id, info_sent_speaker_at, contract_sent_speaker_at, visio_date, liaison_sheet_sent_at, speaker_paid_at, selected_speaker_id"),
       supabase.from("contracts").select("id, proposal_id, status, signed_at"),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, sent_at, paid_at"),
-      supabase.from("proposal_templates").select("*").order("is_preset", { ascending: false }).order("name"),
     ]);
     setProposals((propRes.data as any) || []);
     setSpeakers(spkRes.data || []);
@@ -168,7 +163,6 @@ Belle journée,`;
     setEvents((evtRes.data as any) || []);
     setContracts((ctrRes.data as any) || []);
     setInvoices((invRes.data as any) || []);
-    setTemplates((tplRes.data as any) || []);
     setLoading(false);
   };
 
