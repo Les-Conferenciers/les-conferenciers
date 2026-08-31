@@ -60,7 +60,7 @@ const AdminEventDossiers = () => {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"en_cours" | "attente_paiement" | "archives">("en_cours");
-  const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu">("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState<10 | 50 | 100 | 150>(150);
@@ -366,7 +366,6 @@ const AdminEventDossiers = () => {
       const allInvoicesPaid = pInvoices.length > 0 && pInvoices.every((i) => i.status === "paid");
       const isLost = !!p.lost_at;
       const isWon = allInvoicesPaid && !!speakerPaid && !isLost;
-      const archiveStatus: "gagne" | "perdu" | null = isLost ? "perdu" : (isWon ? "gagne" : null);
 
       // Build pipeline (10 stages)
       const hasAcompteInvoice = pInvoices.some((i) => i.invoice_type === "acompte");
@@ -418,8 +417,16 @@ const AdminEventDossiers = () => {
         speakerPaid,
         speakerAck,
         contractSentSpeaker,
-        archiveStatus,
-        isArchived: !!archiveStatus,
+        isLost,
+        isWon,
+        isArchived: isLost || isWon,
+        // Statut contrat normalisé sur 3 états, piloté manuellement
+        contractStatus:
+          pContract?.status === "signed"
+            ? "signed"
+            : pContract?.status === "en_attente_paiement"
+              ? "en_attente_paiement"
+              : "en_cours",
         stages,
         completedCount,
         nextStage,
@@ -431,16 +438,15 @@ const AdminEventDossiers = () => {
   const filtered = useMemo(() => {
     let list = enriched;
     if (tab === "en_cours") {
-      // Exclure les dossiers en attente de paiement (facture envoyée non payée)
-      list = list.filter((r) => !r.isArchived && !(r.invoiceSentClient && !r.invoicePaidClient));
+      list = list.filter((r) => !r.isArchived && r.contractStatus === "en_cours");
     } else if (tab === "attente_paiement") {
-      // Facture envoyée mais pas encore payée (côté client) — non archivés
-      list = list.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient);
+      list = list.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement");
     } else {
-      list = list.filter((r) => r.isArchived);
-      if (archiveFilter !== "all") {
-        list = list.filter((r) => r.archiveStatus === archiveFilter);
-      }
+      // Archivés : signés + dossiers gagnés/perdus
+      list = list.filter((r) => r.isArchived || r.contractStatus === "signed");
+    }
+    if (yearFilter !== "all") {
+      list = list.filter((r) => r.eventDateRaw && r.eventDateRaw.slice(0, 4) === yearFilter);
     }
     const q = search.trim().toLowerCase();
     if (q) {
@@ -459,14 +465,20 @@ const AdminEventDossiers = () => {
       return a.eventDate.getTime() - b.eventDate.getTime();
     });
     return list;
-  }, [enriched, tab, archiveFilter, search]);
+  }, [enriched, tab, search, yearFilter]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    enriched.forEach((r) => {
+      if (r.eventDateRaw) years.add(r.eventDateRaw.slice(0, 4));
+    });
+    return [...years].sort((a, b) => b.localeCompare(a));
+  }, [enriched]);
 
   const counts = useMemo(() => ({
-    enCours: enriched.filter((r) => !r.isArchived && !(r.invoiceSentClient && !r.invoicePaidClient)).length,
-    attentePaiement: enriched.filter((r) => !r.isArchived && !!r.invoiceSentClient && !r.invoicePaidClient).length,
-    archives: enriched.filter((r) => r.isArchived).length,
-    gagnes: enriched.filter((r) => r.archiveStatus === "gagne").length,
-    perdus: enriched.filter((r) => r.archiveStatus === "perdu").length,
+    enCours: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_cours").length,
+    attentePaiement: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement").length,
+    archives: enriched.filter((r) => r.isArchived || r.contractStatus === "signed").length,
   }), [enriched]);
 
   // KPI: nombre de dossiers en cours bloqués sur chaque étape
@@ -601,15 +613,16 @@ const AdminEventDossiers = () => {
             className="pl-9 h-9 text-sm"
           />
         </div>
-        {tab === "archives" && (
-          <Select value={archiveFilter} onValueChange={(v) => setArchiveFilter(v as any)}>
-            <SelectTrigger className="w-[180px] h-9 text-xs">
+        {availableYears.length > 0 && (
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous ({counts.archives})</SelectItem>
-              <SelectItem value="gagne">🏆 Gagnés ({counts.gagnes})</SelectItem>
-              <SelectItem value="perdu">❌ Perdus ({counts.perdus})</SelectItem>
+              <SelectItem value="all">Toutes années</SelectItem>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         )}
@@ -641,8 +654,8 @@ const AdminEventDossiers = () => {
                       <TableCell className="py-3">
                         <div className="font-medium text-sm">{p.client_name}</div>
                         {r.bdc && <div className="text-[10px] text-muted-foreground">{r.bdc}</div>}
-                        {r.archiveStatus === "perdu" && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
-                        {r.archiveStatus === "gagne" && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
+                        {r.isLost && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
+                        {r.isWon && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
                       </TableCell>
                       <TableCell className="whitespace-nowrap py-3">
                         {r.eventDate ? (
@@ -664,16 +677,14 @@ const AdminEventDossiers = () => {
                       <TableCell className="text-right py-3">
                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           {!r.isArchived && (
-                            <>
-                              <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 h-7 px-2" title="Marquer comme perdu" onClick={() => setLostDialogId(p.id)}>
-                                ❌
-                              </Button>
-                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-7 px-2" title="Supprimer" onClick={() => setDeleteDialogId(p.id)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </>
+                            <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 h-7 px-2" title="Marquer comme perdu" onClick={() => setLostDialogId(p.id)}>
+                              ❌
+                            </Button>
                           )}
-                          {r.archiveStatus === "perdu" && (
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-7 px-2" title="Supprimer définitivement" onClick={() => setDeleteDialogId(p.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                          {r.isLost && (
                             <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Restaurer" onClick={() => handleRestoreFromLost(p.id)}>
                               ↩️ Restaurer
                             </Button>
@@ -763,7 +774,7 @@ const AdminEventDossiers = () => {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              ⚠️ Cette action est <strong className="text-foreground">irréversible</strong>. La proposition, le contrat, les factures, le dossier événement et toutes les données associées seront définitivement supprimés.
+              ⚠️ <strong className="text-foreground">Attention : cette action est irréversible.</strong> Tout sera supprimé en base : la proposition, le contrat, les factures, le dossier événement et toutes les données associées.
             </p>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setDeleteDialogId(null)}>Annuler</Button>

@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { profile_id } = await req.json();
+    const { profile_id, part, section_index, instructions } = await req.json();
     if (!profile_id) {
       return new Response(JSON.stringify({ error: "profile_id required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error: pErr } = await supabase
       .from("speaker_profiles")
-      .select("id, name, landing_label, subtitle, linked_profile_ids, extra_speaker_ids")
+      .select("id, name, landing_label, subtitle, linked_profile_ids, extra_speaker_ids, rich_content")
       .eq("id", profile_id)
       .single();
     if (pErr || !profile) {
@@ -151,8 +151,61 @@ Contraintes :
 - HTML autorisé : <p>, <em>, <ul>, <ol>, <li>, <br>. PAS de <strong>, PAS de classes, PAS d'attributs.
 - Apostrophes droites uniquement (')`;
 
+    const existing: any = (profile as any).rich_content || {};
+    const existingSections: any[] = Array.isArray(existing.sections) ? existing.sections : [];
+    const speakerListText = speakerSummaries
+      .map((s) => `- ${s.name}${s.role ? ` (${s.role})` : ""}`)
+      .join("\n");
 
-    const raw = await callAI(LOVABLE_API_KEY, system, user);
+    const contextHeader = `Profil de landing : "${profileLabel}"
+${profile.subtitle ? `Sous-titre : ${profile.subtitle}` : ""}
+
+Conférenciers sélectionnés dans ce profil (sélection réellement affichée sur la page) :
+${speakerListText}
+`;
+
+    const extraInstructions = instructions
+      ? `\nConsignes complémentaires de l'éditrice (prioritaires) : ${String(instructions).slice(0, 800)}\n`
+      : "";
+
+    let promptUser = user;
+
+    if (part === "key_points") {
+      promptUser = `${contextHeader}${extraInstructions}
+Régénère UNIQUEMENT le bloc "points clés" de la page profil.
+Retourne un JSON strict :
+{ "key_points_title": "", "key_points_intro": "", "key_points": [ { "label": "", "description": "" } ] }
+Contraintes : 4 à 6 cartes, label 3-6 mots, description 15-25 mots, texte brut sans HTML, apostrophes droites.`;
+    } else if (part === "why_agency") {
+      promptUser = `${contextHeader}${extraInstructions}
+Régénère UNIQUEMENT le bloc "pourquoi passer par l'agence".
+Retourne un JSON strict : { "why_agency": "<p>...</p><p>...</p>" }
+Contraintes : 2 paragraphes (120-180 mots au total), 3 axes obligatoires : connaissance fine de chaque conférencier, maîtrise du contenu de leurs conférences, expertise de matching événement/audience/objectifs. HTML autorisé : <p>, <em>, <ul>, <ol>, <li>, <br>. Pas de <strong>.`;
+    } else if (part === "section") {
+      const idx = Number(section_index);
+      const current = existingSections[idx];
+      if (!current) {
+        return new Response(JSON.stringify({ error: "Section introuvable" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const others = existingSections
+        .filter((_, i) => i !== idx)
+        .map((s: any) => `- ${s.title}`)
+        .join("\n");
+      promptUser = `${contextHeader}${extraInstructions}
+Régénère UNIQUEMENT la section suivante de la page profil.
+Titre actuel de la section : "${current.title || "(sans titre)"}"
+Contenu actuel (à remplacer, pour contexte) : ${stripHtml(current.body).slice(0, 800)}
+
+Autres sections déjà présentes (ne pas répéter leur contenu) :
+${others || "(aucune)"}
+
+Retourne un JSON strict : { "title": "", "body": "<p>...</p><p>...</p>" }
+Contraintes : garde un titre proche du titre actuel s'il est pertinent, 150-250 mots, cohérent avec la sélection de conférenciers ci-dessus (tu peux citer des noms de la sélection si la section porte explicitement sur cette sélection). HTML autorisé : <p>, <em>, <ul>, <ol>, <li>, <br>. Pas de <strong>. Apostrophes droites.`;
+    }
+
+    const raw = await callAI(LOVABLE_API_KEY, system, promptUser);
     let parsed: any;
     try {
       parsed = JSON.parse(raw);
@@ -165,31 +218,55 @@ Contraintes :
     const validIds = new Set(speakerSummaries.map((s) => s.id));
     const cleanText = (s: any) => normalizeApostrophes(stripHtml(String(s || "")));
 
-    const rawKeyPoints = Array.isArray(parsed.key_points) ? parsed.key_points : [];
-    const key_points = rawKeyPoints.slice(0, 6).map((p: any) => {
-      if (typeof p === "string") return { label: cleanText(p), description: "" };
-      return {
-        label: cleanText(p?.label),
-        description: cleanText(p?.description),
-      };
-    }).filter((p: any) => p.label);
-
-    const rich_content = {
-      intro: sanitizeRichHtml(parsed.intro),
-      key_points_title: cleanText(parsed.key_points_title),
-      key_points_intro: cleanText(parsed.key_points_intro),
-      key_points,
-      sections: Array.isArray(parsed.sections)
-        ? parsed.sections.slice(0, 6).map((sec: any) => ({
-            title: cleanText(sec.title),
-            body: sanitizeRichHtml(sec.body),
-            speaker_ids: Array.isArray(sec.speaker_ids)
-              ? sec.speaker_ids.filter((id: any) => validIds.has(id)).slice(0, 6)
-              : [],
-          }))
-        : [],
-      why_agency: sanitizeRichHtml(parsed.why_agency),
+    const buildKeyPoints = (input: any) => {
+      const rawKeyPoints = Array.isArray(input) ? input : [];
+      return rawKeyPoints.slice(0, 6).map((p: any) => {
+        if (typeof p === "string") return { label: cleanText(p), description: "" };
+        return { label: cleanText(p?.label), description: cleanText(p?.description) };
+      }).filter((p: any) => p.label);
     };
+
+    let rich_content: any;
+
+    if (part === "key_points") {
+      rich_content = {
+        ...existing,
+        key_points_title: cleanText(parsed.key_points_title) || existing.key_points_title || "",
+        key_points_intro: cleanText(parsed.key_points_intro) || existing.key_points_intro || "",
+        key_points: buildKeyPoints(parsed.key_points),
+      };
+    } else if (part === "why_agency") {
+      rich_content = { ...existing, why_agency: sanitizeRichHtml(parsed.why_agency) };
+    } else if (part === "section") {
+      const idx = Number(section_index);
+      const nextSections = existingSections.map((s: any, i: number) =>
+        i === idx
+          ? {
+              ...s,
+              title: cleanText(parsed.title) || s.title,
+              body: sanitizeRichHtml(parsed.body) || s.body,
+            }
+          : s
+      );
+      rich_content = { ...existing, sections: nextSections };
+    } else {
+      rich_content = {
+        intro: sanitizeRichHtml(parsed.intro),
+        key_points_title: cleanText(parsed.key_points_title),
+        key_points_intro: cleanText(parsed.key_points_intro),
+        key_points: buildKeyPoints(parsed.key_points),
+        sections: Array.isArray(parsed.sections)
+          ? parsed.sections.slice(0, 6).map((sec: any) => ({
+              title: cleanText(sec.title),
+              body: sanitizeRichHtml(sec.body),
+              speaker_ids: Array.isArray(sec.speaker_ids)
+                ? sec.speaker_ids.filter((id: any) => validIds.has(id)).slice(0, 6)
+                : [],
+            }))
+          : [],
+        why_agency: sanitizeRichHtml(parsed.why_agency),
+      };
+    }
 
     const { error: uErr } = await supabase
       .from("speaker_profiles")

@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Email send failed", details: resendBody }), { status: 500, headers: corsHeaders });
     }
 
-    await adminClient.from("contracts").update({ status: "sent", contract_sent_at: new Date().toISOString() }).eq("id", contract_id);
+    await adminClient.from("contracts").update({ contract_sent_at: new Date().toISOString() }).eq("id", contract_id);
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {

@@ -467,10 +467,6 @@ Nelly Sabde - Les Conférenciers`;
         },
       });
       if (error) throw error;
-      await supabase
-        .from("contracts")
-        .update({ status: "sent" } as any)
-        .eq("id", contract.id);
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
       fetchData();
@@ -727,27 +723,25 @@ Nelly Sabde - Les Conférenciers`);
               className={`text-xs px-2 py-0.5 rounded-full ${
                 contract.status === "signed"
                   ? "bg-green-100 text-green-700"
-                  : contract.status === "sent"
-                    ? "bg-amber-100 text-amber-700"
+                  : contract.status === "en_attente_paiement"
+                    ? "bg-orange-100 text-orange-700"
                     : "bg-muted text-muted-foreground"
               }`}
             >
               {contract.status === "signed"
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
-                : contract.status === "sent"
-                  ? "Envoyé"
-                  : "À envoyer"}
+                : contract.status === "en_attente_paiement"
+                  ? "💶 En attente de paiement"
+                  : "🔄 En cours"}
             </span>
-            {(contract.status === "draft" || contract.status === "sent") && (
+            {contract.status !== "signed" && (
               <>
                 <Button size="sm" variant="ghost" onClick={openEditContract} title="Éditer">
                   <Pencil className="h-3 w-3" />
                 </Button>
-                {contract.status === "draft" && (
-                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
-                    <Send className="h-3 w-3" /> Envoyer
-                  </Button>
-                )}
+                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={openContractEmail}>
+                  <Send className="h-3 w-3" /> Envoyer
+                </Button>
               </>
             )}
             <Button size="sm" variant="ghost" asChild>

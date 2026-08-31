@@ -1107,7 +1107,7 @@ Nelly Sabde - Les Conférenciers`;
       if (error) throw error;
       await supabase
         .from("contracts")
-        .update({ status: "sent", contract_sent_at: new Date().toISOString() } as any)
+        .update({ contract_sent_at: new Date().toISOString() } as any)
         .eq("id", contract.id);
       // Ne pas toucher à contract_sent_speaker_at (= communication conférencier).
       toast.success("Contrat envoyé par email !");
@@ -1961,17 +1961,12 @@ Nelly Sabde - Les Conférenciers`);
         .update({ status: "sent", sent_at: new Date().toISOString() })
         .eq("id", emailInvoice.id);
 
-      // Item 7 + 8 : facture solde/total envoyée → bascule contrat en "en attente de paiement"
-      // + crée un rappel agenda J+60 sur la proposition.
+      // Facture solde/total envoyée → rappel agenda J+60 sur la proposition.
+      // (Le statut du contrat reste piloté manuellement.)
       if (
         (emailInvoice.invoice_type === "solde" || emailInvoice.invoice_type === "total") &&
         contract
       ) {
-        await supabase
-          .from("contracts")
-          .update({ status: "en_attente_paiement" } as any)
-          .eq("id", contract.id);
-
         const due = new Date();
         due.setDate(due.getDate() + 60);
         const dueIso = due.toISOString().split("T")[0];
@@ -2158,24 +2153,22 @@ Nelly Sabde - Les Conférenciers`);
                   ? "bg-green-100 text-green-700 border border-green-300"
                   : contract.status === "en_attente_paiement"
                     ? "bg-orange-100 text-orange-700 border border-orange-300"
-                    : contract.status === "archived"
-                      ? "bg-gray-100 text-gray-700 border border-gray-300"
-                      : "bg-red-100 text-red-700 border border-red-300"
+                    : "bg-blue-100 text-blue-700 border border-blue-300"
               }`}
             >
               {contract.status === "signed"
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
                 : contract.status === "en_attente_paiement"
                   ? "💶 En attente de paiement"
-                  : contract.status === "archived"
-                    ? "📦 Archivé"
-                    : contract.status === "sent"
-                      ? "⏳ Non signé (envoyé)"
-                      : "⚠️ Non signé (brouillon)"}
+                  : "🔄 En cours"}
             </span>
-            {/* #14 — Changement de statut manuel */}
+            {/* Changement de statut 100 % manuel */}
             <Select
-              value={contract.status}
+              value={
+                contract.status === "signed" || contract.status === "en_attente_paiement"
+                  ? contract.status
+                  : "en_cours"
+              }
               onValueChange={async (newStatus) => {
                 if (newStatus === contract.status) return;
                 const { error } = await supabase
@@ -2194,11 +2187,9 @@ Nelly Sabde - Les Conférenciers`);
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">Brouillon</SelectItem>
-                <SelectItem value="sent">En cours (envoyé)</SelectItem>
-                <SelectItem value="signed">Signé</SelectItem>
+                <SelectItem value="en_cours">En cours</SelectItem>
                 <SelectItem value="en_attente_paiement">En attente de paiement</SelectItem>
-                <SelectItem value="archived">Archivé</SelectItem>
+                <SelectItem value="signed">Signé</SelectItem>
               </SelectContent>
             </Select>
             {(contract.version || 1) > 1 && (

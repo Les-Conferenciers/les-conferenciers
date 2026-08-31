@@ -24,7 +24,6 @@ import { cn } from "@/lib/utils";
 
 type SpeakerConference = { id: string; title: string; speaker_id: string };
 type Speaker = { id: string; name: string; image_url: string | null; role: string | null; themes: string[] | null; base_fee: number | null; city: string | null };
-type ProposalTemplate = { id: string; name: string; speaker_ids: string[]; is_preset: boolean };
 type ProposalSpeaker = {
   speaker_id: string;
   speaker_fee: number | null;
@@ -86,7 +85,6 @@ type InvoiceData = {
 };
 
 const COMMISSION = 1000;
-const TEMPLATE_ICON = "📋";
 // Step definitions for the pipeline
 const PIPELINE_STEPS = [
   { key: "proposal_sent", label: "Proposition envoyée" },
@@ -109,7 +107,6 @@ const AdminProposals = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [contracts, setContracts] = useState<ContractData[]>([]);
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
-  const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
@@ -117,7 +114,6 @@ const AdminProposals = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("drafts");
   const [stepFilter, setStepFilter] = useState<string | null>(null);
-  const [saveTemplateName, setSaveTemplateName] = useState("");
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewTab, setPreviewTab] = useState<"email" | "proposal">("email");
@@ -153,14 +149,13 @@ Belle journée,`;
 
   const fetchAll = async () => {
     setLoading(true);
-    const [propRes, spkRes, confRes, evtRes, ctrRes, invRes, tplRes] = await Promise.all([
+    const [propRes, spkRes, confRes, evtRes, ctrRes, invRes] = await Promise.all([
       supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, phone, email))").order("created_at", { ascending: false }),
       supabase.from("speakers").select("id, name, image_url, role, themes, base_fee, city").order("name"),
       supabase.from("speaker_conferences").select("id, title, speaker_id").order("display_order"),
       supabase.from("events").select("id, proposal_id, info_sent_speaker_at, contract_sent_speaker_at, visio_date, liaison_sheet_sent_at, speaker_paid_at, selected_speaker_id"),
       supabase.from("contracts").select("id, proposal_id, status, signed_at"),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, sent_at, paid_at"),
-      supabase.from("proposal_templates").select("*").order("is_preset", { ascending: false }).order("name"),
     ]);
     setProposals((propRes.data as any) || []);
     setSpeakers(spkRes.data || []);
@@ -168,7 +163,6 @@ Belle journée,`;
     setEvents((evtRes.data as any) || []);
     setContracts((ctrRes.data as any) || []);
     setInvoices((invRes.data as any) || []);
-    setTemplates((tplRes.data as any) || []);
     setLoading(false);
   };
 
@@ -279,45 +273,6 @@ Belle journée,`;
   const getSpeakerImage = (id: string) => speakers.find(s => s.id === id)?.image_url || null;
   const getSpeakerCity = (id: string) => speakers.find(s => s.id === id)?.city || null;
 
-  // ─── Template helpers ───
-  const applyTemplate = (tpl: ProposalTemplate) => {
-    const tplSpeakers = tpl.speaker_ids
-      .map(id => speakers.find(s => s.id === id))
-      .filter(Boolean)
-      .slice(0, 3) as Speaker[];
-    setSelectedSpeakers(tplSpeakers.map((sp, i) => ({
-      speaker_id: sp.id,
-      speaker_fee: sp.base_fee || null,
-      travel_costs: null,
-      agency_commission: COMMISSION,
-      total_price: ((sp.base_fee || 0) + COMMISSION) || null,
-      display_order: i,
-      selected_conference_ids: [],
-    })));
-    toast.success(`Modèle "${tpl.name}" appliqué`);
-  };
-
-  const saveAsTemplate = async () => {
-    if (!saveTemplateName.trim() || selectedSpeakers.length === 0) {
-      toast.error("Donnez un nom et ajoutez au moins 1 conférencier");
-      return;
-    }
-    const { error } = await supabase.from("proposal_templates").insert({
-      name: saveTemplateName.trim(),
-      speaker_ids: selectedSpeakers.map(s => s.speaker_id),
-      is_preset: false,
-    } as any);
-    if (error) { toast.error("Erreur"); return; }
-    toast.success(`Modèle "${saveTemplateName}" sauvegardé !`);
-    setSaveTemplateName("");
-    fetchAll();
-  };
-
-  const deleteTemplate = async (id: string) => {
-    await supabase.from("proposal_templates").delete().eq("id", id);
-    toast.success("Modèle supprimé");
-    fetchAll();
-  };
 
   // ─── CRUD ───
   const handleCreate = async () => {
@@ -663,31 +618,6 @@ Belle journée,`;
                 <Checkbox checked={isEnglish} onCheckedChange={(v) => setIsEnglish(!!v)} />
                 <span className="text-sm">Intervention en anglais</span>
               </label>
-              {/* Templates */}
-              {templates.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">{TEMPLATE_ICON} Modèles de proposition</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {templates.map(tpl => (
-                      <div key={tpl.id} className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs gap-1"
-                          onClick={() => applyTemplate(tpl)}
-                        >
-                          {tpl.is_preset ? "⭐" : "📌"} {tpl.name} ({tpl.speaker_ids.length})
-                        </Button>
-                        {!tpl.is_preset && (
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => deleteTemplate(tpl.id)}>
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div className="space-y-3">
                 <Label>Conférenciers ({selectedSpeakers.length}/3)</Label>
                 {selectedSpeakers.map(ps => {
@@ -745,20 +675,6 @@ Belle journée,`;
                   </div>
                 )}
               </div>
-              {/* Save as template */}
-              {selectedSpeakers.length > 0 && (
-                <div className="flex items-center gap-2 border border-dashed border-border rounded-lg p-3">
-                  <Input
-                    placeholder="Nom du modèle…"
-                    value={saveTemplateName}
-                    onChange={e => setSaveTemplateName(e.target.value)}
-                    className="flex-1 h-8 text-sm"
-                  />
-                  <Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap" onClick={saveAsTemplate}>
-                    {TEMPLATE_ICON} Sauvegarder comme modèle
-                  </Button>
-                </div>
-              )}
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 gap-2" onClick={() => setPreviewOpen(true)} disabled={selectedSpeakers.length === 0}>
                   <Eye className="h-4 w-4" /> Prévisualiser
