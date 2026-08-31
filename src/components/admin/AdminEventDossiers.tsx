@@ -677,15 +677,13 @@ const AdminEventDossiers = () => {
                       <TableCell className="text-right py-3">
                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           {!r.isArchived && (
-                            <>
-                              <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 h-7 px-2" title="Marquer comme perdu" onClick={() => setLostDialogId(p.id)}>
-                                ❌
-                              </Button>
-                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-7 px-2" title="Supprimer" onClick={() => setDeleteDialogId(p.id)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </>
+                            <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 h-7 px-2" title="Marquer comme perdu" onClick={() => setLostDialogId(p.id)}>
+                              ❌
+                            </Button>
                           )}
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-7 px-2" title="Supprimer définitivement" onClick={() => setDeleteDialogId(p.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                           {r.isLost && (
                             <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Restaurer" onClick={() => handleRestoreFromLost(p.id)}>
                               ↩️ Restaurer
@@ -776,7 +774,7 @@ const AdminEventDossiers = () => {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              ⚠️ Cette action est <strong className="text-foreground">irréversible</strong>. La proposition, le contrat, les factures, le dossier événement et toutes les données associées seront définitivement supprimés.
+              ⚠️ <strong className="text-foreground">Attention : cette action est irréversible.</strong> Tout sera supprimé en base : la proposition, le contrat, les factures, le dossier événement et toutes les données associées.
             </p>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setDeleteDialogId(null)}>Annuler</Button>
