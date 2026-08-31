@@ -2153,24 +2153,22 @@ Nelly Sabde - Les Conférenciers`);
                   ? "bg-green-100 text-green-700 border border-green-300"
                   : contract.status === "en_attente_paiement"
                     ? "bg-orange-100 text-orange-700 border border-orange-300"
-                    : contract.status === "archived"
-                      ? "bg-gray-100 text-gray-700 border border-gray-300"
-                      : "bg-red-100 text-red-700 border border-red-300"
+                    : "bg-blue-100 text-blue-700 border border-blue-300"
               }`}
             >
               {contract.status === "signed"
                 ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
                 : contract.status === "en_attente_paiement"
                   ? "💶 En attente de paiement"
-                  : contract.status === "archived"
-                    ? "📦 Archivé"
-                    : contract.status === "sent"
-                      ? "⏳ Non signé (envoyé)"
-                      : "⚠️ Non signé (brouillon)"}
+                  : "🔄 En cours"}
             </span>
-            {/* #14 — Changement de statut manuel */}
+            {/* Changement de statut 100 % manuel */}
             <Select
-              value={contract.status}
+              value={
+                contract.status === "signed" || contract.status === "en_attente_paiement"
+                  ? contract.status
+                  : "en_cours"
+              }
               onValueChange={async (newStatus) => {
                 if (newStatus === contract.status) return;
                 const { error } = await supabase
