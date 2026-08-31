@@ -471,7 +471,15 @@ const AdminEventDossiers = () => {
       return a.eventDate.getTime() - b.eventDate.getTime();
     });
     return list;
-  }, [enriched, tab, archiveFilter, search]);
+  }, [enriched, tab, archiveFilter, search, yearFilter]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    enriched.forEach((r) => {
+      if (r.eventDateRaw) years.add(r.eventDateRaw.slice(0, 4));
+    });
+    return [...years].sort((a, b) => b.localeCompare(a));
+  }, [enriched]);
 
   const counts = useMemo(() => ({
     enCours: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_cours").length,
