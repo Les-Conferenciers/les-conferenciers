@@ -626,19 +626,6 @@ const AdminEventDossiers = () => {
             </SelectContent>
           </Select>
         )}
-        {tab === "archives" && (
-          <Select value={archiveFilter} onValueChange={(v) => setArchiveFilter(v as any)}>
-            <SelectTrigger className="w-[180px] h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous ({counts.archives})</SelectItem>
-              <SelectItem value="signe">✓ Signés ({counts.signes})</SelectItem>
-              <SelectItem value="gagne">🏆 Gagnés ({counts.gagnes})</SelectItem>
-              <SelectItem value="perdu">❌ Perdus ({counts.perdus})</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -667,8 +654,8 @@ const AdminEventDossiers = () => {
                       <TableCell className="py-3">
                         <div className="font-medium text-sm">{p.client_name}</div>
                         {r.bdc && <div className="text-[10px] text-muted-foreground">{r.bdc}</div>}
-                        {r.archiveStatus === "perdu" && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
-                        {r.archiveStatus === "gagne" && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
+                        {r.isLost && <div className="text-[10px] text-orange-600 mt-0.5">❌ Perdu</div>}
+                        {r.isWon && <div className="text-[10px] text-emerald-600 mt-0.5">🏆 Gagné</div>}
                       </TableCell>
                       <TableCell className="whitespace-nowrap py-3">
                         {r.eventDate ? (
@@ -699,7 +686,7 @@ const AdminEventDossiers = () => {
                               </Button>
                             </>
                           )}
-                          {r.archiveStatus === "perdu" && (
+                          {r.isLost && (
                             <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Restaurer" onClick={() => handleRestoreFromLost(p.id)}>
                               ↩️ Restaurer
                             </Button>
