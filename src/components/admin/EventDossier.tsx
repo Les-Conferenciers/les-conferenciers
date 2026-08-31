@@ -2157,7 +2157,7 @@ Nelly Sabde - Les Conférenciers`);
               }`}
             >
               {contract.status === "signed"
-                ? `✓ Signé${contract.signer_name ? ` par ${contract.signer_name}` : ""}`
+                ? `✓ Archivé${contract.signer_name ? ` (signé par ${contract.signer_name})` : ""}`
                 : contract.status === "en_attente_paiement"
                   ? "💶 En attente de paiement"
                   : "🔄 En cours"}
@@ -2189,7 +2189,7 @@ Nelly Sabde - Les Conférenciers`);
               <SelectContent>
                 <SelectItem value="en_cours">En cours</SelectItem>
                 <SelectItem value="en_attente_paiement">En attente de paiement</SelectItem>
-                <SelectItem value="signed">Signé</SelectItem>
+                <SelectItem value="signed">Archivé</SelectItem>
               </SelectContent>
             </Select>
             {(contract.version || 1) > 1 && (
