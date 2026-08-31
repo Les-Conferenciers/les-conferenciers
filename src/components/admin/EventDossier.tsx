@@ -1961,17 +1961,12 @@ Nelly Sabde - Les Conférenciers`);
         .update({ status: "sent", sent_at: new Date().toISOString() })
         .eq("id", emailInvoice.id);
 
-      // Item 7 + 8 : facture solde/total envoyée → bascule contrat en "en attente de paiement"
-      // + crée un rappel agenda J+60 sur la proposition.
+      // Facture solde/total envoyée → rappel agenda J+60 sur la proposition.
+      // (Le statut du contrat reste piloté manuellement.)
       if (
         (emailInvoice.invoice_type === "solde" || emailInvoice.invoice_type === "total") &&
         contract
       ) {
-        await supabase
-          .from("contracts")
-          .update({ status: "en_attente_paiement" } as any)
-          .eq("id", contract.id);
-
         const due = new Date();
         due.setDate(due.getDate() + 60);
         const dueIso = due.toISOString().split("T")[0];
