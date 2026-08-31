@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { profile_id } = await req.json();
+    const { profile_id, part, section_index, instructions } = await req.json();
     if (!profile_id) {
       return new Response(JSON.stringify({ error: "profile_id required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error: pErr } = await supabase
       .from("speaker_profiles")
-      .select("id, name, landing_label, subtitle, linked_profile_ids, extra_speaker_ids")
+      .select("id, name, landing_label, subtitle, linked_profile_ids, extra_speaker_ids, rich_content")
       .eq("id", profile_id)
       .single();
     if (pErr || !profile) {
