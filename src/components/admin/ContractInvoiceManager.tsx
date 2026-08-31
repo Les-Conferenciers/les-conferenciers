@@ -467,10 +467,6 @@ Nelly Sabde - Les Conférenciers`;
         },
       });
       if (error) throw error;
-      await supabase
-        .from("contracts")
-        .update({ status: "sent" } as any)
-        .eq("id", contract.id);
       toast.success("Contrat envoyé par email !");
       setContractEmailOpen(false);
       fetchData();
