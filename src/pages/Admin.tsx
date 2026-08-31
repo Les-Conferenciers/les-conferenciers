@@ -1948,7 +1948,7 @@ const AdminProposalsContent = () => {
   const handleProposalTypeChange = (type: ProposalType) => {
     setProposalType(type);
     setSelectedSpeakers([]);
-    setSelectedTemplateId(null);
+    
     if (type === "info") {
       setEmailBody(getInfoEmailBody(recipientName));
       setMessage("");
