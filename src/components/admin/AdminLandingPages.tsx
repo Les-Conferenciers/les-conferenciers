@@ -129,6 +129,30 @@ const AdminLandingPages = () => {
     }
   };
 
+  const [generatingPart, setGeneratingPart] = useState<string | null>(null);
+  const generatePart = async (
+    p: Profile,
+    part: "key_points" | "why_agency" | "section",
+    sectionIndex?: number,
+  ) => {
+    const key = `${p.id}:${part}:${sectionIndex ?? ""}`;
+    setGeneratingPart(key);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-landing-content", {
+        body: { profile_id: p.id, part, section_index: sectionIndex },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const rc = (data as any).rich_content as RichContent;
+      updateLocal(p.id, { rich_content: rc, rich_content_updated_at: new Date().toISOString() });
+      toast.success("Section régénérée");
+    } catch (e: any) {
+      toast.error(`Régénération échouée : ${e.message || e}`);
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
   const updateRich = (p: Profile, patch: Partial<RichContent>) => {
     const base: RichContent = p.rich_content || { intro: "", key_points_title: "", key_points_intro: "", sections: [], why_agency: "", key_points: [] };
     updateLocal(p.id, { rich_content: { ...base, ...patch } });
