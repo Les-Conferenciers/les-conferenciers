@@ -485,7 +485,7 @@ const AdminEventDossiers = () => {
     enCours: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_cours").length,
     attentePaiement: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement").length,
     signes: enriched.filter((r) => !r.isArchived && r.contractStatus === "signed").length,
-    archives: enriched.filter((r) => r.isArchived).length,
+    archives: enriched.filter((r) => r.isArchived || r.contractStatus === "signed").length,
     gagnes: enriched.filter((r) => r.archiveStatus === "gagne").length,
     perdus: enriched.filter((r) => r.archiveStatus === "perdu").length,
   }), [enriched]);
@@ -605,9 +605,6 @@ const AdminEventDossiers = () => {
           </TabsTrigger>
           <TabsTrigger value="attente_paiement" className="gap-1.5 text-xs">
             💰 En attente de paiement <span className="ml-1 bg-amber-100 text-amber-700 rounded-full px-1.5 text-[10px]">{counts.attentePaiement}</span>
-          </TabsTrigger>
-          <TabsTrigger value="signes" className="gap-1.5 text-xs">
-            ✓ Signés <span className="ml-1 bg-emerald-100 text-emerald-700 rounded-full px-1.5 text-[10px]">{counts.signes}</span>
           </TabsTrigger>
           <TabsTrigger value="archives" className="gap-1.5 text-xs">
             📦 Archivés <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.archives}</span>
