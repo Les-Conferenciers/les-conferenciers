@@ -1107,7 +1107,7 @@ Nelly Sabde - Les Conférenciers`;
       if (error) throw error;
       await supabase
         .from("contracts")
-        .update({ status: "sent", contract_sent_at: new Date().toISOString() } as any)
+        .update({ contract_sent_at: new Date().toISOString() } as any)
         .eq("id", contract.id);
       // Ne pas toucher à contract_sent_speaker_at (= communication conférencier).
       toast.success("Contrat envoyé par email !");
