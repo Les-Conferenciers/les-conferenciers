@@ -159,10 +159,10 @@ const ContractSign = () => {
     setSigning(true);
     const signedAt = new Date().toISOString();
     const { error } = await supabase.from("contracts").update({
-      status: "signed", signer_name: signerName.trim(), signer_ip: "client", signed_at: signedAt, client_signed_received_at: signedAt.slice(0, 10),
+      signer_name: signerName.trim(), signer_ip: "client", signed_at: signedAt, client_signed_received_at: signedAt.slice(0, 10),
     } as any).eq("token", token!);
     if (error) { toast.error("Erreur lors de la signature"); setSigning(false); return; }
-    setContract({ ...contract, status: "signed", signer_name: signerName.trim(), signed_at: signedAt } as ContractData);
+    setContract({ ...contract, signer_name: signerName.trim(), signed_at: signedAt } as ContractData);
     setSigned(true);
     // Wait for the signature block to appear in the DOM before capturing
     await new Promise((r) => setTimeout(r, 250));
