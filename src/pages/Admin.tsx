@@ -1112,25 +1112,6 @@ const AdminProposalsContent = () => {
   };
 
 
-
-  const applyTemplate = (templateId: string) => {
-    setSelectedTemplateId(templateId);
-    const tpl = templates.find((t) => t.id === templateId);
-    if (!tpl) return;
-    const newSpeakers: ProposalSpeaker[] = tpl.speaker_ids
-      .map((sid, idx) => {
-        const sp = speakers.find((s) => s.id === sid);
-        if (!sp) return null;
-        return createProposalSpeaker(sp, idx);
-      })
-      .filter(Boolean) as ProposalSpeaker[];
-    setSelectedSpeakers(newSpeakers);
-    // Update email body with template-specific phrase
-    const evtCtx = buildEventContextLine(eventLocation, eventDateText, audienceSize);
-    setEmailBody(getDefaultEmailBody(recipientName, clientName, evtCtx, tpl.name));
-    toast.success(`Template "${tpl.name}" appliqué (${newSpeakers.length} conférenciers)`);
-  };
-
   const getPipelineStatus = (p: Proposal) => {
     const pInvoices = allInvoices.filter((i) => i.proposal_id === p.id);
     const pContract = contracts.find((c) => c.proposal_id === p.id);
