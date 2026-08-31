@@ -622,6 +622,19 @@ const AdminEventDossiers = () => {
             className="pl-9 h-9 text-sm"
           />
         </div>
+        {availableYears.length > 0 && (
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes années</SelectItem>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {tab === "archives" && (
           <Select value={archiveFilter} onValueChange={(v) => setArchiveFilter(v as any)}>
             <SelectTrigger className="w-[180px] h-9 text-xs">
@@ -629,6 +642,7 @@ const AdminEventDossiers = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous ({counts.archives})</SelectItem>
+              <SelectItem value="signe">✓ Signés ({counts.signes})</SelectItem>
               <SelectItem value="gagne">🏆 Gagnés ({counts.gagnes})</SelectItem>
               <SelectItem value="perdu">❌ Perdus ({counts.perdus})</SelectItem>
             </SelectContent>
