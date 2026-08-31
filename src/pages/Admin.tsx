@@ -955,9 +955,9 @@ const AdminProposalsContent = () => {
     setAllClients(data || []);
   };
 
-  const fetchTemplates = async () => {
-    const { data } = await supabase.from("proposal_templates").select("id, name, speaker_ids, is_preset").order("name");
-    setTemplates((data as any) || []);
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from("speaker_profiles").select("id, name").order("display_order");
+    setProfiles((data as any) || []);
   };
 
   const fetchTasks = async () => {
