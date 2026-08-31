@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from "react";
-import { Bold, Italic, Smile } from "lucide-react";
+import { Bold, Italic, Underline, List, ListOrdered, Smile } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface SimpleRichTextEditorProps {
@@ -89,6 +89,10 @@ const SimpleRichTextEditor = ({ value, onChange, placeholder, rows = 6 }: Simple
       <div className="flex items-center gap-0.5 px-2 py-1 border-b border-input bg-muted/30">
         <ToolbarBtn onClick={() => execCommand("bold")} title="Gras"><Bold className="h-4 w-4" /></ToolbarBtn>
         <ToolbarBtn onClick={() => execCommand("italic")} title="Italique"><Italic className="h-4 w-4" /></ToolbarBtn>
+        <ToolbarBtn onClick={() => execCommand("underline")} title="Souligné"><Underline className="h-4 w-4" /></ToolbarBtn>
+        <div className="w-px h-5 bg-border mx-1" />
+        <ToolbarBtn onClick={() => execCommand("insertUnorderedList")} title="Liste à puces"><List className="h-4 w-4" /></ToolbarBtn>
+        <ToolbarBtn onClick={() => execCommand("insertOrderedList")} title="Liste numérotée"><ListOrdered className="h-4 w-4" /></ToolbarBtn>
         <div className="w-px h-5 bg-border mx-1" />
         <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
           <PopoverTrigger asChild>
@@ -113,7 +117,7 @@ const SimpleRichTextEditor = ({ value, onChange, placeholder, rows = 6 }: Simple
         onInput={handleInput}
         onPaste={handlePaste}
         data-placeholder={placeholder}
-        className="px-3 py-2 outline-none overflow-y-auto bg-background"
+        className="px-3 py-2 outline-none overflow-y-auto bg-background [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5"
         style={{ minHeight, fontFamily: "Arial, sans-serif", fontSize: "15px", lineHeight: "1.6", color: "#333", whiteSpace: "pre-wrap", wordBreak: "break-word" }}
       />
     </div>

@@ -519,14 +519,13 @@ const AdminLandingPages = () => {
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
-                        <Textarea
-                          rows={2}
+                        <SimpleRichTextEditor
+                          rows={3}
                           value={item.answer}
-                          onChange={e => {
-                            const next = [...p.faq]; next[idx] = { ...next[idx], answer: e.target.value };
+                          onChange={(html) => {
+                            const next = [...p.faq]; next[idx] = { ...next[idx], answer: html };
                             updateLocal(p.id, { faq: next });
                           }}
-                          aria-label="Réponse"
                         />
                       </div>
                     ))}
