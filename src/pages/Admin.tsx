@@ -2471,7 +2471,7 @@ const AdminProposalsContent = () => {
               );
             })}
             {(proposalType === "classique" || (proposalType === "unique" && selectedSpeakers.length === 0)) && (
-              <SpeakerSelector speakers={speakers} selectedSpeakers={selectedSpeakers} onSelect={addSpeaker} />
+              <SpeakerSelector speakers={speakers} selectedSpeakers={selectedSpeakers} onSelect={addSpeaker} profiles={profiles} />
             )}
           </div>
         </>
