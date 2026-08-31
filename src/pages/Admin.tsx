@@ -773,7 +773,7 @@ const AdminProposalsContent = () => {
       fetchSpeakers(),
       fetchConferences(),
       fetchClients(),
-      fetchTemplates(),
+      fetchProfiles(),
       fetchTasks(),
       fetchLeads(),
     ]);
