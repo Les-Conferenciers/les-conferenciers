@@ -420,6 +420,13 @@ const AdminEventDossiers = () => {
         contractSentSpeaker,
         archiveStatus,
         isArchived: !!archiveStatus,
+        // Statut contrat normalisé sur 3 états, piloté manuellement
+        contractStatus:
+          pContract?.status === "signed"
+            ? "signed"
+            : pContract?.status === "en_attente_paiement"
+              ? "en_attente_paiement"
+              : "en_cours",
         stages,
         completedCount,
         nextStage,
