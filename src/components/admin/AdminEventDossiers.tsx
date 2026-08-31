@@ -59,8 +59,9 @@ const AdminEventDossiers = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"en_cours" | "attente_paiement" | "signes" | "archives">("en_cours");
-  const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu">("all");
+  const [tab, setTab] = useState<"en_cours" | "attente_paiement" | "archives">("en_cours");
+  const [archiveFilter, setArchiveFilter] = useState<"all" | "gagne" | "perdu" | "signe">("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState<10 | 50 | 100 | 150>(150);
@@ -441,13 +442,17 @@ const AdminEventDossiers = () => {
       list = list.filter((r) => !r.isArchived && r.contractStatus === "en_cours");
     } else if (tab === "attente_paiement") {
       list = list.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement");
-    } else if (tab === "signes") {
-      list = list.filter((r) => !r.isArchived && r.contractStatus === "signed");
     } else {
-      list = list.filter((r) => r.isArchived);
-      if (archiveFilter !== "all") {
+      // Archivés : signés + dossiers gagnés/perdus
+      list = list.filter((r) => r.isArchived || r.contractStatus === "signed");
+      if (archiveFilter === "signe") {
+        list = list.filter((r) => !r.isArchived && r.contractStatus === "signed");
+      } else if (archiveFilter !== "all") {
         list = list.filter((r) => r.archiveStatus === archiveFilter);
       }
+    }
+    if (yearFilter !== "all") {
+      list = list.filter((r) => r.eventDateRaw && r.eventDateRaw.slice(0, 4) === yearFilter);
     }
     const q = search.trim().toLowerCase();
     if (q) {
