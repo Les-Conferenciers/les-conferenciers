@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // Liste canonique des thématiques (doit rester synchronisée avec src/lib/parseThemes.ts)
 const CANONICAL_THEMES = new Set<string>([
-  "Adaptabilité","Audace","Bien-être au travail","Bienveillance","Cohésion d'équipe","Collectif","Communication","Conduite du changement","Confiance","Confiance en soi","Créativité","Cybersécurité","Dépassement de soi","Diversité et handicap","Droit à l'erreur","Économie","Empowerment","Engagement","Entrepreneuriat","Environnement","Esprit d'équipe","Expérience client","Expérience collaborateur","Facteur humain","Géopolitique","Gestion de crise","Gestion de l'échec","Gestion des conflits","Gestion des émotions","Gestion des risques","Gestion du stress","Handicap","Innovation","Intelligence artificielle","Intelligence collective","Intelligence émotionnelle","Intelligence relationnelle","Jeunes générations","Leadership","Maîtrise des risques","Management","Marketing","Motivation","Négociation","Neurosciences","Optimisme","Parité","Performance","Performance collective","Prise de décision","Prise de parole","Résilience","Storytelling","Stratégie","Transformation","Transformation digitale",
+  "Adaptabilité","Audace","Bien-être au travail","Cohésion d'équipe","Communication","Conduite du changement","Confiance","Dépassement de soi/Motivation","Diversité et handicap","Économie","Engagement","Entrepreneuriat","Environnement","Expérience client","Gestion de crise","Gestion des risques","Innovation","Intelligence artificielle","Intelligence émotionnelle","Jeunes générations","Leadership","Management","Négociation","Optimisme","Performance","Prise de décision","Résilience","Transformation",
 ]);
 
 serve(async (req) => {

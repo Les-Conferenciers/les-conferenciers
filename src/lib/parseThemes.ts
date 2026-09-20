@@ -1,81 +1,73 @@
 /**
- * Master list of canonical themes. AI imports MUST only use themes from this list.
- * Manual creation in admin is still allowed.
+ * Master list of canonical themes (28). AI imports MUST only use themes from this list.
  */
 export const CANONICAL_THEMES: string[] = [
   "Adaptabilité",
   "Audace",
   "Bien-être au travail",
-  "Bienveillance",
   "Cohésion d'équipe",
-  "Collectif",
   "Communication",
   "Conduite du changement",
   "Confiance",
-  "Confiance en soi",
-  "Créativité",
-  "Cybersécurité",
-  "Dépassement de soi",
+  "Dépassement de soi/Motivation",
   "Diversité et handicap",
-  "Droit à l'erreur",
   "Économie",
-  "Empowerment",
   "Engagement",
   "Entrepreneuriat",
   "Environnement",
-  "Esprit d'équipe",
   "Expérience client",
-  "Expérience collaborateur",
-  "Facteur humain",
-  "Géopolitique",
   "Gestion de crise",
-  "Gestion de l'échec",
-  "Gestion des conflits",
-  "Gestion des émotions",
   "Gestion des risques",
-  "Gestion du stress",
-  "Handicap",
   "Innovation",
   "Intelligence artificielle",
-  "Intelligence collective",
   "Intelligence émotionnelle",
-  "Intelligence relationnelle",
   "Jeunes générations",
   "Leadership",
-  "Maîtrise des risques",
   "Management",
-  "Marketing",
-  "Motivation",
   "Négociation",
-  "Neurosciences",
   "Optimisme",
-  "Parité",
   "Performance",
-  "Performance collective",
   "Prise de décision",
-  "Prise de parole",
   "Résilience",
-  "Storytelling",
-  "Stratégie",
   "Transformation",
-  "Transformation digitale",
 ];
 
 /**
- * Canonical theme mappings: normalize duplicates caused by casing, hyphens,
- * accents, plural forms, etc.
+ * Themes that were removed and must be dropped (no parent category).
+ */
+const REMOVED_THEMES = new Set<string>([
+  "empowerment",
+  "expérience collaborateur",
+  "experience collaborateur",
+  "neurosciences",
+  "storytelling",
+]);
+
+/**
+ * Canonical theme mappings: every legacy theme (and its casing/accent variants)
+ * points to its parent category.
  * Key = lowercased version, Value = canonical display form.
  */
 const THEME_ALIASES: Record<string, string> = {
-  // Bien-être
+  // Adaptabilité
+  "adaptabilité": "Adaptabilité",
+  "adaptabilite": "Adaptabilité",
+
+  // Audace
+  "audace": "Audace",
+
+  // Bien-être au travail (= Bienveillance)
   "bien etre": "Bien-être au travail",
   "bien-etre": "Bien-être au travail",
   "bien être": "Bien-être au travail",
   "bien-être": "Bien-être au travail",
   "bien-être au travail": "Bien-être au travail",
   "bien etre au travail": "Bien-être au travail",
+  "bonheur": "Bien-être au travail",
+  "qualité de vie au travail": "Bien-être au travail",
+  "bienveillance": "Bien-être au travail",
 
-  // Cohésion
+  // Cohésion d'équipe (= Collectif, Esprit d'équipe, Performance collective, Intelligence collective)
   "cohesion de groupe": "Cohésion d'équipe",
   "cohésion de groupe": "Cohésion d'équipe",
   "cohesion d'equipe": "Cohésion d'équipe",
@@ -84,38 +76,57 @@ const THEME_ALIASES: Record<string, string> = {
   "cohesion d'équipe": "Cohésion d'équipe",
   "cohesion": "Cohésion d'équipe",
   "cohésion": "Cohésion d'équipe",
+  "collectif": "Cohésion d'équipe",
+  "esprit d'equipe": "Cohésion d'équipe",
+  "esprit d'équipe": "Cohésion d'équipe",
+  "performance collective": "Cohésion d'équipe",
+  "intelligence collective": "Cohésion d'équipe",
 
-  // Intelligence
-  "intelligence artificielle": "Intelligence artificielle",
-  "intelligence collective": "Intelligence collective",
-  "intelligence emotionnelle": "Intelligence émotionnelle",
-  "intelligence émotionnelle": "Intelligence émotionnelle",
-  "intelligence relationnelle": "Intelligence relationnelle",
-
-  // Gestion
-  "gestion de crise": "Gestion de crise",
-  "gestion de crises": "Gestion de crise",
-  "gestion de crise / stress": "Gestion de crise",
-  "gestion du stress": "Gestion du stress",
-  "gestion de stress": "Gestion du stress",
-  "gestion des emotions": "Gestion des émotions",
-  "gestion des émotions": "Gestion des émotions",
-  "gestion de l'échec": "Gestion de l'échec",
-  "gestion de l'echec": "Gestion de l'échec",
-  "gestion des conflit": "Gestion des conflits",
-  "gestion des conflits": "Gestion des conflits",
-  "gestion des risques": "Gestion des risques",
-  "gestion du temps": "Gestion du stress",
+  // Communication (= Prise de parole, Marketing)
+  "communication": "Communication",
+  "eloquence": "Communication",
+  "éloquence": "Communication",
+  "prise de parole": "Communication",
+  "prise de parole en public": "Communication",
+  "marketing": "Communication",
 
   // Conduite du changement
   "conduite du changement": "Conduite du changement",
   "adaptation au changement": "Conduite du changement",
   "adaptabilité/conduite du changement": "Conduite du changement",
-  "adaptabilité": "Adaptabilité",
 
-  // Esprit d'équipe
-  "esprit d'equipe": "Esprit d'équipe",
-  "esprit d'équipe": "Esprit d'équipe",
+  // Confiance (= Confiance en soi)
+  "confiance": "Confiance",
+  "confiance en soi": "Confiance",
+
+  // Dépassement de soi/Motivation
+  "dépassement de soi": "Dépassement de soi/Motivation",
+  "depassement de soi": "Dépassement de soi/Motivation",
+  "motivation": "Dépassement de soi/Motivation",
+  "dépassement de soi/motivation": "Dépassement de soi/Motivation",
+
+  // Diversité et handicap (= Handicap, Parité)
+  "diversité": "Diversité et handicap",
+  "la diversité": "Diversité et handicap",
+  "diversité et handicap": "Diversité et handicap",
+  "diversité & inclusion": "Diversité et handicap",
+  "diversité et inclusion": "Diversité et handicap",
+  "handicap": "Diversité et handicap",
+  "parité": "Diversité et handicap",
+  "parité homme-femme": "Diversité et handicap",
+  "egalité homme femme": "Diversité et handicap",
+  "égalité homme femme": "Diversité et handicap",
+  "égalité & parité": "Diversité et handicap",
+  "lutte contre le sexisme": "Diversité et handicap",
+
+  // Économie (= Géopolitique)
+  "economie": "Économie",
+  "économie": "Économie",
+  "géopolitique": "Économie",
+  "geopolitique": "Économie",
+
+  // Engagement
+  "engagement": "Engagement",
 
   // Entrepreneuriat
   "entreprenariat": "Entrepreneuriat",
@@ -123,24 +134,20 @@ const THEME_ALIASES: Record<string, string> = {
   "entrepreunariat": "Entrepreneuriat",
   "entrepreneuriat": "Entrepreneuriat",
 
-  // Environnement (regroupe RSE, Écologie, Urbanisme, Aménagement)
+  // Environnement
   "ecologie": "Environnement",
   "écologie": "Environnement",
   "environnement": "Environnement",
   "écologie & environnement": "Environnement",
+  "développement durable et environnement": "Environnement",
+  "developpement durable et environnement": "Environnement",
+  "développement durable": "Environnement",
   "rse": "Environnement",
   "urbanisme": "Environnement",
   "aménagement du territoire": "Environnement",
-
-  // Économie
-  "economie": "Économie",
-  "économie": "Économie",
-
-  // Éloquence / Prise de parole
-  "eloquence": "Prise de parole",
-  "éloquence": "Prise de parole",
-  "prise de parole": "Prise de parole",
-  "prise de parole en public": "Prise de parole",
+  "changement climatique": "Environnement",
+  "transition écologique": "Environnement",
+  "sobriété énergétique": "Environnement",
 
   // Expérience client
   "expérience client": "Expérience client",
@@ -148,106 +155,101 @@ const THEME_ALIASES: Record<string, string> = {
   "expérience-client": "Expérience client",
   "culture client": "Expérience client",
 
-  // Transformation digitale
-  "transformation digitale": "Transformation digitale",
-  "digitalisation": "Transformation digitale",
-  "stratégie digitale": "Transformation digitale",
-  "strategie digitale": "Transformation digitale",
+  // Gestion de crise (= Gestion des conflits, Gestion du stress)
+  "gestion de crise": "Gestion de crise",
+  "gestion de crises": "Gestion de crise",
+  "gestion de crise / stress": "Gestion de crise",
+  "gestion du stress": "Gestion de crise",
+  "gestion de stress": "Gestion de crise",
+  "gestion du temps": "Gestion de crise",
+  "gestion des conflit": "Gestion de crise",
+  "gestion des conflits": "Gestion de crise",
 
-  // Diversité
-  "diversité": "Diversité et handicap",
-  "la diversité": "Diversité et handicap",
-  "diversité et handicap": "Diversité et handicap",
-  "diversité & inclusion": "Diversité et handicap",
-  "diversité et inclusion": "Diversité et handicap",
+  // Gestion des risques (= Maîtrise des risques, Cybersécurité)
+  "gestion des risques": "Gestion des risques",
+  "maîtrise des risques": "Gestion des risques",
+  "maitrise des risques": "Gestion des risques",
+  "cybersécurité": "Gestion des risques",
+  "cybersecurite": "Gestion des risques",
 
-  // Parité
-  "egalité homme femme": "Parité",
-  "égalité homme femme": "Parité",
-  "parité homme-femme": "Parité",
-  "lutte contre le sexisme": "Parité",
-  "égalité & parité": "Parité",
-  "parité": "Parité",
+  // Innovation (= Créativité)
+  "innovation": "Innovation",
+  "créativité": "Innovation",
+  "creativite": "Innovation",
+  "apprentissage": "Innovation",
 
-  // Résilience
-  "résilience": "Résilience",
-  "résilience & gestion du stress": "Résilience",
-  "rebond": "Résilience",
-  "rebondir après un échec": "Résilience",
+  // Intelligence artificielle
+  "intelligence artificielle": "Intelligence artificielle",
 
-  // Échec → Gestion de l'échec
-  "echec": "Gestion de l'échec",
-  "échec": "Gestion de l'échec",
-  "succès et échecs": "Gestion de l'échec",
+  // Intelligence émotionnelle (= Gestion des émotions, Intelligence relationnelle, Facteur humain)
+  "intelligence emotionnelle": "Intelligence émotionnelle",
+  "intelligence émotionnelle": "Intelligence émotionnelle",
+  "gestion des emotions": "Intelligence émotionnelle",
+  "gestion des émotions": "Intelligence émotionnelle",
+  "intelligence relationnelle": "Intelligence émotionnelle",
+  "facteur humain": "Intelligence émotionnelle",
 
-  // Stratégie
-  "strategie": "Stratégie",
-  "stratégie": "Stratégie",
+  // Jeunes générations
+  "jeunes générations": "Jeunes générations",
+  "jeunes generations": "Jeunes générations",
 
-  // Dépassement de soi
-  "dépassement de soi": "Dépassement de soi",
-
-  // Performance
-  "performance": "Performance",
-  "performance collective": "Performance collective",
+  // Leadership / Management
+  "leadership": "Leadership",
+  "management": "Management",
+  "manager": "Management",
 
   // Négociation
   "négociation": "Négociation",
   "négociation/vente": "Négociation",
   "vente": "Négociation",
 
-  // Jeunes générations
-  "jeunes générations": "Jeunes générations",
-  "jeunes generations": "Jeunes générations",
-
-  // Innovation
-  "innovation": "Innovation",
-
-  // Leadership & Management
-  "leadership": "Leadership",
-  "management": "Management",
-  "manager": "Management",
-
-  // Others kept consistent
-  "bienveillance": "Bienveillance",
-  "bonheur": "Bien-être au travail",
-  "changement climatique": "Environnement",
-  "transition écologique": "Environnement",
-  "sobriété énergétique": "Environnement",
-  "confiance": "Confiance",
-  "confiance en soi": "Confiance en soi",
-  "créativité": "Créativité",
-  "engagement": "Engagement",
-  "handicap": "Handicap",
-  "marketing": "Marketing",
-  "motivation": "Motivation",
-  "neurosciences": "Neurosciences",
+  // Optimisme
   "optimisme": "Optimisme",
-  "qualité de vie au travail": "Bien-être au travail",
-  "storytelling": "Storytelling",
-  "transformation": "Transformation",
-  
-  "communication": "Communication",
-  "audace": "Audace",
-  "collectif": "Collectif",
-  "empowerment": "Empowerment",
-  "facteur humain": "Facteur humain",
-  "maîtrise des risques": "Maîtrise des risques",
-  "droit à l'erreur": "Droit à l'erreur",
-  "expérience collaborateur": "Expérience collaborateur",
-  "apprentissage": "Innovation",
-  "cybersécurité": "Cybersécurité",
-  "géopolitique": "Géopolitique",
+
+  // Performance
+  "performance": "Performance",
+
+  // Prise de décision (= Biais cognitifs, Désinformation, Esprit critique)
   "prise de décision": "Prise de décision",
+  "prise de decision": "Prise de décision",
+  "biais cognitifs": "Prise de décision",
+  "désinformation": "Prise de décision",
+  "desinformation": "Prise de décision",
+  "esprit critique": "Prise de décision",
+  "désinformation esprit critique": "Prise de décision",
+
+  // Résilience (= Gestion de l'échec, Droit à l'erreur)
+  "résilience": "Résilience",
+  "resilience": "Résilience",
+  "résilience & gestion du stress": "Résilience",
+  "rebond": "Résilience",
+  "rebondir après un échec": "Résilience",
+  "echec": "Résilience",
+  "échec": "Résilience",
+  "succès et échecs": "Résilience",
+  "gestion de l'échec": "Résilience",
+  "gestion de l'echec": "Résilience",
+  "droit à l'erreur": "Résilience",
+  "droit a l'erreur": "Résilience",
+
+  // Transformation (= Transformation digitale, Stratégie)
+  "transformation": "Transformation",
+  "transformation digitale": "Transformation",
+  "digitalisation": "Transformation",
+  "stratégie digitale": "Transformation",
+  "strategie digitale": "Transformation",
+  "strategie": "Transformation",
+  "stratégie": "Transformation",
 };
 
-/** Normalize a single theme string to its canonical form */
+/** Normalize a single theme string to its canonical form ("" if removed/unknown-cased) */
 const normalizeTheme = (theme: string): string => {
   const trimmed = theme.trim();
   if (!trimmed) return "";
   // Replace curly apostrophes with straight ones
   const normalized = trimmed.replace(/\u2019/g, "'");
   const lower = normalized.toLowerCase();
+  if (REMOVED_THEMES.has(lower)) return "";
   if (THEME_ALIASES[lower]) return THEME_ALIASES[lower];
   // Default: capitalize first letter of the string, keep rest as-is
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);

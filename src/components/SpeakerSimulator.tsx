@@ -23,11 +23,11 @@ const EVENT_TYPES = [
 ];
 
 const THEMES = [
-  "Leadership", "Management", "Motivation", "Performance",
-  "Cohésion d'équipe", "Innovation", "Gestion du stress", "Communication",
-  "Bien-être au travail", "Négociation", "Dépassement de soi",
+  "Leadership", "Management", "Dépassement de soi/Motivation", "Performance",
+  "Cohésion d'équipe", "Innovation", "Gestion de crise", "Communication",
+  "Bien-être au travail", "Négociation", "Résilience",
   "Conduite du changement", "Optimisme", "Entrepreneuriat",
-  "Intelligence collective", "Transition écologique",
+  "Intelligence émotionnelle", "Environnement", "Intelligence artificielle",
   "Autre",
 ];
 
