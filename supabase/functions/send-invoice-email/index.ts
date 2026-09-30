@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
-    const invoiceUrl = `${SITE}/admin/facture/${invoice.id}`;
+    const invoiceUrl = invoice.token ? `${SITE}/facture/${invoice.token}` : `${SITE}/admin/facture/${invoice.id}`;
     const bodyHtml = (email_body || `Bonjour,\n\nVeuillez trouver votre facture ${invoice.invoice_number}.\n\nCordialement,\nLes Conférenciers`).replace(/\n/g, "<br>");
     const subject = email_subject || `Facture ${invoice.invoice_number} - ${proposal.client_name}`;
 

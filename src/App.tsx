@@ -68,6 +68,7 @@ const App = () => (
             <Route path="/feuille-liaison/:token" element={<LiaisonSheetView />} />
             <Route path="/signer-contrat/:token" element={<ContractSign />} />
             <Route path="/admin/facture/:id" element={<InvoiceView />} />
+            <Route path="/facture/:token" element={<InvoiceView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
