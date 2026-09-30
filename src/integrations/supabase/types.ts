@@ -469,6 +469,7 @@ export type Database = {
           proposal_id: string
           sent_at: string | null
           status: string
+          token: string | null
           tva_rate: number
           vhr_estimate: number | null
         }
@@ -492,6 +493,7 @@ export type Database = {
           proposal_id: string
           sent_at?: string | null
           status?: string
+          token?: string | null
           tva_rate?: number
           vhr_estimate?: number | null
         }
@@ -515,6 +517,7 @@ export type Database = {
           proposal_id?: string
           sent_at?: string | null
           status?: string
+          token?: string | null
           tva_rate?: number
           vhr_estimate?: number | null
         }
@@ -1189,6 +1192,7 @@ export type Database = {
             Returns: string
           }
       get_invoice_bdc: { Args: { _invoice_id: string }; Returns: string }
+      get_public_invoice: { Args: { _key: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
