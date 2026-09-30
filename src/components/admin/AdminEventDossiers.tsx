@@ -548,13 +548,6 @@ const AdminEventDossiers = () => {
     fetchData();
   };
 
-  const handleRestoreFromLost = async (id: string) => {
-    const { error } = await supabase.from("proposals").update({ lost_at: null, lost_reason: null } as any).eq("id", id);
-    if (error) { toast.error("Erreur"); return; }
-    toast.success("Dossier restauré");
-    fetchData();
-  };
-
   // Réactivation d'un dossier archivé (perdu, signé ou gagné)
   const handleReactivate = async () => {
     const r = reactivateRow;
