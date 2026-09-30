@@ -1,0 +1,1 @@
+- Event date is synced contract<->events by DB triggers (trg_sync_contract_date / trg_sync_event_date); why: pipeline showed stale dates when edited on one side.
