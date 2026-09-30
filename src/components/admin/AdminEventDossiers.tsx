@@ -357,7 +357,7 @@ const AdminEventDossiers = () => {
       const liaisonSent = pEvent?.liaison_sheet_sent_at || null;
 
       // Event date for sorting/display
-      const eventDateRaw = pEvent?.event_date || pContract?.event_date || null;
+      const eventDateRaw = pContract?.event_date || pEvent?.event_date || null;
       const eventDate = eventDateRaw ? new Date(eventDateRaw + (eventDateRaw.length === 10 ? "T12:00:00" : "")) : null;
 
       const bdc = pEvent?.bdc_number || null;
