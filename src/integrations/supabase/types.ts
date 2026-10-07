@@ -503,6 +503,10 @@ export type Database = {
           billing_entity_vat: string | null
           contract_id: string | null
           created_at: string
+          drive_error: string | null
+          drive_file_id: string | null
+          drive_file_url: string | null
+          drive_uploaded_at: string | null
           due_date: string | null
           email_cc: string | null
           email_to: string | null
@@ -528,6 +532,10 @@ export type Database = {
           billing_entity_vat?: string | null
           contract_id?: string | null
           created_at?: string
+          drive_error?: string | null
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          drive_uploaded_at?: string | null
           due_date?: string | null
           email_cc?: string | null
           email_to?: string | null
@@ -553,6 +561,10 @@ export type Database = {
           billing_entity_vat?: string | null
           contract_id?: string | null
           created_at?: string
+          drive_error?: string | null
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          drive_uploaded_at?: string | null
           due_date?: string | null
           email_cc?: string | null
           email_to?: string | null

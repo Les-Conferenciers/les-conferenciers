@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { EmailChipsInput, EMAIL_RE, splitEmails } from "./EmailChipsInput";
+import { renderInvoicePdfBase64 } from "@/lib/invoicePdf";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 interface EmailLog {
   id: string;
@@ -734,11 +736,38 @@ Nelly Sabde - Les Conférenciers`);
     setCheckingStatus(null);
   };
 
+  const [driveUploading, setDriveUploading] = useState<string | null>(null);
+
+  const uploadToDrive = async (invoice: Invoice) => {
+    const token = (invoice as any).token;
+    if (!token) { toast.error("Facture sans lien public, envoi Drive impossible"); return; }
+    setDriveUploading(invoice.id);
+    try {
+      const pdf_base64 = await renderInvoicePdfBase64(token);
+      const file_name = `${invoice.invoice_number} - ${proposal.client_name}.pdf`;
+      const { data, error } = await supabase.functions.invoke("upload-invoice-drive", {
+        body: { invoice_id: invoice.id, pdf_base64, file_name },
+      });
+      if (error) {
+        const details = error instanceof FunctionsHttpError ? await error.context.text() : error.message;
+        throw new Error(details);
+      }
+      toast.success(`PDF envoyé sur Google Drive (${data?.folder})`);
+    } catch (err: any) {
+      console.error("Drive upload failed:", err);
+      toast.error("Envoi sur Google Drive échoué");
+      await supabase.from("invoices").update({ drive_error: String(err?.message || err).slice(0, 500) } as any).eq("id", invoice.id);
+    }
+    setDriveUploading(null);
+    fetchData();
+  };
+
   const handleMarkPaid = async (invoice: Invoice) => {
     await supabase.from("invoices").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", invoice.id);
     toast.success(`Facture ${invoice.invoice_number} marquée payée`);
     fetchData();
     onUpdate();
+    uploadToDrive(invoice);
   };
 
   const handleMarkUnpaid = async (invoice: Invoice) => {
@@ -1316,6 +1345,29 @@ Nelly Sabde - Les Conférenciers`);
                   )}
                 </div>
               </div>
+              {inv.status === "paid" && (
+                <div className="mt-2 text-[11px] flex flex-wrap items-center gap-2">
+                  {driveUploading === inv.id ? (
+                    <span className="text-muted-foreground">Envoi sur Google Drive…</span>
+                  ) : (inv as any).drive_uploaded_at ? (
+                    <span className="text-muted-foreground">
+                      Envoyée sur Drive le {new Date((inv as any).drive_uploaded_at).toLocaleDateString("fr-FR")}
+                      {(inv as any).drive_file_url && (
+                        <> — <a href={(inv as any).drive_file_url} target="_blank" rel="noreferrer" className="underline">ouvrir</a></>
+                      )}
+                    </span>
+                  ) : (inv as any).drive_error ? (
+                    <span className="text-destructive">Envoi Drive échoué</span>
+                  ) : (
+                    <span className="text-muted-foreground">Pas encore sur Drive</span>
+                  )}
+                  {driveUploading !== inv.id && (
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => uploadToDrive(inv)}>
+                      {(inv as any).drive_uploaded_at ? "Renvoyer sur Drive" : (inv as any).drive_error ? "Réessayer" : "Envoyer sur Drive"}
+                    </Button>
+                  )}
+                </div>
+              )}
               {(emailLogs[inv.id] || []).length > 0 && (
                 <div className="mt-3 pt-2 border-t border-border/60 space-y-1.5">
                   <div className="flex items-center justify-between">
