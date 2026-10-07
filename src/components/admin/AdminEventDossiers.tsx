@@ -482,6 +482,23 @@ const AdminEventDossiers = () => {
     archives: enriched.filter((r) => r.isArchived || r.contractStatus === "signed").length,
   }), [enriched]);
 
+  // Mention discrète : contrats créés sur les 7 derniers jours et dans le mois en cours
+  const creationStats = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    let last7 = 0;
+    let month = 0;
+    contracts.forEach((c) => {
+      const d = new Date(c.created_at);
+      if (isNaN(d.getTime())) return;
+      if (d >= sevenDaysAgo) last7++;
+      if (d >= startOfMonth) month++;
+    });
+    const monthLabel = now.toLocaleDateString("fr-FR", { month: "long" });
+    return { last7, month, monthLabel };
+  }, [contracts]);
+
   // KPI: nombre de dossiers en cours bloqués sur chaque étape
   const stageKpis = useMemo(() => {
     const active = enriched.filter((r) => !r.isArchived);
