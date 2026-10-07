@@ -52,8 +52,23 @@ Deno.serve(async (req) => {
       return (await c.json()).id as string;
     };
 
-    const rootId = await findOrCreate(ROOT_NAME, "root");
-    const monthId = await findOrCreate(month, rootId);
+    // Dossier configuré manuellement pour ce mois ? Sinon, création automatique.
+    const { data: override } = await supabase
+      .from("drive_folder_settings")
+      .select("folder_id, folder_name")
+      .eq("month", month)
+      .maybeSingle();
+
+    let monthId: string;
+    let folderLabel: string;
+    if (override?.folder_id) {
+      monthId = override.folder_id;
+      folderLabel = override.folder_name || month;
+    } else {
+      const rootId = await findOrCreate(ROOT_NAME, "root");
+      monthId = await findOrCreate(month, rootId);
+      folderLabel = `${ROOT_NAME}/${month}`;
+    }
 
     const bytes = Uint8Array.from(atob(pdfBase64), (ch) => ch.charCodeAt(0));
     const boundary = "invb" + crypto.randomUUID();
@@ -77,7 +92,7 @@ Deno.serve(async (req) => {
       drive_uploaded_at: new Date().toISOString(), drive_error: null,
     }).eq("id", invoiceId);
 
-    return json({ ok: true, file_id: file.id, url: file.webViewLink, folder: `${ROOT_NAME}/${month}` });
+    return json({ ok: true, file_id: file.id, url: file.webViewLink, folder: folderLabel });
   } catch (e: any) {
     console.error("upload-invoice-drive error:", e?.message);
     if (invoiceId) await supabase.from("invoices").update({ drive_error: String(e?.message || e).slice(0, 500) }).eq("id", invoiceId);

@@ -214,6 +214,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
 
   useEffect(() => {
     fetchData();
+    loadDriveSetting();
   }, [proposal.id]);
 
   const fetchData = async () => {
@@ -762,6 +763,41 @@ Nelly Sabde - Les Conférenciers`);
     fetchData();
   };
 
+  // ─── Dossier Drive personnalisé pour le mois en cours ───
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const [driveFolderUrl, setDriveFolderUrl] = useState("");
+  const [driveFolderSaved, setDriveFolderSaved] = useState<{ folder_id: string; folder_name: string | null } | null>(null);
+  const [driveSaving, setDriveSaving] = useState(false);
+
+  const loadDriveSetting = async () => {
+    const { data } = await supabase
+      .from("drive_folder_settings" as any)
+      .select("folder_id, folder_name")
+      .eq("month", currentMonth)
+      .maybeSingle();
+    setDriveFolderSaved((data as any) ?? null);
+  };
+
+  const saveDriveFolder = async () => {
+    const m = driveFolderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    if (!m) { toast.error("URL de dossier Drive invalide"); return; }
+    setDriveSaving(true);
+    const { error } = await supabase
+      .from("drive_folder_settings" as any)
+      .upsert({ month: currentMonth, folder_id: m[1], updated_at: new Date().toISOString() } as any);
+    setDriveSaving(false);
+    if (error) { toast.error("Enregistrement échoué"); return; }
+    toast.success("Dossier Drive enregistré pour ce mois");
+    setDriveFolderUrl("");
+    loadDriveSetting();
+  };
+
+  const removeDriveFolder = async () => {
+    await supabase.from("drive_folder_settings" as any).delete().eq("month", currentMonth);
+    setDriveFolderSaved(null);
+    toast.success("Dossier retiré : retour au dossier automatique");
+  };
+
   const handleMarkPaid = async (invoice: Invoice) => {
     await supabase.from("invoices").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", invoice.id);
     toast.success(`Facture ${invoice.invoice_number} marquée payée`);
@@ -1219,6 +1255,47 @@ Nelly Sabde - Les Conférenciers`);
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setInvoiceDialogOpen(true)}>
           <Plus className="h-3 w-3" /> Créer une facture
         </Button>
+      </div>
+
+      {/* Dossier Drive du mois */}
+      <div className="border rounded-lg p-3 bg-muted/30 space-y-2">
+        <div className="text-[11px] font-medium text-muted-foreground">
+          Dossier Google Drive pour les factures payées en {currentMonth}
+        </div>
+        {driveFolderSaved ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-muted-foreground">
+              Dossier personnalisé configuré —{" "}
+              <a
+                href={`https://drive.google.com/drive/folders/${driveFolderSaved.folder_id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                ouvrir dans Drive
+              </a>
+            </span>
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={removeDriveFolder}>
+              Retirer
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-1">
+              <label className="text-[11px] text-muted-foreground">
+                Coller l'URL d'un dossier Drive (sinon dossier automatique « Factures payées/{currentMonth} »)
+              </label>
+              <Input
+                value={driveFolderUrl}
+                onChange={(e) => setDriveFolderUrl(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <Button size="sm" variant="outline" className="h-8" onClick={saveDriveFolder} disabled={driveSaving || !driveFolderUrl.trim()}>
+              Enregistrer
+            </Button>
+          </div>
+        )}
       </div>
 
       {invoices.length > 0 && (
