@@ -1257,6 +1257,47 @@ Nelly Sabde - Les Conférenciers`);
         </Button>
       </div>
 
+      {/* Dossier Drive du mois */}
+      <div className="border rounded-lg p-3 bg-muted/30 space-y-2">
+        <div className="text-[11px] font-medium text-muted-foreground">
+          Dossier Google Drive pour les factures payées en {currentMonth}
+        </div>
+        {driveFolderSaved ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-muted-foreground">
+              Dossier personnalisé configuré —{" "}
+              <a
+                href={`https://drive.google.com/drive/folders/${driveFolderSaved.folder_id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                ouvrir dans Drive
+              </a>
+            </span>
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={removeDriveFolder}>
+              Retirer
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-1">
+              <label className="text-[11px] text-muted-foreground">
+                Coller l'URL d'un dossier Drive (sinon dossier automatique « Factures payées/{currentMonth} »)
+              </label>
+              <Input
+                value={driveFolderUrl}
+                onChange={(e) => setDriveFolderUrl(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <Button size="sm" variant="outline" className="h-8" onClick={saveDriveFolder} disabled={driveSaving || !driveFolderUrl.trim()}>
+              Enregistrer
+            </Button>
+          </div>
+        )}
+      </div>
+
       {invoices.length > 0 && (
         <div className="space-y-3">
           {invoices.map((inv) => (
