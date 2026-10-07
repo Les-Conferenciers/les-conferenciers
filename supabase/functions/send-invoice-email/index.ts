@@ -53,40 +53,56 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const { invoice_id, email_subject, email_body, to, recipient_name, cc } = await req.json();
-    if (!invoice_id) {
-      return new Response(JSON.stringify({ error: "invoice_id required" }), { status: 400, headers: corsHeaders });
-    }
-    const ccList = (Array.isArray(cc) ? cc : String(cc || "").split(/[,;]/))
-      .map((e: string) => (e || "").trim())
-      .filter((e: string) => e && e.includes("@"));
+    const json = (b: unknown, status = 200) =>
+      new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const payload = await req.json();
+    const { action, invoice_id, email_subject, email_body, to, cc } = payload;
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) return json({ error: "RESEND_API_KEY not set" }, 500);
+
+    // ---- Vérification du statut de livraison ----
+    if (action === "check_status") {
+      const { data: logs } = await adminClient
+        .from("invoice_email_logs").select("id, resend_id")
+        .eq("invoice_id", invoice_id).not("resend_id", "is", null);
+      const results: any[] = [];
+      for (const l of logs || []) {
+        const r = await fetch(`https://api.resend.com/emails/${l.resend_id}`, {
+          headers: { Authorization: `Bearer ${RESEND_API_KEY}` },
+        });
+        const body = await r.text();
+        if (!r.ok) { console.error("Resend status error", r.status, body); results.push({ id: l.id, error: body }); continue; }
+        const status = JSON.parse(body)?.last_event || "sent";
+        await adminClient.from("invoice_email_logs")
+          .update({ last_status: status, status_checked_at: new Date().toISOString() }).eq("id", l.id);
+        results.push({ id: l.id, status });
+      }
+      return json({ success: true, results });
+    }
+
+    if (!invoice_id) return json({ error: "invoice_id required" }, 400);
+    const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]{2,}$/;
+    const parseList = (v: unknown) => (Array.isArray(v) ? v : String(v || "").split(/[,;\s]+/))
+      .map((e: string) => String(e || "").trim().toLowerCase()).filter(Boolean);
 
     const { data: invoice, error: iErr } = await adminClient
       .from("invoices")
       .select("*, proposal:proposals(client_name, client_email, recipient_name)")
       .eq("id", invoice_id)
       .single();
-
-    if (iErr || !invoice) {
-      return new Response(JSON.stringify({ error: "Invoice not found" }), { status: 404, headers: corsHeaders });
-    }
+    if (iErr || !invoice) return json({ error: "Invoice not found" }, 404);
 
     const proposal = invoice.proposal;
-    const recipientEmail = (Array.isArray(to) ? to : String(to || proposal.client_email).split(/[,;]/))
-      .map((email: string) => email.trim())
-      .filter(Boolean);
-    if (recipientEmail.length === 0) {
-      return new Response(JSON.stringify({ error: "recipient required" }), { status: 400, headers: corsHeaders });
-    }
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
-    }
+    const recipientEmail = [...new Set(parseList(to ?? proposal.client_email))];
+    const ccList = [...new Set(parseList(cc))].filter((e) => !recipientEmail.includes(e));
+    const invalid = [...recipientEmail, ...ccList].filter((e) => !EMAIL_RE.test(e));
+    if (invalid.length) return json({ error: `Adresse(s) invalide(s) : ${invalid.join(", ")}` }, 400);
+    if (recipientEmail.length === 0) return json({ error: "recipient required" }, 400);
 
     const invoiceUrl = invoice.token ? `${SITE}/facture/${invoice.token}` : `${SITE}/admin/facture/${invoice.id}`;
     const bodyHtml = (email_body || `Bonjour,\n\nVeuillez trouver votre facture ${invoice.invoice_number}.\n\nCordialement,\nLes Conférenciers`).replace(/\n/g, "<br>");
@@ -125,16 +141,29 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify(invoicePayload),
     });
-
+    const resText = await resendRes.text();
     if (!resendRes.ok) {
-      const errBody = await resendRes.text();
-      return new Response(JSON.stringify({ error: "Email send failed", details: errBody }), { status: 500, headers: corsHeaders });
+      console.error("Resend send error", resendRes.status, resText);
+      let msg = resText;
+      try { msg = JSON.parse(resText)?.message || resText; } catch { /* ignore */ }
+      return json({ error: `Envoi refusé par le service mail : ${msg}`, status: resendRes.status }, 502);
     }
+    const resendId = (() => { try { return JSON.parse(resText)?.id || null; } catch { return null; } })();
+    console.log("Invoice email sent", invoice.invoice_number, resendId, recipientEmail, ccList);
 
-    await adminClient.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoice_id);
+    await adminClient.from("invoice_email_logs").insert({
+      invoice_id, resend_id: resendId, to_emails: recipientEmail, cc_emails: ccList, subject,
+    });
+    await adminClient.from("invoices").update({
+      status: invoice.status === "paid" ? "paid" : "sent",
+      sent_at: new Date().toISOString(),
+      email_to: recipientEmail.join(", "),
+      email_cc: ccList.length ? ccList.join(", ") : null,
+    }).eq("id", invoice_id);
 
-    return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return json({ success: true, resend_id: resendId, to: recipientEmail, cc: ccList });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
+    console.error(err);
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

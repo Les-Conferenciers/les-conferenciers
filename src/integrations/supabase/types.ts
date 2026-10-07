@@ -448,6 +448,50 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_email_logs: {
+        Row: {
+          cc_emails: string[]
+          id: string
+          invoice_id: string
+          last_status: string
+          resend_id: string | null
+          sent_at: string
+          status_checked_at: string | null
+          subject: string | null
+          to_emails: string[]
+        }
+        Insert: {
+          cc_emails?: string[]
+          id?: string
+          invoice_id: string
+          last_status?: string
+          resend_id?: string | null
+          sent_at?: string
+          status_checked_at?: string | null
+          subject?: string | null
+          to_emails?: string[]
+        }
+        Update: {
+          cc_emails?: string[]
+          id?: string
+          invoice_id?: string
+          last_status?: string
+          resend_id?: string | null
+          sent_at?: string
+          status_checked_at?: string | null
+          subject?: string | null
+          to_emails?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_email_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_ht: number
@@ -461,6 +505,7 @@ export type Database = {
           created_at: string
           due_date: string | null
           email_cc: string | null
+          email_to: string | null
           id: string
           invoice_number: string
           invoice_type: string
@@ -485,6 +530,7 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           email_cc?: string | null
+          email_to?: string | null
           id?: string
           invoice_number: string
           invoice_type?: string
@@ -509,6 +555,7 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           email_cc?: string | null
+          email_to?: string | null
           id?: string
           invoice_number?: string
           invoice_type?: string
