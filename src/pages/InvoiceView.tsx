@@ -246,6 +246,12 @@ const InvoiceView = () => {
                 {invoice.billing_entity_vat && (
                   <p className="text-gray-600 text-xs">TVA : {invoice.billing_entity_vat}</p>
                 )}
+                {(invoice as any).billing_entity_phone && (
+                  <p className="text-gray-600 text-xs">Tél : {(invoice as any).billing_entity_phone}</p>
+                )}
+                {invoice.billing_entity_email && (
+                  <p className="text-gray-600 text-xs">{invoice.billing_entity_email}</p>
+                )}
                 <p className="text-gray-500 text-xs mt-2 italic">
                   Pour le compte de : {client?.company_name || proposal?.client_name}
                 </p>
