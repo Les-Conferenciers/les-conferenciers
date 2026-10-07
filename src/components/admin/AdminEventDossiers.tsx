@@ -364,9 +364,13 @@ const AdminEventDossiers = () => {
       const bdc = pEvent?.bdc_number || null;
 
       // Status
-      const allInvoicesPaid = pInvoices.length > 0 && pInvoices.every((i) => i.status === "paid");
+      // Gagné = facture de solde/totale payée + aucune facture envoyée impayée + conférencier payé
+      const hasPaidFinal = pInvoices.some(
+        (i) => (i.invoice_type === "solde" || i.invoice_type === "total") && i.status === "paid"
+      );
+      const noUnpaidSent = pInvoices.every((i) => i.status === "paid" || i.status === "draft");
       const isLost = !!p.lost_at;
-      const isWon = allInvoicesPaid && !!speakerPaid && !isLost;
+      const isWon = hasPaidFinal && noUnpaidSent && !!speakerPaid && !isLost;
 
       // Build pipeline (10 stages)
       const hasAcompteInvoice = pInvoices.some((i) => i.invoice_type === "acompte");
