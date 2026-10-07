@@ -1579,6 +1579,8 @@ Nelly Sabde - Les Conférenciers`);
                 </span>
               </div>
             </div>
+          </div>
+          <div className="px-6 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleCreateInvoice} disabled={creatingInvoice}>
               {creatingInvoice ? "Création…" : "Créer la facture"}
             </Button>
@@ -1651,6 +1653,8 @@ Nelly Sabde - Les Conférenciers`);
                 {(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
               </span>
             </div>
+          </div>
+          <div className="px-6 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleSaveInvoice}>
               Enregistrer les modifications
             </Button>
