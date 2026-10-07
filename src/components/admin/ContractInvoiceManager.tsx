@@ -3,6 +3,7 @@ import { RefreshCw } from "lucide-react";
 import { EmailChipsInput, EMAIL_RE, splitEmails } from "./EmailChipsInput";
 import { renderInvoicePdfBase64 } from "@/lib/invoicePdf";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import { BillingEntityChoice, billingPayload, type BillingEntity, type BillingMode } from "./BillingEntityChoice";
 
 interface EmailLog {
   id: string;
@@ -118,17 +119,10 @@ type Invoice = {
   billing_entity_siret?: string | null;
   billing_entity_vat?: string | null;
   billing_entity_email?: string | null;
+  billing_entity_phone?: string | null;
 };
 
-type BillingEntity = {
-  name: string;
-  address: string;
-  siret: string;
-  vat: string;
-  email: string;
-};
-
-const EMPTY_BILLING: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "" };
+const EMPTY_BILLING: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "", phone: "" };
 
 type ContractLine = {
   id: string;
@@ -186,6 +180,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [dueDate, setDueDate] = useState("");
   const [createNotes, setCreateNotes] = useState("");
   const [createBilling, setCreateBilling] = useState<BillingEntity>(EMPTY_BILLING);
+  const [createBillingMode, setCreateBillingMode] = useState<BillingMode>("client");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Invoice edit
@@ -197,6 +192,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
   const [editNotes, setEditNotes] = useState("");
   const [editBilling, setEditBilling] = useState<BillingEntity>(EMPTY_BILLING);
+  const [editBillingMode, setEditBillingMode] = useState<BillingMode>("client");
 
   // Invoice delete confirmation
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
@@ -518,7 +514,31 @@ Nelly Sabde - Les Conférenciers`;
 
   // ─── Invoices ───
 
+  const openCreateInvoice = () => {
+    // Reprend l'entité de la dernière facture du dossier (ex. acompte → solde)
+    const prev = [...invoices].reverse().find((i) => i.billing_entity_name);
+    if (prev) {
+      setCreateBillingMode("entity");
+      setCreateBilling({
+        name: prev.billing_entity_name || "",
+        address: prev.billing_entity_address || "",
+        siret: prev.billing_entity_siret || "",
+        vat: prev.billing_entity_vat || "",
+        email: prev.billing_entity_email || "",
+        phone: prev.billing_entity_phone || "",
+      });
+    } else {
+      setCreateBillingMode("client");
+      setCreateBilling(EMPTY_BILLING);
+    }
+    setInvoiceDialogOpen(true);
+  };
+
   const handleCreateInvoice = async () => {
+    if (createBillingMode === "entity" && !createBilling.name.trim()) {
+      toast.error("Indiquez le nom de l'entité à facturer");
+      return;
+    }
     setCreatingInvoice(true);
     const multiplier = invoiceType === "total" ? 1 : 0.5;
     const amountHT = totalHTAfterDiscount * multiplier;
@@ -535,11 +555,7 @@ Nelly Sabde - Les Conférenciers`;
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
       notes: createNotes.trim() || null,
-      billing_entity_name: createBilling.name.trim() || null,
-      billing_entity_address: createBilling.address.trim() || null,
-      billing_entity_siret: createBilling.siret.trim() || null,
-      billing_entity_vat: createBilling.vat.trim() || null,
-      billing_entity_email: createBilling.email.trim() || null,
+      ...billingPayload(createBillingMode, createBilling),
     } as any);
     if (error) {
       toast.error("Erreur création facture");
@@ -562,18 +578,24 @@ Nelly Sabde - Les Conférenciers`;
     setEditDueDate(inv.due_date || "");
     setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
     setEditNotes((inv as any).notes || "");
+    setEditBillingMode(inv.billing_entity_name ? "entity" : "client");
     setEditBilling({
-      name: (inv as any).billing_entity_name || "",
-      address: (inv as any).billing_entity_address || "",
-      siret: (inv as any).billing_entity_siret || "",
-      vat: (inv as any).billing_entity_vat || "",
-      email: (inv as any).billing_entity_email || "",
+      name: inv.billing_entity_name || "",
+      address: inv.billing_entity_address || "",
+      siret: inv.billing_entity_siret || "",
+      vat: inv.billing_entity_vat || "",
+      email: inv.billing_entity_email || "",
+      phone: inv.billing_entity_phone || "",
     });
     setEditInvoiceOpen(true);
   };
 
   const handleSaveInvoice = async () => {
     if (!editingInvoice) return;
+    if (editBillingMode === "entity" && !editBilling.name.trim()) {
+      toast.error("Indiquez le nom de l'entité à facturer");
+      return;
+    }
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
     const { error } = await supabase
       .from("invoices")
@@ -584,11 +606,7 @@ Nelly Sabde - Les Conférenciers`;
         due_date: editDueDate || null,
         invoice_type: editInvoiceType,
         notes: editNotes.trim() || null,
-        billing_entity_name: editBilling.name.trim() || null,
-        billing_entity_address: editBilling.address.trim() || null,
-        billing_entity_siret: editBilling.siret.trim() || null,
-        billing_entity_vat: editBilling.vat.trim() || null,
-        billing_entity_email: editBilling.email.trim() || null,
+        ...billingPayload(editBillingMode, editBilling),
       } as any)
       .eq("id", editingInvoice.id);
     if (error) {
@@ -616,6 +634,7 @@ Nelly Sabde - Les Conférenciers`;
       billing_entity_siret: (inv as any).billing_entity_siret || null,
       billing_entity_vat: (inv as any).billing_entity_vat || null,
       billing_entity_email: (inv as any).billing_entity_email || null,
+      billing_entity_phone: inv.billing_entity_phone || null,
     } as any);
     if (error) {
       toast.error("Erreur duplication");
@@ -1252,7 +1271,7 @@ Nelly Sabde - Les Conférenciers`);
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Receipt className="h-4 w-4" /> Factures
         </h3>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setInvoiceDialogOpen(true)}>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateInvoice}>
           <Plus className="h-3 w-3" /> Créer une facture
         </Button>
       </div>
@@ -1518,50 +1537,14 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">Ce texte apparaîtra sur la facture PDF envoyée au client.</p>
             </div>
 
-            <details className="border border-border rounded-lg p-3 group">
-              <summary className="text-xs font-medium cursor-pointer select-none">
-                Facturer à une autre entité (optionnel)
-              </summary>
-              <div className="mt-3 space-y-2">
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setCreateBilling({ ...EMPTY_BILLING, name: proposal.client_name, email: proposal.client_email || "" })}
-                  >
-                    Copier depuis le client
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => setCreateBilling(EMPTY_BILLING)}>
-                    Effacer
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Raison sociale</Label>
-                  <Input value={createBilling.name} onChange={(e) => setCreateBilling({ ...createBilling, name: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Adresse complète</Label>
-                  <Textarea rows={2} value={createBilling.address} onChange={(e) => setCreateBilling({ ...createBilling, address: e.target.value })} className="text-sm" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">SIRET</Label>
-                    <Input value={createBilling.siret} onChange={(e) => setCreateBilling({ ...createBilling, siret: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">N° TVA intra</Label>
-                    <Input value={createBilling.vat} onChange={(e) => setCreateBilling({ ...createBilling, vat: e.target.value })} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Email de facturation (destinataire par défaut)</Label>
-                  <Input type="email" value={createBilling.email} onChange={(e) => setCreateBilling({ ...createBilling, email: e.target.value })} />
-                </div>
-                <p className="text-[10px] text-muted-foreground">Si renseignée, la facture sera adressée à cette entité (avec la mention « Pour le compte de {proposal.client_name} »).</p>
-              </div>
-            </details>
+            <BillingEntityChoice
+              idPrefix="create-billing"
+              mode={createBillingMode}
+              onModeChange={setCreateBillingMode}
+              value={createBilling}
+              onChange={setCreateBilling}
+              clientName={proposal.client_name}
+            />
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Montant HT</span>
@@ -1654,50 +1637,14 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">Ce texte apparaîtra sur la facture PDF envoyée au client.</p>
             </div>
 
-            <details className="border border-border rounded-lg p-3">
-              <summary className="text-xs font-medium cursor-pointer select-none">
-                Facturer à une autre entité (optionnel)
-                {editBilling.name && <span className="ml-2 text-primary">• {editBilling.name}</span>}
-              </summary>
-              <div className="mt-3 space-y-2">
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setEditBilling({ ...EMPTY_BILLING, name: proposal.client_name, email: proposal.client_email || "" })}
-                  >
-                    Copier depuis le client
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => setEditBilling(EMPTY_BILLING)}>
-                    Effacer
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Raison sociale</Label>
-                  <Input value={editBilling.name} onChange={(e) => setEditBilling({ ...editBilling, name: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Adresse complète</Label>
-                  <Textarea rows={2} value={editBilling.address} onChange={(e) => setEditBilling({ ...editBilling, address: e.target.value })} className="text-sm" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">SIRET</Label>
-                    <Input value={editBilling.siret} onChange={(e) => setEditBilling({ ...editBilling, siret: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">N° TVA intra</Label>
-                    <Input value={editBilling.vat} onChange={(e) => setEditBilling({ ...editBilling, vat: e.target.value })} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Email de facturation (destinataire par défaut)</Label>
-                  <Input type="email" value={editBilling.email} onChange={(e) => setEditBilling({ ...editBilling, email: e.target.value })} />
-                </div>
-              </div>
-            </details>
+            <BillingEntityChoice
+              idPrefix="edit-billing"
+              mode={editBillingMode}
+              onModeChange={setEditBillingMode}
+              value={editBilling}
+              onChange={setEditBilling}
+              clientName={proposal.client_name}
+            />
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
               <span>Total TTC</span>
               <span>
