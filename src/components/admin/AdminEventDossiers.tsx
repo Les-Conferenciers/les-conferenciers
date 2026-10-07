@@ -631,7 +631,8 @@ const AdminEventDossiers = () => {
       {/* Blocs "Prochains événements (30j)" et "À traiter cette semaine" retirés à la demande pour alléger l'onglet Contrats */}
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setExpandedId(null); }}>
-        <TabsList className="mb-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <TabsList>
           <TabsTrigger value="en_cours" className="gap-1.5 text-xs">
             📂 En cours <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.enCours}</span>
           </TabsTrigger>
@@ -641,7 +642,17 @@ const AdminEventDossiers = () => {
           <TabsTrigger value="archives" className="gap-1.5 text-xs">
             📦 Archivés <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.archives}</span>
           </TabsTrigger>
-        </TabsList>
+          </TabsList>
+          <span
+            className="text-[11px] text-muted-foreground/70 flex items-center gap-1.5"
+            title="Contrats créés récemment, d'après la date de création du contrat"
+          >
+            <CalendarDays className="h-3 w-3 opacity-60" />
+            {creationStats.last7} créés sur 7 jours
+            <span className="opacity-40">·</span>
+            {creationStats.month} en {creationStats.monthLabel}
+          </span>
+        </div>
       </Tabs>
 
       <div className="flex items-center gap-2 flex-wrap">
