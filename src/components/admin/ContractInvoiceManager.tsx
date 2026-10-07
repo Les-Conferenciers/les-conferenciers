@@ -214,6 +214,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
 
   useEffect(() => {
     fetchData();
+    loadDriveSetting();
   }, [proposal.id]);
 
   const fetchData = async () => {
@@ -760,6 +761,41 @@ Nelly Sabde - Les Conférenciers`);
     }
     setDriveUploading(null);
     fetchData();
+  };
+
+  // ─── Dossier Drive personnalisé pour le mois en cours ───
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const [driveFolderUrl, setDriveFolderUrl] = useState("");
+  const [driveFolderSaved, setDriveFolderSaved] = useState<{ folder_id: string; folder_name: string | null } | null>(null);
+  const [driveSaving, setDriveSaving] = useState(false);
+
+  const loadDriveSetting = async () => {
+    const { data } = await supabase
+      .from("drive_folder_settings" as any)
+      .select("folder_id, folder_name")
+      .eq("month", currentMonth)
+      .maybeSingle();
+    setDriveFolderSaved((data as any) ?? null);
+  };
+
+  const saveDriveFolder = async () => {
+    const m = driveFolderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    if (!m) { toast.error("URL de dossier Drive invalide"); return; }
+    setDriveSaving(true);
+    const { error } = await supabase
+      .from("drive_folder_settings" as any)
+      .upsert({ month: currentMonth, folder_id: m[1], updated_at: new Date().toISOString() } as any);
+    setDriveSaving(false);
+    if (error) { toast.error("Enregistrement échoué"); return; }
+    toast.success("Dossier Drive enregistré pour ce mois");
+    setDriveFolderUrl("");
+    loadDriveSetting();
+  };
+
+  const removeDriveFolder = async () => {
+    await supabase.from("drive_folder_settings" as any).delete().eq("month", currentMonth);
+    setDriveFolderSaved(null);
+    toast.success("Dossier retiré : retour au dossier automatique");
   };
 
   const handleMarkPaid = async (invoice: Invoice) => {
