@@ -647,7 +647,7 @@ const AdminEventDossiers = () => {
           </TabsList>
           <span
             className="text-[11px] text-muted-foreground/70 flex items-center gap-1.5"
-            title="Contrats créés récemment, d'après la date de création du contrat"
+            title="Contrats créés récemment, d'après la date de création. Les versions « annule et remplace » ne comptent pas comme un nouveau contrat."
           >
             <CalendarDays className="h-3 w-3 opacity-60" />
             {creationStats.last7} créés sur 7 jours
