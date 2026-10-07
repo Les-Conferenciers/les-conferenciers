@@ -1521,9 +1521,10 @@ ${liaisonButtonHtml()}
   }
 
   // Persist editable liaison fields back to contract + event
-  const persistLiaisonFields = async () => {
+  const persistLiaisonFields = async (): Promise<boolean> => {
+    let ok = true;
     if (contract) {
-      await supabase
+      const { error } = await supabase
         .from("contracts")
         .update({
           event_date: liaisonEventDate || null,
@@ -1531,9 +1532,10 @@ ${liaisonButtonHtml()}
           event_time: liaisonEventTime || null,
         } as any)
         .eq("id", contract.id);
+      if (error) { ok = false; console.error(error); }
     }
     if (event) {
-      await supabase
+      const { error } = await supabase
         .from("events")
         .update({
           audience_size: liaisonAudience || null,
@@ -1544,7 +1546,10 @@ ${liaisonButtonHtml()}
           notes: liaisonNotes || null,
         } as any)
         .eq("id", event.id);
+      if (error) { ok = false; console.error(error); }
     }
+    if (!ok) toast.error("Erreur lors de l'enregistrement de la feuille de liaison");
+    return ok;
   };
 
   const handlePreviewLiaisonSheet = async () => {
@@ -3666,9 +3671,9 @@ Nelly Sabde - Les Conférenciers`);
                   variant="default"
                   size="sm"
                   onClick={async () => {
-                    await persistLiaisonFields();
+                    const ok = await persistLiaisonFields();
                     await fetchData();
-                    toast.success("Modifications enregistrées");
+                    if (ok) toast.success("Modifications enregistrées");
                   }}
                   className="gap-1.5"
                 >

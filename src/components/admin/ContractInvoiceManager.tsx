@@ -29,6 +29,7 @@ import {
   CircleDollarSign,
   Trash2,
   Percent,
+  Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
@@ -1197,6 +1198,19 @@ Nelly Sabde - Les Conférenciers`);
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </Button>
+                  {(inv as any).token && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="Copier le lien client"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`https://www.lesconferenciers.com/facture/${(inv as any).token}`);
+                        toast.success("Lien client copié");
+                      }}
+                    >
+                      <Link2 className="h-3 w-3" />
+                    </Button>
+                  )}
                   {inv.status !== "paid" && (
                     <Button
                       size="sm"

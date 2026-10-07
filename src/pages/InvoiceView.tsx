@@ -27,7 +27,7 @@ type InvoiceData = {
 };
 
 const InvoiceView = () => {
-  const { id } = useParams();
+  const { id, token } = useParams();
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [proposal, setProposal] = useState<any>(null);
   const [contract, setContract] = useState<any>(null);
@@ -39,6 +39,23 @@ const InvoiceView = () => {
 
   useEffect(() => {
     const fetch = async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      if (token || !sess.session) {
+        // Accès client (lien public) : lecture sécurisée côté serveur, sans dépendre de l'expiration de la proposition
+        const { data } = await (supabase as any).rpc("get_public_invoice", { _key: token || id });
+        if (!data?.invoice) { setLoading(false); return; }
+        setInvoice(data.invoice);
+        setProposal(data.proposal);
+        setContract(data.contract);
+        setEvent(data.event);
+        setClient(data.client);
+        setBdcNumber(data.event?.bdc_number || "—");
+        const sid = data.event?.selected_speaker_id || data.contract?.selected_speaker_id;
+        const ps = data.proposal?.proposal_speakers || [];
+        setSpeaker(sid ? ps.find((p: any) => p.speakers?.id === sid) : ps[0]);
+        setLoading(false);
+        return;
+      }
       const { data: inv } = await supabase
         .from("invoices")
         .select("*")
@@ -46,6 +63,7 @@ const InvoiceView = () => {
         .maybeSingle();
       if (!inv) { setLoading(false); return; }
       setInvoice(inv as any);
+
 
       const [propRes, contractRes, eventRes, bdcRes] = await Promise.all([
         supabase.from("proposals").select("*, proposal_speakers(speaker_fee, travel_costs, agency_commission, total_price, speakers(id, name))").eq("id", (inv as any).proposal_id).maybeSingle(),
@@ -74,7 +92,7 @@ const InvoiceView = () => {
       setLoading(false);
     };
     fetch();
-  }, [id]);
+  }, [id, token]);
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Chargement…</div>;
   if (!invoice) return <div className="flex items-center justify-center min-h-screen">Facture introuvable</div>;

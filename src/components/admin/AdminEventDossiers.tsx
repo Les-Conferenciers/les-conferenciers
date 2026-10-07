@@ -67,6 +67,7 @@ const AdminEventDossiers = () => {
   const [lostDialogId, setLostDialogId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
+  const [reactivateRow, setReactivateRow] = useState<any | null>(null);
 
   // Direct contract creation (without prior proposal)
   const [directOpen, setDirectOpen] = useState(false);
@@ -357,7 +358,7 @@ const AdminEventDossiers = () => {
       const liaisonSent = pEvent?.liaison_sheet_sent_at || null;
 
       // Event date for sorting/display
-      const eventDateRaw = pEvent?.event_date || pContract?.event_date || null;
+      const eventDateRaw = pContract?.event_date || pEvent?.event_date || null;
       const eventDate = eventDateRaw ? new Date(eventDateRaw + (eventDateRaw.length === 10 ? "T12:00:00" : "")) : null;
 
       const bdc = pEvent?.bdc_number || null;
@@ -547,11 +548,34 @@ const AdminEventDossiers = () => {
     fetchData();
   };
 
-  const handleRestoreFromLost = async (id: string) => {
-    const { error } = await supabase.from("proposals").update({ lost_at: null, lost_reason: null } as any).eq("id", id);
-    if (error) { toast.error("Erreur"); return; }
-    toast.success("Dossier restauré");
-    fetchData();
+  // Réactivation d'un dossier archivé (perdu, signé ou gagné)
+  const handleReactivate = async () => {
+    const r = reactivateRow;
+    if (!r) return;
+    try {
+      // 1) Dossier perdu : effacer la marque « perdu »
+      if (r.isLost) {
+        const { error } = await supabase.from("proposals").update({ lost_at: null, lost_reason: null } as any).eq("id", r.proposal.id);
+        if (error) throw error;
+      }
+      // 2) Dossier gagné : effacer « Conférencier payé » pour qu'il redevienne actif
+      if (r.isWon && r.event?.id) {
+        const { error } = await supabase.from("events").update({ speaker_paid_at: null } as any).eq("id", r.event.id);
+        if (error) throw error;
+      }
+      // 3) Contrat signé : repasser en attente de paiement s'il reste des factures envoyées non payées, sinon en cours
+      if (r.contract?.id && r.contract.status === "signed") {
+        const hasUnpaidSent = (r.invoices || []).some((inv: any) => inv.status === "sent");
+        const newStatus = hasUnpaidSent ? "en_attente_paiement" : "en_cours";
+        const { error } = await supabase.from("contracts").update({ status: newStatus } as any).eq("id", r.contract.id);
+        if (error) throw error;
+      }
+      toast.success("Dossier réactivé");
+      setReactivateRow(null);
+      fetchData();
+    } catch {
+      toast.error("Erreur lors de la réactivation");
+    }
   };
 
   const handleDelete = async () => {
@@ -684,9 +708,9 @@ const AdminEventDossiers = () => {
                           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-7 px-2" title="Supprimer définitivement" onClick={() => setDeleteDialogId(p.id)}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                          {r.isLost && (
-                            <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Restaurer" onClick={() => handleRestoreFromLost(p.id)}>
-                              ↩️ Restaurer
+                          {(r.isArchived || r.contractStatus === "signed") && (
+                            <Button variant="ghost" size="sm" className="text-xs h-7 px-2" title="Réactiver le dossier" onClick={() => setReactivateRow(r)}>
+                              ↩️ Réactiver
                             </Button>
                           )}
                           <Button variant="ghost" size="sm" onClick={() => setExpandedId(isExpanded ? null : p.id)}>
@@ -784,7 +808,33 @@ const AdminEventDossiers = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Direct contract creation dialog */}
+      {/* Reactivate dialog */}
+      <Dialog open={!!reactivateRow} onOpenChange={(open) => !open && setReactivateRow(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Réactiver ce dossier ?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Le dossier <strong className="text-foreground">{reactivateRow?.proposal?.client_name}</strong> redeviendra actif :
+            </p>
+            <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+              {reactivateRow?.isLost && <li>La marque « Perdu » sera effacée.</li>}
+              {reactivateRow?.contract?.status === "signed" && (
+                <li>Le contrat repassera en « En attente de paiement » s'il reste des factures non payées, sinon en « En cours ».</li>
+              )}
+              {reactivateRow?.isWon && (
+                <li className="text-orange-600">⚠️ La date « Conférencier payé » sera effacée pour que le dossier redevienne actif.</li>
+              )}
+            </ul>
+            <p className="text-xs text-muted-foreground">Aucune donnée (contrat, factures, événement) ne sera supprimée.</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setReactivateRow(null)}>Annuler</Button>
+              <Button size="sm" onClick={handleReactivate}>Réactiver</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={directOpen} onOpenChange={setDirectOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">

@@ -91,8 +91,11 @@ const LiaisonSheetView = () => {
     const { data: contract } = pid
       ? await supabase
           .from("contracts")
-          .select("event_date, event_location, event_time, event_description")
+          .select("id, event_date, event_location, event_time, event_description")
           .eq("proposal_id", pid)
+          .is("superseded_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle()
       : { data: null };
 
@@ -147,7 +150,7 @@ const LiaisonSheetView = () => {
           event_location: eventLocation || null,
           event_time: eventTime || null,
         } as any)
-        .eq("proposal_id", proposalId!);
+        .eq("id", (data.contract as any).id);
       contractErr = error;
     }
 
