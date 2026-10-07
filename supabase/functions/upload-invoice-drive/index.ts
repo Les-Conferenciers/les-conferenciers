@@ -52,8 +52,23 @@ Deno.serve(async (req) => {
       return (await c.json()).id as string;
     };
 
-    const rootId = await findOrCreate(ROOT_NAME, "root");
-    const monthId = await findOrCreate(month, rootId);
+    // Dossier configuré manuellement pour ce mois ? Sinon, création automatique.
+    const { data: override } = await supabase
+      .from("drive_folder_settings")
+      .select("folder_id, folder_name")
+      .eq("month", month)
+      .maybeSingle();
+
+    let monthId: string;
+    let folderLabel: string;
+    if (override?.folder_id) {
+      monthId = override.folder_id;
+      folderLabel = override.folder_name || month;
+    } else {
+      const rootId = await findOrCreate(ROOT_NAME, "root");
+      monthId = await findOrCreate(month, rootId);
+      folderLabel = `${ROOT_NAME}/${month}`;
+    }
 
     const bytes = Uint8Array.from(atob(pdfBase64), (ch) => ch.charCodeAt(0));
     const boundary = "invb" + crypto.randomUUID();
