@@ -4194,6 +4194,14 @@ Nelly Sabde - Les Conférenciers`);
               );
             })()}
 
+            <BillingEntityChoice
+              idPrefix="dossier-create-billing"
+              mode={createBillingMode}
+              onModeChange={setCreateBillingMode}
+              value={createBilling}
+              onChange={setCreateBilling}
+              clientName={proposal.client_name}
+            />
             <div className="space-y-1">
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
