@@ -205,7 +205,7 @@ const AdminEventDossiers = () => {
     setLoading(true);
     const [pRes, cRes, iRes, eRes] = await Promise.all([
       supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))").eq("status", "accepted").order("created_at", { ascending: false }),
-      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date, deposit_required").order("created_at", { ascending: false }),
+      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date, deposit_required, superseded_at").order("created_at", { ascending: false }),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at, sent_at, due_date").order("created_at", { ascending: false }),
       supabase.from("events").select("*").order("created_at", { ascending: false }),
     ]);
