@@ -482,7 +482,8 @@ const AdminEventDossiers = () => {
     archives: enriched.filter((r) => r.isArchived || r.contractStatus === "signed").length,
   }), [enriched]);
 
-  // Mention discrète : contrats créés sur les 7 derniers jours et dans le mois en cours
+  // Mention discrète : contrats créés sur les 7 derniers jours et dans le mois en cours.
+  // Les versions remplacées (« annule et remplace ») ne comptent pas comme un nouveau contrat.
   const creationStats = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -490,6 +491,7 @@ const AdminEventDossiers = () => {
     let last7 = 0;
     let month = 0;
     contracts.forEach((c) => {
+      if (c.superseded_at) return;
       const d = new Date(c.created_at);
       if (isNaN(d.getTime())) return;
       if (d >= sevenDaysAgo) last7++;
