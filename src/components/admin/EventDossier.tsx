@@ -39,6 +39,8 @@ import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
+import { BillingEntityChoice, billingPayload, type BillingEntity, type BillingMode } from "@/components/admin/BillingEntityChoice";
+const EMPTY_BILLING_ENTITY: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "", phone: "" };
 
 const REMOVED_CLAUSE = "__REMOVED__";
 
@@ -323,6 +325,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [dueDate, setDueDate] = useState("");
   const [invoiceNotes, setInvoiceNotes] = useState("");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [createBilling, setCreateBilling] = useState<BillingEntity>(EMPTY_BILLING_ENTITY);
+  const [createBillingMode, setCreateBillingMode] = useState<BillingMode>("client");
 
   // Invoice edit
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -1817,6 +1821,10 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   // ─── Invoices ───
   const handleCreateInvoice = async () => {
+    if (createBillingMode === "entity" && !createBilling.name.trim()) {
+      toast.error("Indiquez le nom de l'entité à facturer");
+      return;
+    }
     setCreatingInvoice(true);
     const multiplier = invoiceType === "total" ? 1 : 0.5;
     const amountHT = totalHTAfterDiscount * multiplier;
@@ -1832,7 +1840,8 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
       notes: invoiceNotes.trim() || null,
-    });
+      ...billingPayload(createBillingMode, createBilling),
+    } as any);
     if (error) {
       toast.error("Erreur");
       console.error(error);
@@ -2374,6 +2383,21 @@ Nelly Sabde - Les Conférenciers`);
               onClick={() => {
                 if (onlySolde) setInvoiceType("solde");
                 else setInvoiceType("total");
+                const prev = [...invoices].reverse().find((i: any) => i.billing_entity_name) as any;
+                if (prev) {
+                  setCreateBillingMode("entity");
+                  setCreateBilling({
+                    name: prev.billing_entity_name || "",
+                    address: prev.billing_entity_address || "",
+                    siret: prev.billing_entity_siret || "",
+                    vat: prev.billing_entity_vat || "",
+                    email: prev.billing_entity_email || "",
+                    phone: prev.billing_entity_phone || "",
+                  });
+                } else {
+                  setCreateBillingMode("client");
+                  setCreateBilling(EMPTY_BILLING_ENTITY);
+                }
                 setInvoiceDialogOpen(true);
               }}
             >
@@ -4194,6 +4218,14 @@ Nelly Sabde - Les Conférenciers`);
               );
             })()}
 
+            <BillingEntityChoice
+              idPrefix="dossier-create-billing"
+              mode={createBillingMode}
+              onModeChange={setCreateBillingMode}
+              value={createBilling}
+              onChange={setCreateBilling}
+              clientName={proposal.client_name}
+            />
             <div className="space-y-1">
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
