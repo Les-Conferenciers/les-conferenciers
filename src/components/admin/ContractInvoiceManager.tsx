@@ -1,4 +1,26 @@
 import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { EmailChipsInput, EMAIL_RE, splitEmails } from "./EmailChipsInput";
+
+interface EmailLog {
+  id: string;
+  invoice_id: string;
+  to_emails: string[];
+  cc_emails: string[];
+  sent_at: string;
+  last_status: string;
+}
+
+const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
+  sent: { label: "Envoyé", cls: "bg-muted text-muted-foreground" },
+  delivered: { label: "Délivré", cls: "bg-green-100 text-green-700" },
+  opened: { label: "Ouvert", cls: "bg-green-100 text-green-700" },
+  clicked: { label: "Consulté", cls: "bg-green-100 text-green-700" },
+  delivery_delayed: { label: "Retardé", cls: "bg-amber-100 text-amber-700" },
+  bounced: { label: "Rejeté", cls: "bg-destructive/15 text-destructive" },
+  complained: { label: "Signalé spam", cls: "bg-destructive/15 text-destructive" },
+  failed: { label: "Échec", cls: "bg-destructive/15 text-destructive" },
+};
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -185,6 +207,8 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [invoiceEmailCc, setInvoiceEmailCc] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
+  const [emailLogs, setEmailLogs] = useState<Record<string, EmailLog[]>>({});
+  const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -197,7 +221,18 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       supabase.from("invoices").select("*").eq("proposal_id", proposal.id).order("created_at"),
     ]);
     setContract(contractRes.data as any);
-    setInvoices((invoicesRes.data as any) || []);
+    const invs = (invoicesRes.data as any) || [];
+    setInvoices(invs);
+    if (invs.length) {
+      const { data: logs } = await supabase
+        .from("invoice_email_logs")
+        .select("*")
+        .in("invoice_id", invs.map((i: any) => i.id))
+        .order("sent_at", { ascending: false });
+      const map: Record<string, EmailLog[]> = {};
+      (logs || []).forEach((l: any) => { (map[l.invoice_id] ||= []).push(l); });
+      setEmailLogs(map);
+    } else setEmailLogs({});
     setLoading(false);
   };
 
@@ -634,29 +669,35 @@ ${inv.due_date ? `• Échéance : ${new Date(inv.due_date).toLocaleDateString("
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
-    // Destinataires par défaut : email entité de facturation si présent, sinon email client
-    const defaultTo = (inv as any).billing_entity_email || proposal.client_email || "";
+    // Destinataires par défaut : adresses déjà utilisées sur cette facture, sinon celles de l'acompte du dossier,
+    // sinon email entité de facturation, sinon email client
+    const acompte = invoices.find((i) => i.invoice_type === "acompte" && i.id !== inv.id && (i as any).email_to);
+    const defaultTo =
+      (inv as any).email_to ||
+      (acompte as any)?.email_to ||
+      (inv as any).billing_entity_email ||
+      proposal.client_email ||
+      "";
     setInvoiceEmailTo(defaultTo);
-    setInvoiceEmailCc(((inv as any).email_cc || "") as string);
+    setInvoiceEmailCc((((inv as any).email_cc || (acompte as any)?.email_cc || "") as string));
     setInvoiceEmailOpen(true);
   };
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
-    const toList = invoiceEmailTo
-      .split(/[,;]/)
-      .map((e) => e.trim())
-      .filter((e) => e.includes("@"));
+    const toList = splitEmails(invoiceEmailTo);
+    const ccList = splitEmails(invoiceEmailCc);
+    const invalid = [...toList, ...ccList].filter((e) => !EMAIL_RE.test(e));
+    if (invalid.length) {
+      toast.error(`Adresse(s) invalide(s) : ${invalid.join(", ")}`);
+      return;
+    }
     if (toList.length === 0) {
       toast.error("Ajoute au moins un destinataire valide");
       return;
     }
     setSendingInvoice(true);
     try {
-      const ccList = invoiceEmailCc
-        .split(/[,;]/)
-        .map((e) => e.trim())
-        .filter((e) => e.includes("@"));
       const { data, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
@@ -666,13 +707,14 @@ Nelly Sabde - Les Conférenciers`);
           cc: ccList.length > 0 ? ccList : undefined,
         },
       });
-      if (error) throw error;
+      if (error) {
+        let details = error.message;
+        try { const t = await (error as any).context?.json?.(); if (t?.error) details = t.error; } catch { /* ignore */ }
+        throw new Error(details);
+      }
       if (data && (data as any).error) throw new Error((data as any).error);
-      await supabase
-        .from("invoices")
-        .update({ status: "sent", sent_at: new Date().toISOString(), email_cc: invoiceEmailCc.trim() || null } as any)
-        .eq("id", emailInvoice.id);
-      toast.success(`Facture ${emailInvoice.invoice_number} envoyée à ${toList.length} destinataire${toList.length > 1 ? "s" : ""}`);
+      const total = toList.length + ccList.length;
+      toast.success(`Facture ${emailInvoice.invoice_number} envoyée à ${total} adresse${total > 1 ? "s" : ""}`);
       setInvoiceEmailOpen(false);
       fetchData();
     } catch (err: any) {
@@ -680,6 +722,16 @@ Nelly Sabde - Les Conférenciers`);
       toast.error(`Erreur d'envoi : ${err?.message || "inconnue"}`);
     }
     setSendingInvoice(false);
+  };
+
+  const refreshStatus = async (invoiceId: string) => {
+    setCheckingStatus(invoiceId);
+    const { error } = await supabase.functions.invoke("send-invoice-email", {
+      body: { action: "check_status", invoice_id: invoiceId },
+    });
+    if (error) toast.error("Impossible de récupérer le statut");
+    await fetchData();
+    setCheckingStatus(null);
   };
 
   const handleMarkPaid = async (invoice: Invoice) => {
@@ -1264,6 +1316,32 @@ Nelly Sabde - Les Conférenciers`);
                   )}
                 </div>
               </div>
+              {(emailLogs[inv.id] || []).length > 0 && (
+                <div className="mt-3 pt-2 border-t border-border/60 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">Historique d'envoi</span>
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] gap-1" disabled={checkingStatus === inv.id} onClick={() => refreshStatus(inv.id)}>
+                      <RefreshCw className={`h-3 w-3 ${checkingStatus === inv.id ? "animate-spin" : ""}`} /> Actualiser le statut
+                    </Button>
+                  </div>
+                  {(emailLogs[inv.id] || []).map((l) => {
+                    const st = STATUS_LABELS[l.last_status] || { label: l.last_status, cls: "bg-muted text-muted-foreground" };
+                    return (
+                      <div key={l.id} className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-1.5 break-all">
+                        <span className={`px-1.5 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
+                        <span>
+                          {new Date(l.sent_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          {" → "}{l.to_emails.join(", ")}
+                          {l.cc_emails.length > 0 && ` (CC ${l.cc_emails.join(", ")})`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {(emailLogs[inv.id] || []).some((l) => ["bounced", "complained", "failed"].includes(l.last_status)) && (
+                    <p className="text-[11px] text-destructive font-medium">⚠️ Un envoi a été rejeté : vérifiez l'adresse et renvoyez la facture.</p>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1512,29 +1590,19 @@ Nelly Sabde - Les Conférenciers`);
           </DialogHeader>
           <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Destinataires (séparés par , ou ;)</Label>
-              <Input
-                type="text"
-                placeholder="destinataire1@exemple.com, destinataire2@exemple.com"
-                value={invoiceEmailTo}
-                onChange={(e) => setInvoiceEmailTo(e.target.value)}
-              />
+              <Label className="text-xs text-muted-foreground">À</Label>
+              <EmailChipsInput value={invoiceEmailTo} onChange={setInvoiceEmailTo} />
               <p className="text-[10px] text-muted-foreground">
-                Ajoute plusieurs adresses pour envoyer la facture à plusieurs personnes.
+                Tapez une adresse puis Entrée ou virgule pour en ajouter une autre. Toutes reçoivent la facture.
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">CC</Label>
+              <EmailChipsInput value={invoiceEmailCc} onChange={setInvoiceEmailCc} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
               <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">CC (séparés par , ou ;)</Label>
-              <Input
-                type="text"
-                placeholder="email1@exemple.com, email2@exemple.com"
-                value={invoiceEmailCc}
-                onChange={(e) => setInvoiceEmailCc(e.target.value)}
-              />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>
