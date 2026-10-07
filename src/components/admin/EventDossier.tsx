@@ -337,6 +337,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
   const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
   const [editInvoiceNotes, setEditInvoiceNotes] = useState("");
+  const [editBilling, setEditBilling] = useState<BillingEntity>(EMPTY_BILLING_ENTITY);
+  const [editBillingMode, setEditBillingMode] = useState<BillingMode>("client");
+
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
@@ -1863,11 +1866,25 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEditVhrEstimate(inv.vhr_estimate ?? "");
     setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
     setEditInvoiceNotes(inv.notes || "");
+    const anyInv = inv as any;
+    setEditBillingMode(anyInv.billing_entity_name ? "entity" : "client");
+    setEditBilling({
+      name: anyInv.billing_entity_name || "",
+      address: anyInv.billing_entity_address || "",
+      siret: anyInv.billing_entity_siret || "",
+      vat: anyInv.billing_entity_vat || "",
+      email: anyInv.billing_entity_email || "",
+      phone: anyInv.billing_entity_phone || "",
+    });
     setEditInvoiceOpen(true);
   };
 
   const handleSaveInvoice = async () => {
     if (!editingInvoice) return;
+    if (editBillingMode === "entity" && !editBilling.name.trim()) {
+      toast.error("Indiquez le nom de l'entité à facturer");
+      return;
+    }
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
     await supabase
       .from("invoices")
@@ -1879,6 +1896,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
         invoice_type: editInvoiceType,
         notes: editInvoiceNotes.trim() || null,
+        ...billingPayload(editBillingMode, editBilling),
       } as any)
       .eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
@@ -4290,6 +4308,14 @@ Nelly Sabde - Les Conférenciers`);
                 ))}
               </div>
             </div>
+            <BillingEntityChoice
+              idPrefix="dossier-edit-billing"
+              mode={editBillingMode}
+              onModeChange={setEditBillingMode}
+              value={editBilling}
+              onChange={setEditBilling}
+              clientName={proposal.client_name}
+            />
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Montant HT (€)</Label>
