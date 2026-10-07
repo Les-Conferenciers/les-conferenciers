@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       drive_uploaded_at: new Date().toISOString(), drive_error: null,
     }).eq("id", invoiceId);
 
-    return json({ ok: true, file_id: file.id, url: file.webViewLink, folder: `${ROOT_NAME}/${month}` });
+    return json({ ok: true, file_id: file.id, url: file.webViewLink, folder: folderLabel });
   } catch (e: any) {
     console.error("upload-invoice-drive error:", e?.message);
     if (invoiceId) await supabase.from("invoices").update({ drive_error: String(e?.message || e).slice(0, 500) }).eq("id", invoiceId);
