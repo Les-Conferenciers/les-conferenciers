@@ -4204,11 +4204,11 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Invoice creation dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="w-[min(28rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">Créer une facture - {proposal.client_name}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
             {(() => {
               const hasAcompte = invoices.some((i) => i.invoice_type === "acompte");
               const onlySolde = hasAcompte;
@@ -4277,6 +4277,8 @@ Nelly Sabde - Les Conférenciers`);
                 </span>
               </div>
             </div>
+          </div>
+          <div className="px-6 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleCreateInvoice} disabled={creatingInvoice}>
               {creatingInvoice ? "Création…" : "Créer la facture"}
             </Button>
@@ -4286,11 +4288,11 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Invoice edit dialog */}
       <Dialog open={editInvoiceOpen} onOpenChange={setEditInvoiceOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="w-[min(28rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">Modifier {editingInvoice?.invoice_number}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
             <div className="space-y-2">
               <Label className="text-xs">Type de facture</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -4374,6 +4376,8 @@ Nelly Sabde - Les Conférenciers`);
                 €
               </span>
             </div>
+          </div>
+          <div className="px-6 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleSaveInvoice}>
               Mettre à jour
             </Button>
