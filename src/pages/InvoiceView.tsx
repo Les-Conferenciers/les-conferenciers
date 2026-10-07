@@ -318,8 +318,7 @@ const InvoiceView = () => {
               {vhr > 0 && (
                 <tr className="border-b border-gray-200">
                   <td className="py-3 px-3">
-                    <p className="font-medium">Estimation frais VHR</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Voyage / Hébergement / Restauration — refacturés au réel sur justificatifs</p>
+                    <p className="font-medium">Frais VHR</p>
                   </td>
                   <td className="py-3 px-3 text-right font-medium">{vhr.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</td>
                 </tr>
