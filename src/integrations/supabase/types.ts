@@ -163,6 +163,30 @@ export type Database = {
           },
         ]
       }
+      drive_folder_settings: {
+        Row: {
+          created_at: string
+          folder_id: string
+          folder_name: string | null
+          month: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          folder_id: string
+          folder_name?: string | null
+          month: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          folder_id?: string
+          folder_name?: string | null
+          month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           available_variables: Json
