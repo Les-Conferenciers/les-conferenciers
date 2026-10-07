@@ -1,1 +1,2 @@
 - Event date is synced contract<->events by DB triggers (trg_sync_contract_date / trg_sync_event_date); why: pipeline showed stale dates when edited on one side.
+- Paid invoices are rendered to PDF client-side (hidden iframe of /facture/:token) and uploaded by edge function upload-invoice-drive into Drive 'Factures payées/YYYY-MM'; why: Drive connector uses drive.file scope, so only app-created folders are writable.
