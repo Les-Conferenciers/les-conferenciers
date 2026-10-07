@@ -205,7 +205,7 @@ const AdminEventDossiers = () => {
     setLoading(true);
     const [pRes, cRes, iRes, eRes] = await Promise.all([
       supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))").eq("status", "accepted").order("created_at", { ascending: false }),
-      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date, deposit_required").order("created_at", { ascending: false }),
+      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date, deposit_required, superseded_at").order("created_at", { ascending: false }),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at, sent_at, due_date").order("created_at", { ascending: false }),
       supabase.from("events").select("*").order("created_at", { ascending: false }),
     ]);
@@ -482,7 +482,8 @@ const AdminEventDossiers = () => {
     archives: enriched.filter((r) => r.isArchived || r.contractStatus === "signed").length,
   }), [enriched]);
 
-  // Mention discrète : contrats créés sur les 7 derniers jours et dans le mois en cours
+  // Mention discrète : contrats créés sur les 7 derniers jours et dans le mois en cours.
+  // Les versions remplacées (« annule et remplace ») ne comptent pas comme un nouveau contrat.
   const creationStats = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -490,6 +491,7 @@ const AdminEventDossiers = () => {
     let last7 = 0;
     let month = 0;
     contracts.forEach((c) => {
+      if (c.superseded_at) return;
       const d = new Date(c.created_at);
       if (isNaN(d.getTime())) return;
       if (d >= sevenDaysAgo) last7++;
@@ -645,7 +647,7 @@ const AdminEventDossiers = () => {
           </TabsList>
           <span
             className="text-[11px] text-muted-foreground/70 flex items-center gap-1.5"
-            title="Contrats créés récemment, d'après la date de création du contrat"
+            title="Contrats créés récemment, d'après la date de création. Les versions « annule et remplace » ne comptent pas comme un nouveau contrat."
           >
             <CalendarDays className="h-3 w-3 opacity-60" />
             {creationStats.last7} créés sur 7 jours
