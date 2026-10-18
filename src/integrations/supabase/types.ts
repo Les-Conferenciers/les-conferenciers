@@ -163,6 +163,30 @@ export type Database = {
           },
         ]
       }
+      drive_folder_settings: {
+        Row: {
+          created_at: string
+          folder_id: string
+          folder_name: string | null
+          month: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          folder_id: string
+          folder_name?: string | null
+          month: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          folder_id?: string
+          folder_name?: string | null
+          month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           available_variables: Json
@@ -448,6 +472,50 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_email_logs: {
+        Row: {
+          cc_emails: string[]
+          id: string
+          invoice_id: string
+          last_status: string
+          resend_id: string | null
+          sent_at: string
+          status_checked_at: string | null
+          subject: string | null
+          to_emails: string[]
+        }
+        Insert: {
+          cc_emails?: string[]
+          id?: string
+          invoice_id: string
+          last_status?: string
+          resend_id?: string | null
+          sent_at?: string
+          status_checked_at?: string | null
+          subject?: string | null
+          to_emails?: string[]
+        }
+        Update: {
+          cc_emails?: string[]
+          id?: string
+          invoice_id?: string
+          last_status?: string
+          resend_id?: string | null
+          sent_at?: string
+          status_checked_at?: string | null
+          subject?: string | null
+          to_emails?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_email_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount_ht: number
@@ -455,12 +523,18 @@ export type Database = {
           billing_entity_address: string | null
           billing_entity_email: string | null
           billing_entity_name: string | null
+          billing_entity_phone: string | null
           billing_entity_siret: string | null
           billing_entity_vat: string | null
           contract_id: string | null
           created_at: string
+          drive_error: string | null
+          drive_file_id: string | null
+          drive_file_url: string | null
+          drive_uploaded_at: string | null
           due_date: string | null
           email_cc: string | null
+          email_to: string | null
           id: string
           invoice_number: string
           invoice_type: string
@@ -479,12 +553,18 @@ export type Database = {
           billing_entity_address?: string | null
           billing_entity_email?: string | null
           billing_entity_name?: string | null
+          billing_entity_phone?: string | null
           billing_entity_siret?: string | null
           billing_entity_vat?: string | null
           contract_id?: string | null
           created_at?: string
+          drive_error?: string | null
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          drive_uploaded_at?: string | null
           due_date?: string | null
           email_cc?: string | null
+          email_to?: string | null
           id?: string
           invoice_number: string
           invoice_type?: string
@@ -503,12 +583,18 @@ export type Database = {
           billing_entity_address?: string | null
           billing_entity_email?: string | null
           billing_entity_name?: string | null
+          billing_entity_phone?: string | null
           billing_entity_siret?: string | null
           billing_entity_vat?: string | null
           contract_id?: string | null
           created_at?: string
+          drive_error?: string | null
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          drive_uploaded_at?: string | null
           due_date?: string | null
           email_cc?: string | null
+          email_to?: string | null
           id?: string
           invoice_number?: string
           invoice_type?: string

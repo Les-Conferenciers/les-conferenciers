@@ -1,4 +1,29 @@
 import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { EmailChipsInput, EMAIL_RE, splitEmails } from "./EmailChipsInput";
+import { renderInvoicePdfBase64 } from "@/lib/invoicePdf";
+import { FunctionsHttpError } from "@supabase/supabase-js";
+import { BillingEntityChoice, billingPayload, type BillingEntity, type BillingMode } from "./BillingEntityChoice";
+
+interface EmailLog {
+  id: string;
+  invoice_id: string;
+  to_emails: string[];
+  cc_emails: string[];
+  sent_at: string;
+  last_status: string;
+}
+
+const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
+  sent: { label: "Envoyé", cls: "bg-muted text-muted-foreground" },
+  delivered: { label: "Délivré", cls: "bg-green-100 text-green-700" },
+  opened: { label: "Ouvert", cls: "bg-green-100 text-green-700" },
+  clicked: { label: "Consulté", cls: "bg-green-100 text-green-700" },
+  delivery_delayed: { label: "Retardé", cls: "bg-amber-100 text-amber-700" },
+  bounced: { label: "Rejeté", cls: "bg-destructive/15 text-destructive" },
+  complained: { label: "Signalé spam", cls: "bg-destructive/15 text-destructive" },
+  failed: { label: "Échec", cls: "bg-destructive/15 text-destructive" },
+};
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,17 +119,10 @@ type Invoice = {
   billing_entity_siret?: string | null;
   billing_entity_vat?: string | null;
   billing_entity_email?: string | null;
+  billing_entity_phone?: string | null;
 };
 
-type BillingEntity = {
-  name: string;
-  address: string;
-  siret: string;
-  vat: string;
-  email: string;
-};
-
-const EMPTY_BILLING: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "" };
+const EMPTY_BILLING: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "", phone: "" };
 
 type ContractLine = {
   id: string;
@@ -162,6 +180,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [dueDate, setDueDate] = useState("");
   const [createNotes, setCreateNotes] = useState("");
   const [createBilling, setCreateBilling] = useState<BillingEntity>(EMPTY_BILLING);
+  const [createBillingMode, setCreateBillingMode] = useState<BillingMode>("client");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Invoice edit
@@ -173,6 +192,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
   const [editNotes, setEditNotes] = useState("");
   const [editBilling, setEditBilling] = useState<BillingEntity>(EMPTY_BILLING);
+  const [editBillingMode, setEditBillingMode] = useState<BillingMode>("client");
 
   // Invoice delete confirmation
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
@@ -185,9 +205,12 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
   const [invoiceEmailCc, setInvoiceEmailCc] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
+  const [emailLogs, setEmailLogs] = useState<Record<string, EmailLog[]>>({});
+  const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
+    loadDriveSetting();
   }, [proposal.id]);
 
   const fetchData = async () => {
@@ -197,7 +220,18 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
       supabase.from("invoices").select("*").eq("proposal_id", proposal.id).order("created_at"),
     ]);
     setContract(contractRes.data as any);
-    setInvoices((invoicesRes.data as any) || []);
+    const invs = (invoicesRes.data as any) || [];
+    setInvoices(invs);
+    if (invs.length) {
+      const { data: logs } = await supabase
+        .from("invoice_email_logs")
+        .select("*")
+        .in("invoice_id", invs.map((i: any) => i.id))
+        .order("sent_at", { ascending: false });
+      const map: Record<string, EmailLog[]> = {};
+      (logs || []).forEach((l: any) => { (map[l.invoice_id] ||= []).push(l); });
+      setEmailLogs(map);
+    } else setEmailLogs({});
     setLoading(false);
   };
 
@@ -480,7 +514,31 @@ Nelly Sabde - Les Conférenciers`;
 
   // ─── Invoices ───
 
+  const openCreateInvoice = () => {
+    // Reprend l'entité de la dernière facture du dossier (ex. acompte → solde)
+    const prev = [...invoices].reverse().find((i) => i.billing_entity_name);
+    if (prev) {
+      setCreateBillingMode("entity");
+      setCreateBilling({
+        name: prev.billing_entity_name || "",
+        address: prev.billing_entity_address || "",
+        siret: prev.billing_entity_siret || "",
+        vat: prev.billing_entity_vat || "",
+        email: prev.billing_entity_email || "",
+        phone: prev.billing_entity_phone || "",
+      });
+    } else {
+      setCreateBillingMode("client");
+      setCreateBilling(EMPTY_BILLING);
+    }
+    setInvoiceDialogOpen(true);
+  };
+
   const handleCreateInvoice = async () => {
+    if (createBillingMode === "entity" && !createBilling.name.trim()) {
+      toast.error("Indiquez le nom de l'entité à facturer");
+      return;
+    }
     setCreatingInvoice(true);
     const multiplier = invoiceType === "total" ? 1 : 0.5;
     const amountHT = totalHTAfterDiscount * multiplier;
@@ -497,11 +555,7 @@ Nelly Sabde - Les Conférenciers`;
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
       notes: createNotes.trim() || null,
-      billing_entity_name: createBilling.name.trim() || null,
-      billing_entity_address: createBilling.address.trim() || null,
-      billing_entity_siret: createBilling.siret.trim() || null,
-      billing_entity_vat: createBilling.vat.trim() || null,
-      billing_entity_email: createBilling.email.trim() || null,
+      ...billingPayload(createBillingMode, createBilling),
     } as any);
     if (error) {
       toast.error("Erreur création facture");
@@ -524,18 +578,24 @@ Nelly Sabde - Les Conférenciers`;
     setEditDueDate(inv.due_date || "");
     setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
     setEditNotes((inv as any).notes || "");
+    setEditBillingMode(inv.billing_entity_name ? "entity" : "client");
     setEditBilling({
-      name: (inv as any).billing_entity_name || "",
-      address: (inv as any).billing_entity_address || "",
-      siret: (inv as any).billing_entity_siret || "",
-      vat: (inv as any).billing_entity_vat || "",
-      email: (inv as any).billing_entity_email || "",
+      name: inv.billing_entity_name || "",
+      address: inv.billing_entity_address || "",
+      siret: inv.billing_entity_siret || "",
+      vat: inv.billing_entity_vat || "",
+      email: inv.billing_entity_email || "",
+      phone: inv.billing_entity_phone || "",
     });
     setEditInvoiceOpen(true);
   };
 
   const handleSaveInvoice = async () => {
     if (!editingInvoice) return;
+    if (editBillingMode === "entity" && !editBilling.name.trim()) {
+      toast.error("Indiquez le nom de l'entité à facturer");
+      return;
+    }
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
     const { error } = await supabase
       .from("invoices")
@@ -546,11 +606,7 @@ Nelly Sabde - Les Conférenciers`;
         due_date: editDueDate || null,
         invoice_type: editInvoiceType,
         notes: editNotes.trim() || null,
-        billing_entity_name: editBilling.name.trim() || null,
-        billing_entity_address: editBilling.address.trim() || null,
-        billing_entity_siret: editBilling.siret.trim() || null,
-        billing_entity_vat: editBilling.vat.trim() || null,
-        billing_entity_email: editBilling.email.trim() || null,
+        ...billingPayload(editBillingMode, editBilling),
       } as any)
       .eq("id", editingInvoice.id);
     if (error) {
@@ -578,6 +634,7 @@ Nelly Sabde - Les Conférenciers`;
       billing_entity_siret: (inv as any).billing_entity_siret || null,
       billing_entity_vat: (inv as any).billing_entity_vat || null,
       billing_entity_email: (inv as any).billing_entity_email || null,
+      billing_entity_phone: inv.billing_entity_phone || null,
     } as any);
     if (error) {
       toast.error("Erreur duplication");
@@ -634,29 +691,35 @@ ${inv.due_date ? `• Échéance : ${new Date(inv.due_date).toLocaleDateString("
 
 Bien cordialement,
 Nelly Sabde - Les Conférenciers`);
-    // Destinataires par défaut : email entité de facturation si présent, sinon email client
-    const defaultTo = (inv as any).billing_entity_email || proposal.client_email || "";
+    // Destinataires par défaut : adresses déjà utilisées sur cette facture, sinon celles de l'acompte du dossier,
+    // sinon email entité de facturation, sinon email client
+    const acompte = invoices.find((i) => i.invoice_type === "acompte" && i.id !== inv.id && (i as any).email_to);
+    const defaultTo =
+      (inv as any).email_to ||
+      (acompte as any)?.email_to ||
+      (inv as any).billing_entity_email ||
+      proposal.client_email ||
+      "";
     setInvoiceEmailTo(defaultTo);
-    setInvoiceEmailCc(((inv as any).email_cc || "") as string);
+    setInvoiceEmailCc((((inv as any).email_cc || (acompte as any)?.email_cc || "") as string));
     setInvoiceEmailOpen(true);
   };
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
-    const toList = invoiceEmailTo
-      .split(/[,;]/)
-      .map((e) => e.trim())
-      .filter((e) => e.includes("@"));
+    const toList = splitEmails(invoiceEmailTo);
+    const ccList = splitEmails(invoiceEmailCc);
+    const invalid = [...toList, ...ccList].filter((e) => !EMAIL_RE.test(e));
+    if (invalid.length) {
+      toast.error(`Adresse(s) invalide(s) : ${invalid.join(", ")}`);
+      return;
+    }
     if (toList.length === 0) {
       toast.error("Ajoute au moins un destinataire valide");
       return;
     }
     setSendingInvoice(true);
     try {
-      const ccList = invoiceEmailCc
-        .split(/[,;]/)
-        .map((e) => e.trim())
-        .filter((e) => e.includes("@"));
       const { data, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
@@ -666,13 +729,14 @@ Nelly Sabde - Les Conférenciers`);
           cc: ccList.length > 0 ? ccList : undefined,
         },
       });
-      if (error) throw error;
+      if (error) {
+        let details = error.message;
+        try { const t = await (error as any).context?.json?.(); if (t?.error) details = t.error; } catch { /* ignore */ }
+        throw new Error(details);
+      }
       if (data && (data as any).error) throw new Error((data as any).error);
-      await supabase
-        .from("invoices")
-        .update({ status: "sent", sent_at: new Date().toISOString(), email_cc: invoiceEmailCc.trim() || null } as any)
-        .eq("id", emailInvoice.id);
-      toast.success(`Facture ${emailInvoice.invoice_number} envoyée à ${toList.length} destinataire${toList.length > 1 ? "s" : ""}`);
+      const total = toList.length + ccList.length;
+      toast.success(`Facture ${emailInvoice.invoice_number} envoyée à ${total} adresse${total > 1 ? "s" : ""}`);
       setInvoiceEmailOpen(false);
       fetchData();
     } catch (err: any) {
@@ -682,11 +746,83 @@ Nelly Sabde - Les Conférenciers`);
     setSendingInvoice(false);
   };
 
+  const refreshStatus = async (invoiceId: string) => {
+    setCheckingStatus(invoiceId);
+    const { error } = await supabase.functions.invoke("send-invoice-email", {
+      body: { action: "check_status", invoice_id: invoiceId },
+    });
+    if (error) toast.error("Impossible de récupérer le statut");
+    await fetchData();
+    setCheckingStatus(null);
+  };
+
+  const [driveUploading, setDriveUploading] = useState<string | null>(null);
+
+  const uploadToDrive = async (invoice: Invoice) => {
+    const token = (invoice as any).token;
+    if (!token) { toast.error("Facture sans lien public, envoi Drive impossible"); return; }
+    setDriveUploading(invoice.id);
+    try {
+      const pdf_base64 = await renderInvoicePdfBase64(token);
+      const file_name = `${invoice.invoice_number} - ${proposal.client_name}.pdf`;
+      const { data, error } = await supabase.functions.invoke("upload-invoice-drive", {
+        body: { invoice_id: invoice.id, pdf_base64, file_name },
+      });
+      if (error) {
+        const details = error instanceof FunctionsHttpError ? await error.context.text() : error.message;
+        throw new Error(details);
+      }
+      toast.success(`PDF envoyé sur Google Drive (${data?.folder})`);
+    } catch (err: any) {
+      console.error("Drive upload failed:", err);
+      toast.error("Envoi sur Google Drive échoué");
+      await supabase.from("invoices").update({ drive_error: String(err?.message || err).slice(0, 500) } as any).eq("id", invoice.id);
+    }
+    setDriveUploading(null);
+    fetchData();
+  };
+
+  // ─── Dossier Drive personnalisé pour le mois en cours ───
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const [driveFolderUrl, setDriveFolderUrl] = useState("");
+  const [driveFolderSaved, setDriveFolderSaved] = useState<{ folder_id: string; folder_name: string | null } | null>(null);
+  const [driveSaving, setDriveSaving] = useState(false);
+
+  const loadDriveSetting = async () => {
+    const { data } = await supabase
+      .from("drive_folder_settings" as any)
+      .select("folder_id, folder_name")
+      .eq("month", currentMonth)
+      .maybeSingle();
+    setDriveFolderSaved((data as any) ?? null);
+  };
+
+  const saveDriveFolder = async () => {
+    const m = driveFolderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    if (!m) { toast.error("URL de dossier Drive invalide"); return; }
+    setDriveSaving(true);
+    const { error } = await supabase
+      .from("drive_folder_settings" as any)
+      .upsert({ month: currentMonth, folder_id: m[1], updated_at: new Date().toISOString() } as any);
+    setDriveSaving(false);
+    if (error) { toast.error("Enregistrement échoué"); return; }
+    toast.success("Dossier Drive enregistré pour ce mois");
+    setDriveFolderUrl("");
+    loadDriveSetting();
+  };
+
+  const removeDriveFolder = async () => {
+    await supabase.from("drive_folder_settings" as any).delete().eq("month", currentMonth);
+    setDriveFolderSaved(null);
+    toast.success("Dossier retiré : retour au dossier automatique");
+  };
+
   const handleMarkPaid = async (invoice: Invoice) => {
     await supabase.from("invoices").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", invoice.id);
     toast.success(`Facture ${invoice.invoice_number} marquée payée`);
     fetchData();
     onUpdate();
+    uploadToDrive(invoice);
   };
 
   const handleMarkUnpaid = async (invoice: Invoice) => {
@@ -1135,9 +1271,50 @@ Nelly Sabde - Les Conférenciers`);
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Receipt className="h-4 w-4" /> Factures
         </h3>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setInvoiceDialogOpen(true)}>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateInvoice}>
           <Plus className="h-3 w-3" /> Créer une facture
         </Button>
+      </div>
+
+      {/* Dossier Drive du mois */}
+      <div className="border rounded-lg p-3 bg-muted/30 space-y-2">
+        <div className="text-[11px] font-medium text-muted-foreground">
+          Dossier Google Drive pour les factures payées en {currentMonth}
+        </div>
+        {driveFolderSaved ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-muted-foreground">
+              Dossier personnalisé configuré —{" "}
+              <a
+                href={`https://drive.google.com/drive/folders/${driveFolderSaved.folder_id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                ouvrir dans Drive
+              </a>
+            </span>
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={removeDriveFolder}>
+              Retirer
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-1">
+              <label className="text-[11px] text-muted-foreground">
+                Coller l'URL d'un dossier Drive (sinon dossier automatique « Factures payées/{currentMonth} »)
+              </label>
+              <Input
+                value={driveFolderUrl}
+                onChange={(e) => setDriveFolderUrl(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <Button size="sm" variant="outline" className="h-8" onClick={saveDriveFolder} disabled={driveSaving || !driveFolderUrl.trim()}>
+              Enregistrer
+            </Button>
+          </div>
+        )}
       </div>
 
       {invoices.length > 0 && (
@@ -1264,6 +1441,55 @@ Nelly Sabde - Les Conférenciers`);
                   )}
                 </div>
               </div>
+              {inv.status === "paid" && (
+                <div className="mt-2 text-[11px] flex flex-wrap items-center gap-2">
+                  {driveUploading === inv.id ? (
+                    <span className="text-muted-foreground">Envoi sur Google Drive…</span>
+                  ) : (inv as any).drive_uploaded_at ? (
+                    <span className="text-muted-foreground">
+                      Envoyée sur Drive le {new Date((inv as any).drive_uploaded_at).toLocaleDateString("fr-FR")}
+                      {(inv as any).drive_file_url && (
+                        <> — <a href={(inv as any).drive_file_url} target="_blank" rel="noreferrer" className="underline">ouvrir</a></>
+                      )}
+                    </span>
+                  ) : (inv as any).drive_error ? (
+                    <span className="text-destructive">Envoi Drive échoué</span>
+                  ) : (
+                    <span className="text-muted-foreground">Pas encore sur Drive</span>
+                  )}
+                  {driveUploading !== inv.id && (
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => uploadToDrive(inv)}>
+                      {(inv as any).drive_uploaded_at ? "Renvoyer sur Drive" : (inv as any).drive_error ? "Réessayer" : "Envoyer sur Drive"}
+                    </Button>
+                  )}
+                </div>
+              )}
+              {(emailLogs[inv.id] || []).length > 0 && (
+                <div className="mt-3 pt-2 border-t border-border/60 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">Historique d'envoi</span>
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] gap-1" disabled={checkingStatus === inv.id} onClick={() => refreshStatus(inv.id)}>
+                      <RefreshCw className={`h-3 w-3 ${checkingStatus === inv.id ? "animate-spin" : ""}`} /> Actualiser le statut
+                    </Button>
+                  </div>
+                  {(emailLogs[inv.id] || []).map((l) => {
+                    const st = STATUS_LABELS[l.last_status] || { label: l.last_status, cls: "bg-muted text-muted-foreground" };
+                    return (
+                      <div key={l.id} className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-1.5 break-all">
+                        <span className={`px-1.5 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
+                        <span>
+                          {new Date(l.sent_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          {" → "}{l.to_emails.join(", ")}
+                          {l.cc_emails.length > 0 && ` (CC ${l.cc_emails.join(", ")})`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {(emailLogs[inv.id] || []).some((l) => ["bounced", "complained", "failed"].includes(l.last_status)) && (
+                    <p className="text-[11px] text-destructive font-medium">⚠️ Un envoi a été rejeté : vérifiez l'adresse et renvoyez la facture.</p>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1311,50 +1537,14 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">Ce texte apparaîtra sur la facture PDF envoyée au client.</p>
             </div>
 
-            <details className="border border-border rounded-lg p-3 group">
-              <summary className="text-xs font-medium cursor-pointer select-none">
-                Facturer à une autre entité (optionnel)
-              </summary>
-              <div className="mt-3 space-y-2">
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setCreateBilling({ ...EMPTY_BILLING, name: proposal.client_name, email: proposal.client_email || "" })}
-                  >
-                    Copier depuis le client
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => setCreateBilling(EMPTY_BILLING)}>
-                    Effacer
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Raison sociale</Label>
-                  <Input value={createBilling.name} onChange={(e) => setCreateBilling({ ...createBilling, name: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Adresse complète</Label>
-                  <Textarea rows={2} value={createBilling.address} onChange={(e) => setCreateBilling({ ...createBilling, address: e.target.value })} className="text-sm" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">SIRET</Label>
-                    <Input value={createBilling.siret} onChange={(e) => setCreateBilling({ ...createBilling, siret: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">N° TVA intra</Label>
-                    <Input value={createBilling.vat} onChange={(e) => setCreateBilling({ ...createBilling, vat: e.target.value })} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Email de facturation (destinataire par défaut)</Label>
-                  <Input type="email" value={createBilling.email} onChange={(e) => setCreateBilling({ ...createBilling, email: e.target.value })} />
-                </div>
-                <p className="text-[10px] text-muted-foreground">Si renseignée, la facture sera adressée à cette entité (avec la mention « Pour le compte de {proposal.client_name} »).</p>
-              </div>
-            </details>
+            <BillingEntityChoice
+              idPrefix="create-billing"
+              mode={createBillingMode}
+              onModeChange={setCreateBillingMode}
+              value={createBilling}
+              onChange={setCreateBilling}
+              clientName={proposal.client_name}
+            />
             <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Montant HT</span>
@@ -1389,6 +1579,8 @@ Nelly Sabde - Les Conférenciers`);
                 </span>
               </div>
             </div>
+          </div>
+          <div className="px-6 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleCreateInvoice} disabled={creatingInvoice}>
               {creatingInvoice ? "Création…" : "Créer la facture"}
             </Button>
@@ -1447,56 +1639,22 @@ Nelly Sabde - Les Conférenciers`);
               <p className="text-[10px] text-muted-foreground">Ce texte apparaîtra sur la facture PDF envoyée au client.</p>
             </div>
 
-            <details className="border border-border rounded-lg p-3">
-              <summary className="text-xs font-medium cursor-pointer select-none">
-                Facturer à une autre entité (optionnel)
-                {editBilling.name && <span className="ml-2 text-primary">• {editBilling.name}</span>}
-              </summary>
-              <div className="mt-3 space-y-2">
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setEditBilling({ ...EMPTY_BILLING, name: proposal.client_name, email: proposal.client_email || "" })}
-                  >
-                    Copier depuis le client
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => setEditBilling(EMPTY_BILLING)}>
-                    Effacer
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Raison sociale</Label>
-                  <Input value={editBilling.name} onChange={(e) => setEditBilling({ ...editBilling, name: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Adresse complète</Label>
-                  <Textarea rows={2} value={editBilling.address} onChange={(e) => setEditBilling({ ...editBilling, address: e.target.value })} className="text-sm" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">SIRET</Label>
-                    <Input value={editBilling.siret} onChange={(e) => setEditBilling({ ...editBilling, siret: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">N° TVA intra</Label>
-                    <Input value={editBilling.vat} onChange={(e) => setEditBilling({ ...editBilling, vat: e.target.value })} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Email de facturation (destinataire par défaut)</Label>
-                  <Input type="email" value={editBilling.email} onChange={(e) => setEditBilling({ ...editBilling, email: e.target.value })} />
-                </div>
-              </div>
-            </details>
+            <BillingEntityChoice
+              idPrefix="edit-billing"
+              mode={editBillingMode}
+              onModeChange={setEditBillingMode}
+              value={editBilling}
+              onChange={setEditBilling}
+              clientName={proposal.client_name}
+            />
             <div className="bg-muted/50 rounded-lg p-3 text-sm flex justify-between font-bold">
               <span>Total TTC</span>
               <span>
                 {(editAmountHT * (1 + editTvaRate / 100)).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
               </span>
             </div>
+          </div>
+          <div className="px-6 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleSaveInvoice}>
               Enregistrer les modifications
             </Button>
@@ -1512,29 +1670,19 @@ Nelly Sabde - Les Conférenciers`);
           </DialogHeader>
           <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Destinataires (séparés par , ou ;)</Label>
-              <Input
-                type="text"
-                placeholder="destinataire1@exemple.com, destinataire2@exemple.com"
-                value={invoiceEmailTo}
-                onChange={(e) => setInvoiceEmailTo(e.target.value)}
-              />
+              <Label className="text-xs text-muted-foreground">À</Label>
+              <EmailChipsInput value={invoiceEmailTo} onChange={setInvoiceEmailTo} />
               <p className="text-[10px] text-muted-foreground">
-                Ajoute plusieurs adresses pour envoyer la facture à plusieurs personnes.
+                Tapez une adresse puis Entrée ou virgule pour en ajouter une autre. Toutes reçoivent la facture.
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">CC</Label>
+              <EmailChipsInput value={invoiceEmailCc} onChange={setInvoiceEmailCc} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
               <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">CC (séparés par , ou ;)</Label>
-              <Input
-                type="text"
-                placeholder="email1@exemple.com, email2@exemple.com"
-                value={invoiceEmailCc}
-                onChange={(e) => setInvoiceEmailCc(e.target.value)}
-              />
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corps du mail</Label>

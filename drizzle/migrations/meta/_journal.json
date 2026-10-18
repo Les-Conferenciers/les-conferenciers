@@ -15,6 +15,34 @@
       "when": 1790769305757,
       "tag": "0001_sync_event_date",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791365741418,
+      "tag": "0002_invoice_email_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791374752053,
+      "tag": "0003_invoice_drive_upload",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791375071610,
+      "tag": "0004_create_drive_folder_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791375686803,
+      "tag": "0005_invoice_billing_entity_phone",
+      "breakpoints": true
     }
   ]
 }

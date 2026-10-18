@@ -246,6 +246,12 @@ const InvoiceView = () => {
                 {invoice.billing_entity_vat && (
                   <p className="text-gray-600 text-xs">TVA : {invoice.billing_entity_vat}</p>
                 )}
+                {(invoice as any).billing_entity_phone && (
+                  <p className="text-gray-600 text-xs">Tél : {(invoice as any).billing_entity_phone}</p>
+                )}
+                {invoice.billing_entity_email && (
+                  <p className="text-gray-600 text-xs">{invoice.billing_entity_email}</p>
+                )}
                 <p className="text-gray-500 text-xs mt-2 italic">
                   Pour le compte de : {client?.company_name || proposal?.client_name}
                 </p>
@@ -318,8 +324,7 @@ const InvoiceView = () => {
               {vhr > 0 && (
                 <tr className="border-b border-gray-200">
                   <td className="py-3 px-3">
-                    <p className="font-medium">Estimation frais VHR</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Voyage / Hébergement / Restauration — refacturés au réel sur justificatifs</p>
+                    <p className="font-medium">Frais VHR</p>
                   </td>
                   <td className="py-3 px-3 text-right font-medium">{vhr.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</td>
                 </tr>

@@ -39,6 +39,8 @@ import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
+import { BillingEntityChoice, billingPayload, type BillingEntity, type BillingMode } from "@/components/admin/BillingEntityChoice";
+const EMPTY_BILLING_ENTITY: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "", phone: "" };
 
 const REMOVED_CLAUSE = "__REMOVED__";
 
@@ -323,6 +325,8 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [dueDate, setDueDate] = useState("");
   const [invoiceNotes, setInvoiceNotes] = useState("");
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [createBilling, setCreateBilling] = useState<BillingEntity>(EMPTY_BILLING_ENTITY);
+  const [createBillingMode, setCreateBillingMode] = useState<BillingMode>("client");
 
   // Invoice edit
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -333,6 +337,9 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [editVhrEstimate, setEditVhrEstimate] = useState<number | "">("");
   const [editInvoiceType, setEditInvoiceType] = useState<"acompte" | "solde" | "total">("total");
   const [editInvoiceNotes, setEditInvoiceNotes] = useState("");
+  const [editBilling, setEditBilling] = useState<BillingEntity>(EMPTY_BILLING_ENTITY);
+  const [editBillingMode, setEditBillingMode] = useState<BillingMode>("client");
+
 
   // Invoice email
   const [invoiceEmailOpen, setInvoiceEmailOpen] = useState(false);
@@ -1817,6 +1824,10 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
 
   // ─── Invoices ───
   const handleCreateInvoice = async () => {
+    if (createBillingMode === "entity" && !createBilling.name.trim()) {
+      toast.error("Indiquez le nom de l'entité à facturer");
+      return;
+    }
     setCreatingInvoice(true);
     const multiplier = invoiceType === "total" ? 1 : 0.5;
     const amountHT = totalHTAfterDiscount * multiplier;
@@ -1832,7 +1843,8 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       amount_ttc: Math.round(amountTTC * 100) / 100,
       due_date: dueDate || null,
       notes: invoiceNotes.trim() || null,
-    });
+      ...billingPayload(createBillingMode, createBilling),
+    } as any);
     if (error) {
       toast.error("Erreur");
       console.error(error);
@@ -1854,11 +1866,25 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
     setEditVhrEstimate(inv.vhr_estimate ?? "");
     setEditInvoiceType((inv.invoice_type as "acompte" | "solde" | "total") || "total");
     setEditInvoiceNotes(inv.notes || "");
+    const anyInv = inv as any;
+    setEditBillingMode(anyInv.billing_entity_name ? "entity" : "client");
+    setEditBilling({
+      name: anyInv.billing_entity_name || "",
+      address: anyInv.billing_entity_address || "",
+      siret: anyInv.billing_entity_siret || "",
+      vat: anyInv.billing_entity_vat || "",
+      email: anyInv.billing_entity_email || "",
+      phone: anyInv.billing_entity_phone || "",
+    });
     setEditInvoiceOpen(true);
   };
 
   const handleSaveInvoice = async () => {
     if (!editingInvoice) return;
+    if (editBillingMode === "entity" && !editBilling.name.trim()) {
+      toast.error("Indiquez le nom de l'entité à facturer");
+      return;
+    }
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
     await supabase
       .from("invoices")
@@ -1870,6 +1896,7 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
         invoice_type: editInvoiceType,
         notes: editInvoiceNotes.trim() || null,
+        ...billingPayload(editBillingMode, editBilling),
       } as any)
       .eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
@@ -2374,6 +2401,21 @@ Nelly Sabde - Les Conférenciers`);
               onClick={() => {
                 if (onlySolde) setInvoiceType("solde");
                 else setInvoiceType("total");
+                const prev = [...invoices].reverse().find((i: any) => i.billing_entity_name) as any;
+                if (prev) {
+                  setCreateBillingMode("entity");
+                  setCreateBilling({
+                    name: prev.billing_entity_name || "",
+                    address: prev.billing_entity_address || "",
+                    siret: prev.billing_entity_siret || "",
+                    vat: prev.billing_entity_vat || "",
+                    email: prev.billing_entity_email || "",
+                    phone: prev.billing_entity_phone || "",
+                  });
+                } else {
+                  setCreateBillingMode("client");
+                  setCreateBilling(EMPTY_BILLING_ENTITY);
+                }
                 setInvoiceDialogOpen(true);
               }}
             >
@@ -4162,11 +4204,11 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Invoice creation dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="w-[min(28rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">Créer une facture - {proposal.client_name}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
             {(() => {
               const hasAcompte = invoices.some((i) => i.invoice_type === "acompte");
               const onlySolde = hasAcompte;
@@ -4194,6 +4236,14 @@ Nelly Sabde - Les Conférenciers`);
               );
             })()}
 
+            <BillingEntityChoice
+              idPrefix="dossier-create-billing"
+              mode={createBillingMode}
+              onModeChange={setCreateBillingMode}
+              value={createBilling}
+              onChange={setCreateBilling}
+              clientName={proposal.client_name}
+            />
             <div className="space-y-1">
               <Label className="text-xs">Date d'échéance</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
@@ -4227,6 +4277,8 @@ Nelly Sabde - Les Conférenciers`);
                 </span>
               </div>
             </div>
+          </div>
+          <div className="px-6 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleCreateInvoice} disabled={creatingInvoice}>
               {creatingInvoice ? "Création…" : "Créer la facture"}
             </Button>
@@ -4236,11 +4288,11 @@ Nelly Sabde - Les Conférenciers`);
 
       {/* Invoice edit dialog */}
       <Dialog open={editInvoiceOpen} onOpenChange={setEditInvoiceOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="w-[min(28rem,calc(100vw-2rem))] max-w-none max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden p-0 min-w-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0 border-b border-border">
             <DialogTitle className="font-serif">Modifier {editingInvoice?.invoice_number}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
             <div className="space-y-2">
               <Label className="text-xs">Type de facture</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -4258,6 +4310,14 @@ Nelly Sabde - Les Conférenciers`);
                 ))}
               </div>
             </div>
+            <BillingEntityChoice
+              idPrefix="dossier-edit-billing"
+              mode={editBillingMode}
+              onModeChange={setEditBillingMode}
+              value={editBilling}
+              onChange={setEditBilling}
+              clientName={proposal.client_name}
+            />
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Montant HT (€)</Label>
@@ -4316,6 +4376,8 @@ Nelly Sabde - Les Conférenciers`);
                 €
               </span>
             </div>
+          </div>
+          <div className="px-6 py-3 border-t border-border shrink-0 bg-background">
             <Button className="w-full" onClick={handleSaveInvoice}>
               Mettre à jour
             </Button>

@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS drive_file_id text, ADD COLUMN IF NOT EXISTS drive_file_url text, ADD COLUMN IF NOT EXISTS drive_uploaded_at timestamptz, ADD COLUMN IF NOT EXISTS drive_error text;

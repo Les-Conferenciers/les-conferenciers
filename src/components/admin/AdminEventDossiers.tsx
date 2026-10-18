@@ -205,7 +205,7 @@ const AdminEventDossiers = () => {
     setLoading(true);
     const [pRes, cRes, iRes, eRes] = await Promise.all([
       supabase.from("proposals").select("*, proposal_speakers(speaker_id, speaker_fee, travel_costs, agency_commission, total_price, display_order, selected_conference_ids, speakers(name, image_url, formal_address, email, phone))").eq("status", "accepted").order("created_at", { ascending: false }),
-      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date, deposit_required").order("created_at", { ascending: false }),
+      supabase.from("contracts").select("id, proposal_id, status, created_at, contract_sent_at, signed_at, client_signed_received_at, event_date, deposit_required, superseded_at").order("created_at", { ascending: false }),
       supabase.from("invoices").select("id, proposal_id, invoice_type, status, paid_at, sent_at, due_date").order("created_at", { ascending: false }),
       supabase.from("events").select("*").order("created_at", { ascending: false }),
     ]);
@@ -364,9 +364,13 @@ const AdminEventDossiers = () => {
       const bdc = pEvent?.bdc_number || null;
 
       // Status
-      const allInvoicesPaid = pInvoices.length > 0 && pInvoices.every((i) => i.status === "paid");
+      // Gagné = facture de solde/totale payée + aucune facture envoyée impayée + conférencier payé
+      const hasPaidFinal = pInvoices.some(
+        (i) => (i.invoice_type === "solde" || i.invoice_type === "total") && i.status === "paid"
+      );
+      const noUnpaidSent = pInvoices.every((i) => i.status === "paid" || i.status === "draft");
       const isLost = !!p.lost_at;
-      const isWon = allInvoicesPaid && !!speakerPaid && !isLost;
+      const isWon = hasPaidFinal && noUnpaidSent && !!speakerPaid && !isLost;
 
       // Build pipeline (10 stages)
       const hasAcompteInvoice = pInvoices.some((i) => i.invoice_type === "acompte");
@@ -481,6 +485,25 @@ const AdminEventDossiers = () => {
     attentePaiement: enriched.filter((r) => !r.isArchived && r.contractStatus === "en_attente_paiement").length,
     archives: enriched.filter((r) => r.isArchived || r.contractStatus === "signed").length,
   }), [enriched]);
+
+  // Mention discrète : contrats créés sur les 7 derniers jours et dans le mois en cours.
+  // Les versions remplacées (« annule et remplace ») ne comptent pas comme un nouveau contrat.
+  const creationStats = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    let last7 = 0;
+    let month = 0;
+    contracts.forEach((c) => {
+      if (c.superseded_at) return;
+      const d = new Date(c.created_at);
+      if (isNaN(d.getTime())) return;
+      if (d >= sevenDaysAgo) last7++;
+      if (d >= startOfMonth) month++;
+    });
+    const monthLabel = now.toLocaleDateString("fr-FR", { month: "long" });
+    return { last7, month, monthLabel };
+  }, [contracts]);
 
   // KPI: nombre de dossiers en cours bloqués sur chaque étape
   const stageKpis = useMemo(() => {
@@ -614,7 +637,8 @@ const AdminEventDossiers = () => {
       {/* Blocs "Prochains événements (30j)" et "À traiter cette semaine" retirés à la demande pour alléger l'onglet Contrats */}
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setExpandedId(null); }}>
-        <TabsList className="mb-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <TabsList>
           <TabsTrigger value="en_cours" className="gap-1.5 text-xs">
             📂 En cours <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.enCours}</span>
           </TabsTrigger>
@@ -624,7 +648,17 @@ const AdminEventDossiers = () => {
           <TabsTrigger value="archives" className="gap-1.5 text-xs">
             📦 Archivés <span className="ml-1 bg-muted-foreground/20 text-muted-foreground rounded-full px-1.5 text-[10px]">{counts.archives}</span>
           </TabsTrigger>
-        </TabsList>
+          </TabsList>
+          <span
+            className="text-[11px] text-muted-foreground/70 flex items-center gap-1.5"
+            title="Contrats créés récemment, d'après la date de création. Les versions « annule et remplace » ne comptent pas comme un nouveau contrat."
+          >
+            <CalendarDays className="h-3 w-3 opacity-60" />
+            {creationStats.last7} créés sur 7 jours
+            <span className="opacity-40">·</span>
+            {creationStats.month} en {creationStats.monthLabel}
+          </span>
+        </div>
       </Tabs>
 
       <div className="flex items-center gap-2 flex-wrap">
