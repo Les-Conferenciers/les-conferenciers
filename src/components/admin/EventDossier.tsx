@@ -40,6 +40,7 @@ import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
 import { BillingEntityChoice, billingPayload, type BillingEntity, type BillingMode } from "@/components/admin/BillingEntityChoice";
+import { EmailChipsInput, EMAIL_RE, splitEmails } from "@/components/admin/EmailChipsInput";
 const EMPTY_BILLING_ENTITY: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "", phone: "" };
 
 const REMOVED_CLAUSE = "__REMOVED__";
@@ -1977,26 +1978,32 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
-    if (!invoiceRecipientEmail.trim()) {
+    const toList = splitEmails(invoiceRecipientEmail);
+    const ccList = splitEmails(invoiceCc);
+    if (!toList.length) {
       toast.error("Email destinataire requis");
+      return;
+    }
+    const bad = [...toList, ...ccList].filter((e) => !EMAIL_RE.test(e));
+    if (bad.length) {
+      toast.error(`Adresse(s) invalide(s) : ${bad.join(", ")}`);
       return;
     }
     setSendingInvoice(true);
     try {
-      const { error } = await supabase.functions.invoke("send-invoice-email", {
+      const { data: sendData, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
-          to: invoiceRecipientEmail,
+          to: toList,
+          cc: ccList,
           recipient_name: invoiceRecipientName,
         },
       });
       if (error) throw error;
-      await supabase
-        .from("invoices")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
-        .eq("id", emailInvoice.id);
+      if ((sendData as any)?.error) throw new Error((sendData as any).error);
+      toast.success(`Facture envoyée à ${toList.length + ccList.length} destinataire(s)`);
 
       // Facture solde/total envoyée → rappel agenda J+60 sur la proposition.
       // (Le statut du contrat reste piloté manuellement.)
