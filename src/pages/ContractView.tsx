@@ -5,7 +5,8 @@ import { COMPANY } from "@/lib/companyConfig";
 import { Button } from "@/components/ui/button";
 import { Printer, Pencil, Save, X } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_CLAUSES, getClauseHtml, getCustomClausesText, isClauseRemoved } from "@/lib/contractClauses";
+import { ContractClauses } from "@/components/ContractClauses";
+import { ContractParticulars } from "@/components/ContractParticulars";
 
 type ContractLine = {
   id: string;
@@ -142,7 +143,6 @@ const ContractView = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAdmin(!!session);
       if (session) {
-        setEditing(true);
         supabase.from("speakers").select("id, name, gender").order("name").then(({ data }) => {
           if (data) setAllSpeakers(data as any);
         });
@@ -307,6 +307,7 @@ const ContractView = () => {
       </div>
 
       <div className="max-w-[800px] mx-auto p-8 print:p-6 text-[13px] leading-relaxed text-gray-900">
+        {editing ? (<>
         {/* Header */}
         <div className="text-center mb-8 space-y-2">
           <h1 className="text-2xl font-bold uppercase tracking-wide">BON DE COMMANDE</h1>
@@ -479,51 +480,15 @@ const ContractView = () => {
           </div>
         </div>
 
+        </>) : (
+          <ContractParticulars contract={contract} client={client} event={event} speaker={firstSpeaker || null} />
+        )}
+
         {/* CONDITIONS GENERALES - Page break */}
         <div className="break-before-page">
           <h1 className="text-xl font-bold text-center mb-8 uppercase">CONDITIONS GÉNÉRALES</h1>
 
-          <div className="space-y-6 text-[12px] leading-relaxed">
-            {(() => {
-              const visibleClauses = DEFAULT_CLAUSES.filter(
-                (c) => !isClauseRemoved(c.key, contract.custom_clauses)
-              );
-              const art5VisibleIndex = visibleClauses.findIndex((c) => c.key === "art5");
-              return visibleClauses.map((clause, idx) => {
-                const displayNum = idx + 1;
-                const priceClause = contract.deposit_required === false
-                  ? `<p><strong>${displayNum}.1 Prix de la Prestation.</strong> Le montant de la Prestation est détaillé au Bon de commande. Le Client s'engage à régler 100% du montant total au plus tard sept jours avant la tenue de l'Événement.</p>`
-                  : `<p><strong>${displayNum}.1 Prix de la Prestation.</strong> Le montant de la Prestation est détaillé au Bon de commande. Le Client s'engage à verser 50% du montant total dans les 30 jours suivants la signature. 100% du montant devra être reçu au plus tard sept jours avant la tenue de l'Événement.</p>`;
-                const html = getClauseHtml(clause.key, contract.custom_clauses, { PRICE_CLAUSE: priceClause });
-
-                const customText = getCustomClausesText(contract.custom_clauses);
-                const isArt5 = clause.key === "art5";
-                const insertCustomHere = customText && (
-                  art5VisibleIndex >= 0 ? isArt5 : idx === visibleClauses.length - 1
-                );
-                const dynamicTitle = clause.title.replace(/^Article\s+\d+\./i, `Article ${displayNum}.`);
-
-                return (
-                  <div key={clause.key}>
-                    <div>
-                      <h3 className="font-bold mb-2">{dynamicTitle}</h3>
-                      <div
-                        className="[&_p]:mt-0 [&_ul]:my-2"
-                        dangerouslySetInnerHTML={{ __html: html }}
-                      />
-                    </div>
-
-                    {insertCustomHere && (
-                      <div className="mt-6">
-                        <h3 className="font-bold mb-2">CONDITIONS PARTICULIÈRES</h3>
-                        <div className="whitespace-pre-wrap text-[13px]">{customText}</div>
-                      </div>
-                    )}
-                  </div>
-                );
-              });
-            })()}
-          </div>
+          <ContractClauses customClauses={contract.custom_clauses} depositRequired={contract.deposit_required} />
         </div>
 
         {/* Footer */}

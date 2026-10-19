@@ -50,6 +50,30 @@ const SignedContractUpload = ({ contractId }: Props) => {
 
   useEffect(() => { fetchFiles(); }, [contractId]);
 
+  const [regen, setRegen] = useState(false);
+  const [signedToken, setSignedToken] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.from("contracts").select("token, signed_at").eq("id", contractId).maybeSingle()
+      .then(({ data }) => setSignedToken((data as any)?.signed_at ? (data as any).token : null));
+  }, [contractId]);
+
+  const handleRegenerate = () => {
+    if (!signedToken) return;
+    setRegen(true);
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;left:0;top:0;width:1280px;height:1800px;border:0;opacity:0.01;pointer-events:none;z-index:-1;";
+    iframe.src = `/signer-contrat/${signedToken}?pdf=1`;
+    const cleanup = () => { window.removeEventListener("message", onMsg); iframe.remove(); clearTimeout(timer); setRegen(false); };
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.type !== "contract-pdf") return;
+      cleanup();
+      if (e.data.ok) { toast.success("PDF signé régénéré"); fetchFiles(); } else toast.error("Échec de la régénération du PDF");
+    };
+    const timer = setTimeout(() => { cleanup(); toast.error("Délai dépassé pour la régénération"); }, 60000);
+    window.addEventListener("message", onMsg);
+    document.body.appendChild(iframe);
+  };
+
   const handleUpload = async (file: File) => {
     if (!ALLOWED.includes(file.type) && !file.name.match(/\.(pdf|jpg|jpeg|png|webp|heic|doc|docx)$/i)) {
       toast.error("Format non supporté (PDF, image ou Word uniquement)");
@@ -133,6 +157,13 @@ const SignedContractUpload = ({ contractId }: Props) => {
         <h4 className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground">
           <FileText className="h-3.5 w-3.5" /> Contrats signés reçus
         </h4>
+        <div className="flex gap-1.5">
+        {signedToken && (
+          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5" disabled={regen} onClick={handleRegenerate}>
+            {regen ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+            {regen ? "Génération…" : "Régénérer le PDF signé"}
+          </Button>
+        )}
         <Button
           size="sm"
           variant="outline"
@@ -143,6 +174,7 @@ const SignedContractUpload = ({ contractId }: Props) => {
           {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
           {uploading ? "Téléversement…" : "Téléverser"}
         </Button>
+        </div>
         <input
           ref={inputRef}
           type="file"

@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { token, pdf_base64, file_name } = await req.json();
+    const { token, pdf_base64, file_name, regenerate } = await req.json();
     if (!token || !pdf_base64) {
       return new Response(JSON.stringify({ error: "Missing token or pdf_base64" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     // Notification email à Nelly à chaque signature de contrat (best-effort)
     try {
       const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-      if (RESEND_API_KEY) {
+      if (RESEND_API_KEY && !regenerate) {
         const { data: full } = await supabase
           .from("contracts")
           .select("id, signer_name, signed_at, event_date, event_location, proposal:proposals(client_name, client_email, recipient_name)")

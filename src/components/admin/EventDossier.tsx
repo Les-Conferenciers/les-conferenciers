@@ -40,6 +40,7 @@ import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
 import { BillingEntityChoice, billingPayload, type BillingEntity, type BillingMode } from "@/components/admin/BillingEntityChoice";
+import { EmailChipsInput, EMAIL_RE, splitEmails } from "@/components/admin/EmailChipsInput";
 const EMPTY_BILLING_ENTITY: BillingEntity = { name: "", address: "", siret: "", vat: "", email: "", phone: "" };
 
 const REMOVED_CLAUSE = "__REMOVED__";
@@ -346,6 +347,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const [invoiceEmailSubject, setInvoiceEmailSubject] = useState("");
   const [invoiceEmailBody, setInvoiceEmailBody] = useState("");
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState("");
+  const [invoiceCc, setInvoiceCc] = useState("");
   const [invoiceRecipientName, setInvoiceRecipientName] = useState("");
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
@@ -1914,7 +1916,11 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
           year: "numeric",
         })
       : "—";
-    setInvoiceRecipientEmail(proposal.client_email || "");
+    const acompteInv: any = invoices.find((i: any) => i.invoice_type === "acompte" && i.id !== inv.id && i.email_to);
+    setInvoiceRecipientEmail(
+      (inv as any).email_to || acompteInv?.email_to || (inv as any).billing_entity_email || proposal.client_email || ""
+    );
+    setInvoiceCc((inv as any).email_cc || acompteInv?.email_cc || "");
     setInvoiceRecipientName(proposal.recipient_name || "");
 
     if (inv.invoice_type === "acompte") {
@@ -1972,26 +1978,32 @@ Nelly Sabde - Les Conférenciers`);
 
   const handleSendInvoiceEmail = async () => {
     if (!emailInvoice) return;
-    if (!invoiceRecipientEmail.trim()) {
+    const toList = splitEmails(invoiceRecipientEmail);
+    const ccList = splitEmails(invoiceCc);
+    if (!toList.length) {
       toast.error("Email destinataire requis");
+      return;
+    }
+    const bad = [...toList, ...ccList].filter((e) => !EMAIL_RE.test(e));
+    if (bad.length) {
+      toast.error(`Adresse(s) invalide(s) : ${bad.join(", ")}`);
       return;
     }
     setSendingInvoice(true);
     try {
-      const { error } = await supabase.functions.invoke("send-invoice-email", {
+      const { data: sendData, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
-          to: invoiceRecipientEmail,
+          to: toList,
+          cc: ccList,
           recipient_name: invoiceRecipientName,
         },
       });
       if (error) throw error;
-      await supabase
-        .from("invoices")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
-        .eq("id", emailInvoice.id);
+      if ((sendData as any)?.error) throw new Error((sendData as any).error);
+      toast.success(`Facture envoyée à ${toList.length + ccList.length} destinataire(s)`);
 
       // Facture solde/total envoyée → rappel agenda J+60 sur la proposition.
       // (Le statut du contrat reste piloté manuellement.)
@@ -2452,6 +2464,12 @@ Nelly Sabde - Les Conférenciers`);
                 </div>
                 <span className="text-sm font-bold">{inv.amount_ttc.toLocaleString("fr-FR")} € TTC</span>
               </div>
+              {(inv as any).sent_at && (inv as any).email_to && (
+                <p className="text-[11px] text-muted-foreground mb-2 break-words">
+                  Envoyée le {formatDate((inv as any).sent_at)} à {(inv as any).email_to}
+                  {(inv as any).email_cc ? ` (CC ${(inv as any).email_cc})` : ""}
+                </p>
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {inv.status === "paid" ? (
@@ -2482,6 +2500,11 @@ Nelly Sabde - Les Conférenciers`);
                   {inv.status === "draft" && (
                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => openInvoiceEmail(inv)}>
                       <Send className="h-3 w-3" /> Envoyer
+                    </Button>
+                  )}
+                  {(inv.status === "sent" || inv.status === "paid") && (
+                    <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => openInvoiceEmail(inv)} title="Renvoyer par email">
+                      <Send className="h-3 w-3" /> Renvoyer
                     </Button>
                   )}
                   {inv.status === "sent" && (
@@ -4397,11 +4420,7 @@ Nelly Sabde - Les Conférenciers`);
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-xs">À</Label>
-                <Input
-                  value={invoiceRecipientEmail}
-                  onChange={(e) => setInvoiceRecipientEmail(e.target.value)}
-                  className="text-sm"
-                />
+                <EmailChipsInput value={invoiceRecipientEmail} onChange={setInvoiceRecipientEmail} />
               </div>
               <div className="space-y-2">
                 <Label className="text-xs">Contact</Label>
@@ -4411,6 +4430,10 @@ Nelly Sabde - Les Conférenciers`);
                   className="text-sm"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">CC (optionnel)</Label>
+              <EmailChipsInput value={invoiceCc} onChange={setInvoiceCc} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Objet</Label>
