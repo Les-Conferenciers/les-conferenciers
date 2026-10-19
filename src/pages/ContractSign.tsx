@@ -87,8 +87,13 @@ const ContractSign = () => {
         const { data: cl } = await supabase.from("clients").select("company_name, contact_name, address, city, siret").eq("id", c.proposal.client_id).single();
         setClient(cl);
       }
-      const { data: ev } = await supabase.from("events").select("bdc_number, audience_size, theme, selected_speaker_id").eq("proposal_id", c?.proposal_id).maybeSingle();
+      const { data: ev } = await supabase.from("events").select("bdc_number, audience_size, theme, selected_speaker_id").eq("proposal_id", c?.proposal_id).order("created_at", { ascending: false }).limit(1).maybeSingle();
       setEvent(ev);
+      const spId = c?.selected_speaker_id || (ev as any)?.selected_speaker_id;
+      if (spId) {
+        const { data: sp } = await supabase.from("speakers").select("name, gender").eq("id", spId).maybeSingle();
+        if (sp) setSpeaker(sp as any);
+      }
 
 
       setLoading(false);
