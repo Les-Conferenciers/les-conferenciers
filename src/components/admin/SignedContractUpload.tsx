@@ -193,18 +193,27 @@ const SignedContractUpload = ({ contractId }: Props) => {
         <p className="text-[11px] text-muted-foreground italic">Aucun contrat signé déposé pour le moment. Formats acceptés : PDF, image, Word.</p>
       ) : (
         <ul className="space-y-1">
-          {files.map((f) => (
+          {files.map((f, i) => {
+            const d = new Date(f.uploaded_at);
+            const when = d.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+            const auto = f.file_name.startsWith("Contrat-signe-");
+            const oldFormat = auto && d < new Date("2026-10-19T09:00:00Z");
+            const isRegen = f.file_name.includes("-regenere-") || (auto && !oldFormat && i < files.length - 1);
+            const label = auto
+              ? `Contrat signé – ${oldFormat ? "original" : isRegen ? "régénéré" : "original"} ${when}`
+              : f.file_name;
+            return (
             <li key={f.id} className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-muted/40 border border-border/60 text-xs">
               <button
                 onClick={() => handlePreview(f)}
                 className="flex-1 flex items-center gap-2 text-left hover:text-primary truncate"
-                title="Aperçu dans un nouvel onglet"
+                title={f.file_name}
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate font-medium">{f.file_name}</span>
-                <span className="text-muted-foreground text-[10px] shrink-0">
-                  {formatSize(f.file_size)} · {new Date(f.uploaded_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" })}
-                </span>
+                <span className="truncate font-medium">{label}</span>
+                {i === 0 && <span className="shrink-0 rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold">Version à jour</span>}
+                {oldFormat && <span className="shrink-0 rounded bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px]">Ancien format (résumé)</span>}
+                <span className="text-muted-foreground text-[10px] shrink-0">{formatSize(f.file_size)}</span>
               </button>
               <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handlePreview(f)} title="Aperçu">
                 <Eye className="h-3 w-3" />
