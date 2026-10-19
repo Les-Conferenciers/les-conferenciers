@@ -8,8 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import { renderElementToPdfBase64 } from "@/lib/contractPdf";
+import { ContractClauses } from "@/components/ContractClauses";
 
 type ContractLine = {
   id: string;
@@ -96,54 +96,14 @@ const ContractSign = () => {
     fetchAll();
   }, [token]);
 
-  const generateAndUploadPdf = async (contractId: string, contractToken: string, signedBy: string, signedAt: string) => {
+  const generateAndUploadPdf = async (contractId: string, contractToken: string, signedBy: string, signedAt: string, regenerate = false) => {
     try {
       const element = document.getElementById("contract-printable");
       if (!element) throw new Error("Contract DOM element not found");
-
-      // Force CGV details open for capture
-      const detailsEls = element.querySelectorAll("details");
-      const previousOpen: boolean[] = [];
-      detailsEls.forEach((d) => { previousOpen.push(d.open); d.open = true; });
-
-      // Wait a frame for layout to settle (signature block just rendered)
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: element.scrollWidth,
-      });
-
-      // Restore details state
-      detailsEls.forEach((d, i) => { d.open = previousOpen[i]; });
-
-      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-      const pageWidthMm = pdf.internal.pageSize.getWidth();
-      const pageHeightMm = pdf.internal.pageSize.getHeight();
-      const imgWidthMm = pageWidthMm;
-      const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
-      let heightLeft = imgHeightMm;
-      let position = 0;
-      pdf.addImage(imgData, "JPEG", 0, position, imgWidthMm, imgHeightMm, undefined, "FAST");
-      heightLeft -= pageHeightMm;
-      while (heightLeft > 0) {
-        position -= pageHeightMm;
-        pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, position, imgWidthMm, imgHeightMm, undefined, "FAST");
-        heightLeft -= pageHeightMm;
-      }
-
-      const base64 = arrayBufferToBase64(pdf.output("arraybuffer"));
+      const base64 = await renderElementToPdfBase64(element);
       const fileName = `Contrat-signe-${contractId.slice(0, 8)}.pdf`;
-
       const { data, error } = await supabase.functions.invoke("upload-signed-contract", {
-        body: { token: contractToken, pdf_base64: base64, file_name: fileName, signer_name: signedBy, signed_at: signedAt },
+        body: { token: contractToken, pdf_base64: base64, file_name: fileName, signer_name: signedBy, signed_at: signedAt, regenerate },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -153,6 +113,20 @@ const ContractSign = () => {
       return false;
     }
   };
+
+  // Mode régénération (admin) : ?pdf=1 dans un iframe caché
+  const regenMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("pdf") === "1";
+  useEffect(() => {
+    if (!regenMode || loading || !contract) return;
+    (async () => {
+      if (!contract.signed_at) { window.parent.postMessage({ type: "contract-pdf", ok: false, error: "not signed" }, "*"); return; }
+      await (document as any).fonts?.ready;
+      await new Promise((r) => setTimeout(r, 400));
+      const ok = await generateAndUploadPdf(contract.id, contract.token, contract.signer_name || "", contract.signed_at, true);
+      window.parent.postMessage({ type: "contract-pdf", ok }, "*");
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regenMode, loading, contract?.id]);
 
   const handleSign = async () => {
     if (!contract || !signerName.trim() || !accepted) return;
@@ -285,29 +259,12 @@ const ContractSign = () => {
               <p className="mt-1">TVA Les conférenciers : FR - TVA applicable : 20%</p>
             </div>
 
-            <p className="text-sm text-gray-500">
-              Les conditions générales applicables au Bon de commande sont transmises au Client et à l'Intervenant simultanément à la remise du Bon de commande.
-            </p>
+          </div>
 
-            {/* CGV condensées */}
-            <details className="text-xs text-gray-600">
-              <summary className="font-bold text-gray-900 cursor-pointer hover:text-gray-700 py-2">
-                📄 Voir les conditions générales (Articles 1-11)
-              </summary>
-              <div className="space-y-4 mt-3 pl-2 border-l-2 border-gray-200">
-                <div><h4 className="font-semibold">Article 1. Définitions</h4><p>Bon de commande, Client, Conditions générales, Contrat, Informations confidentielles, Intervenant, Événement, Image de l'Intervenant, Parties, Prestation : termes définis au contrat.</p></div>
-                <div><h4 className="font-semibold">Article 2. Objet et composition du Contrat</h4><p>Définit les Prestations et les modalités d'utilisation de l'image de l'Intervenant.</p></div>
-                <div><h4 className="font-semibold">Article 3. Réalisation des Prestations</h4><p>Accompagnement, participation de l'Intervenant, engagements du Client, relations entre les Parties (rendez-vous tripartite, loyauté, confidentialité, exclusivité 3 ans).</p></div>
-                <div><h4 className="font-semibold">Article 4. Droit à l'image et droit d'auteur</h4><p>Règles avant, pendant et après l'événement. Captation soumise à accord écrit.</p></div>
-                <div><h4 className="font-semibold">Article 5. Modalités financières</h4><p>50% à la signature, 100% reçu 7 jours avant l'événement. Frais de déplacement facturés sur justificatif.</p></div>
-                <div><h4 className="font-semibold">Article 6. Durée du Contrat</h4><p>Entrée en vigueur à la signature, valable jusqu'à extinction des obligations.</p></div>
-                <div><h4 className="font-semibold">Article 7. Modification des Prestations</h4><p>Annulation par le Client : 50% à +30j, 100% à -30j. Résiliation après mise en demeure de 30 jours.</p></div>
-                <div><h4 className="font-semibold">Article 8. Force majeure</h4><p>Exonération en cas d'événement imprévisible et irrésistible.</p></div>
-                <div><h4 className="font-semibold">Article 9. Imprévision</h4><p>Renégociation possible si variation de +30% du prix.</p></div>
-                <div><h4 className="font-semibold">Article 10. Obligations légales</h4><p>Responsabilités administratives, données personnelles, recours à un tiers.</p></div>
-                <div><h4 className="font-semibold">Article 11. Divers</h4><p>Signature électronique reconnue. Loi française applicable. Tribunal de Paris compétent.</p></div>
-              </div>
-            </details>
+          {/* Conditions générales détaillées (identiques à l'aperçu admin) */}
+          <div className="border-t border-gray-200 p-6 text-gray-700">
+            <h2 className="text-lg font-bold text-center mb-6 uppercase text-gray-900" data-pdf-block>Conditions générales</h2>
+            <ContractClauses customClauses={(contract as any).custom_clauses} depositRequired={(contract as any).deposit_required} />
           </div>
 
           {/* Signature section */}
