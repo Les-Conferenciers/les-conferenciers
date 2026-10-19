@@ -29,7 +29,7 @@ export async function renderElementToPdfBase64(element: HTMLElement): Promise<st
   host.appendChild(clone);
   document.body.appendChild(host);
   try {
-    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50)));
+    await new Promise((r) => setTimeout(r, 150));
     const scale = 2;
     const canvas = await html2canvas(clone, { scale, useCORS: true, backgroundColor: "#ffffff", logging: false, width: A4_PX, windowWidth: A4_PX });
 
