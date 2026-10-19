@@ -2289,7 +2289,7 @@ Nelly Sabde - Les Conférenciers`);
         )}
       </div>
 
-      {contract?.status === "signed" && contract.signed_at && (
+      {contract?.signed_at && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-700">
           ✓ Contrat signé le {formatDate(contract.signed_at)} par <strong>{contract.signer_name}</strong>
         </div>

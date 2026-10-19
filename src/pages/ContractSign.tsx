@@ -80,7 +80,7 @@ const ContractSign = () => {
         .single();
       const c = data as any;
       setContract(c);
-      if (c?.status === "signed") {
+      if (c?.status === "signed" || c?.signed_at) {
         setSigned(true);
         if (c.signer_name) setSignerName(c.signer_name);
       }
@@ -108,7 +108,7 @@ const ContractSign = () => {
       const element = document.getElementById("contract-printable");
       if (!element) throw new Error("Contract DOM element not found");
       const base64 = await renderElementToPdfBase64(element);
-      const fileName = `Contrat-signe-${contractId.slice(0, 8)}.pdf`;
+      const bdc = (event?.bdc_number || contractId.slice(0, 8)).replace(/[^\w-]/g, ""); const stamp = new Date().toISOString().slice(0, 16).replace(/[T:]/g, "-"); const fileName = `Contrat-signe-${bdc}-${regenerate ? "regenere" : "original"}-${stamp}.pdf`;
       const { data, error } = await supabase.functions.invoke("upload-signed-contract", {
         body: { token: contractToken, pdf_base64: base64, file_name: fileName, signer_name: signedBy, signed_at: signedAt, regenerate },
       });
