@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, Pencil, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { ContractClauses } from "@/components/ContractClauses";
+import { ContractParticulars } from "@/components/ContractParticulars";
 
 type ContractLine = {
   id: string;
@@ -142,7 +143,6 @@ const ContractView = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAdmin(!!session);
       if (session) {
-        setEditing(true);
         supabase.from("speakers").select("id, name, gender").order("name").then(({ data }) => {
           if (data) setAllSpeakers(data as any);
         });
@@ -307,6 +307,7 @@ const ContractView = () => {
       </div>
 
       <div className="max-w-[800px] mx-auto p-8 print:p-6 text-[13px] leading-relaxed text-gray-900">
+        {editing ? (<>
         {/* Header */}
         <div className="text-center mb-8 space-y-2">
           <h1 className="text-2xl font-bold uppercase tracking-wide">BON DE COMMANDE</h1>
@@ -478,6 +479,10 @@ const ContractView = () => {
             )}
           </div>
         </div>
+
+        </>) : (
+          <ContractParticulars contract={contract} client={client} event={event} speaker={firstSpeaker || null} />
+        )}
 
         {/* CONDITIONS GENERALES - Page break */}
         <div className="break-before-page">
