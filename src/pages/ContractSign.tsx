@@ -279,7 +279,7 @@ const ContractSign = () => {
                   </div>
                 </div>
                 {/* Bloc signature manuscrite (utilisé pour la génération PDF) */}
-                <div className="grid grid-cols-2 gap-6 mt-4">
+                <div className="grid grid-cols-2 gap-6 mt-4" data-pdf-block>
                   <div className="border border-gray-300 rounded-lg p-4 bg-gray-50/50 min-h-[140px]">
                     <p className="text-xs font-semibold text-gray-700 mb-1">Le Client</p>
                     <p className="text-[11px] text-gray-500 mb-2">{clientName}</p>
@@ -304,7 +304,7 @@ const ContractSign = () => {
                     </p>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 text-center mt-2">Vous recevrez une confirmation par email avec le contrat signé en pièce jointe.</p>
+                <p data-pdf-hide className="text-xs text-gray-500 text-center mt-2">Vous recevrez une confirmation par email avec le contrat signé en pièce jointe.</p>
               </div>
             ) : (
               <div className="space-y-4">
