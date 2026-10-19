@@ -49,13 +49,44 @@ export async function renderElementToPdfBase64(element: HTMLElement): Promise<st
     const pageContentPx = (pageH - margin * 2) * pxPerMm;
     const totalPx = canvas.height / scale;
 
+    // Détection des lignes de pixels entièrement blanches (aucun texte coupé)
+    const ctx = canvas.getContext("2d")!;
+    const W = canvas.width;
+    const blankCache = new Map<number, boolean>();
+    const isBlankRow = (row: number) => {
+      if (blankCache.has(row)) return blankCache.get(row)!;
+      const d = ctx.getImageData(0, row, W, 1).data;
+      let ok = true;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] < 245 || d[i + 1] < 245 || d[i + 2] < 245) { ok = false; break; }
+      }
+      blankCache.set(row, ok);
+      return ok;
+    };
+    // Bande blanche d'au moins 4 px CSS centrée autour de y (px CSS)
+    const isBlankBand = (y: number) => {
+      const r0 = Math.floor((y - 2) * scale), r1 = Math.ceil((y + 2) * scale);
+      for (let r = Math.max(0, r0); r <= Math.min(canvas.height - 1, r1); r++) if (!isBlankRow(r)) return false;
+      return true;
+    };
+
     let start = 0;
     let first = true;
     while (start < totalPx - 1) {
       let end = Math.min(start + pageContentPx, totalPx);
       if (end < totalPx) {
-        const candidates = breaks.filter((y) => y > start + pageContentPx * 0.5 && y <= end);
-        if (candidates.length) end = candidates[candidates.length - 1];
+        const minY = start + pageContentPx * 0.5;
+        // 1) entre deux blocs, si la zone est vraiment blanche
+        const blockCut = breaks.filter((y) => y > minY && y <= end - 2).reverse()
+          .map((y) => { for (let dy = 0; dy <= 12; dy++) { if (isBlankBand(y + dy) && y + dy <= end - 2) return y + dy; if (isBlankBand(y - dy)) return y - dy; } return null; })
+          .find((y) => y !== null) as number | undefined;
+        if (blockCut !== undefined) end = blockCut;
+        else {
+          // 2) bande blanche la plus basse (entre deux lignes)
+          let y = end - 2;
+          while (y > minY && !isBlankBand(y)) y -= 1;
+          if (y > minY) end = y;
+        }
       }
       const sliceH = Math.ceil((end - start) * scale);
       const slice = document.createElement("canvas");
