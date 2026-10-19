@@ -144,7 +144,7 @@ const SignedContractUpload = ({ contractId }: Props) => {
   };
 
   const handleDelete = async (file: SignedFile) => {
-    if (!confirm(`Supprimer "${file.file_name}" ?`)) return;
+    if (!confirm(`Supprimer définitivement ce PDF ? Cette action est irréversible.`)) return;
     await supabase.storage.from("signed-contracts").remove([file.file_path]);
     await supabase.from("signed_contract_files" as any).delete().eq("id", file.id);
     toast.success("Fichier supprimé");
@@ -224,8 +224,8 @@ const SignedContractUpload = ({ contractId }: Props) => {
               <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Supprimer">
                 <Trash2 className="h-3 w-3" />
               </Button>
-            </li>
-          ))}
+            </li>);
+          })}
         </ul>
       )}
     </div>
