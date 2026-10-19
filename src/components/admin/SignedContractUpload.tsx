@@ -62,7 +62,7 @@ const SignedContractUpload = ({ contractId }: Props) => {
     setRegen(true);
     const iframe = document.createElement("iframe");
     iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:1280px;height:1800px;border:0;";
-    iframe.src = `/contrat/${signedToken}?pdf=1`;
+    iframe.src = `/signer-contrat/${signedToken}?pdf=1`;
     const cleanup = () => { window.removeEventListener("message", onMsg); iframe.remove(); clearTimeout(timer); setRegen(false); };
     const onMsg = (e: MessageEvent) => {
       if (e.data?.type !== "contract-pdf") return;
