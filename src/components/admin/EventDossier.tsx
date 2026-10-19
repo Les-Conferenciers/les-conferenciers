@@ -4432,6 +4432,10 @@ Nelly Sabde - Les Conférenciers`);
               </div>
             </div>
             <div className="space-y-2">
+              <Label className="text-xs">CC (optionnel)</Label>
+              <EmailChipsInput value={invoiceCc} onChange={setInvoiceCc} />
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs">Objet</Label>
               <Input value={invoiceEmailSubject} onChange={(e) => setInvoiceEmailSubject(e.target.value)} />
             </div>
