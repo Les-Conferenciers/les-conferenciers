@@ -1138,6 +1138,29 @@ Nelly Sabde - Les Conférenciers`;
       : `Bon de commande - ${datePart} - ${proposal.client_name}`;
   };
 
+  const getSpeakerBudget = (): number => {
+    const ps = getSelectedSpeaker();
+    if (event?.speaker_budget) return Number(event.speaker_budget);
+    const cl = Array.isArray(contract?.contract_lines) ? (contract!.contract_lines as any[]) : [];
+    const sp = cl.filter((l: any) => l?.type === "speaker").reduce((a: number, l: any) => a + (Number(l?.amount_ht) || 0), 0);
+    if (sp > 0) return sp;
+    return Number(ps?.speaker_fee) || 0;
+  };
+
+  const toInformal = (html: string): string => {
+    const reps: [RegExp, string][] = [
+      [/Pourriez-vous/g, "Peux-tu"], [/pourriez-vous/g, "peux-tu"],
+      [/Veuillez trouver ci-joint le bon de commande pour votre/g, "Voici le bon de commande pour ton"],
+      [/les informations concernant votre/g, "les infos concernant ton"],
+      [/À très bientôt et bonne journée !/g, "À très vite et bonne journée !"],
+      [/Restant à votre disposition\./g, "À très vite !"],
+      [/Je vous souhaite/g, "Je te souhaite"],
+      [/\bvotre\b/g, "ton"], [/\bVotre\b/g, "Ton"], [/\bvos\b/g, "tes"], [/\bVos\b/g, "Tes"],
+      [/\bvous\b/g, "toi"],
+    ];
+    return reps.reduce((acc, [r, v]) => acc.replace(r, v), html);
+  };
+
   const buildSpeakerEmailBody = (type: "info" | "contract", addressing: "formal" | "informal") => {
     const speaker = getSelectedSpeakerInfo();
     const speakerName = speaker?.name || "le conférencier";
@@ -1148,12 +1171,12 @@ Nelly Sabde - Les Conférenciers`;
       ? new Date(contract.event_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
       : "à définir";
     const ps = getSelectedSpeaker();
-    const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const budget = getSpeakerBudget();
     const cLines = Array.isArray(contract?.contract_lines) ? (contract!.contract_lines as any[]) : [];
     const travel = cLines
       .filter((l: any) => l?.type === "travel" || l?.type === "custom")
       .reduce((sum: number, l: any) => sum + (Number(l?.amount_ht) || 0), 0);
-    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT` : "à définir";
+    const budgetStr = budget ? `${budget.toLocaleString("fr-FR")} € HT, hors frais VHR` : "à définir";
     const vhrStr = travel > 0
       ? `${travel.toLocaleString("fr-FR")} € HT`
       : "";
@@ -1225,7 +1248,7 @@ ${line("🚗 Frais VHR :", vhrStr)}
     const firstName = speakerName.split(" ")[0] || "";
     const eventDateLong = liaisonEventDateFmt(contract?.event_date || (event as any)?.event_date || "");
     const ps = getSelectedSpeaker();
-    const budget = event?.speaker_budget || ps?.speaker_fee || 0;
+    const budget = getSpeakerBudget();
     const cLines = Array.isArray(contract?.contract_lines) ? (contract!.contract_lines as any[]) : [];
     const travel = cLines
       .filter((l: any) => l?.type === "travel" || l?.type === "custom")
@@ -1253,7 +1276,7 @@ ${line("🚗 Frais VHR :", vhrStr)}
       duree: event?.conference_duration || "",
       auditoire: event?.audience_size || "",
       thematique: event?.theme || "",
-      budget: budgetStr === "à définir" ? "" : budgetStr,
+      budget: budget ? `${budget.toLocaleString("fr-FR")} € HT` : "",
       frais_vhr: vhrStr,
       details: contract?.event_description || "",
       format: contract?.event_format || "",
@@ -1268,7 +1291,7 @@ ${line("🚗 Frais VHR :", vhrStr)}
       agent_nom: "Nelly Sabde",
     });
     setSpeakerEmailSubject(tpl?.subject || buildSpeakerEmailSubject(type));
-    setSpeakerEmailBody(tpl?.body || buildSpeakerEmailBody(type, addressing));
+    setSpeakerEmailBody(tpl?.body ? (addressing === "informal" ? toInformal(tpl.body) : tpl.body) : buildSpeakerEmailBody(type, addressing));
   };
 
   const handleResetSpeakerEmailFromTemplate = async () => {
@@ -3586,7 +3609,7 @@ Nelly Sabde - Les Conférenciers`);
                   type="button"
                   onClick={() => {
                     setSpeakerEmailAddressing("informal");
-                    setSpeakerEmailBody(buildSpeakerEmailBody(speakerEmailType, "informal"));
+                    loadSpeakerEmailFromTemplate(speakerEmailType, "informal");
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${speakerEmailAddressing === "informal" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
                 >
@@ -3596,7 +3619,7 @@ Nelly Sabde - Les Conférenciers`);
                   type="button"
                   onClick={() => {
                     setSpeakerEmailAddressing("formal");
-                    setSpeakerEmailBody(buildSpeakerEmailBody(speakerEmailType, "formal"));
+                    loadSpeakerEmailFromTemplate(speakerEmailType, "formal");
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${speakerEmailAddressing === "formal" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
                 >
