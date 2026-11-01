@@ -43,6 +43,13 @@
       "when": 1791375686803,
       "tag": "0005_invoice_billing_entity_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793526158861,
+      "tag": "0006_get_public_liaison",
+      "breakpoints": true
     }
   ]
 }

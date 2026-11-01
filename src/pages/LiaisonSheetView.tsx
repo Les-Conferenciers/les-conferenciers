@@ -69,13 +69,11 @@ const LiaisonSheetView = () => {
 
   const loadData = async () => {
     let ev: any = null;
+    let contract: any = null;
     if (isPublic && token) {
-      const { data } = await supabase
-        .from("events")
-        .select("*, proposal:proposals(client_name, recipient_name, client_phone, proposal_speakers(speaker_id, speakers(name, phone)))")
-        .eq("token", token)
-        .maybeSingle();
-      ev = data;
+      const { data } = await (supabase as any).rpc("get_public_liaison", { _token: token });
+      ev = data?.event || null;
+      contract = data?.contract || null;
     } else if (routeId) {
       const { data } = await supabase
         .from("events")
@@ -88,16 +86,18 @@ const LiaisonSheetView = () => {
     const pid = ev?.proposal_id || routeId || null;
     setProposalId(pid);
 
-    const { data: contract } = pid
-      ? await supabase
-          .from("contracts")
-          .select("id, event_date, event_location, event_time, event_description")
-          .eq("proposal_id", pid)
-          .is("superseded_at", null)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : { data: null };
+    if (!isPublic && pid) {
+      const { data: c } = await supabase
+        .from("contracts")
+        .select("id, event_date, event_location, event_time, event_description")
+        .eq("proposal_id", pid)
+        .is("superseded_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      contract = c;
+    }
+
 
     setData({ event: ev, contract });
     if (ev) {
