@@ -8,7 +8,7 @@ const SpeakersHelpCard = () => (
       <h2 className="text-3xl font-bold leading-tight">
         Vous êtes
         <br />
-        <span className="italic text-accent">perdu.e ?</span>
+        <span className="italic text-accent">perdu·e ?</span>
       </h2>
       <p className="mt-4 text-sm text-primary-foreground/80 leading-relaxed">
         Parlez-nous de votre événement : nous vous proposons une sélection sur mesure sous 24 h.
