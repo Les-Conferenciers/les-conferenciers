@@ -414,7 +414,6 @@ const Speakers = () => {
             {hasFilters && (
               <button onClick={resetFilters} className="text-xs text-accent font-semibold hover:underline">Tout effacer</button>
             )}
-            {speakers && <span className="text-xs text-muted-foreground ml-auto">{speakers.length} conférenciers</span>}
           </div>
         </div>
 
