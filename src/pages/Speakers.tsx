@@ -15,7 +15,7 @@ import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const PAGE_SIZE = 20;
-const HELP_CARD_EVERY = 75;
+const HELP_CARD_POSITION = 12;
 const splitParam = (v: string | null) => (v ? v.split(",").filter(Boolean) : []);
 const SCROLL_KEY = "speakers-scroll-pos";
 const DISPLAY_COUNT_KEY = "speakers-display-count";
@@ -447,7 +447,7 @@ const Speakers = () => {
                   <div className="speaker-card-container">
                     <SpeakerCard speaker={speaker} onThemeClick={handleThemeClick} onNavigate={saveScrollPosition} />
                   </div>
-                  {((i + 1) % HELP_CARD_EVERY === 0 || (!hasMore && i === visibleSpeakers.length - 1 && (i + 1) % HELP_CARD_EVERY !== 0 && visibleSpeakers.length < HELP_CARD_EVERY)) && (
+                  {(i + 1 === HELP_CARD_POSITION || (!hasMore && i === visibleSpeakers.length - 1 && visibleSpeakers.length < HELP_CARD_POSITION)) && (
                     <SpeakersHelpCard />
                   )}
                 </Fragment>
