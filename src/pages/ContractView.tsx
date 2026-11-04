@@ -460,7 +460,7 @@ const ContractView = () => {
           <div className="border rounded-lg p-6 min-h-[140px]">
             <p className="font-semibold mb-1">Le Client</p>
             <p className="text-sm text-gray-500 mb-2">{clientName}</p>
-            {contract.status === "signed" && contract.signer_name && (
+            {contract.signed_at && contract.signer_name && (
               <>
                 <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">Bon pour accord</p>
                 <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">{contract.signer_name}</p>
@@ -471,7 +471,7 @@ const ContractView = () => {
           <div className="border rounded-lg p-6 min-h-[140px]">
             <p className="font-semibold mb-1">Les Conférenciers</p>
             <p className="text-sm text-gray-500 mb-2">Société Eve</p>
-            {contract.status === "signed" && (
+            {contract.signed_at && (
               <>
                 <p style={{ fontFamily: "'Caveat', cursive" }} className="text-2xl text-[#1a2332] leading-tight">Bon pour accord</p>
                 <p style={{ fontFamily: "'Caveat', cursive" }} className="text-3xl text-[#1a2332] mt-1">Nelly Sabde</p>

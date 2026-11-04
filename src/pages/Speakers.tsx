@@ -1,17 +1,24 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpeakerCard, { Speaker } from "@/components/SpeakerCard";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
+import SpeakersHelpCard from "@/components/SpeakersHelpCard";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseThemes, getThemeColor } from "@/lib/parseThemes";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const PAGE_SIZE = 20;
+const HELP_CARD_POSITION = 12;
+const HELP_CARD_EVERY = 50;
+const isHelpSlot = (n: number) => n >= HELP_CARD_POSITION && (n - HELP_CARD_POSITION) % HELP_CARD_EVERY === 0;
+const splitParam = (v: string | null) => (v ? v.split(",").filter(Boolean) : []);
 const SCROLL_KEY = "speakers-scroll-pos";
 const DISPLAY_COUNT_KEY = "speakers-display-count";
 
@@ -131,25 +138,41 @@ const Speakers = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
-  const initialTheme = searchParams.get("theme") || null;
+  const initialThemes = [...splitParam(searchParams.get("themes")), ...splitParam(searchParams.get("theme"))];
+  const initialProfiles = splitParam(searchParams.get("profiles"));
   const savedDisplayCount = sessionStorage.getItem(DISPLAY_COUNT_KEY);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [selectedTheme, setSelectedTheme] = useState<string | null>(initialTheme);
+  const [selectedThemes, setSelectedThemes] = useState<string[]>(initialThemes);
+  const [selectedProfiles, setSelectedProfiles] = useState<string[]>(initialProfiles);
   const [displayCount, setDisplayCount] = useState(savedDisplayCount ? parseInt(savedDisplayCount, 10) : PAGE_SIZE);
-  const [showAllThemes, setShowAllThemes] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("search", searchQuery);
-    if (selectedTheme) params.set("theme", selectedTheme);
-    setSearchParams(params);
-  }, [searchQuery, selectedTheme, setSearchParams]);
+    if (selectedThemes.length) params.set("themes", selectedThemes.join(","));
+    if (selectedProfiles.length) params.set("profiles", selectedProfiles.join(","));
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, selectedThemes, selectedProfiles, setSearchParams]);
 
   useEffect(() => {
     setDisplayCount(PAGE_SIZE);
     sessionStorage.removeItem(SCROLL_KEY);
     sessionStorage.removeItem(DISPLAY_COUNT_KEY);
-  }, [searchQuery, selectedTheme]);
+  }, [searchQuery, selectedThemes, selectedProfiles]);
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["public-speaker-profiles-filter"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("speaker_profiles")
+        .select("id, slug, name, landing_label, extra_speaker_ids, display_order, landing_enabled")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? [])
+        .filter((p) => p.name?.trim().toLowerCase() !== "sans profil")
+        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "fr", { sensitivity: "base" }));
+    },
+  });
 
   const { data: allSpeakers, isLoading } = useQuery({
     queryKey: ["speakers"],
@@ -215,37 +238,39 @@ const Speakers = () => {
   }, [faqItems]);
 
 
-  // Extract all themes sorted by frequency
-  const { topThemes, allThemes } = (() => {
-    if (!allSpeakers) return { topThemes: [], allThemes: [] };
-    const counts = new Map<string, number>();
-    allSpeakers.forEach((s) => {
-      parseThemes(s.themes).forEach((t) => {
-        counts.set(t, (counts.get(t) || 0) + 1);
-      });
-    });
-    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-
-    const top10 = sorted.slice(0, 10).map(([theme]) => theme);
-    const all = sorted.map(([theme]) => theme).sort((a, b) => a.localeCompare(b, "fr"));
-    return { topThemes: top10, allThemes: all };
+  const allThemes = (() => {
+    if (!allSpeakers) return [] as string[];
+    const set = new Set<string>();
+    allSpeakers.forEach((s) => parseThemes(s.themes).forEach((t) => set.add(t)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
   })();
 
-  const displayedThemes = showAllThemes ? allThemes : topThemes;
+  const profileMatches = (speaker: Speaker, slug: string) => {
+    const p = profiles.find((x) => x.slug === slug);
+    if (!p) return false;
+    return (speaker as any).profile_id === p.id || (p.extra_speaker_ids || []).includes(speaker.id);
+  };
 
-  // Filter speakers
+  const q = searchQuery.trim().toLowerCase();
   const speakers = allSpeakers?.filter((s) => {
     const matchesSearch =
-      !searchQuery ||
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.biography?.toLowerCase().includes(searchQuery.toLowerCase());
-
+      !q ||
+      s.name.toLowerCase().includes(q) ||
+      s.role?.toLowerCase().includes(q) ||
+      s.biography?.toLowerCase().includes(q);
     const speakerThemes = parseThemes(s.themes);
-    const matchesTheme = !selectedTheme || speakerThemes.includes(selectedTheme);
-
-    return matchesSearch && matchesTheme;
+    const matchesTheme = !selectedThemes.length || selectedThemes.some((t) => speakerThemes.includes(t));
+    const matchesProfile = !selectedProfiles.length || selectedProfiles.some((slug) => profileMatches(s, slug));
+    return matchesSearch && matchesTheme && matchesProfile;
   });
+
+  const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedThemes([]);
+    setSelectedProfiles([]);
+  };
+  const hasFilters = !!q || selectedThemes.length > 0 || selectedProfiles.length > 0;
 
   const visibleSpeakers = speakers?.slice(0, displayCount);
   const hasMore = speakers ? displayCount < speakers.length : false;
@@ -293,7 +318,8 @@ const Speakers = () => {
   }, [loadMore]);
 
   const handleThemeClick = (theme: string) => {
-    setSelectedTheme(theme === selectedTheme ? null : theme);
+    setSelectedThemes((prev) => toggle(prev, theme));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -324,47 +350,76 @@ const Speakers = () => {
           d'entreprise, séminaires, conventions et conférences en France comme à l'international.
         </p>
 
-        {/* Theme filters */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button
-            onClick={() => setSelectedTheme(null)}
-            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
-              !selectedTheme
-                ? "bg-accent text-accent-foreground border-accent"
-                : "bg-card text-muted-foreground border-border hover:border-accent/50"
-            }`}
-          >
-            Tous
-          </button>
-          {displayedThemes.map((theme) => (
-            <button
-              key={theme}
-              onClick={() => handleThemeClick(theme)}
-              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
-                selectedTheme === theme
-                  ? "ring-2 ring-accent ring-offset-1 " + getThemeColor(theme)
-                  : getThemeColor(theme) + " hover:opacity-80"
-              }`}
-            >
-              {theme}
-            </button>
-          ))}
-        </div>
-
-        {/* Show all / less toggle */}
-        {allThemes.length > 10 && (
-          <div className="mb-10">
-            <button
-              onClick={() => setShowAllThemes(!showAllThemes)}
-              className="text-sm text-accent font-semibold hover:underline inline-flex items-center gap-1"
-            >
-              {showAllThemes ? "Voir moins de catégories" : `Voir toutes les catégories (${allThemes.length})`}
-              <ChevronDown className={`h-4 w-4 transition-transform ${showAllThemes ? "rotate-180" : ""}`} />
-            </button>
+        {/* Filters */}
+        <div className="mb-8 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex flex-wrap gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="rounded-full gap-1.5">
+                    Thématiques{selectedThemes.length > 0 && ` (${selectedThemes.length})`}
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-2 max-h-80 overflow-y-auto">
+                  {allThemes.map((t) => (
+                    <label key={t} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-muted">
+                      <Checkbox checked={selectedThemes.includes(t)} onCheckedChange={() => setSelectedThemes((p) => toggle(p, t))} />
+                      {t}
+                    </label>
+                  ))}
+                </PopoverContent>
+              </Popover>
+              {profiles.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="rounded-full gap-1.5">
+                      Profils{selectedProfiles.length > 0 && ` (${selectedProfiles.length})`}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-72 p-2 max-h-80 overflow-y-auto">
+                    {profiles.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-muted">
+                        <Checkbox checked={selectedProfiles.includes(p.slug)} onCheckedChange={() => setSelectedProfiles((x) => toggle(x, p.slug))} />
+                        {p.name}
+                      </label>
+                    ))}
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+            <div className="relative sm:ml-auto sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Rechercher un conférencier"
+                placeholder="Recherche par mot-clé"
+                className="w-full h-9 rounded-full border border-border bg-card pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+              />
+            </div>
           </div>
-        )}
-
-        {!showAllThemes && allThemes.length <= 10 && <div className="mb-10" />}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            {selectedThemes.map((t) => (
+              <button key={t} onClick={() => setSelectedThemes((p) => p.filter((x) => x !== t))} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${getThemeColor(t)}`}>
+                {t} <X className="h-3 w-3" />
+              </button>
+            ))}
+            {selectedProfiles.map((slug) => {
+              const p = profiles.find((x) => x.slug === slug);
+              return (
+                <button key={slug} onClick={() => setSelectedProfiles((x) => x.filter((y) => y !== slug))} className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground px-3 py-1 text-xs font-semibold">
+                  {p?.landing_label || p?.name || slug} <X className="h-3 w-3" />
+                </button>
+              );
+            })}
+            {hasFilters && (
+              <button onClick={resetFilters} className="text-xs text-accent font-semibold hover:underline">Tout effacer</button>
+            )}
+          </div>
+        </div>
 
         {/* Results */}
         {isLoading ? (
@@ -382,10 +437,7 @@ const Speakers = () => {
             <p className="text-xl text-muted-foreground">Aucun conférencier ne correspond à votre recherche.</p>
             <Button
               variant="link"
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedTheme(null);
-              }}
+              onClick={resetFilters}
             >
               Réinitialiser les filtres
             </Button>
@@ -393,10 +445,15 @@ const Speakers = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {visibleSpeakers?.map((speaker) => (
-                <div key={speaker.id} className="speaker-card-container">
-                  <SpeakerCard speaker={speaker} onThemeClick={handleThemeClick} onNavigate={saveScrollPosition} />
-                </div>
+              {visibleSpeakers?.map((speaker, i) => (
+                <Fragment key={speaker.id}>
+                  <div className="speaker-card-container">
+                    <SpeakerCard speaker={speaker} onThemeClick={handleThemeClick} onNavigate={saveScrollPosition} />
+                  </div>
+                  {(isHelpSlot(i + 1) || (!hasMore && i === visibleSpeakers.length - 1 && (hasFilters || visibleSpeakers.length < HELP_CARD_POSITION))) && (
+                    <SpeakersHelpCard />
+                  )}
+                </Fragment>
               ))}
             </div>
 
