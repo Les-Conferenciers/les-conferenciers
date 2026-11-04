@@ -164,10 +164,9 @@ const Speakers = () => {
       const { data, error } = await supabase
         .from("speaker_profiles")
         .select("id, slug, name, landing_label, extra_speaker_ids, display_order, landing_enabled")
-        .eq("landing_enabled", true)
         .order("display_order", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).filter((p) => p.name?.trim().toLowerCase() !== "sans profil");
     },
   });
 
@@ -379,7 +378,7 @@ const Speakers = () => {
                     {profiles.map((p) => (
                       <label key={p.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-muted">
                         <Checkbox checked={selectedProfiles.includes(p.slug)} onCheckedChange={() => setSelectedProfiles((x) => toggle(x, p.slug))} />
-                        {p.landing_label || p.name}
+                        {p.name}
                       </label>
                     ))}
                   </PopoverContent>
@@ -393,6 +392,7 @@ const Speakers = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Rechercher un conférencier"
+                placeholder="Recherche par mot-clé"
                 className="w-full h-9 rounded-full border border-border bg-card pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
               />
             </div>
