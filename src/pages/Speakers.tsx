@@ -168,7 +168,9 @@ const Speakers = () => {
         .select("id, slug, name, landing_label, extra_speaker_ids, display_order, landing_enabled")
         .order("display_order", { ascending: true });
       if (error) throw error;
-      return (data ?? []).filter((p) => p.name?.trim().toLowerCase() !== "sans profil");
+      return (data ?? [])
+        .filter((p) => p.name?.trim().toLowerCase() !== "sans profil")
+        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "fr", { sensitivity: "base" }));
     },
   });
 
