@@ -158,6 +158,7 @@ import {
   Plus,
   Send,
   Trash2,
+  RotateCcw,
   ExternalLink,
   Copy,
   Check,
@@ -1891,6 +1892,40 @@ const AdminProposalsContent = () => {
 
   // (handleNewProposalForClient existant — voir plus haut, conservé)
 
+  const handleRestoreToDraft = async (p: any) => {
+    const [{ data: c }, { data: e }] = await Promise.all([
+      supabase.from("contracts").select("id").eq("proposal_id", p.id).limit(1),
+      supabase.from("events").select("id").eq("proposal_id", p.id).limit(1),
+    ]);
+    const linked = (c && c.length > 0) || (e && e.length > 0);
+    const msg = linked
+      ? "Attention : cette proposition a déjà un contrat ou un dossier événement. La remettre en brouillon quand même ?"
+      : "Remettre cette proposition en brouillon ?";
+    if (!confirm(msg)) return;
+    const trace = p.lost_reason || p.lost_at
+      ? `Archivée${p.lost_at ? ` le ${new Date(p.lost_at).toLocaleDateString("fr-FR")}` : ""}${p.lost_reason ? ` – ${p.lost_reason}` : ""}`
+      : "";
+    const notes = [trace, p.internal_notes].filter(Boolean).join("\n");
+    const { error } = await supabase
+      .from("proposals")
+      .update({
+        status: "draft",
+        lost_at: null,
+        lost_reason: null,
+        accepted_at: null,
+        next_reminder_date: null,
+        followup_reminder_date: null,
+        internal_notes: notes || null,
+      } as any)
+      .eq("id", p.id);
+    if (error) {
+      toast.error("Erreur lors de la remise en brouillon");
+      return;
+    }
+    toast.success("Proposition remise dans les brouillons");
+    fetchProposals();
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer définitivement cette proposition ?")) return;
     await supabase.from("proposal_speakers").delete().eq("proposal_id", id);
@@ -3175,6 +3210,11 @@ const AdminProposalsContent = () => {
                   <Archive className="h-4 w-4 text-muted-foreground" />
                 </Button>
               )}
+              {p.status === "archived" && !isSuperseded && (
+                <Button variant="ghost" size="sm" onClick={() => handleRestoreToDraft(p)} title="Remettre en brouillon">
+                  <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              )}
               {mode === "draft" && (
                 <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} title="Supprimer">
                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -3610,6 +3650,9 @@ const AdminProposalsContent = () => {
                               <a href={getProposalUrl(p.token)} target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="h-4 w-4" />
                               </a>
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleRestoreToDraft(p)} title="Remettre en brouillon">
+                              <RotateCcw className="h-4 w-4 text-muted-foreground" />
                             </Button>
                             <Button
                               variant="ghost"
