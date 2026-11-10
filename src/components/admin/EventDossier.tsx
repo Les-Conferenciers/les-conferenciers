@@ -474,8 +474,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setClients((data as any) || []);
     const { data: sp } = await supabase
       .from("speakers")
-      .select("id, name, base_fee, email, phone, city")
-      .eq("archived", false)
+      .select("id, name, base_fee, email, phone, city, archived")
       .order("name");
     setAllSpeakers((sp as any) || []);
   };
@@ -3024,7 +3023,7 @@ Nelly Sabde - Les Conférenciers`);
                       .sort((a, b) => a.name.localeCompare(b.name))
                       .map((sp) => (
                         <option key={sp.id} value={sp.id}>
-                          {sp.name}
+                          {sp.name}{(sp as any).archived ? " (hors ligne)" : ""}
                         </option>
                       ))}
                   </select>
@@ -3498,7 +3497,7 @@ Nelly Sabde - Les Conférenciers`);
                     className="w-full text-left px-3 py-2 hover:bg-muted/60 transition flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{sp.name}</p>
+                      <p className="text-sm font-medium truncate">{sp.name}{(sp as any).archived ? <span className="text-muted-foreground font-normal"> (hors ligne)</span> : null}</p>
                       <p className="text-[11px] text-muted-foreground truncate">
                         {sp.city || "—"}
                         {sp.email ? ` · ${sp.email}` : ""}
