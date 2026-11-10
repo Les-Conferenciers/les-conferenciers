@@ -154,6 +154,8 @@ const AdminLeads = () => {
   const getMessageSnippet = (lead: Lead) => lead.additional_info || lead.objective || "";
 
   const handleDelete = async (lead: Lead) => {
+    const { data: linked } = await supabase.from("proposals").select("id").eq("lead_id", lead.id).limit(1);
+    if (linked && linked.length > 0 && !window.confirm("Attention : ce lead est lié à une proposition / un dossier. La demande restera visible dans le dossier, mais le lead disparaîtra de la liste. Supprimer quand même ?")) return;
     const { error } = await supabase.from("simulator_leads").delete().eq("id", lead.id);
     if (error) {
       toast.error("Erreur lors de la suppression");
