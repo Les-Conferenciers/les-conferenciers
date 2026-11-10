@@ -408,6 +408,14 @@ const ContractView = () => {
                   : event?.theme}
               </p>
             )}
+            {(editing || !!contract.event_format) && (
+              <p>
+                <span className="text-gray-600">Format :</span>{" "}
+                {editing
+                  ? <input type="text" value={evFormat} onChange={e => setEvFormat(e.target.value)} className={inputCls} />
+                  : contract.event_format}
+              </p>
+            )}
             {(editing ? evDescription.length > 0 : !!contract.event_description) && (
               <div>
                 <span className="text-gray-600">Détails :</span>{" "}

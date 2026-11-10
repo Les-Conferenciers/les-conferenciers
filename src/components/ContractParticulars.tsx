@@ -100,6 +100,7 @@ export function ContractParticulars({ contract, client, event, speaker, hideSign
           <p><span className="text-gray-600">Horaires de l'intervention :</span> {contract.event_time || "À définir"}</p>
           {audience && <p><span className="text-gray-600">Auditoire :</span> {/personne/i.test(String(audience)) ? audience : `${audience} personnes attendues`}</p>}
           {event?.theme && <p><span className="text-gray-600">Thématique :</span> {event.theme}</p>}
+          {contract.event_format && <p><span className="text-gray-600">Format :</span> {contract.event_format}</p>}
           {contract.event_description && (
             <div><span className="text-gray-600">Détails :</span> <span className="whitespace-pre-line">{contract.event_description}</span></div>
           )}
