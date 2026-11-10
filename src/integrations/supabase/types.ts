@@ -1280,6 +1280,10 @@ export type Database = {
       get_invoice_bdc: { Args: { _invoice_id: string }; Returns: string }
       get_public_invoice: { Args: { _key: string }; Returns: Json }
       get_public_liaison: { Args: { _token: string }; Returns: Json }
+      sync_proposal_speaker_to_contract: {
+        Args: { _ps_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -50,6 +50,13 @@
       "when": 1793526158861,
       "tag": "0006_get_public_liaison",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794345367603,
+      "tag": "0007_sync_proposal_amounts_to_contract",
+      "breakpoints": true
     }
   ]
 }
