@@ -58,7 +58,7 @@ import {
   Link2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
+import { DEFAULT_CLAUSES, expandPriceClause, type ClauseKey } from "@/lib/contractClauses";
 import { loadEmailTemplates, renderTpl } from "@/lib/emailTemplates";
 
 type Proposal = {
@@ -1114,11 +1114,10 @@ Nelly Sabde - Les Conférenciers`);
               <div className="p-3 space-y-4">
                 <p className="text-[10px] text-muted-foreground">
                   Vide = texte standard. Modifiez uniquement les articles à ajuster (ex : droit à l'image). Le HTML est
-                  accepté (balises <code>{"<p>"}</code>, <code>{"<strong>"}</code>, <code>{"<ul>"}</code>…). Pour
-                  l'article 5, conservez <code>{"{{PRICE_CLAUSE}}"}</code> où la clause de prix doit s'insérer.
+                  accepté (balises <code>{"<p>"}</code>, <code>{"<strong>"}</code>, <code>{"<ul>"}</code>…).
                 </p>
                 {DEFAULT_CLAUSES.map((clause) => {
-                  const value = articleOverrides[clause.key] ?? "";
+                  const value = expandPriceClause(articleOverrides[clause.key] ?? "");
                   const isOverridden = value.trim().length > 0;
                   return (
                     <div
