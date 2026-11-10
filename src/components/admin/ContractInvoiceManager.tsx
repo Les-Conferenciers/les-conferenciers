@@ -1679,6 +1679,7 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">CC</Label>
               <EmailChipsInput value={invoiceEmailCc} onChange={setInvoiceEmailCc} />
+              <p className="text-[11px] text-muted-foreground">Copie cachée automatique (invisible pour le client) : Pennylane – eve-v5pdlydq@customers.pennylane.com</p>
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
