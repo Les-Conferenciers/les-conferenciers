@@ -221,7 +221,7 @@ const AdminEventDossiers = () => {
   const openDirectContract = async () => {
     const [{ data: cl }, { data: sp }] = await Promise.all([
       supabase.from("clients").select("id, company_name, contact_name, email").order("company_name"),
-      supabase.from("speakers").select("id, name, base_fee, email, phone").eq("archived", false).order("name"),
+      supabase.from("speakers").select("id, name, base_fee, email, phone, archived").order("name"),
     ]);
     setDirectClients((cl as any) || []);
     setDirectSpeakers((sp as any) || []);
@@ -998,7 +998,7 @@ const AdminEventDossiers = () => {
                 return (
                   <div className="flex items-center justify-between gap-2 bg-primary/10 text-primary text-xs px-2 py-1.5 rounded-md">
                     <span className="truncate font-medium">
-                      {sp.name}
+                      {sp.name}{(sp as any).archived ? <span className="text-muted-foreground font-normal"> (hors ligne)</span> : null}
                       {sp.base_fee ? <span className="text-[10px] text-primary/70 ml-2">{Number(sp.base_fee).toLocaleString("fr-FR")} €</span> : null}
                     </span>
                     <button type="button" onClick={() => setDirectSpeakerIds([])} className="hover:text-primary/70 shrink-0">
@@ -1027,7 +1027,7 @@ const AdminEventDossiers = () => {
                           checked && "bg-primary/10 text-primary font-medium"
                         )}
                       >
-                        <span className="truncate">{s.name}</span>
+                        <span className="truncate">{s.name}{(s as any).archived ? <span className="text-muted-foreground font-normal"> (hors ligne)</span> : null}</span>
                         <span className="text-[10px] text-muted-foreground shrink-0">
                           {s.base_fee ? `${Number(s.base_fee).toLocaleString("fr-FR")} €` : "—"}
                         </span>
