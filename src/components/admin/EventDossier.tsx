@@ -1920,6 +1920,13 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       return;
     }
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
+    const wasSent = editingInvoice.status === "sent";
+    let finalNotes = editInvoiceNotes.trim() || null;
+    if (wasSent) {
+      const fmt = (n: number) => Number(n).toLocaleString("fr-FR");
+      const trace = `[Modif après envoi] Modifiée le ${new Date().toLocaleDateString("fr-FR")} (ancien montant : ${fmt(editingInvoice.amount_ht)} € HT, TVA ${editingInvoice.tva_rate} %)`;
+      finalNotes = [finalNotes, trace].filter(Boolean).join("\n");
+    }
     await supabase
       .from("invoices")
       .update({
@@ -1929,13 +1936,16 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         due_date: editDueDate || null,
         vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
         invoice_type: editInvoiceType,
-        notes: editInvoiceNotes.trim() || null,
+        notes: finalNotes,
         ...billingPayload(editBillingMode, editBilling),
       } as any)
       .eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
     setEditInvoiceOpen(false);
-    fetchData();
+    await fetchData();
+    if (wasSent && window.confirm("Renvoyer la facture corrigée maintenant ?")) {
+      openInvoiceEmail({ ...editingInvoice, amount_ht: Math.round(editAmountHT * 100) / 100, tva_rate: editTvaRate, amount_ttc: Math.round(amountTTC * 100) / 100, due_date: editDueDate || null, invoice_type: editInvoiceType, notes: finalNotes, ...billingPayload(editBillingMode, editBilling) } as any);
+    }
   };
 
   const openInvoiceEmail = (inv: Invoice) => {
@@ -2551,8 +2561,8 @@ Nelly Sabde - Les Conférenciers`);
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  {inv.status === "draft" && (
-                    <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)}>
+                  {(inv.status === "draft" || inv.status === "sent") && (
+                    <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)} title="Éditer">
                       <Pencil className="h-3 w-3" />
                     </Button>
                   )}
