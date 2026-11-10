@@ -586,6 +586,13 @@ Nelly Sabde - Les Conférenciers`;
       return;
     }
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
+    const wasSent = editingInvoice.status === "sent";
+    let finalNotes = editNotes.trim() || null;
+    if (wasSent) {
+      const fmt = (n: number) => Number(n).toLocaleString("fr-FR");
+      const trace = `[Modif après envoi] Modifiée le ${new Date().toLocaleDateString("fr-FR")} (ancien montant : ${fmt(editingInvoice.amount_ht)} € HT, TVA ${editingInvoice.tva_rate} %${editingInvoice.due_date ? `, échéance ${new Date(editingInvoice.due_date).toLocaleDateString("fr-FR")}` : ""})`;
+      finalNotes = [finalNotes, trace].filter(Boolean).join("\n");
+    }
     const { error } = await supabase
       .from("invoices")
       .update({
@@ -594,7 +601,7 @@ Nelly Sabde - Les Conférenciers`;
         amount_ttc: Math.round(amountTTC * 100) / 100,
         due_date: editDueDate || null,
         invoice_type: editInvoiceType,
-        notes: editNotes.trim() || null,
+        notes: finalNotes,
         ...billingPayload(editBillingMode, editBilling),
       } as any)
       .eq("id", editingInvoice.id);
@@ -604,7 +611,11 @@ Nelly Sabde - Les Conférenciers`;
       toast.success("Facture mise à jour !");
     }
     setEditInvoiceOpen(false);
-    fetchData();
+    await fetchData();
+    if (!error && wasSent) {
+      const updated = { ...editingInvoice, amount_ht: Math.round(editAmountHT * 100) / 100, tva_rate: editTvaRate, amount_ttc: Math.round(amountTTC * 100) / 100, due_date: editDueDate || null, invoice_type: editInvoiceType, notes: finalNotes, ...billingPayload(editBillingMode, editBilling) } as any;
+      if (window.confirm("Renvoyer la facture corrigée maintenant ?")) openInvoiceEmail(updated);
+    }
   };
 
   const handleDuplicateInvoice = async (inv: Invoice) => {
@@ -1354,7 +1365,7 @@ Nelly Sabde - Les Conférenciers`);
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {inv.status === "draft" && (
+                  {(inv.status === "draft" || inv.status === "sent") && (
                     <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)} title="Éditer">
                       <Pencil className="h-3 w-3" />
                     </Button>
@@ -1493,6 +1504,11 @@ Nelly Sabde - Les Conférenciers`);
             <DialogTitle className="font-serif">Créer une facture — {proposal.client_name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+            {editingInvoice?.status === "sent" && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                Cette facture a déjà été envoyée. Pensez à la renvoyer au client après modification.
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-xs">Type de facture</Label>
               <div className="grid grid-cols-3 gap-2">
