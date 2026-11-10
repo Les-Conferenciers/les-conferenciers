@@ -64,6 +64,13 @@
       "when": 1794345405993,
       "tag": "0008_sync_proposal_amounts_on_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794345649856,
+      "tag": "0009_proposals_initial_request_snapshot",
+      "breakpoints": true
     }
   ]
 }

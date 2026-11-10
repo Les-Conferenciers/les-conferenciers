@@ -789,6 +789,7 @@ export type Database = {
           followup_reminder_date: string | null
           followup_reminder_note: string | null
           id: string
+          initial_request: Json | null
           internal_notes: string | null
           lead_id: string | null
           lost_at: string | null
@@ -823,6 +824,7 @@ export type Database = {
           followup_reminder_date?: string | null
           followup_reminder_note?: string | null
           id?: string
+          initial_request?: Json | null
           internal_notes?: string | null
           lead_id?: string | null
           lost_at?: string | null
@@ -857,6 +859,7 @@ export type Database = {
           followup_reminder_date?: string | null
           followup_reminder_note?: string | null
           id?: string
+          initial_request?: Json | null
           internal_notes?: string | null
           lead_id?: string | null
           lost_at?: string | null
