@@ -57,6 +57,13 @@
       "when": 1794345367603,
       "tag": "0007_sync_proposal_amounts_to_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794345405993,
+      "tag": "0008_sync_proposal_amounts_on_insert",
+      "breakpoints": true
     }
   ]
 }
