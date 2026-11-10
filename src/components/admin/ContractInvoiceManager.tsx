@@ -1,3 +1,4 @@
+import { linesFromProposalSpeakers } from "@/lib/proposalContractLines";
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { EmailChipsInput, EMAIL_RE, splitEmails } from "./EmailChipsInput";
@@ -255,13 +256,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     if (contract?.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0) {
       return contract.contract_lines as ContractLine[];
     }
-    return proposal.proposal_speakers.map((ps, i) => ({
-      id: generateId(),
-      label: ps.speakers?.name || `Conférencier ${i + 1}`,
-      amount_ht: ps.total_price || 0,
-      tva_rate: 20,
-      type: "speaker" as const,
-    }));
+    return linesFromProposalSpeakers(proposal.proposal_speakers as any) as ContractLine[];
   };
 
   const effectiveDiscount = contract?.discount_percent || 0;
@@ -279,13 +274,7 @@ const ContractInvoiceManager = ({ proposal, onUpdate }: Props) => {
     if (contract?.contract_lines && Array.isArray(contract.contract_lines) && contract.contract_lines.length > 0) {
       return contract.contract_lines as ContractLine[];
     }
-    return proposal.proposal_speakers.map((ps, i) => ({
-      id: generateId(),
-      label: ps.speakers?.name || `Conférencier ${i + 1}`,
-      amount_ht: ps.total_price || 0,
-      tva_rate: 20,
-      type: "speaker" as const,
-    }));
+    return linesFromProposalSpeakers(proposal.proposal_speakers as any) as ContractLine[];
   };
 
   const updateLine = (id: string, field: keyof ContractLine, value: any) => {
