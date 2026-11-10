@@ -113,6 +113,13 @@ export function ContractParticulars({ contract, client, event, speaker, hideSign
             {line.type === "speaker" ? "Montant de la prestation de l'intervenant" : line.label} : {fmtNum(line.amount_ht * (1 + line.tva_rate / 100))} €TTC, soit {fmtNum(line.amount_ht)} €HT{line.type === "speaker" ? ", hors frais de déplacements" : ""}
           </p>
         ))}
+        {lines.length >= 2 && (() => {
+          const f = 1 - (discount || 0) / 100;
+          const ht = lines.reduce((s: number, l: any) => s + (Number(l.amount_ht) || 0), 0) * f;
+          const ttc = lines.reduce((s: number, l: any) => s + (Number(l.amount_ht) || 0) * (1 + (Number(l.tva_rate) || 0) / 100), 0) * f;
+          const n = (v: number) => v.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+          return <p className="mb-1 font-bold">Total Prestation : {n(ttc)} €TTC, soit {n(ht)} €HT</p>;
+        })()}
         {discount > 0 && <p className="text-sm text-gray-600">Remise de {discount}% appliquée</p>}
         <p className="mt-2">TVA Les conférenciers : FR - TVA applicable : 20%</p>
       </section>
