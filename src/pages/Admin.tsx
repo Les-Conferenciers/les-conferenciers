@@ -1708,6 +1708,10 @@ const AdminProposalsContent = () => {
           return;
         }
       }
+      const { data: signedC } = await supabase.from("contracts").select("id").eq("proposal_id", editingProposal.id).is("superseded_at", null).not("signed_at", "is", null).limit(1);
+      if (signedC && signedC.length > 0) {
+        toast.warning("Contrat déjà signé : ses montants n'ont pas été modifiés. Créez une version « annule et remplace » si besoin.");
+      }
     }
 
     if (andSend) {

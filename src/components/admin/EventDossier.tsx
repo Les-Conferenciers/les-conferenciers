@@ -1,3 +1,4 @@
+import { linesFromProposalSpeakers, commissionFromProposalSpeakers } from "@/lib/proposalContractLines";
 import { useEffect, useState, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -556,13 +557,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     const speakersForContract = event?.selected_speaker_id
       ? proposal.proposal_speakers.filter((ps) => ps.speaker_id === event.selected_speaker_id)
       : proposal.proposal_speakers;
-    return speakersForContract.map((ps, i) => ({
-      id: generateId(),
-      label: ps.speakers?.name || `Conférencier ${i + 1}`,
-      amount_ht: ps.total_price || 0,
-      tva_rate: 20,
-      type: "speaker" as const,
-    }));
+    return linesFromProposalSpeakers(speakersForContract as any) as ContractLine[];
   };
 
   const effectiveDiscount = contract?.discount_percent || 0;
@@ -588,13 +583,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     const speakersForContract = event?.selected_speaker_id
       ? proposal.proposal_speakers.filter((ps) => ps.speaker_id === event.selected_speaker_id)
       : proposal.proposal_speakers;
-    return speakersForContract.map((ps, i) => ({
-      id: generateId(),
-      label: ps.speakers?.name || `Conférencier ${i + 1}`,
-      amount_ht: ps.total_price || 0,
-      tva_rate: 20,
-      type: "speaker" as const,
-    }));
+    return linesFromProposalSpeakers(speakersForContract as any) as ContractLine[];
   };
 
   const updateLine = (id: string, field: keyof ContractLine, value: any) => {
@@ -2900,16 +2889,17 @@ Nelly Sabde - Les Conférenciers`);
                                 .from("contracts")
                                 .update({ selected_speaker_id: ps.speaker_id } as any)
                                 .eq("id", contract.id);
-                            const newLines = [
-                              {
-                                id: generateId(),
-                                label: ps.speakers?.name || "Conférencier",
-                                amount_ht: ps.total_price || 0,
-                                tva_rate: 20,
-                                type: "speaker" as const,
-                              },
-                            ];
+                            const newLines = linesFromProposalSpeakers([ps as any]) as ContractLine[];
+                            const newComm = commissionFromProposalSpeakers([ps as any]);
                             setContractLines(newLines);
+                            setAgencyCommission(newComm);
+                            setAgencyCommissionText(String(newComm || 0));
+                            if (contract && !contract.signed_at) {
+                              const others = ((contract.contract_lines as any[]) || []).filter((l: any) => l.type === "custom");
+                              await supabase.from("contracts").update({ contract_lines: [...newLines, ...others], agency_commission: newComm } as any).eq("id", contract.id);
+                            } else if (contract?.signed_at) {
+                              toast.warning("Contrat déjà signé : montants non modifiés. Créez une version « annule et remplace » si besoin.");
+                            }
                             fetchData();
                             toast.success("Conférencier mis à jour");
                           }}
@@ -2939,6 +2929,9 @@ Nelly Sabde - Les Conférenciers`);
                       if (!sp) return;
                       // Insert proposal_speakers row if absent
                       const exists = proposal.proposal_speakers.find((ps) => ps.speaker_id === spId);
+                      const fromProposal = exists
+                        ? { ...exists, speakers: { name: sp.name } }
+                        : { speaker_fee: sp.base_fee || 0, travel_costs: 0, agency_commission: 0, speakers: { name: sp.name } };
                       if (!exists) {
                         await supabase.from("proposal_speakers").insert({
                           proposal_id: proposal.id,
@@ -2957,15 +2950,17 @@ Nelly Sabde - Les Conférenciers`);
                           .from("contracts")
                           .update({ selected_speaker_id: spId } as any)
                           .eq("id", contract.id);
-                      setContractLines([
-                        {
-                          id: generateId(),
-                          label: sp.name,
-                          amount_ht: sp.base_fee || 0,
-                          tva_rate: 20,
-                          type: "speaker" as const,
-                        },
-                      ]);
+                      const repLines = linesFromProposalSpeakers([fromProposal as any]) as ContractLine[];
+                      const repComm = commissionFromProposalSpeakers([fromProposal as any]);
+                      setContractLines(repLines);
+                      setAgencyCommission(repComm);
+                      setAgencyCommissionText(String(repComm || 0));
+                      if (contract && !contract.signed_at) {
+                        const others = ((contract.contract_lines as any[]) || []).filter((l: any) => l.type === "custom");
+                        await supabase.from("contracts").update({ contract_lines: [...repLines, ...others], agency_commission: repComm } as any).eq("id", contract.id);
+                      } else if (contract?.signed_at) {
+                        toast.warning("Contrat déjà signé : montants non modifiés. Créez une version « annule et remplace » si besoin.");
+                      }
                       fetchData();
                       toast.success(`Conférencier remplacé par ${sp.name}`);
                     }}
