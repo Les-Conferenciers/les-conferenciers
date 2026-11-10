@@ -70,7 +70,7 @@ export const DEFAULT_CLAUSES: ClauseDef[] = [
   {
     key: "art5",
     title: "Article 5. MODALITÉS FINANCIÈRES",
-    defaultHtml: `{{PRICE_CLAUSE}}
+    defaultHtml: `<p><strong>5.1 Prix de la Prestation.</strong> Le montant de la Prestation est détaillé au Bon de commande. Le Client s'engage à verser 50% du montant total dans les 30 jours suivants la signature. 100% du montant devra être reçu au plus tard sept jours avant la tenue de l'Événement.</p>
 <p class="mt-1"><strong>5.2 Frais de déplacement et hébergement.</strong> Les Conférenciers prendra en charge la réservation des moyens de transport nécessaires à l'intervention de l'Intervenant. Les Conférenciers facturera les frais avancés au Client - sur présentation de justificatif à l'ordre des Conférenciers ou de l'Intervenant.</p>`,
   },
   {
@@ -169,4 +169,12 @@ export function isClauseRemoved(key: ClauseKey, customClauses: any): boolean {
       ? customClauses.articles
       : {};
   return overrides[key] === REMOVED_CLAUSE_MARKER;
+}
+
+/** Texte standard de l'article 5.1 (remplace l'ancienne variable {{PRICE_CLAUSE}}). */
+export const PRICE_CLAUSE_HTML = `<p><strong>5.1 Prix de la Prestation.</strong> Le montant de la Prestation est détaillé au Bon de commande. Le Client s'engage à verser 50% du montant total dans les 30 jours suivants la signature. 100% du montant devra être reçu au plus tard sept jours avant la tenue de l'Événement.</p>`;
+
+/** Remplace l'ancienne variable {{PRICE_CLAUSE}} par le texte en dur (pour l'édition). */
+export function expandPriceClause(html: string): string {
+  return html.includes("{{PRICE_CLAUSE}}") ? html.split("{{PRICE_CLAUSE}}").join(PRICE_CLAUSE_HTML) : html;
 }

@@ -35,7 +35,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
+import { DEFAULT_CLAUSES, expandPriceClause, type ClauseKey } from "@/lib/contractClauses";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
@@ -3343,7 +3343,7 @@ Nelly Sabde - Les Conférenciers`);
                   ne seront pas affichés et la numérotation sera mise à jour automatiquement.
                 </p>
                 {DEFAULT_CLAUSES.map((clause, idx) => {
-                  const raw = articleOverrides[clause.key] ?? "";
+                  const raw = expandPriceClause(articleOverrides[clause.key] ?? "");
                   const isRemoved = raw === REMOVED_CLAUSE;
                   const isOverridden = !isRemoved && raw.trim().length > 0;
                   const visibleIndex = DEFAULT_CLAUSES.slice(0, idx + 1).filter(
@@ -3449,12 +3449,6 @@ Nelly Sabde - Les Conférenciers`);
                             onChange={(html) => setArticleOverrides((o) => ({ ...o, [clause.key]: html }))}
                             minHeight="160px"
                           />
-                          {clause.key === "art5" && (
-                            <p className="text-[10px] text-muted-foreground">
-                              Astuce : la mention <code>{"{{PRICE_CLAUSE}}"}</code> est remplacée automatiquement par la
-                              clause d'acompte.
-                            </p>
-                          )}
                         </>
                       )}
                     </div>
