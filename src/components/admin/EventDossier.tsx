@@ -397,29 +397,50 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const loadInitialRequest = async () => {
     const { data: prop } = await supabase
       .from("proposals")
-      .select("lead_id, message, created_at, internal_notes")
+      .select("lead_id, message, created_at, internal_notes, initial_request")
       .eq("id", proposal.id)
       .maybeSingle();
     setProposalMessage(((prop as any)?.message as string) || null);
+    const snapshot = (prop as any)?.initial_request;
+    if (snapshot) {
+      setInitialLead(snapshot);
+      return;
+    }
     const leadId = (prop as any)?.lead_id as string | null;
+    let found: any = null;
     if (leadId) {
       const { data } = await supabase.from("simulator_leads").select("*").eq("id", leadId).maybeSingle();
-      if (data) {
-        setInitialLead(data as any);
-        return;
-      }
+      found = data;
     }
-    if (proposal.client_email) {
+    if (!found && proposal.client_email) {
       const { data } = await supabase
         .from("simulator_leads")
         .select("*")
         .ilike("email", proposal.client_email)
         .order("created_at", { ascending: false })
         .limit(1);
-      setInitialLead(((data as any) || [])[0] || null);
-      return;
+      found = ((data as any) || [])[0] || null;
     }
-    setInitialLead(null);
+    setInitialLead(found);
+    if (found) {
+      await supabase.from("proposals").update({ initial_request: found } as any).eq("id", proposal.id);
+    }
+  };
+
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [attachSearch, setAttachSearch] = useState("");
+  const [attachLeads, setAttachLeads] = useState<any[]>([]);
+  const openAttach = async () => {
+    setAttachOpen(true);
+    const { data } = await supabase.from("simulator_leads").select("*").order("created_at", { ascending: false }).limit(500);
+    setAttachLeads((data as any) || []);
+  };
+  const attachLead = async (lead: any) => {
+    const { error } = await supabase.from("proposals").update({ lead_id: lead.id, initial_request: lead } as any).eq("id", proposal.id);
+    if (error) { toast.error("Erreur lors du rattachement"); return; }
+    setInitialLead(lead);
+    setAttachOpen(false);
+    toast.success("Demande rattachée au dossier");
   };
 
   const fetchData = async () => {
@@ -2148,6 +2169,38 @@ Nelly Sabde - Les Conférenciers`);
                   {proposalMessage}
                 </div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!initialLead && (
+        <div className="border border-dashed border-border rounded-lg px-4 py-2.5">
+          {!attachOpen ? (
+            <button type="button" onClick={openAttach} className="text-sm text-muted-foreground hover:text-foreground">
+              📩 Rattacher une demande client
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input value={attachSearch} onChange={(e) => setAttachSearch(e.target.value)} placeholder="Nom, entreprise ou e-mail" className="h-8 text-sm" />
+                <Button size="sm" variant="ghost" onClick={() => setAttachOpen(false)}>Fermer</Button>
+              </div>
+              <div className="max-h-64 overflow-y-auto divide-y divide-border">
+                {attachLeads
+                  .filter((l) => {
+                    const q = attachSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    return [l.first_name, l.last_name, l.company, l.email].filter(Boolean).join(" ").toLowerCase().includes(q);
+                  })
+                  .slice(0, 50)
+                  .map((l) => (
+                    <button key={l.id} type="button" onClick={() => attachLead(l)} className="w-full text-left py-1.5 px-1 hover:bg-muted/50 text-xs">
+                      <span className="font-medium">{[l.first_name, l.last_name].filter(Boolean).join(" ")}</span>
+                      {l.company ? ` · ${l.company}` : ""} <span className="text-muted-foreground">· {l.email} · {new Date(l.created_at).toLocaleDateString("fr-FR")}</span>
+                    </button>
+                  ))}
+              </div>
             </div>
           )}
         </div>

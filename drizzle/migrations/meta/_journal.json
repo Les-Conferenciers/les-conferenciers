@@ -71,6 +71,13 @@
       "when": 1794345649856,
       "tag": "0009_proposals_initial_request_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794345661063,
+      "tag": "0010_proposals_initial_request_trigger",
+      "breakpoints": true
     }
   ]
 }
