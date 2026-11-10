@@ -1007,7 +1007,11 @@ const AdminProposalsContent = () => {
     fetchTasks();
   };
 
-  const getTasksForProposal = (proposalId: string) => proposalTasks.filter((t: any) => t.proposal_id === proposalId);
+  const getTasksForProposal = (proposalId: string) => {
+    const prop = proposals.find((p) => p.id === proposalId);
+    if (prop && (prop.status === "archived" || prop.status === "lost")) return proposalTasks.filter((t: any) => t.proposal_id === proposalId && t.status !== "pending");
+    return proposalTasks.filter((t: any) => t.proposal_id === proposalId);
+  };
 
   const getReminderDefaultBody = (p: Proposal, num: 1 | 2) => {
     const firstName = p.recipient_name?.split(" ")[0] || "";

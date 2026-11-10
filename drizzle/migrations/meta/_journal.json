@@ -78,6 +78,13 @@
       "when": 1794345661063,
       "tag": "0010_proposals_initial_request_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794346991270,
+      "tag": "0011_clear_reminders_on_archive",
+      "breakpoints": true
     }
   ]
 }
