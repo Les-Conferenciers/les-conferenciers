@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS pennylane_sent_at timestamptz, ADD COLUMN IF NOT EXISTS pennylane_error text;
