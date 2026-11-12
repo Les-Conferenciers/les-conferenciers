@@ -764,6 +764,25 @@ Nelly Sabde - Les Conférenciers`);
   };
 
   const [driveUploading, setDriveUploading] = useState<string | null>(null);
+  const [pennylaneSending, setPennylaneSending] = useState<string | null>(null);
+
+  const resendPennylane = async (invoice: Invoice) => {
+    setPennylaneSending(invoice.id);
+    try {
+      let pdf_base64: string | undefined;
+      const tk = (invoice as any).token;
+      if (tk) { try { pdf_base64 = await renderInvoicePdfBase64(tk); } catch (e) { console.error("PDF Pennylane", e); } }
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
+        body: { action: "pennylane_only", invoice_id: invoice.id, pdf_base64 },
+      });
+      if (error || !(data as any)?.pennylane_sent) throw new Error(error?.message || "échec");
+      toast.success(`Facture ${invoice.invoice_number} transmise à Pennylane`);
+    } catch (e: any) {
+      toast.error("Envoi à Pennylane échoué");
+    }
+    setPennylaneSending(null);
+    fetchData();
+  };
 
   const uploadToDrive = async (invoice: Invoice) => {
     const token = (invoice as any).token;
@@ -1447,6 +1466,24 @@ Nelly Sabde - Les Conférenciers`);
                   )}
                 </div>
               </div>
+              {(inv.status === "sent" || inv.status === "paid") && (
+                <div className="mt-2 text-[11px] flex flex-wrap items-center gap-2">
+                  {pennylaneSending === inv.id ? (
+                    <span className="text-muted-foreground">Envoi à Pennylane…</span>
+                  ) : (inv as any).pennylane_sent_at ? (
+                    <span className="text-muted-foreground">Pennylane ✓ le {new Date((inv as any).pennylane_sent_at).toLocaleDateString("fr-FR")}</span>
+                  ) : (inv as any).pennylane_error ? (
+                    <span className="text-destructive" title={(inv as any).pennylane_error}>Pennylane ✗ envoi échoué</span>
+                  ) : (
+                    <span className="text-muted-foreground">Pennylane : pas encore transmise</span>
+                  )}
+                  {pennylaneSending !== inv.id && (
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => resendPennylane(inv)}>
+                      Renvoyer à Pennylane
+                    </Button>
+                  )}
+                </div>
+              )}
               {inv.status === "paid" && (
                 <div className="mt-2 text-[11px] flex flex-wrap items-center gap-2">
                   {driveUploading === inv.id ? (
