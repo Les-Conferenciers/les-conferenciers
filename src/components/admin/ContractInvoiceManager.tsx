@@ -720,9 +720,15 @@ Nelly Sabde - Les Conférenciers`);
     }
     setSendingInvoice(true);
     try {
+      let pdf_base64: string | undefined;
+      const pdfToken = (emailInvoice as any).token;
+      if (pdfToken) {
+        try { pdf_base64 = await renderInvoicePdfBase64(pdfToken); } catch (e) { console.error("PDF Pennylane", e); }
+      }
       const { data, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
+          pdf_base64,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
           to: toList,
