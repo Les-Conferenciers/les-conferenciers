@@ -2053,6 +2053,7 @@ Nelly Sabde - Les Conférenciers`);
       if (error) throw error;
       if ((sendData as any)?.error) throw new Error((sendData as any).error);
       toast.success(`Facture envoyée à ${toList.length + ccList.length} destinataire(s)`);
+      if (!(sendData as any)?.pennylane_sent) toast.warning("Pennylane n'a pas reçu la facture PDF – à transmettre manuellement");
 
       // Facture solde/total envoyée → rappel agenda J+60 sur la proposition.
       // (Le statut du contrat reste piloté manuellement.)
