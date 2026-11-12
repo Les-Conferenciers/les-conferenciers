@@ -1,4 +1,5 @@
 import { renderInvoicePdfBase64 } from "@/lib/invoicePdf";
+import { pennylaneStatus } from "@/lib/pennylaneStatus";
 import { linesFromProposalSpeakers, commissionFromProposalSpeakers } from "@/lib/proposalContractLines";
 import { useEffect, useState, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -123,6 +124,9 @@ type Invoice = {
   created_at: string;
   vhr_estimate?: number | null;
   notes?: string | null;
+  token?: string | null;
+  pennylane_sent_at?: string | null;
+  pennylane_error?: string | null;
 };
 
 type EventData = {
@@ -2084,6 +2088,30 @@ Nelly Sabde - Les Conférenciers`);
     setSendingInvoice(false);
   };
 
+  const [pennylaneSending, setPennylaneSending] = useState<string | null>(null);
+
+  const resendPennylane = async (invoice: Invoice) => {
+    if (pennylaneSending) return;
+    setPennylaneSending(invoice.id);
+    try {
+      let pdf_base64: string | undefined;
+      if (invoice.token) {
+        try { pdf_base64 = await renderInvoicePdfBase64(invoice.token); }
+        catch (error) { console.error("PDF Pennylane", error); }
+      }
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
+        body: { action: "pennylane_only", invoice_id: invoice.id, pdf_base64 },
+      });
+      if (error || !data?.pennylane_sent) throw new Error("Envoi échoué");
+      toast.success(`Facture ${invoice.invoice_number} transmise à Pennylane`);
+    } catch {
+      toast.error("Envoi à Pennylane échoué");
+    } finally {
+      await fetchData();
+      setPennylaneSending(null);
+    }
+  };
+
   const handleMarkPaid = async (invoice: Invoice) => {
     await supabase.from("invoices").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", invoice.id);
     toast.success(`Facture ${invoice.invoice_number} marquée payée`);
@@ -2552,7 +2580,7 @@ Nelly Sabde - Les Conférenciers`);
                   {(inv as any).email_cc ? ` (CC ${(inv as any).email_cc})` : ""}
                 </p>
               )}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   {inv.status === "paid" ? (
                     <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium flex items-center gap-1">
@@ -2568,7 +2596,7 @@ Nelly Sabde - Les Conférenciers`);
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   {(inv.status === "draft" || inv.status === "sent") && (
                     <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)} title="Éditer">
                       <Pencil className="h-3 w-3" />
@@ -2612,6 +2640,22 @@ Nelly Sabde - Les Conférenciers`);
                   )}
                 </div>
               </div>
+              {pennylaneStatus(inv) !== "hidden" && (
+                <div className="mt-3 border-t border-border pt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  {pennylaneSending === inv.id ? (
+                    <span className="text-muted-foreground" role="status">Envoi à Pennylane…</span>
+                  ) : pennylaneStatus(inv) === "failed" ? (
+                    <span className="text-destructive" title={inv.pennylane_error || undefined}>Pennylane ✗ envoi échoué</span>
+                  ) : pennylaneStatus(inv) === "sent" ? (
+                    <span className="text-primary font-medium">Pennylane ✓ le {formatDate(inv.pennylane_sent_at || null)}</span>
+                  ) : (
+                    <span className="text-muted-foreground">Pennylane : pas encore transmise</span>
+                  )}
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs" disabled={pennylaneSending !== null} onClick={() => resendPennylane(inv)} title="Transmettre le PDF uniquement à Pennylane, sans mail au client">
+                    <Send className="h-3 w-3" /> Renvoyer à Pennylane
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>
