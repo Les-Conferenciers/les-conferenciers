@@ -1,3 +1,4 @@
+import { renderInvoicePdfBase64 } from "@/lib/invoicePdf";
 import { linesFromProposalSpeakers, commissionFromProposalSpeakers } from "@/lib/proposalContractLines";
 import { useEffect, useState, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -2033,9 +2034,15 @@ Nelly Sabde - Les Conférenciers`);
     }
     setSendingInvoice(true);
     try {
+      let pdf_base64: string | undefined;
+      const pdfToken = (emailInvoice as any).token;
+      if (pdfToken) {
+        try { pdf_base64 = await renderInvoicePdfBase64(pdfToken); } catch (e) { console.error("PDF Pennylane", e); }
+      }
       const { data: sendData, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
+          pdf_base64,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
           to: toList,
@@ -2046,6 +2053,7 @@ Nelly Sabde - Les Conférenciers`);
       if (error) throw error;
       if ((sendData as any)?.error) throw new Error((sendData as any).error);
       toast.success(`Facture envoyée à ${toList.length + ccList.length} destinataire(s)`);
+      if (!(sendData as any)?.pennylane_sent) toast.warning("Pennylane n'a pas reçu la facture PDF – à transmettre manuellement");
 
       // Facture solde/total envoyée → rappel agenda J+60 sur la proposition.
       // (Le statut du contrat reste piloté manuellement.)

@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const json = (b: unknown, status = 200) =>
       new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const payload = await req.json();
-    const { action, invoice_id, email_subject, email_body, to, cc } = payload;
+    const { action, invoice_id, email_subject, email_body, to, cc, pdf_base64 } = payload;
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -136,8 +136,6 @@ Deno.serve(async (req) => {
       html: emailHtml,
     };
     if (ccList.length > 0) invoicePayload.cc = ccList;
-    // Copie cachée comptable (Pennylane) — jamais visible des clients ni stockée
-    invoicePayload.bcc = ["eve-v5pdlydq@customers.pennylane.com"];
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
@@ -163,7 +161,29 @@ Deno.serve(async (req) => {
       email_cc: ccList.length ? ccList.join(", ") : null,
     }).eq("id", invoice_id);
 
-    return json({ success: true, resend_id: resendId, to: recipientEmail, cc: ccList });
+    // Envoi séparé à Pennylane avec la facture PDF jointe (jamais visible des clients)
+    let pennylane_sent = false;
+    if (typeof pdf_base64 === "string" && pdf_base64.length > 1000) {
+      try {
+        const safeNum = String(invoice.invoice_number || "facture").replace(/[^\w.-]+/g, "_");
+        const pr = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+          body: JSON.stringify({
+            from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
+            to: ["eve-v5pdlydq@customers.pennylane.com"],
+            subject: `Facture ${invoice.invoice_number} - ${proposal.client_name}`,
+            html: `<p>Facture ${invoice.invoice_number} - ${proposal.client_name} en pièce jointe.</p>`,
+            attachments: [{ filename: `Facture-${safeNum}.pdf`, content: pdf_base64 }],
+          }),
+        });
+        const pt = await pr.text();
+        pennylane_sent = pr.ok;
+        if (!pr.ok) console.error("Pennylane send error", pr.status, pt);
+      } catch (e) { console.error("Pennylane send exception", e); }
+    }
+
+    return json({ success: true, resend_id: resendId, to: recipientEmail, cc: ccList, pennylane_sent });
   } catch (err) {
     console.error(err);
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

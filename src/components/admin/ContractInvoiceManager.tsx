@@ -720,9 +720,15 @@ Nelly Sabde - Les Conférenciers`);
     }
     setSendingInvoice(true);
     try {
+      let pdf_base64: string | undefined;
+      const pdfToken = (emailInvoice as any).token;
+      if (pdfToken) {
+        try { pdf_base64 = await renderInvoicePdfBase64(pdfToken); } catch (e) { console.error("PDF Pennylane", e); }
+      }
       const { data, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoice_id: emailInvoice.id,
+          pdf_base64,
           email_subject: invoiceEmailSubject,
           email_body: invoiceEmailBody,
           to: toList,
@@ -737,6 +743,7 @@ Nelly Sabde - Les Conférenciers`);
       if (data && (data as any).error) throw new Error((data as any).error);
       const total = toList.length + ccList.length;
       toast.success(`Facture ${emailInvoice.invoice_number} envoyée à ${total} adresse${total > 1 ? "s" : ""}`);
+      if (!(data as any)?.pennylane_sent) toast.warning("Pennylane n'a pas reçu la facture PDF – à transmettre manuellement");
       setInvoiceEmailOpen(false);
       fetchData();
     } catch (err: any) {
@@ -1683,7 +1690,7 @@ Nelly Sabde - Les Conférenciers`);
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">CC</Label>
               <EmailChipsInput value={invoiceEmailCc} onChange={setInvoiceEmailCc} />
-              <p className="text-[11px] text-muted-foreground">Copie cachée automatique (invisible pour le client) : Pennylane – eve-v5pdlydq@customers.pennylane.com</p>
+              <p className="text-[11px] text-muted-foreground">Copie automatique avec PDF joint (invisible pour le client) : Pennylane – eve-v5pdlydq@customers.pennylane.com</p>
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Objet</Label>
