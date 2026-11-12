@@ -85,6 +85,13 @@
       "when": 1794346991270,
       "tag": "0011_clear_reminders_on_archive",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794477165081,
+      "tag": "0012_invoice_pennylane_tracking",
+      "breakpoints": true
     }
   ]
 }

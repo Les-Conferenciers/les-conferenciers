@@ -540,6 +540,8 @@ export type Database = {
           invoice_type: string
           notes: string | null
           paid_at: string | null
+          pennylane_error: string | null
+          pennylane_sent_at: string | null
           proposal_id: string
           sent_at: string | null
           status: string
@@ -570,6 +572,8 @@ export type Database = {
           invoice_type?: string
           notes?: string | null
           paid_at?: string | null
+          pennylane_error?: string | null
+          pennylane_sent_at?: string | null
           proposal_id: string
           sent_at?: string | null
           status?: string
@@ -600,6 +604,8 @@ export type Database = {
           invoice_type?: string
           notes?: string | null
           paid_at?: string | null
+          pennylane_error?: string | null
+          pennylane_sent_at?: string | null
           proposal_id?: string
           sent_at?: string | null
           status?: string

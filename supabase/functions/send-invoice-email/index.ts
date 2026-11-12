@@ -1,4 +1,74 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+
+const PENNYLANE_EMAIL = "eve-v5pdlydq@customers.pennylane.com";
+const eur = (n: number) => Number(n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u202f|\u00a0/g, " ") + " EUR";
+const clean = (t: unknown) => String(t ?? "").replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2013\u2014]/g, "-").replace(/[^\x20-\x7E\u00A0-\u00FF\n]/g, "");
+
+// PDF de secours généré côté serveur (si l'écran n'a pas fourni le PDF)
+async function buildInvoicePdf(inv: any, proposal: any): Promise<string> {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([595, 842]);
+  const f = await doc.embedFont(StandardFonts.Helvetica);
+  const b = await doc.embedFont(StandardFonts.HelveticaBold);
+  let y = 790;
+  const t = (s: string, x = 50, bold = false, size = 10) => { page.drawText(clean(s), { x, y, size, font: bold ? b : f, color: rgb(0.1, 0.14, 0.2) }); };
+  const nl = (h = 15) => { y -= h; };
+  t("EVE - LES CONFERENCIERS", 50, true, 14); nl(18);
+  t("SAS - 4 B Villa de la Gare, 92140 Clamart"); nl();
+  t("SIRET 848 829 743 00014 - TVA FR39 848 829 743"); nl();
+  t("contact@lesconferenciers.com"); nl(35);
+  const typeLabel = inv.invoice_type === "deposit" || inv.invoice_type === "acompte" ? "FACTURE D'ACOMPTE" : "FACTURE";
+  t(`${typeLabel} N° ${inv.invoice_number}`, 50, true, 16); nl(22);
+  const d = new Date(inv.sent_at || inv.created_at || Date.now());
+  t(`Date : ${d.toLocaleDateString("fr-FR")}`); nl();
+  if (inv.due_date) { t(`Échéance : ${new Date(inv.due_date).toLocaleDateString("fr-FR")}`); nl(); }
+  nl(15);
+  t("Facturé à :", 50, true); nl();
+  t(inv.billing_entity_name || proposal?.client_name || ""); nl();
+  for (const line of String(inv.billing_entity_address || "").split(/\n/)) { if (line.trim()) { t(line); nl(); } }
+  if (inv.billing_entity_siret) { t(`SIRET : ${inv.billing_entity_siret}`); nl(); }
+  if (inv.billing_entity_vat) { t(`TVA : ${inv.billing_entity_vat}`); nl(); }
+  nl(25);
+  const ht = Number(inv.amount_ht || 0), ttc = Number(inv.amount_ttc || 0), rate = Number(inv.tva_rate || 0);
+  t("Désignation", 50, true); t("Montant HT", 450, true); nl(18);
+  t(`Prestation conférence - ${proposal?.client_name || ""}`.slice(0, 80)); t(eur(ht), 450); nl(30);
+  t("Total HT", 350, true); t(eur(ht), 450); nl();
+  t(`TVA ${rate} %`, 350); t(eur(ttc - ht), 450); nl();
+  t("Total TTC", 350, true); t(eur(ttc), 450, true); nl(40);
+  t("Règlement par virement - SWAN SAS", 50, true); nl();
+  t("IBAN : FR76 1732 8844 0034 5146 9068 617 - BIC : SWNBFR22"); nl();
+  return await doc.saveAsBase64();
+}
+
+async function sendToPennylane(adminClient: any, key: string, invoice: any, proposal: any, pdfIn?: string): Promise<boolean> {
+  let pdf = typeof pdfIn === "string" && pdfIn.length > 1000 ? pdfIn : "";
+  console.log("[pennylane] invoice", invoice.invoice_number, "pdf from screen:", !!pdf);
+  try {
+    if (!pdf) { pdf = await buildInvoicePdf(invoice, proposal); console.log("[pennylane] fallback pdf generated, len", pdf.length); }
+    const safeNum = String(invoice.invoice_number || "facture").replace(/[^\w.-]+/g, "_");
+    const pr = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
+        to: [PENNYLANE_EMAIL],
+        subject: `Facture ${invoice.invoice_number} - ${proposal?.client_name || ""}`,
+        html: `<p>Facture ${invoice.invoice_number} - ${proposal?.client_name || ""} en pièce jointe.</p>`,
+        attachments: [{ filename: `Facture-${safeNum}.pdf`, content: pdf }],
+      }),
+    });
+    const pt = await pr.text();
+    console.log("[pennylane] resend status", pr.status, pt);
+    if (!pr.ok) throw new Error(`Resend ${pr.status}: ${pt}`.slice(0, 500));
+    await adminClient.from("invoices").update({ pennylane_sent_at: new Date().toISOString(), pennylane_error: null }).eq("id", invoice.id);
+    return true;
+  } catch (e) {
+    console.error("[pennylane] error", e);
+    await adminClient.from("invoices").update({ pennylane_error: String((e as any)?.message || e).slice(0, 500) }).eq("id", invoice.id);
+    return false;
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,6 +168,10 @@ Deno.serve(async (req) => {
     if (iErr || !invoice) return json({ error: "Invoice not found" }, 404);
 
     const proposal = invoice.proposal;
+    if (action === "pennylane_only") {
+      const ok = await sendToPennylane(adminClient, RESEND_API_KEY, invoice, proposal, pdf_base64);
+      return json({ success: ok, pennylane_sent: ok });
+    }
     const recipientEmail = [...new Set(parseList(to ?? proposal.client_email))];
     const ccList = [...new Set(parseList(cc))].filter((e) => !recipientEmail.includes(e));
     const invalid = [...recipientEmail, ...ccList].filter((e) => !EMAIL_RE.test(e));
@@ -161,27 +235,7 @@ Deno.serve(async (req) => {
       email_cc: ccList.length ? ccList.join(", ") : null,
     }).eq("id", invoice_id);
 
-    // Envoi séparé à Pennylane avec la facture PDF jointe (jamais visible des clients)
-    let pennylane_sent = false;
-    if (typeof pdf_base64 === "string" && pdf_base64.length > 1000) {
-      try {
-        const safeNum = String(invoice.invoice_number || "facture").replace(/[^\w.-]+/g, "_");
-        const pr = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-          body: JSON.stringify({
-            from: "Les Conférenciers <nellysabde@lesconferenciers.com>",
-            to: ["eve-v5pdlydq@customers.pennylane.com"],
-            subject: `Facture ${invoice.invoice_number} - ${proposal.client_name}`,
-            html: `<p>Facture ${invoice.invoice_number} - ${proposal.client_name} en pièce jointe.</p>`,
-            attachments: [{ filename: `Facture-${safeNum}.pdf`, content: pdf_base64 }],
-          }),
-        });
-        const pt = await pr.text();
-        pennylane_sent = pr.ok;
-        if (!pr.ok) console.error("Pennylane send error", pr.status, pt);
-      } catch (e) { console.error("Pennylane send exception", e); }
-    }
+    const pennylane_sent = await sendToPennylane(adminClient, RESEND_API_KEY, invoice, proposal, pdf_base64);
 
     return json({ success: true, resend_id: resendId, to: recipientEmail, cc: ccList, pennylane_sent });
   } catch (err) {
