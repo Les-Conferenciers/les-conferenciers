@@ -136,6 +136,8 @@ Deno.serve(async (req) => {
       html: emailHtml,
     };
     if (ccList.length > 0) invoicePayload.cc = ccList;
+    // Copie cachée comptable (Pennylane) — jamais visible des clients ni stockée
+    invoicePayload.bcc = ["eve-v5pdlydq@customers.pennylane.com"];
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },

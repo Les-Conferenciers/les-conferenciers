@@ -1,3 +1,4 @@
+import { linesFromProposalSpeakers, commissionFromProposalSpeakers } from "@/lib/proposalContractLines";
 import { useEffect, useState, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_CLAUSES, type ClauseKey } from "@/lib/contractClauses";
+import { DEFAULT_CLAUSES, expandPriceClause, type ClauseKey } from "@/lib/contractClauses";
 import { cn } from "@/lib/utils";
 import SignedContractUpload from "@/components/admin/SignedContractUpload";
 import RichTextEditor from "@/components/admin/RichTextEditor";
@@ -396,29 +397,50 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
   const loadInitialRequest = async () => {
     const { data: prop } = await supabase
       .from("proposals")
-      .select("lead_id, message, created_at, internal_notes")
+      .select("lead_id, message, created_at, internal_notes, initial_request")
       .eq("id", proposal.id)
       .maybeSingle();
     setProposalMessage(((prop as any)?.message as string) || null);
+    const snapshot = (prop as any)?.initial_request;
+    if (snapshot) {
+      setInitialLead(snapshot);
+      return;
+    }
     const leadId = (prop as any)?.lead_id as string | null;
+    let found: any = null;
     if (leadId) {
       const { data } = await supabase.from("simulator_leads").select("*").eq("id", leadId).maybeSingle();
-      if (data) {
-        setInitialLead(data as any);
-        return;
-      }
+      found = data;
     }
-    if (proposal.client_email) {
+    if (!found && proposal.client_email) {
       const { data } = await supabase
         .from("simulator_leads")
         .select("*")
         .ilike("email", proposal.client_email)
         .order("created_at", { ascending: false })
         .limit(1);
-      setInitialLead(((data as any) || [])[0] || null);
-      return;
+      found = ((data as any) || [])[0] || null;
     }
-    setInitialLead(null);
+    setInitialLead(found);
+    if (found) {
+      await supabase.from("proposals").update({ initial_request: found } as any).eq("id", proposal.id);
+    }
+  };
+
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [attachSearch, setAttachSearch] = useState("");
+  const [attachLeads, setAttachLeads] = useState<any[]>([]);
+  const openAttach = async () => {
+    setAttachOpen(true);
+    const { data } = await supabase.from("simulator_leads").select("*").order("created_at", { ascending: false }).limit(500);
+    setAttachLeads((data as any) || []);
+  };
+  const attachLead = async (lead: any) => {
+    const { error } = await supabase.from("proposals").update({ lead_id: lead.id, initial_request: lead } as any).eq("id", proposal.id);
+    if (error) { toast.error("Erreur lors du rattachement"); return; }
+    setInitialLead(lead);
+    setAttachOpen(false);
+    toast.success("Demande rattachée au dossier");
   };
 
   const fetchData = async () => {
@@ -452,8 +474,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     setClients((data as any) || []);
     const { data: sp } = await supabase
       .from("speakers")
-      .select("id, name, base_fee, email, phone, city")
-      .eq("archived", false)
+      .select("id, name, base_fee, email, phone, city, archived")
       .order("name");
     setAllSpeakers((sp as any) || []);
   };
@@ -556,13 +577,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     const speakersForContract = event?.selected_speaker_id
       ? proposal.proposal_speakers.filter((ps) => ps.speaker_id === event.selected_speaker_id)
       : proposal.proposal_speakers;
-    return speakersForContract.map((ps, i) => ({
-      id: generateId(),
-      label: ps.speakers?.name || `Conférencier ${i + 1}`,
-      amount_ht: ps.total_price || 0,
-      tva_rate: 20,
-      type: "speaker" as const,
-    }));
+    return linesFromProposalSpeakers(speakersForContract as any) as ContractLine[];
   };
 
   const effectiveDiscount = contract?.discount_percent || 0;
@@ -588,13 +603,7 @@ const EventDossier = ({ proposal, onUpdate }: Props) => {
     const speakersForContract = event?.selected_speaker_id
       ? proposal.proposal_speakers.filter((ps) => ps.speaker_id === event.selected_speaker_id)
       : proposal.proposal_speakers;
-    return speakersForContract.map((ps, i) => ({
-      id: generateId(),
-      label: ps.speakers?.name || `Conférencier ${i + 1}`,
-      amount_ht: ps.total_price || 0,
-      tva_rate: 20,
-      type: "speaker" as const,
-    }));
+    return linesFromProposalSpeakers(speakersForContract as any) as ContractLine[];
   };
 
   const updateLine = (id: string, field: keyof ContractLine, value: any) => {
@@ -1911,6 +1920,13 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
       return;
     }
     const amountTTC = editAmountHT * (1 + editTvaRate / 100);
+    const wasSent = editingInvoice.status === "sent";
+    let finalNotes = editInvoiceNotes.trim() || null;
+    if (wasSent) {
+      const fmt = (n: number) => Number(n).toLocaleString("fr-FR");
+      const trace = `[Modif après envoi] Modifiée le ${new Date().toLocaleDateString("fr-FR")} (ancien montant : ${fmt(editingInvoice.amount_ht)} € HT, TVA ${editingInvoice.tva_rate} %)`;
+      finalNotes = [finalNotes, trace].filter(Boolean).join("\n");
+    }
     await supabase
       .from("invoices")
       .update({
@@ -1920,13 +1936,16 @@ ${liaisonNotes ? `\n💬 Commentaires :\n${liaisonNotes}` : ""}`;
         due_date: editDueDate || null,
         vhr_estimate: editVhrEstimate === "" ? null : Number(editVhrEstimate),
         invoice_type: editInvoiceType,
-        notes: editInvoiceNotes.trim() || null,
+        notes: finalNotes,
         ...billingPayload(editBillingMode, editBilling),
       } as any)
       .eq("id", editingInvoice.id);
     toast.success("Facture mise à jour !");
     setEditInvoiceOpen(false);
-    fetchData();
+    await fetchData();
+    if (wasSent && window.confirm("Renvoyer la facture corrigée maintenant ?")) {
+      openInvoiceEmail({ ...editingInvoice, amount_ht: Math.round(editAmountHT * 100) / 100, tva_rate: editTvaRate, amount_ttc: Math.round(amountTTC * 100) / 100, due_date: editDueDate || null, invoice_type: editInvoiceType, notes: finalNotes, ...billingPayload(editBillingMode, editBilling) } as any);
+    }
   };
 
   const openInvoiceEmail = (inv: Invoice) => {
@@ -2159,6 +2178,38 @@ Nelly Sabde - Les Conférenciers`);
                   {proposalMessage}
                 </div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!initialLead && (
+        <div className="border border-dashed border-border rounded-lg px-4 py-2.5">
+          {!attachOpen ? (
+            <button type="button" onClick={openAttach} className="text-sm text-muted-foreground hover:text-foreground">
+              📩 Rattacher une demande client
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input value={attachSearch} onChange={(e) => setAttachSearch(e.target.value)} placeholder="Nom, entreprise ou e-mail" className="h-8 text-sm" />
+                <Button size="sm" variant="ghost" onClick={() => setAttachOpen(false)}>Fermer</Button>
+              </div>
+              <div className="max-h-64 overflow-y-auto divide-y divide-border">
+                {attachLeads
+                  .filter((l) => {
+                    const q = attachSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    return [l.first_name, l.last_name, l.company, l.email].filter(Boolean).join(" ").toLowerCase().includes(q);
+                  })
+                  .slice(0, 50)
+                  .map((l) => (
+                    <button key={l.id} type="button" onClick={() => attachLead(l)} className="w-full text-left py-1.5 px-1 hover:bg-muted/50 text-xs">
+                      <span className="font-medium">{[l.first_name, l.last_name].filter(Boolean).join(" ")}</span>
+                      {l.company ? ` · ${l.company}` : ""} <span className="text-muted-foreground">· {l.email} · {new Date(l.created_at).toLocaleDateString("fr-FR")}</span>
+                    </button>
+                  ))}
+              </div>
             </div>
           )}
         </div>
@@ -2510,8 +2561,8 @@ Nelly Sabde - Les Conférenciers`);
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  {inv.status === "draft" && (
-                    <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)}>
+                  {(inv.status === "draft" || inv.status === "sent") && (
+                    <Button size="sm" variant="ghost" onClick={() => openEditInvoice(inv)} title="Éditer">
                       <Pencil className="h-3 w-3" />
                     </Button>
                   )}
@@ -2900,16 +2951,17 @@ Nelly Sabde - Les Conférenciers`);
                                 .from("contracts")
                                 .update({ selected_speaker_id: ps.speaker_id } as any)
                                 .eq("id", contract.id);
-                            const newLines = [
-                              {
-                                id: generateId(),
-                                label: ps.speakers?.name || "Conférencier",
-                                amount_ht: ps.total_price || 0,
-                                tva_rate: 20,
-                                type: "speaker" as const,
-                              },
-                            ];
+                            const newLines = linesFromProposalSpeakers([ps as any]) as ContractLine[];
+                            const newComm = commissionFromProposalSpeakers([ps as any]);
                             setContractLines(newLines);
+                            setAgencyCommission(newComm);
+                            setAgencyCommissionText(String(newComm || 0));
+                            if (contract && !contract.signed_at) {
+                              const others = ((contract.contract_lines as any[]) || []).filter((l: any) => l.type === "custom");
+                              await supabase.from("contracts").update({ contract_lines: [...newLines, ...others], agency_commission: newComm } as any).eq("id", contract.id);
+                            } else if (contract?.signed_at) {
+                              toast.warning("Contrat déjà signé : montants non modifiés. Créez une version « annule et remplace » si besoin.");
+                            }
                             fetchData();
                             toast.success("Conférencier mis à jour");
                           }}
@@ -2939,6 +2991,9 @@ Nelly Sabde - Les Conférenciers`);
                       if (!sp) return;
                       // Insert proposal_speakers row if absent
                       const exists = proposal.proposal_speakers.find((ps) => ps.speaker_id === spId);
+                      const fromProposal = exists
+                        ? { ...exists, speakers: { name: sp.name } }
+                        : { speaker_fee: sp.base_fee || 0, travel_costs: 0, agency_commission: 0, speakers: { name: sp.name } };
                       if (!exists) {
                         await supabase.from("proposal_speakers").insert({
                           proposal_id: proposal.id,
@@ -2957,15 +3012,17 @@ Nelly Sabde - Les Conférenciers`);
                           .from("contracts")
                           .update({ selected_speaker_id: spId } as any)
                           .eq("id", contract.id);
-                      setContractLines([
-                        {
-                          id: generateId(),
-                          label: sp.name,
-                          amount_ht: sp.base_fee || 0,
-                          tva_rate: 20,
-                          type: "speaker" as const,
-                        },
-                      ]);
+                      const repLines = linesFromProposalSpeakers([fromProposal as any]) as ContractLine[];
+                      const repComm = commissionFromProposalSpeakers([fromProposal as any]);
+                      setContractLines(repLines);
+                      setAgencyCommission(repComm);
+                      setAgencyCommissionText(String(repComm || 0));
+                      if (contract && !contract.signed_at) {
+                        const others = ((contract.contract_lines as any[]) || []).filter((l: any) => l.type === "custom");
+                        await supabase.from("contracts").update({ contract_lines: [...repLines, ...others], agency_commission: repComm } as any).eq("id", contract.id);
+                      } else if (contract?.signed_at) {
+                        toast.warning("Contrat déjà signé : montants non modifiés. Créez une version « annule et remplace » si besoin.");
+                      }
                       fetchData();
                       toast.success(`Conférencier remplacé par ${sp.name}`);
                     }}
@@ -2976,7 +3033,7 @@ Nelly Sabde - Les Conférenciers`);
                       .sort((a, b) => a.name.localeCompare(b.name))
                       .map((sp) => (
                         <option key={sp.id} value={sp.id}>
-                          {sp.name}
+                          {sp.name}{(sp as any).archived ? " (hors ligne)" : ""}
                         </option>
                       ))}
                   </select>
@@ -3286,7 +3343,7 @@ Nelly Sabde - Les Conférenciers`);
                   ne seront pas affichés et la numérotation sera mise à jour automatiquement.
                 </p>
                 {DEFAULT_CLAUSES.map((clause, idx) => {
-                  const raw = articleOverrides[clause.key] ?? "";
+                  const raw = expandPriceClause(articleOverrides[clause.key] ?? "");
                   const isRemoved = raw === REMOVED_CLAUSE;
                   const isOverridden = !isRemoved && raw.trim().length > 0;
                   const visibleIndex = DEFAULT_CLAUSES.slice(0, idx + 1).filter(
@@ -3392,12 +3449,6 @@ Nelly Sabde - Les Conférenciers`);
                             onChange={(html) => setArticleOverrides((o) => ({ ...o, [clause.key]: html }))}
                             minHeight="160px"
                           />
-                          {clause.key === "art5" && (
-                            <p className="text-[10px] text-muted-foreground">
-                              Astuce : la mention <code>{"{{PRICE_CLAUSE}}"}</code> est remplacée automatiquement par la
-                              clause d'acompte.
-                            </p>
-                          )}
                         </>
                       )}
                     </div>
@@ -3450,7 +3501,7 @@ Nelly Sabde - Les Conférenciers`);
                     className="w-full text-left px-3 py-2 hover:bg-muted/60 transition flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{sp.name}</p>
+                      <p className="text-sm font-medium truncate">{sp.name}{(sp as any).archived ? <span className="text-muted-foreground font-normal"> (hors ligne)</span> : null}</p>
                       <p className="text-[11px] text-muted-foreground truncate">
                         {sp.city || "—"}
                         {sp.email ? ` · ${sp.email}` : ""}
